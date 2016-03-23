@@ -6,7 +6,7 @@ declared-services:
 applications:
 - services:
   - visual-insights-service
-  name: visual-insights-nodejs
+  name: age-at-home
   command: node app.js
   path: .
   memory: 512M
