@@ -1,248 +1,43 @@
 <!DOCTYPE html>
 <html>
 <head>
-<title>Visual Insights</title>
-<meta charset="utf-8">
-<meta http-equiv="X-UA-Compatible" content="IE=edge">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<link rel="shortcut icon" type="image/x-icon" href="/images/favicon.ico">
-<link rel="stylesheet" href="css/style.css">
+<title>Age At Home</title>
 </head>
+<!-- start Mixpanel -->
+<script type="text/javascript">
+(function(e,b){if(!b.__SV){var a,f,i,g;window.mixpanel=b;a=e.createElement("script");a.type="text/javascript";a.async=!0;a.src=("https:"===e.location.protocol?"https:":"http:")+'//cdn.mxpnl.com/libs/mixpanel-2.2.min.js';f=e.getElementsByTagName("script")[0];f.parentNode.insertBefore(a,f);b._i=[];b.init=function(a,e,d){function f(b,h){var a=h.split(".");2==a.length&&(b=b[a[0]],h=a[1]);b[h]=function(){b.push([h].concat(Array.prototype.slice.call(arguments,0)))}}var c=b;"undefined"!==typeof d?c=b[d]=[]:d="mixpanel";c.people=c.people||[];c.toString=function(b){var a="mixpanel";"mixpanel"!==d&&(a+="."+d);b||(a+=" (stub)");return a};c.people.toString=function(){return c.toString(1)+".people (stub)"};i="disable track track_pageview track_links track_forms register register_once alias unregister identify name_tag set_config people.set people.set_once people.increment people.append people.track_charge people.clear_charges people.delete_user".split(" ");for(g=0;g<i.length;g++)f(c,i[g]); b._i.push([a,e,d])};b.__SV=1.2}})(document,window.mixpanel||[]); 
+mixpanel.init("c36f5ef7cd8b18985afcb1a8b6e8b96a");
+mixpanel.track('age-at-home');
+</script>
+<!-- end Mixpanel -->
 <body>
-  <header class="_demo--heading">
-	<div class="_demo--container">
-		<a class="wordmark" href="http://www.ibm.com/smarterplanet/us/en/ibmwatson/developercloud/">
-			<span class="wordmark--left">IBM</span>
-			<span class="wordmark--right">Watson Developer Cloud</span>
-		</a>
-		<nav class="heading-nav">
-			<a class="heading-nav--item" href="http://www.ibm.com/smarterplanet/us/en/ibmwatson/developercloud/services-catalog.html">
-				Services
-			</a>
-			<a class="heading-nav--item" href="http://www.ibm.com/smarterplanet/us/en/ibmwatson/developercloud/doc/">
-				Docs
-			</a>
-			<a class="heading-nav--item" href="http://www.ibm.com/smarterplanet/us/en/ibmwatson/developercloud/gallery.html">
-				App Gallery
-			</a>
-			<a class="heading-nav--item" href="https://developer.ibm.com/watson/">
-				Community
-			</a>
-		</nav>
-	</div>
-</header>
-
-  <div class="_demo--banner">
-	<div class="_demo--container">
-		<div class="banner--service-icon-container">
-			<img class="banner--service-icon" src="images/icons/service-icon.svg" alt="Visual Insights API Icon">
-		</div>
-		<div class="banner--service-info">
-			<h1 class="banner--service-title base--h1">
-				<img class="banner--service-icon_INLINE" src="images/icons/service-icon.svg" alt="Visual Insights API Icon">
-				Visual Insights
-			</h1>
-			<div class="banner--service-description">
-			The IBM Visual Insights service allows you to derive value from collections of photos.  It extracts visual insights related to activities, places, interests and people to deliver a comprehensive view of what you or your users are communicating through visual media.
-			</div>
-			<div class="banner--service-resource">
-				<span class="icon icon-link"></span>
-				<strong>Resources:</strong>
-			</div>
-			<div class="banner--service-links">
-				<li class="base--li banner--service-link-item">
-					<a href="http://www.ibm.com/smarterplanet/us/en/ibmwatson/developercloud/apis/visual-insights-apis.html" class="base--a">API Overview</a>
-				</li>
-				<li class="base--li banner--service-link-item">
-					<a href="http://www.ibm.com/smarterplanet/us/en/ibmwatson/developercloud/doc/visual-insights/" class="base--a">Documentation</a>
-				</li>
-				<li class="base--li banner--service-link-item">
-					<a href="https://bluemix.net/deploy?repository=https://github.com/watson-developer-cloud/visual-insights-nodejs" class="base--a">Fork and Deploy on Bluemix</a>
-				</li>
-				<li class="base--li banner--service-link-item">
-					<a href="https://github.com/watson-developer-cloud/visual-insights-nodejs" class="base--a">Fork on Github</a>
-				</li>
-			</div>
-		</div>
-	</div>
-</div>
-  <div class="_demo--container">
-    <article class="_content base--article">
-        <form id="form" class="_content--input input-section">
-            <h2 class="base--h2 input-section--header">
-				Input
-			</h2>
-            <p class="base--p">
-                Select one of the photo collections below to extract visual insights from the collection.
-            </p>
-            <div class="tab-panels" role="tabpanel">
-                <ul class="tab-panels--tab-list" role="tablist">
-                    <li class="tab-panels--tab-list-item base--li" role="presentation">
-                        <a class="tab-panels--tab base--a active" href="#examples-panel" aria-controls="examples" role="tab">Examples</a>
-                    </li>
-                </ul>
-                <div class="tab-panels--tab-content">
-                    <div id="examples-panel" class="tab-panels--tab-pane active" role="tab-panel">
-                        <p class="base--p">Choose a photo collection</p>
-                        <label class="input-section--person input-section--person_1 input-section--person_CHECKED" for="person1-radio">
-                            <input type="radio" name="dataset" id="person1-radio" value="person1" class="base--radio" required="required" checked="checked">
-                            <label for="person1-radio" class="base--label input-section--examples-radio-label">Collection 1</label>
-                            <div class="short-preview">
-                                <div class="short-preview--row">
-                                    <div class="short-preview--thumb-container short-preview--thumb-container_SMALL">
-                                        <img class="short-preview--thumb" src="images/person1/9.jpg">
-                                    </div>
-                                    <div class="short-preview--thumb-container short-preview--thumb-container_SMALL">
-                                        <img class="short-preview--thumb" src="images/person1/0.jpg">
-                                    </div>
-                                    <div class="short-preview--thumb-container short-preview--thumb-container_SMALL">
-                                        <img class="short-preview--thumb" src="images/person1/23.jpg">
-                                    </div>
-                                </div>
-                                <div class="short-preview--row">
-                                    <div class="short-preview--thumb-container short-preview--thumb-container_SMALL">
-                                        <img class="short-preview--thumb" src="images/person1/29.jpg">
-                                    </div>
-                                    <div class="short-preview--thumb-container short-preview--thumb-container_SMALL">
-                                        <img class="short-preview--thumb" src="images/person1/48.jpg">
-                                    </div>
-                                    <div class="short-preview--thumb-container short-preview--thumb-container_SMALL">
-                                        <img class="short-preview--thumb" src="images/person1/33.jpg">
-                                    </div>
-                                </div>
-                                <div class="short-preview--row">
-                                    <div class="short-preview--thumb-container short-preview--thumb-container_SMALL">
-                                        <img class="short-preview--thumb" src="images/person1/2.jpg">
-                                    </div>
-                                    <div class="short-preview--thumb-container short-preview--thumb-container_SMALL">
-                                        <img class="short-preview--thumb" src="images/person1/3.jpg">
-                                    </div>
-                                    <div class="short-preview--thumb-container short-preview--thumb-container_SMALL">
-                                        <img class="short-preview--thumb" src="images/person1/4.jpg">
-                                        <div class="short-preview--thumb-overlay">
-                                            <span class="short-preview--thumb-overlay-text">+53</span>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="input-section--person-images input-section--person-images_1 input-section--person-images_HIDDEN" style=""></div>
-                        </label>
-                        <label class="input-section--person input-section--person_2" for="person2-radio">
-                            <input type="radio" name="dataset" id="person2-radio" value="person2" class="base--radio" required="required">
-                            <label for="person2-radio" class="base--label input-section--examples-radio-label">Collection 2</label>
-                            <div class="short-preview">
-                                <div class="short-preview--row">
-                                    <div class="short-preview--thumb-container short-preview--thumb-container_SMALL">
-                                        <img class="short-preview--thumb" src="images/person2/30.jpg">
-                                    </div>
-                                    <div class="short-preview--thumb-container short-preview--thumb-container_SMALL">
-                                        <img class="short-preview--thumb" src="images/person2/6.jpg">
-                                    </div>
-                                    <div class="short-preview--thumb-container short-preview--thumb-container_SMALL">
-                                        <img class="short-preview--thumb" src="images/person2/23.jpg">
-                                    </div>
-                                </div>
-                                <div class="short-preview--row">
-                                    <div class="short-preview--thumb-container short-preview--thumb-container_SMALL">
-                                        <img class="short-preview--thumb" src="images/person2/46.jpg">
-                                    </div>
-                                    <div class="short-preview--thumb-container short-preview--thumb-container_SMALL">
-                                        <img class="short-preview--thumb" src="images/person2/33.jpg">
-                                    </div>
-                                    <div class="short-preview--thumb-container short-preview--thumb-container_SMALL">
-                                        <img class="short-preview--thumb" src="images/person2/32.jpg">
-                                    </div>
-                                </div>
-                                <div class="short-preview--row">
-                                    <div class="short-preview--thumb-container short-preview--thumb-container_SMALL">
-                                        <img class="short-preview--thumb" src="images/person2/2.jpg">
-                                    </div>
-                                    <div class="short-preview--thumb-container short-preview--thumb-container_SMALL">
-                                        <img class="short-preview--thumb" src="images/person2/1.jpg">
-                                    </div>
-                                    <div class="short-preview--thumb-container short-preview--thumb-container_SMALL">
-                                        <img class="short-preview--thumb" src="images/person2/3.jpg">
-                                        <div class="short-preview--thumb-overlay">
-                                            <span class="short-preview--thumb-overlay-text">+46</span>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="input-section--person-images input-section--person-images_2 input-section--person-images_HIDDEN"></div>
-                        </label>
-                    </div>
-                </div>
-            </div>
-            <button type="submit" value="Submit" class="base--button input-section--submit">Analyze</button>
-            <span class="icon-hyperlink input-section--reset">
-				<span class="icon icon-reset"></span>
-	            <button class="base--a input-section--reset-button" href="" type="reset">
-	                Reset
-	            </button>
-            </span>
-        </form>
-        <div class="_content--output output">
-            <h2 class="base--h2 output--header">
-				Output
-			</h2>
-            <p class="base--p">
-                This service delivers a tagging profile that tells you how common each tag is in the photo collection. Each tag’s score is a combination of confidence and prevalence, ranging from low (zero) to high (one).
-            </p>
-            <div class="output--loader">
-            	<div class="loader">
-					<img src="images/loading-indicator.gif" width="100%" alt="">
-            	</div>
-			</div>
-			<div class="output--results">
-				<h3 class="base--h3">Tagging Profile</h3>
-	            <div class="output--viz-container">
-	                <svg class="output--viz">
-	                </svg>
-	            </div>
-	            <div class="output--table-data"></div>
-	            <h3 class="base--h3 output--json-header">JSON</h3>
-                <div class="output--json-panel">
-                    <pre class="base--pre output--json language-javascript">
-                        <code class="base--code output--json-code language-javascript"></code>
-                    </pre>
-                </div>
-			</div>
-			<div class="output--error">
-				<p class="base--p output--error-message">Some error message here</p>
-			</div>
-        </div>
-    </article>
-</div>
-<script type="text/html" id='clustersTemplate'>
-    <% _.each(items, function(item, key, list) { %>
-        <div class="output--thumb-container">
-            <img class="output--thumb" src="<%= item.img %>">
-        </div>
-        <% });%>
-            <hr class="base--hr">
-</script>
-<script type="text/html" id='imagePreview'>
-    <% _.each(items, function(item, key, list) { %>
-        <img class="images-display--image" src="<%= item.src %>">
-        <% });%>
-</script>
-<script type="text/html" id='personImagePreview'>
-    <% _.each(items, function(item, key, list) { %>
-        <div class="input-section--thumb-container">
-            <img class="input-section--thumb" src="<%= item.img %>">
-        </div>
-        <% });%>
-</script>
-
-
-
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/modernizr/2.8.3/modernizr.min.js"></script>
-  <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/underscore.js/1.4.4/underscore-min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/3.5.6/d3.min.js"></script>
-  <script type="text/javascript" src="js/vendors/_prism.js"></script>
-  <script type="text/javascript" src="js/vendors/_d3.layout.cloud.js"></script>
-  <script type="text/javascript" src="js/components/_viz.js"></script>
-  <script type="text/javascript" src="js/demo.js"></script>
+<img width="10%" src="images/age-at-home.jpg">
+<h1>
+Age-At-Home</h1>
+<h2>What is it?</h2>
+<p>
+Improve elderly's ability to age at home through understanding of daily activities inferred from image analysis.
+<h2>
+How it Works
+</h2>
+<p>
+The need for helping elderly individuals or couples remain in their home is increasing as our global population ages.  Cognitive processing offers opportunities to assist the elderly by processing information to identify opportunities for caregivers to offer assistance and support.
+<p>
+However, rather than depending on sensors worn on the body (and needing to be not forgotten, recharged, etc..) or installing sensors on individual devices (e.g. sink, cabinet, refrigerator, etc..), this solution utilizes passive monitoring devices, notably video camera(s) with multi-channel microphones, to sense activity, record events, and build a model of normative behavior.
+<p>
+Initially we intend to monitor the kitchen and recognizes the presence of a person (not an individual) in the room. From this simple event detection we will build a normative baseline of daily activity and detect when that daily activity exhibits aberrations (e.g. no activity in kitchen after +2 std. dev. past median time).
+<p>
+As the visual recognition algorithm will run on the local device (e.g. RaspberryPi with camera), the issues of round-trip latency to the cloud, or bandwidth required, or security or privacy concerns, will be eliminated.  Only events generated from this recognition will be sent to the cloud to build (and update) the normative behavior model.
+<p>
+This initial scenario may be easily extended to other passive monitoring capabilities, e.g. audio, motion (sonar), electrical circuit, , ... as well as deployment in other area, e.g. entry way, bathroom, hallway, etc.. to provide support for additional scenarios, e.g. medication adherence, diet, exercise, ... 
+<h2>Equipment</h2>
+<img width="50%" src="images/camera.png">
+<p>
+A RaspberryPi3 with 32 GB uSD card and Playstation3 Eye USB camera
+<h2>Examples</h2>
+<p>
+<img width="50%" alt="High confidence example" src="images/hiconf.png">
+<br>
+<img width="50%" alt="Low confidence example" src="images/loconf.png">
 </body>
 </html>
