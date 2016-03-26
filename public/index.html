@@ -36,14 +36,56 @@ Initially we intend to monitor the kitchen and recognizes the presence of a pers
 As the visual recognition algorithm will run on the local device (e.g. RaspberryPi with camera), the issues of round-trip latency to the cloud, or bandwidth required, or security or privacy concerns, will be eliminated.  Only events generated from this recognition will be sent to the cloud to build (and update) the normative behavior model.
 <p>
 This initial scenario may be easily extended to other passive monitoring capabilities, e.g. audio, motion (sonar), electrical circuit, , ... as well as deployment in other area, e.g. entry way, bathroom, hallway, etc.. to provide support for additional scenarios, e.g. medication adherence, diet, exercise, ... 
-<h2>Equipment</h2>
-<img width="50%" src="images/camera.png">
-<p>
-A RaspberryPi3 with 32 GB uSD card and Playstation3 Eye USB camera
 <h2>Examples</h2>
+Image captured using motion detection algorithm based on changes in pixel count (bounding box around centroid identifed).
 <p>
 <img width="50%" alt="High confidence example" src="images/hiconf.png">
 <br>
 <img width="50%" alt="Low confidence example" src="images/loconf.png">
+<h2>Equipment</h2>
+The necessary equipment for this project is relatively inexpensive:
+A RaspberryPi3 with 32 GB uSD card and Playstation3 Eye USB camera
+<p>
+<img width="50%" src="images/camera.png">
+<br>
+<i>Installation on kitchen shelf</i>
+<p>
+<ul>
+<li>RaspberryPi3 ~ US$45.00
+<li>Enclosure, uSD card, power-supply ~ US$30
+<li>Playstation3 Eye camera ~ US$5 (WOW!)
+</ul>
+TOTAL COST: ~ US$80
+<br>
+For comparison, a DropCam from Nest (aka Google) is ~ US$199.
+<p>
+<img width="25%" src="images/Rp3.png">
+<br>
+<img width="25%" src="images/Rpi3 case.png">
+<img width="25%" src="images/uSD-32bg.png">
+<br>
+<img width="25%" src="images/Rpi3 power.png">
+<img width="25%" src="images/ps3eyecamera.png">
+<p>
+<h2>Infrastructure</h2>
+We are making use of <a href="http://resin.io/">resin.io</a> to manage the build and deployment process to the Raspberry Pi devices.
+<p>
+The resin.io service provides a customizable base image with which to "flash" the uSD card for the RaspberryPi.  The image may be configured 
+with the SSID and password for the local WiFi network.
+<p>
+The "AgeAtHome" application we have defined provides a context in which devices participate.  Each device is assigned to one application.
+Once a device has been flashed and booted, it connects to the resin.io service and presents itself within the application context.
+<p>
+<img width="24%" src="images/resin-app.png">
+<p>
+Each device associated with the application can be inspected, including summary status and logs (e.g. stderr).
+<p>
+<img width="75%" src="images/resin-detail.png">
+<p>
+Including the ability to ssh(1) into a terminal for command line interface:
+<br>
+<img width="75%" src="images/terminal.png">
+<br>
+<i>Listing of motion detection volume data in file system</i>
 </body>
 </html>
