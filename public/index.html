@@ -1,6 +1,13 @@
 <!DOCTYPE html>
 <html>
 <head>
+<link href="https://fonts.googleapis.com/css?family=Open+Sans" rel="stylesheet" type="text/css">
+<style>
+  body {
+    font-family: 'Open+Sans', sans;
+    font-size: 20px;
+  }
+</style>
 <title>Age At Home</title>
 </head>
 <!-- start Intercom -->
@@ -19,7 +26,7 @@ mixpanel.track("home");
 <img width="10%" src="images/age-at-home.jpg">
 </a>
 <h1>
-<a href="https://cognitivebuild.bluefundit.com/project/56ee0073f6ec6de43b0d6344">Age-At-Home</a></h1>
+Age-At-Home <a href="https://cognitivebuild.bluefundit.com/project/56ee0073f6ec6de43b0d6344">INVEST NOW!</a></h1>
 <h2>What is it?</h2>
 <p>
 Improve the elderlys' ability to age at home through understanding of daily activities inferred from image analysis.
@@ -29,11 +36,13 @@ How it Works
 <p>
 The need for helping elderly individuals or couples remain in their home is increasing as our global population ages.  Cognitive processing offers opportunities to assist the elderly by processing information to identify opportunities for caregivers to offer assistance and support.
 <p>
-However, rather than depending on sensors worn on the body (and needing to be not forgotten, recharged, etc..) or installing sensors on individual devices (e.g. sink, cabinet, refrigerator, etc..), this solution utilizes passive monitoring devices, notably video camera(s) with multi-channel microphones, to sense activity, record events, and build a model of normative behavior.
+Rather than depending on sensors worn on the body (and needing to be not forgotten, recharged, etc..) or installing sensors on individual devices (e.g. sink, cabinet, refrigerator, etc..), this solution utilizes passive monitoring devices, notably video camera(s) with multi-channel microphones, to sense activity, record events, and build a model of normative behavior.
 <p>
 Initially we intend to monitor the kitchen and recognizes the presence of a person (not an individual) in the room. From this simple event detection we will build a normative baseline of daily activity and detect when that daily activity exhibits aberrations (e.g. no activity in kitchen after +2 std. dev. past median time).
 <p>
-As the visual recognition algorithm will run on the local device (e.g. RaspberryPi with camera), the issues of round-trip latency to the cloud, or bandwidth required, or security or privacy concerns, will be eliminated.  Only events generated from this recognition will be sent to the cloud to build (and update) the normative behavior model.
+<img width="50%" src="images/bellcurve.png">
+<p>
+The visual recognition algorithm will run on the local device (e.g. RaspberryPi with camera), the issues of round-trip latency to the cloud, or bandwidth required, or security or privacy concerns, will be eliminated.  Only events generated from this recognition will be sent to the cloud to build (and update) the normative behavior model.
 <p>
 This initial scenario may be easily extended to other passive monitoring capabilities, e.g. audio, motion (sonar), electrical circuit, , ... as well as deployment in other area, e.g. entry way, bathroom, hallway, etc.. to provide support for additional scenarios, e.g. medication adherence, diet, exercise, ... 
 <h2>Examples</h2>
