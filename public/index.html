@@ -38,13 +38,33 @@ The need for helping elderly individuals or couples remain in their home is incr
 <p>
 Rather than depending on sensors worn on the body (and needing to be not forgotten, recharged, etc..) or installing sensors on individual devices (e.g. sink, cabinet, refrigerator, etc..), this solution utilizes passive monitoring devices, notably video camera(s) with multi-channel microphones, to sense activity, record events, and build a model of normative behavior.
 <p>
+<table>
+<tr><td width="70%">
 Initially we intend to monitor the kitchen and recognizes the presence of a person (not an individual) in the room. From this simple event detection we will build a normative baseline of daily activity and detect when that daily activity exhibits aberrations (e.g. no activity in kitchen after +2 std. dev. past median time).
-<p>
-<img width="50%" src="images/bellcurve.png">
-<p>
 The visual recognition algorithm will run on the local device (e.g. RaspberryPi with camera), the issues of round-trip latency to the cloud, or bandwidth required, or security or privacy concerns, will be eliminated.  Only events generated from this recognition will be sent to the cloud to build (and update) the normative behavior model.
-<p>
 This initial scenario may be easily extended to other passive monitoring capabilities, e.g. audio, motion (sonar), electrical circuit, , ... as well as deployment in other area, e.g. entry way, bathroom, hallway, etc.. to provide support for additional scenarios, e.g. medication adherence, diet, exercise, ... 
+</td>
+<td>
+<img width="75%" src="images/bellcurve.png">
+</td>
+</tr>
+</table>
+<h2>
+Initial Results
+</h2>
+In the following chart you can see the increase in activity at around 7:00 AM in my house.
+<br>
+<img width="75%" src="images/alchemy_score-hour-alchemy_text.png">
+<p>
+The primary classifiers can be identified in the following chart:
+<br>
+<img width="75%" src="images/score-hour-classifier.png">
+<p>
+Link to data:
+<ul>
+<li><a href="data/VISUAL-02.csv">VISUAL.csv</a>
+<li><a href="data/ALCHEMY-02.csv">ALCHEMY.csv</a>
+</ul>
 <h2>Examples</h2>
 Image captured using motion detection algorithm based on changes in pixel count (bounding box around centroid identifed).
 <p>
@@ -102,5 +122,6 @@ Data is now being processed into Cloudant DB and then replicated (automatically)
 <img width="75%" src="images/device_table.png">
 <br>
 <img width="75%" src="images/classifiers_table.png">
+<br>
 </body>
 </html>

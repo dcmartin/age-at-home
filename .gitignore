@@ -1,5 +1,2 @@
-DATA
 node_modules
 .DS_Store
-public/images/person1/*.jpg
-public/images/person2/*.jpg
