@@ -1,0 +1,67 @@
+  1. ALCHEMY_SCORE
+	<type 'float'>
+	Nulls: True
+	Min: 0.268941
+	Max: 0.999547
+	Sum: 3820.515959
+	Mean: 0.683944854816
+	Median: 0.710949
+	Standard Deviation: 0.261726804603
+	Unique values: 80
+	5 most frequent values:
+		0.268941:	266
+		0.450166:	265
+		0.331812:	226
+		0.310026:	201
+		0.28905:	199
+  2. ALCHEMY_TEXT
+	<type 'unicode'>
+	Nulls: False
+	Unique values: 7
+	5 most frequent values:
+		person:	5493
+		NO_TAGS:	4414
+		kitchen:	33
+		room:	18
+		hotel:	18
+	Max length: 9
+  3. HOUR
+	<type 'unicode'>
+	Nulls: False
+	Unique values: 21
+	5 most frequent values:
+		12:	1175
+		13:	1112
+		19:	994
+		11:	811
+		18:	803
+	Max length: 2
+  4. CLASSIFIER_ID
+	<type 'unicode'>
+	Nulls: False
+	Unique values: 195
+	5 most frequent values:
+		Stove:	588
+		Mixed_Color:	583
+		Pubbing:	541
+		Oven:	525
+		Engine_or_Control_Room:	486
+	Max length: 27
+  5. SCORE
+	<type 'float'>
+	Nulls: False
+	Min: 0.500017
+	Max: 0.975348
+	Sum: 7712.793291
+	Mean: 0.7712793291
+	Median: 0.80652
+	Standard Deviation: 0.153208405741
+	Unique values: 9878
+	5 most frequent values:
+		0.548364:	2
+		0.642543:	2
+		0.959939:	2
+		0.868032:	2
+		0.503879:	2
+
+Row count: 10000

@@ -1,0 +1,123 @@
+  1. ARRAY_INDEX
+	<type 'int'>
+	Nulls: False
+	Min: 0
+	Max: 23
+	Sum: 79125
+	Mean: 7.9125
+	Median: 8.0
+	Standard Deviation: 5.02342948094
+	Unique values: 24
+	5 most frequent values:
+		5:	606
+		4:	606
+		7:	606
+		6:	606
+		8:	606
+  2. CLASSIFIER_ID
+	<type 'unicode'>
+	Nulls: False
+	Unique values: 195
+	5 most frequent values:
+		Stove:	588
+		Mixed_Color:	583
+		Pubbing:	541
+		Oven:	525
+		Engine_or_Control_Room:	486
+	Max length: 27
+  3. NAME
+	<type 'unicode'>
+	Nulls: False
+	Unique values: 195
+	5 most frequent values:
+		Stove:	588
+		Mixed_Color:	583
+		Pubbing:	541
+		Oven:	525
+		Engine_or_Control_Room:	486
+	Max length: 27
+  4. SCORE
+	<type 'float'>
+	Nulls: False
+	Min: 0.500017
+	Max: 0.975348
+	Sum: 7712.793291
+	Mean: 0.7712793291
+	Median: 0.80652
+	Standard Deviation: 0.153208405741
+	Unique values: 9878
+	5 most frequent values:
+		0.548364:	2
+		0.642543:	2
+		0.959939:	2
+		0.868032:	2
+		0.503879:	2
+  5. YEAR
+	<type 'int'>
+	Nulls: False
+	Values: 2016
+  6. MONTH
+	<type 'unicode'>
+	Nulls: False
+	Values: 03, 04
+  7. DAY
+	<type 'unicode'>
+	Nulls: False
+	Values: 02, 31, 01, 30
+  8. HOUR
+	<type 'unicode'>
+	Nulls: False
+	Unique values: 21
+	5 most frequent values:
+		12:	1175
+		13:	1112
+		19:	994
+		11:	811
+		18:	803
+	Max length: 2
+  9. MINUTE
+	<type 'unicode'>
+	Nulls: False
+	Unique values: 60
+	5 most frequent values:
+		10:	316
+		17:	308
+		09:	288
+		51:	277
+		12:	273
+	Max length: 2
+ 10. SECOND
+	<type 'unicode'>
+	Nulls: False
+	Unique values: 60
+	5 most frequent values:
+		17:	293
+		48:	283
+		26:	282
+		52:	281
+		30:	266
+	Max length: 2
+ 11. SEQNO
+	<type 'unicode'>
+	Nulls: False
+	Unique values: 529
+	5 most frequent values:
+		22-01:	50
+		19-00:	49
+		02-00:	49
+		09-01:	48
+		17-00:	48
+	Max length: 6
+ 12. _ID
+	<type 'unicode'>
+	Nulls: False
+	Unique values: 615
+	5 most frequent values:
+		20160330203052-99-01:	24
+		20160330203211-100-01:	24
+		20160331195755-101-00:	24
+		20160401174558-348-01:	24
+		20160330193149-73-01:	23
+	Max length: 21
+
+Row count: 10000
