@@ -29,8 +29,10 @@ endif
 
 if ( $#argv > 0 ) then
     setenv ALLJSON "$argv[1]".json
+    setenv ALLROWS "$argv[1]".csv
 else
     setenv ALLJSON "$DB.json"
+    setenv ALLROWS "$DB.csv"
 endif
 
 
@@ -47,16 +49,7 @@ else
     echo "STAT: $ALLJSON total_rows $total_rows"
 endif
 
-# set i = 0
-# while ($i < $total_rows) 
-    # set id = `jq '.rows['"$i"'].id' all.json | sed 's/"//g'`
-    # echo $id
-    # jq '.rows['"$i"'].doc.visual.scores' all.json | in2csv -f json >! $id.csv
-    # @ i++
-# end
-
 # get all rows
-setenv ALLROWS "$DB.csv"
 if ( ! -e "$ALLROWS" ) then
     in2csv -k "rows" "$ALLJSON" >! "$ALLROWS"
 endif

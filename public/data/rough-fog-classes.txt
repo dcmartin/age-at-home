@@ -28,6 +28,7 @@ Beverage
 Big_Group
 Black
 Black_and_white
+Bloody_Mary
 Blue_Sky
 Bobsledding
 Bookstore
@@ -45,6 +46,7 @@ Candy
 Candy_Store
 Car_Repair_Shop
 Casino
+Castle
 Celebrating
 Chainlink_Fence
 Child_Room
@@ -108,6 +110,7 @@ Full_Body
 Gazebo
 Golden_Gate_Bridge
 Golf
+Goose
 Graduation
 Graphics
 Grasshopper
@@ -127,7 +130,9 @@ Helicopter
 Home_Theater
 Hotel_Building
 Ice_Skating
+Ice_Sport
 Icicles
+Individual_Person
 Indoor_Skating_Rink
 Indoor_Volleyball
 Indoors
@@ -144,6 +149,7 @@ Living_Room
 Lobby
 Locker_Room
 Log_Cabin
+Lumber_Mill
 Magenta
 Male_Adult
 Market
@@ -234,6 +240,7 @@ Tennis
 Toaster
 Toaster_Oven
 Tool
+Tortilla_Chip
 Train
 Voting_Booth
 Waffle_Iron

@@ -6,10 +6,16 @@ else
     setenv DB "rough-fog"
 endif
 
-if ( -e "$DB.csv" ) then
-    set k = `csvstat -n $DB.csv | awk '{ print $2 }'`
+if ( $#argv > 0 ) then
+    setenv ALLROWS "$argv[1]".csv
+else
+    setenv ALLROWS "$DB".csv
+endif
+
+if ( -e "$ALLROWS" ) then
+    set k = `csvstat -n "$ALLROWS" | awk '{ print $2 }'`
     set s = `echo $k | sed "s/ /,/g"`
-    set g = `csvstat -n $DB.csv | awk '{ print $2 }' | egrep classifier_id`
+    set g = `csvstat -n "$ALLROWS"| awk '{ print $2 }' | egrep classifier_id`
     set t = `echo $g | sed "s/ /,/g"`
     set h = ()
     foreach i ( $g )
@@ -17,32 +23,33 @@ if ( -e "$DB.csv" ) then
     end
     set u = `echo $h | sed "s/ /,/g"`
 
-    if ( ! -e "$DB-classes.txt" ) then
-	echo "STAT: making $DB-classes.txt"
+    setenv ARBASE "$ALLROWS:r"
+    if ( ! -e "$ARBASE-classes.txt" ) then
+	echo "STAT: making $ARBASE-classes.txt"
 	foreach i ( $g )
-	    csvcut -c $i "$DB".csv | tail +2 >>! "$DB"-classes.txt
-	    cat "$DB"-classes.txt | sort | uniq >! tmp.$$
-	    mv -f tmp.$$ "$DB"-classes.txt
+	    csvcut -c $i "$ALLROWS" | tail +2 >>! "$ARBASE"-classes.txt
+	    cat "$ARBASE"-classes.txt | sort | uniq >! tmp.$$
+	    mv -f tmp.$$ "$ARBASE"-classes.txt
 	end
     endif
 else
     exit
 endif
 
-set classifiers = ( `cat "$DB"-classes.txt` )
+set classifiers = ( `cat "$ARBASE"-classes.txt` )
 if ($#classifiers > 1) then
     echo "STAT: total $#classifiers"
     set datetime = ( doc/year doc/month doc/day doc/hour doc/minute doc/second )
     set dtcolumns = `echo "$datetime" | sed "s/ /,/g"`
-    echo "classifier,score,id,$dtcolumns" >! "$DB-class-values.csv"
+    echo "classifier,score,id,$dtcolumns" >! "$ARBASE-class-values.csv"
     foreach i ( $classifiers )
 	if ($i == \"\") continue
 
 	echo -n "STAT: $i"
 	echo "$s" >! "$i.csv"
-	egrep ",$i," "$DB.csv" >> "$i.csv"
+	egrep ",$i," "$ALLROWS" >> "$i.csv"
 	foreach j ( $g )
-	    csvcut -c "$j","$j:h/score","id","$dtcolumns" "$i.csv" | egrep "^$i," >> "$DB-class-values.csv"
+	    csvcut -c "$j","$j:h/score","id","$dtcolumns" "$i.csv" | egrep "^$i," >> "$ARBASE-class-values.csv"
 	    echo -n "."
 	end
 	rm "$i.csv"
