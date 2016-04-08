@@ -62,11 +62,18 @@ The primary classifiers can be identified in the following chart:
 <img width="40%" src="images/classifier-score.png">
 <p>
 <img width="40%" src="images/hour-classifier-relationship.png">
+<br> <i>Classifier relationships to hour of day</i>
+<p>
+<img width="40%" src="images/classifier-heatmap.png">
+<br> <i>Heatmap of classifiers (all times)</i>
+<p>
+These images are created using <a href="https://watson.analytics.ibmcloud.com/">Watson Analytics</a>.  It is simple to get a free account and load the CSV files.
 <p>
 Link to data:
 <ul>
-<li><a href="data/VISUAL-02.csv">VISUAL.csv</a> (<a href="data/VISUAL-02_stats.txt">statistics</a>)
-<li><a href="data/ALCHEMY-02.csv">ALCHEMY.csv</a> (<a href="data/ALCHEMY-02_stats.txt">statistics</a>)
+<li><a href="data/rough-fog.csv">rough-fog.csv</a> (<a href="data/rough-fog-stat.csv">statistics</a>)
+<li><a href="data/rough-fog-class-values.csv">rough-fog-class-values.csv</a> (<a href="data/rough-fog-classes.txt">all classes</a>)
+<li><a href="data/rough-fog.json">rough-fog.json</a>
 </ul>
 <h2>Examples</h2>
 Image captured using motion detection algorithm based on changes in pixel count (bounding box around centroid identifed).
@@ -117,13 +124,6 @@ Including the ability to ssh(1) into a terminal for command line interface:
 <img width="75%" src="images/terminal.png">
 <br>
 <i>Listing of motion detection volume data in file system</i>
-<h2>Data Tables</h2>
-Data is now being processed into Cloudant DB and then replicated (automatically) into dashDB for inspection.
-<p>
-<img width="75%" src="images/device_table.png">
-<br>
-<img width="75%" src="images/classifiers_table.png">
-<br>
 <h2>Other Related Projects</h2>
 <table>
 <tr valign="bottom">

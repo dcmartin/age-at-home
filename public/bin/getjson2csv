@@ -1,0 +1,124 @@
+#!/bin/csh
+#
+if ($?CLOUDANT_USERNAME) then
+    setenv CN $CLOUDANT_USERNAME
+else
+    setenv CN "538e7925-b7f5-478b-bf75-2f292dcf642a-bluemix"
+endif
+
+if ($?CLOUDANT_PASSWORD) then
+    setenv CP $CLOUDANT_PASSWORD
+endif
+
+if ($?CLOUDANT_URL) then
+    setenv CU $CLOUDANT_URL
+else
+    if ($?CN && $?CP) then
+	setenv CU "https://$CN":"$CP"@"$CN.cloudant.com"
+    else
+	setenv CU "https://$CN.cloudant.com"
+    endif
+endif
+
+
+if ($?CLOUDANT_DATABASE) then
+    setenv DB $CLOUDANT_DATABASE
+else
+    setenv DB "rough-fog"
+endif
+
+if ( $#argv > 0 ) then
+    setenv ALLJSON "$argv[1]".json
+else
+    setenv ALLJSON "$DB.json"
+endif
+
+
+if ( ! -e "$ALLJSON" ) then
+    echo "GET: $ALLJSON"
+    curl "$CU/$DB/_all_docs?include_docs=true" >! "$ALLJSON"
+endif
+
+if ( ! -e "$ALLJSON" ) then
+    echo "FAIL: $ALLJSON"
+    exit
+else
+    set total_rows = `jq .total_rows "$ALLJSON"`
+    echo "STAT: $ALLJSON total_rows $total_rows"
+endif
+
+# set i = 0
+# while ($i < $total_rows) 
+    # set id = `jq '.rows['"$i"'].id' all.json | sed 's/"//g'`
+    # echo $id
+    # jq '.rows['"$i"'].doc.visual.scores' all.json | in2csv -f json >! $id.csv
+    # @ i++
+# end
+
+# get all rows
+setenv ALLROWS "$DB.csv"
+if ( ! -e "$ALLROWS" ) then
+    in2csv -k "rows" "$ALLJSON" >! "$ALLROWS"
+endif
+
+# get all columns
+set columns = ( `csvstat -n "$ALLROWS" | awk '{ print $2 }'` )
+if ($#columns > 0) then
+    echo "STAT: $ALLROWS $#columns columns ( $columns )"
+else
+    echo "FAIL: $ALLROWS no columns"
+    exit
+endif
+
+# iterate over all columns calculating statistics
+set operations = ('min' 'max' 'sum' 'mean' 'median' 'stdev' 'nulls' 'unique' 'freq' 'len')
+if ($#operations > 0) then
+    echo "STAT: $ALLROWS $#operations operations ( $operations )"
+else
+    echo "FAIL: $ALLROWS no operations"
+    exit
+endif
+
+foreach j ( $operations )
+    echo -n "STAT: $ALLROWS operation($j) ... "
+    set jstat = "$j"-stat.csv
+    set jbody = "$j"-body.csv
+
+    if ( ! -e "$jstat" ) then
+	csvstat --$j "$ALLROWS" | sed 's/"//g' | sed 's/^[ ]*\([0-9]*\)\. \([^:]*\): \(.*\)/\1,\2,"\3"/' >! "$jbody"
+	echo "colnum,colname,$j" >! "$jstat"
+	cat "$jbody" >>  "$jstat"
+	rm "$jbody"
+    endif
+    echo "$jstat"
+end
+
+# start output
+set OUTPUT = "$ALLJSON:r"-stat.csv
+echo "colnum" "colname" $operations | sed "s/ /,/g" >! "$OUTPUT"
+@ i = 1
+@ k = 2
+while ($i <= $#columns)
+    echo -n "STAT: $i $columns[$i] - "
+    echo $i $columns[$i] | awk '{ printf "%d,%s,", $1, $2 }' >> "$OUTPUT"
+    @ j = 1
+    while ($j <= $#operations )
+	set op = $operations[$j]
+	if ($j < $#operations) then
+	    echo -n "$op,"
+	    tail +"$k" "$op"-stat.csv | head -1 | sed "s/[^,]*,[^,]*,\(.*\)/\1/" | awk '{ printf "%s,", $0 }' >> "$OUTPUT"
+	else
+	    echo "$op"
+	    tail +"$k" "$op"-stat.csv | head -1 | sed "s/[^,]*,[^,]*,\(.*\)/\1/" | awk '{ printf "%s\n", $0 }' >> "$OUTPUT"
+	endif
+	@ j++
+    end
+    @ i++    
+    @ k++
+end
+
+# cleanup
+foreach i ( $operations )
+    rm "$i"-stat.csv
+end
+
