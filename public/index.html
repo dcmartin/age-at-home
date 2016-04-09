@@ -75,6 +75,16 @@ Link to data:
 <li><a href="data/rough-fog-class-values.csv">rough-fog-class-values.csv</a> (<a href="data/rough-fog-classes.txt">all classes</a>)
 <li><a href="data/rough-fog.json">rough-fog.json</a>
 </ul>
+<p>
+I added the IBM IoT Foundation <a href="https://developer.ibm.com/recipes/tutorials/raspberry-pi-4/">Quickstart for Raspberry Pi</a>
+to the environment and you can see a live stream of instrumentation data on the dashboard (click on image below).
+<p>
+<a href="https://quickstart.internetofthings.ibmcloud.com/#/device/b827eb85c0f8"><img width="50%" src="images/iotf-monitor.png"></a>
+<br>
+<i>Dashboard / monitor from IBM IoTF QuickStart</i>
+<p>
+Changes needed to be made to both Dockerfile as well as initial script to enable IoTF/QS, including removing PID and LCK files and performing manual restart.
+The repository for the RaspberryPi container is on <a href="https://github.com/dcmartin/AgeAtHome">GitHub</a>.
 <h2>Examples</h2>
 Image captured using motion detection algorithm based on changes in pixel count (bounding box around centroid identifed).
 <p>
