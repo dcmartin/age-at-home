@@ -2,6 +2,7 @@
 Adult
 Adventure_Sport
 Air_Sport
+Airplane
 Airport_Terminal
 Ambulance
 Anechoic_Chamber
@@ -38,6 +39,7 @@ Bowling_Alley
 Brandy
 Breaded_and_Fried
 Breadstick
+Brown
 Burning
 Camping
 Candied_Apple
@@ -70,6 +72,7 @@ Convenience_Store
 Cotton_Candy
 Courtroom
 Covered_Bridge
+Creek
 Cricket
 Crowd
 Custard
@@ -199,12 +202,15 @@ Rest_Room
 Restaurant
 Riot
 Road_Scene
+Rodent
 Rollerskating
+Rural_Building
 Seaweed_Salad
 Sedan
 Sewing_Machine
 Shoe_Store
 Shopping
+Shrine
 Sky_Scene
 Skyline
 Small_Group
