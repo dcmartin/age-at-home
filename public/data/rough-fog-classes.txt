@@ -22,11 +22,14 @@ Banners
 Bar
 Barber_Shop
 Barn
+Bat_Sport
 Bathroom
+Bazaar
 Beauty_Salon
 Beer
 Beverage
 Big_Group
+Bison
 Black
 Black_and_white
 Bloody_Mary
@@ -51,6 +54,7 @@ Casino
 Castle
 Celebrating
 Chainlink_Fence
+Chicken_Soup
 Child_Room
 Chips
 Classroom
@@ -79,6 +83,7 @@ Custard
 Cyan
 Cycling
 Daiquiri
+Deep_Sea_Fishing
 Delicatessen
 Demonstration
 Desert
@@ -92,6 +97,7 @@ Dog_Racing
 Donkey
 Dressing_Room
 Drugstore
+Dry_Cleaners
 Earrings
 Earthquake
 Eatery_Space
@@ -113,6 +119,7 @@ Full_Body
 Gazebo
 Golden_Gate_Bridge
 Golf
+Golf_Course
 Goose
 Graduation
 Graphics
@@ -168,6 +175,7 @@ Monkey
 Motor_Sport
 Mud_Wrestling
 Musical_Instrument
+NO_TAGS
 Night_Club
 Night_Sky
 Noodles
@@ -192,6 +200,7 @@ Pyramids
 Race_Car
 Racquet_Sport
 Racquetball
+Ranch
 Ranch_Style_House
 Recovery_Room
 Refinery
@@ -205,6 +214,7 @@ Road_Scene
 Rodent
 Rollerskating
 Rural_Building
+Seafood
 Seaweed_Salad
 Sedan
 Sewing_Machine
@@ -222,6 +232,7 @@ Speed_Skating
 Squash
 Statue_of_Liberty
 Stew
+Stick_Sport
 Stockroom
 Store
 Storm
@@ -268,3 +279,13 @@ Wine_or_Liquor
 Wrestling
 Yellow
 Zoo
+abandoned
+home
+hotel
+house
+kitchen
+night
+person
+sky
+wedding
+window
