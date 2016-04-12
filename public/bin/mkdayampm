@@ -1,0 +1,36 @@
+#!/bin/csh
+
+if ($?CLOUDANT_DATABASE) then
+    setenv DB "$CLOUDANT_DATABASE"
+else
+    setenv DB "rough-fog"
+endif
+
+if ( $#argv > 0 ) then
+    setenv ALLROWS "$argv[1]".csv
+else
+    setenv ALLROWS "$DB".csv
+endif
+
+if ( -e "$ALLROWS" ) then
+    setenv ARBASE "$ALLROWS:r"
+
+    if ( ! -e "$ARBASE"-day-ampm.csv ) then
+	set colset = `csvstat -n "$ALLROWS" | awk '{ print $2 }'`
+	set colnam = `echo $colset | sed "s/ /,/g"`
+	# note insertion of "id" in middle
+	set datetime = ( doc/year doc/month doc/day id doc/hour doc/minute doc/second )
+	set dtcolumns = `echo "$datetime" | sed "s/ /,/g"`
+
+	echo "STAT: creating $ARBASE-day-ampm.csv"
+	echo "ampm,day,id" >! "$ARBASE"-day-ampm.csv
+
+	# note utilization of gawk(1)
+	csvcut -c "$dtcolumns" "$ALLROWS" | tail +2 | \
+	    gawk -F, '{ t=mktime(sprintf("%4d %2d %2d %2d %2d %2d", $1, $2, $3, $5, $6, $7)); printf "%s,%s,%s\n", strftime("%p",t),strftime("%A",t), $4 }' >> "$ARBASE"-day-ampm.csv
+    else
+    	echo "$ARBASE-day-ampm.csv exists; run join2classvalues"
+    endif
+else
+    echo "$ALLROWS does not exist; run getjson2csv"
+endif

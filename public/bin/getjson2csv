@@ -64,7 +64,9 @@ else
 endif
 
 # iterate over all columns calculating statistics
-set operations = ('min' 'max' 'sum' 'mean' 'median' 'stdev' 'nulls' 'unique' 'freq' 'len')
+# count does not return unit value nor structure - need to fix csvkit
+# set operations = ('min' 'max' 'sum' 'mean' 'median' 'stdev' 'nulls' 'unique' 'freq' 'len' 'count')
+set operations = ('min' 'max' 'sum' 'mean' 'median' 'stdev' 'nulls' 'unique' 'freq' 'len' )
 if ($#operations > 0) then
     echo "STAT: $ALLROWS $#operations operations ( $operations )"
 else

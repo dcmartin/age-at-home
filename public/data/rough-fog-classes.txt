@@ -44,6 +44,7 @@ Breaded_and_Fried
 Breadstick
 Brown
 Burning
+Butcher_Shop
 Camping
 Candied_Apple
 Candle
@@ -73,6 +74,7 @@ Concert
 Conference_Room
 Control_Room
 Convenience_Store
+Coral_Reef
 Cotton_Candy
 Courtroom
 Covered_Bridge
@@ -176,6 +178,7 @@ Motor_Sport
 Mud_Wrestling
 Musical_Instrument
 NO_TAGS
+News_Studio
 Night_Club
 Night_Sky
 Noodles
@@ -214,6 +217,7 @@ Road_Scene
 Rodent
 Rollerskating
 Rural_Building
+SUV
 Seafood
 Seaweed_Salad
 Sedan
@@ -223,13 +227,16 @@ Shopping
 Shrine
 Sky_Scene
 Skyline
+Sledding
 Small_Group
 Snack_Food
 Snooker
 Snow_Scene
 Sparkling_Wine
 Speed_Skating
+Sports
 Squash
+Squash_Court
 Statue_of_Liberty
 Stew
 Stick_Sport

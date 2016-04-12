@@ -1,0 +1,70 @@
+#!/bin/csh
+
+if ($?CLOUDANT_DATABASE) then
+    setenv DB "$CLOUDANT_DATABASE"
+else
+    setenv DB "rough-fog"
+endif
+
+if ( $#argv > 0 ) then
+    setenv ALLROWS "$argv[1]".csv
+else
+    setenv ALLROWS "$DB".csv
+endif
+
+setenv ARBASE "$ALLROWS:r"
+setenv OUTPUT "$ARBASE-person-days.csv"
+
+if (! -e "$ALLROWS" ) then
+    echo "$ALLROWS does not exist; run $0:h/getjson2csv"
+else if ( ! -e "$ARBASE-class-values.csv" ) then
+    echo "$ARBASE-class-values.csv does not exist; run $0:h/mkclassvalues"
+else if ( ! -e "$ARBASE-day-ampm.csv" ) then
+    echo "$ARBASE-day-ampm.csv does not exists; run $0:h/mkdayampm"
+else if ( ! -e "$OUTPUT" ) then
+    echo "STAT: creating $OUTPUT"
+    # only calculating numeric stats (that work)
+    set operations = ('min' 'max' 'mean' 'median' 'stdev' )
+    set opnames = `echo $operations | sed "s/ /,/g"`
+
+    # we're calculating by the hour
+    set target = "doc/hour"
+
+    # start output
+    echo "day,ampm,$opnames" >! "$OUTPUT"
+
+    # calculate for all days
+    set i = ALL
+    foreach j ( AM PM )
+	echo -n "STAT: calculating $j for all days -"
+	echo -n "$i,$j" >> "$OUTPUT"
+	foreach k ( $operations )
+	    echo -n "," >> "$OUTPUT"
+	    set h = `csvgrep -c 'classifier' -m 'person' "$ARBASE"-class-values.csv > ! /tmp/$0:t.$$; csvjoin -c 'id,id' /tmp/$0:t.$$ "$ARBASE"-day-ampm.csv | csvgrep -c 'ampm' -m "$j" | csvcut -c "$target" | csvstat --$k`
+	    echo -n "$h" >> "$OUTPUT"
+	    rm /tmp/$0:t.$$
+	    echo -n " $k"
+	end
+	echo >> "$OUTPUT"
+	echo
+    end
+
+    # calculate for each day
+    foreach i ( Sunday Monday Tuesday Wednesday Thursday Friday Saturday )
+	foreach j ( AM PM )
+	    echo -n "STAT: calculating $j for $i -"
+	    echo -n "$i,$j" >> "$OUTPUT"
+	    foreach k ( $operations )
+		echo -n "," >> "$OUTPUT"
+		set h = `csvgrep -c 'classifier' -m 'person' "$ARBASE"-class-values.csv > /tmp/$0:t.$$; csvjoin -c 'id,id' /tmp/$0:t.$$ "$ARBASE"-day-ampm.csv | csvgrep -c 'ampm' -m "$j" | csvgrep -c 'day' -m "$i" | csvcut -c "$target" | csvstat --$k`
+		echo -n "$h" >> "$OUTPUT"
+		rm /tmp/$0:t.$$
+		echo -n " $k"
+	    end
+	    echo  >> "$OUTPUT"
+	    echo
+	end
+    end
+else
+    echo "$OUTPUT exists"
+endif
