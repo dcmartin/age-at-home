@@ -45,6 +45,7 @@ Breadstick
 Brown
 Burning
 Butcher_Shop
+Cake
 Camping
 Candied_Apple
 Candle
@@ -194,6 +195,7 @@ Piano
 Pina_Colada
 Pole_Vault
 Popcorn
+Power_Boating
 Primate
 Prison
 Professional_Wrestling
@@ -218,6 +220,7 @@ Rodent
 Rollerskating
 Rural_Building
 SUV
+Sauna
 Seafood
 Seaweed_Salad
 Sedan
