@@ -1,10 +1,10 @@
-# Visual Insights Nodejs
+# Age-At-Home Cognitive Build Project
 
   The IBM Watson [Visual Insights][service_url] service allows you to derive value from collections of photos. It extracts visual insights related to activities, places, interests and people to deliver a comprehensive view of what you or your users are communicating through visual media.
 
 Give it a try! Click the button below to fork into IBM DevOps Services and deploy your own copy of this application on Bluemix.
 
-[![Deploy to Bluemix](https://bluemix.net/deploy/button.png)](https://bluemix.net/deploy?repository=https://github.com/watson-developer-cloud/visual-insights-nodejs)
+[![Deploy to Bluemix](https://bluemix.net/deploy/button.png)](https://bluemix.net/deploy?repository=https://github.com/dcmartin/age-at-home)
 
 ## Getting Started
 
