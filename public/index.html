@@ -54,38 +54,57 @@ This initial scenario may be easily extended to other passive monitoring capabil
 <h2>
 Initial Results
 </h2>
-In the following chart you can see the increase in activity at around 7:00 AM in my house.
-<br>
-<img width="75%" src="images/alchemy_score-hour-alchemy_text.png">
+<p>
+After one week of collecting data I am happy to announce initial results.  Utilizing only the 'person' classifier from the Alchemy API 
+image recognition algorithm, the mean time of a person being seen in the kitchen was calculated across all days for both AM and PM intervals.
+While not exactly the calculation of mean for "first occurence per day," that will have to wait for additional data -- and some additional
+scripting.
+<p>
+<table>
+<tr>
+<td>
+<img width="95%" src="images/mean-day-ampm.png">
+<br><i>Trend of mean time for person in kitchen over days of week</i>
+</td>
+<td>
+<img width="95%" src="images/stdev-day-ampm.png">
+<br><i>Trend of standard deviation for person in kitchen over days of week</i>
+</td>
+</tr>
+</table>
 <p>
 The primary classifiers can be identified in the following chart:
 <br>
 <img width="50%" src="images/score-hour-classifier.png">
-<img width="40%" src="images/classifier-score.png">
 <p>
+And relationships between hour of day and classifiers in the graph below:
+<br>
 <img width="40%" src="images/hour-classifier-relationship.png">
-<br> <i>Classifier relationships to hour of day</i>
 <p>
+A heatmap of classifiers (all times)
+<br>
 <img width="40%" src="images/classifier-heatmap.png">
-<br> <i>Heatmap of classifiers (all times)</i>
 <p>
 These images are created using <a href="https://watson.analytics.ibmcloud.com/">Watson Analytics</a>.  It is simple to get a free account and load the CSV files.
 <p>
-Link to data:
+Link to data (rough-fog is the device DB name in Cloudant):
 <ul>
-<li><a href="data/rough-fog.csv">rough-fog.csv</a> (<a href="data/rough-fog-stat.csv">statistics</a>)
-<li><a href="data/rough-fog-class-values.csv">rough-fog-class-values.csv</a> (<a href="data/rough-fog-classes.txt">all classes</a>)
-<li><a href="data/rough-fog-day-ampm.csv">rough-fog-day-ampm.csv</a>
-<li><a href="data/rough-fog-person-days.csv">rough-fog-person-days.csv</a>
-<li><a href="data/rough-fog.json">rough-fog.json</a>
+<li><a href="data/rough-fog.json">rough-fog.json</a> - This file is the JSON 'events' from the Cloudant database retrieved by the <code>getjson2csv</code> script; 
+the DB can be specified on the command line
+<li><a href="data/rough-fog.csv">rough-fog.csv</a> (<a href="data/rough-fog-stat.csv">statistics</a>) - 
+These two files are output of JSON to CSV conversion and the calculation of statistics on the columns; these files are produced by the <code>getjson2csv</code> script
+<li><a href="data/rough-fog-class-values.csv">rough-fog-class-values.csv</a> (<a href="data/rough-fog-classes.txt">all classes</a>) - These two files are the classifiers and values for all 'events' in the CSV table (i.e. rough-fog) as well as a list of all classifiers, including null (&quot;&quot)
+<li><a href="data/rough-fog-day-ampm.csv">rough-fog-day-ampm.csv</a> - This file is the calculation of AM or PM and day of week (e.g. Sunday) for all 'events' in the CSV table
+<li><a href="data/rough-fog-person-days.csv">rough-fog-person-days.csv</a> - This file is the calculation of the 'person' classifier (n.b. Alchemy API) statistics 
+across all days of the week for both AM and PM intervals.
 </ul>
 <p>
 List of shell scripts:
 <ul>
-<li><a href="bin/getjson2csv">getjson2csv</a> - Script to pull JSON from Cloudant and convert to CSV, including calculating statistics and encoding as CSV.
-<li><a href="bin/mkclassvalues">mkclassvalues</a> - Script to pull all VisualInsights and Alchemy "classifiers" and create CSV with class, score, time, date and event ID
-<li><a href="bin/mkdayampm">mkdayampm</a> - Script to calculate day of week and AM, PM designation for events
-<li><a href="bin/mkpersondays">mkpersondays</a> - Script to calculate statistics for person events across days of week
+<li><a href="bin/getjson2csv"><code>getjson2csv</code></a> - Script to pull JSON from Cloudant and convert to CSV, including calculating statistics and encoding as CSV.
+<li><a href="bin/mkclassvalues"><code>mkclassvalues</code></a> - Script to pull all VisualInsights and Alchemy "classifiers" and create CSV with class, score, time, date and event ID
+<li><a href="bin/mkdayampm"><code>mkdayampm</code></a> - Script to calculate day of week and AM, PM designation for events
+<li><a href="bin/mkpersondays"><code>mkpersondays</code></a> - Script to calculate statistics for person events across days of week
 </ul>
 <p>
 I added the IBM IoT Foundation <a href="https://developer.ibm.com/recipes/tutorials/raspberry-pi-4/">Quickstart for Raspberry Pi</a>
