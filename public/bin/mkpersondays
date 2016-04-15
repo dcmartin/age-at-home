@@ -12,8 +12,10 @@ else
     setenv ALLROWS "$DB".csv
 endif
 
+set classifier = ( 'person' )
+
 setenv ARBASE "$ALLROWS:r"
-setenv OUTPUT "$ARBASE-person-days.csv"
+setenv OUTPUT "$ARBASE-$classifier-days.csv"
 
 if (! -e "$ALLROWS" ) then
     echo "$ALLROWS does not exist; run $0:h/getjson2csv"
@@ -24,24 +26,30 @@ else if ( ! -e "$ARBASE-day-ampm.csv" ) then
 else if ( ! -e "$OUTPUT" ) then
     echo "STAT: creating $OUTPUT"
     # only calculating numeric stats (that work)
-    set operations = ('min' 'max' 'mean' 'median' 'stdev' )
+    set operations = ('min' 'max' 'mean' 'median' 'stdev' 'freq' )
     set opnames = `echo $operations | sed "s/ /,/g"`
 
     # we're calculating by the hour
     set target = "doc/hour"
 
     # start output
-    echo "day,ampm,$opnames" >! "$OUTPUT"
+    echo "day,ampm,$opnames""1,f1num,freq2,f2num,freq3,f3num,freq4,fnum4,freq5,fnum5" >! "$OUTPUT"
 
     # calculate for all days
     set i = ALL
     foreach j ( AM PM )
 	echo -n "STAT: calculating $j for all days -"
-	echo -n "$i,$j" >> "$OUTPUT"
+	echo -n '"'"$i"'","'"$j"'"' >> "$OUTPUT"
 	foreach k ( $operations )
 	    echo -n "," >> "$OUTPUT"
-	    set h = `csvgrep -c 'classifier' -m 'person' "$ARBASE"-class-values.csv > ! /tmp/$0:t.$$; csvjoin -c 'id,id' /tmp/$0:t.$$ "$ARBASE"-day-ampm.csv | csvgrep -c 'ampm' -m "$j" | csvcut -c "$target" | csvstat --$k`
+	    set noglob
+	    set h = `csvgrep -c 'classifier' -m "$classifier" "$ARBASE"-class-values.csv > ! /tmp/$0:t.$$; csvjoin -c 'id,id' /tmp/$0:t.$$ "$ARBASE"-day-ampm.csv | csvgrep -c 'ampm' -m "$j" | csvcut -c "$target" | csvstat --$k | sed 's/"//g' | sed 's/\(.*\)/"\1"/'`
+	    # flatten frequency
+	    if ($k == freq) then
+		set h = `echo "$h" | sed 's/"{ \([^:]*\): \([^,]*\), \([^:]*\): \([^,]*\), \([^:]*\): \([^,]*\), \([^:]*\): \([^,]*\), \([^:]*\): \([^,]*\) }"/"\1","\2","\3","\4","\5","\6","\7","\8","\9","\10"/'`
+	    endif
 	    echo -n "$h" >> "$OUTPUT"
+	    unset noglob
 	    rm /tmp/$0:t.$$
 	    echo -n " $k"
 	end
@@ -56,8 +64,14 @@ else if ( ! -e "$OUTPUT" ) then
 	    echo -n "$i,$j" >> "$OUTPUT"
 	    foreach k ( $operations )
 		echo -n "," >> "$OUTPUT"
-		set h = `csvgrep -c 'classifier' -m 'person' "$ARBASE"-class-values.csv > /tmp/$0:t.$$; csvjoin -c 'id,id' /tmp/$0:t.$$ "$ARBASE"-day-ampm.csv | csvgrep -c 'ampm' -m "$j" | csvgrep -c 'day' -m "$i" | csvcut -c "$target" | csvstat --$k`
+		set noglob
+		set h = `csvgrep -c 'classifier' -m "$classifier" "$ARBASE"-class-values.csv > /tmp/$0:t.$$; csvjoin -c 'id,id' /tmp/$0:t.$$ "$ARBASE"-day-ampm.csv | csvgrep -c 'ampm' -m "$j" | csvgrep -c 'day' -m "$i" | csvcut -c "$target" | csvstat --$k | sed 's/"//g' | sed 's/\(.*\)/"\1"/'`
+		# flatten frequency
+		if ($k == freq) then
+		    set h = `echo "$h" | sed 's/"{ \([^:]*\): \([^,]*\), \([^:]*\): \([^,]*\), \([^:]*\): \([^,]*\), \([^:]*\): \([^,]*\), \([^:]*\): \([^,]*\) }"/"\1","\2","\3","\4","\5","\6","\7","\8","\9","\10"/'`
+		endif
 		echo -n "$h" >> "$OUTPUT"
+		unset noglob
 		rm /tmp/$0:t.$$
 		echo -n " $k"
 	    end

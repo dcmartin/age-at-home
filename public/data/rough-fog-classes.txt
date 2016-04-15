@@ -18,6 +18,7 @@ Auto_Track_Racing
 Badminton
 Bakery_Shop
 Baklava
+Ballooning
 Banners
 Bar
 Barber_Shop
@@ -29,6 +30,7 @@ Beauty_Salon
 Beer
 Beverage
 Big_Group
+Billiards_Room
 Bison
 Black
 Black_and_white
@@ -52,6 +54,7 @@ Candle
 Candy
 Candy_Store
 Car_Repair_Shop
+Carpenter_Plane
 Casino
 Castle
 Celebrating
@@ -111,6 +114,7 @@ Escalator
 Eyeglasses
 Female_Adult
 Fire_Truck
+Flea_Market
 Flood
 Florist_Shop
 Flower
@@ -133,6 +137,7 @@ Green
 Greenery
 Guitar
 Gymnastics
+Handball
 Hands
 Hang_Gliding
 Head_and_Shoulders
@@ -189,6 +194,7 @@ Oven
 Overpass
 Pantry
 Pea_Soup
+Peanut_Brittle
 People
 People_Activity
 Piano
@@ -221,6 +227,7 @@ Rollerskating
 Rural_Building
 SUV
 Sauna
+Scuba
 Seafood
 Seaweed_Salad
 Sedan

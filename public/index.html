@@ -51,6 +51,11 @@ This initial scenario may be easily extended to other passive monitoring capabil
 </td>
 </tr>
 </table>
+GitHub repositories are publically accessible at:
+<ul>
+<li><a href="https://github.com/dcmartin/AgeAtHome">RaspberryPi container for resin.io deployment</a>.
+<li><a href="https://github.com/dcmartin/age-at-home">BlueMix CloudFoundry application</a>.
+</ul>
 <h2>
 Initial Results
 </h2>
@@ -62,30 +67,47 @@ scripting.
 <p>
 <table>
 <tr>
-<td>
+<td align="center">
 <img width="95%" src="images/mean-day-ampm.png">
 <br><i>Trend of mean time for person in kitchen over days of week</i>
 </td>
-<td>
+<td align="center">
 <img width="95%" src="images/stdev-day-ampm.png">
 <br><i>Trend of standard deviation for person in kitchen over days of week</i>
 </td>
 </tr>
 </table>
 <p>
-The primary classifiers can be identified in the following chart:
-<br>
-<img width="50%" src="images/score-hour-classifier.png">
-<p>
-And relationships between hour of day and classifiers in the graph below:
-<br>
-<img width="40%" src="images/hour-classifier-relationship.png">
-<p>
-A heatmap of classifiers (all times)
-<br>
-<img width="40%" src="images/classifier-heatmap.png">
-<p>
 These images are created using <a href="https://watson.analytics.ibmcloud.com/">Watson Analytics</a>.  It is simple to get a free account and load the CSV files.
+Here are some additional visualizations of the data.
+<br>
+<table width="100%">
+<tr valign="top">
+<td width="30%" align="center">
+<figure>
+    <img width="95%" src="images/score-hour-classifier.png">
+    <figcaption>Primary Classifiers</figcaption>
+</figure>
+</td>
+<td width="30%" align="center">
+<figure>
+    <img width="95%" src="images/hour-classifier-relationship.png">
+    <figcaption>Relationship between hour, day and classifier</figcaption>
+</figure>
+</td>
+<td width="30%" align="center">
+<figure>
+    <img width="95%" src="images/classifier-heatmap.png">
+    <figcaption>Heatmap of classifiers</figcaption>
+</figure>
+</td>
+</tr>
+</table>
+<p>
+The process of preparing JSON data for Watson Analytics is cumbersome. While replication from Cloudant into dashDB is provided and dashDB can be accessed from WA
+(n.b. you need a paid account), the refinement capabilities in WA are insufficient for any non-trivial transformation (e.g. time into day of week).
+I wrote UNIX shell scripts to download the JSON data, convert to CSV, calculate statistics on the columns -- also not provided by WA, extract classifiers' scores for all events, 
+and catagorize events into day-of-week and AM-PM <i>bins</i>.  These scripts can take a long time to run on a laptop.
 <p>
 Link to data (rough-fog is the device DB name in Cloudant):
 <ul>
@@ -99,25 +121,13 @@ These two files are output of JSON to CSV conversion and the calculation of stat
 across all days of the week for both AM and PM intervals.
 </ul>
 <p>
-List of shell scripts:
+List of shell scripts - listed in the order they should be run:
 <ul>
 <li><a href="bin/getjson2csv"><code>getjson2csv</code></a> - Script to pull JSON from Cloudant and convert to CSV, including calculating statistics and encoding as CSV.
 <li><a href="bin/mkclassvalues"><code>mkclassvalues</code></a> - Script to pull all VisualInsights and Alchemy "classifiers" and create CSV with class, score, time, date and event ID
 <li><a href="bin/mkdayampm"><code>mkdayampm</code></a> - Script to calculate day of week and AM, PM designation for events
-<li><a href="bin/mkpersondays"><code>mkpersondays</code></a> - Script to calculate statistics for person events across days of week
+<li><a href="bin/mkpersondays"><code>mkpersondays</code></a> - Script to calculate statistics for 'person' events occurence by 'hour' across AM and PM and days of week
 </ul>
-<p>
-I added the IBM IoT Foundation <a href="https://developer.ibm.com/recipes/tutorials/raspberry-pi-4/">Quickstart for Raspberry Pi</a>
-to the environment and you can see a <a href="https://quickstart.internetofthings.ibmcloud.com/#/device/b827eb7bf9fb"> live stream </a>
-of instrumentation data on the dashboard (sample image below).
-<p>
-<img width="50%" src="images/iotf-monitor.png">
-<p>
-<br>
-<i>Dashboard / monitor from IBM IoTF QuickStart</i>
-<p>
-Changes needed to be made to both Dockerfile as well as initial script to enable IoTF/QS, including removing PID and LCK files and performing manual restart.
-The repository for the RaspberryPi container is on <a href="https://github.com/dcmartin/AgeAtHome">GitHub</a>.
 <h2>Examples</h2>
 Image captured using motion detection algorithm based on changes in pixel count (bounding box around centroid identifed).
 <p>
@@ -167,6 +177,37 @@ Including the ability to ssh(1) into a terminal for command line interface:
 <img width="75%" src="images/terminal.png">
 <br>
 <i>Listing of motion detection volume data in file system</i>
+
+
+<h2>IBM IoTF Platform</h2>
+I added the IBM IoT Foundation <a href="https://developer.ibm.com/recipes/tutorials/raspberry-pi-4/">Quickstart for Raspberry Pi</a>
+to the environment and you can see a <a href="https://quickstart.internetofthings.ibmcloud.com/#/device/b827eb7bf9fb"> live stream </a>
+of instrumentation data.  The dashboard below is shown once a device is registered to a BlueMix account and affiliated with an organization (another level of indirection 
+off your BlueMix account).
+<p>
+<img width="50%" src="images/iotf-platform-dashboard.png">
+<br> <i>IBM IoTF Platform Dashboard</i>
+<p>
+Changes were made to both Dockerfile as well as initial script to enable IoTF/QS and sample C program only sends system status.  Will need to change
+the sample program to progres HTTP requests to send any JSON payloads (i.e. our events).
+<h3>
+IBM IOTF Real-time Insights
+</h3>
+The IBM IOTF Real-time Insights capabilities can be linked to the IOTF Platform 
+through a shared repository for the JSON events received by the platform; the JSON objects in that repository provide schemas for payload processing.
+The IOTF-RTI environment provides for rules to be specified in conjunction with JSON
+payload values using numeric comparison to static values, other payload values, and context parameters (n.b. unsure where or how these values are set).
+<p>
+<img width="50%" src="images/iotf-realtime-insights.png">
+<br><i>IBM IOTF Real-time Insights <i>rule</i> specification</i>
+<p>
+<img width="50%" src="images/iotf-realtime-insights-condition.png">
+<br><i>IBM IOTF Real-time Insights <i>rule</i> <b>condition</b> specification</i>
+<p>
+<img width="50%" src="images/iotf-realtime-insights-action.png">
+<br><i>IBM IOTF Real-time Insights <i>rule</i> <b>action</b> specification</i>
+<p>
+
 <h2>Other Related Projects</h2>
 <table>
 <tr valign="bottom">
