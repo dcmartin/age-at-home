@@ -128,6 +128,11 @@ List of shell scripts - listed in the order they should be run:
 <li><a href="bin/mkdayampm"><code>mkdayampm</code></a> - Script to calculate day of week and AM, PM designation for events
 <li><a href="bin/mkpersondays"><code>mkpersondays</code></a> - Script to calculate statistics for 'person' events occurence by 'hour' across AM and PM and days of week
 </ul>
+<p>
+I am thinking I am going to add new databases to Cloudant to store these statistical values, consume them on the Rpi when it starts, calculate any update from Cloudant historical record (e.g. start-up and/or recovery mode), and then update the values with each event processed on the Rpi (e.g. each motion detection event that generates the JSON payload).  I think it could be part of the basic IoT application (ala the QS + any JSON payload).
+<p> 
+I can setup another asynchronous thread to update the Cloudant DB periodically from a local file-system cache of the JSON encoded statistics; I can also use that process to periodically test for the condition of no events within a specified period of time.  I will need to record the date/time in the JSON for the statistics, as well as the last seen record to calculate updates and check for last known event when testing condition.
+<p>
 <h2>Examples</h2>
 Image captured using motion detection algorithm based on changes in pixel count (bounding box around centroid identifed).
 <p>
