@@ -87,9 +87,9 @@ else if ( ! -e "$OUTPUT" ) then
 		set noglob
 		# fix count
 		if ($k == count) then
-		    set h = `csvgrep -c 'classifier' -m "$classifier" "$ARBASE"-class-values.csv > ! /tmp/$0:t.$$; csvjoin -c 'id,id' /tmp/$0:t.$$ "$ARBASE"-buckets.csv | csvgrep -c 'ampm' -m "$j" | csvcut -c "$bucket" | csvstat --$k | sed 's/Row count: \(.*\)/"\1"/'`
+		    set h = `csvgrep -c 'classifier' -m "$classifier" "$ARBASE"-class-values.csv > ! /tmp/$0:t.$$; csvjoin -c 'id,id' /tmp/$0:t.$$ "$ARBASE"-buckets.csv  | csvgrep -c 'day' -m "$i" | csvgrep -c 'ampm' -m "$j" | csvcut -c "$bucket" | csvstat --$k | sed 's/Row count: \(.*\)/"\1"/'`
 		else
-		    set h = `csvgrep -c 'classifier' -m "$classifier" "$ARBASE"-class-values.csv > ! /tmp/$0:t.$$; csvjoin -c 'id,id' /tmp/$0:t.$$ "$ARBASE"-buckets.csv | csvgrep -c 'ampm' -m "$j" | csvcut -c "$bucket" | csvstat --$k | sed 's/"//g' | sed 's/\(.*\)/"\1"/'`
+		    set h = `csvgrep -c 'classifier' -m "$classifier" "$ARBASE"-class-values.csv > ! /tmp/$0:t.$$; csvjoin -c 'id,id' /tmp/$0:t.$$ "$ARBASE"-buckets.csv  | csvgrep -c 'day' -m "$i" | csvgrep -c 'ampm' -m "$j" | csvcut -c "$bucket" | csvstat --$k | sed 's/"//g' | sed 's/\(.*\)/"\1"/'`
 		endif
 		# flatten frequency
 		if ($k == freq) then

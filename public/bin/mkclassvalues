@@ -23,7 +23,9 @@ else
 
     set vcolset = `csvstat -n "$ALLROWS" | awk '{ print $2 }' | egrep classifier_id`
     set acolset = `csvstat -n "$ALLROWS" | awk '{ print $2 }' | egrep alchemy/text`
+endif
 
+if ( $?CLASSIFIERS == 0) then
     if ( ! -e "$ARBASE-classes.txt" ) then
 	echo "STAT: making $ARBASE-classes.txt"
 
@@ -38,9 +40,6 @@ else
 	    mv -f tmp.$$ "$ARBASE"-classes.txt
 	end
     endif
-endif
-
-if ( $?CLASSIFIERS == 0) then
     set classifiers = ( `cat "$ARBASE"-classes.txt` )
 else
     set classifiers = ( $CLASSIFIERS )
