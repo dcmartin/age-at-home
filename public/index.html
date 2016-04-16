@@ -118,9 +118,8 @@ the DB can be specified on the command line
 These two files are output of JSON to CSV conversion and the calculation of statistics on the columns; these files are produced by the <code>getjson2csv</code> script
 <li><a href="data/rough-fog-class-values.csv">rough-fog-class-values.csv</a> (<a href="data/rough-fog-classes.txt">all classes</a>) - These two files are the classifiers and values for all 'events' in the CSV table (i.e. rough-fog) as well as a list of all classifiers, including null (&quot;&quot)
 <li><a href="data/rough-fog-day-ampm.csv">rough-fog-day-ampm.csv</a> - This file is the calculation of AM or PM and day of week (e.g. Sunday) for all 'events' in the CSV table
-<li><a href="data/rough-fog-person-days.csv">rough-fog-person-days.csv</a>
-(<a href="data/rough-fog-person-days.json">JSON</a>) - This file is the calculation of the 'person' classifier (n.b. Alchemy API) statistics 
-across all days of the week for both AM and PM intervals.
+<li><a href="data/rough-fog-person-hour.csv">rough-fog-person-hour.csv</a> (<a href="data/rough-fog-person-hour.json">JSON</a>) - This file is the calculation of the 'person' classifier (n.b. Alchemy API) statistics for all hours of the week for both AM and PM intervals.
+<li><a href="data/rough-fog-person-interval.csv">rough-fog-person-interval.csv</a> (<a href="data/rough-fog-person-interval.json">JSON</a>) - This file is the calculation of the 'person' classifier (n.b. Alchemy API) in increments of 15 minutes (interval) across all days of the week for both AM and PM intervals.
 </ul>
 <p>
 List of shell scripts - listed in the order they should be run:
