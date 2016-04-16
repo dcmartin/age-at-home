@@ -15,7 +15,10 @@ else
     setenv ALLROWS "$DB".csv
 endif
 
-if ( -e "$ALLROWS" ) then
+if (! -e "$ALLROWS" ) then
+    echo "$ALLROWS does not exist; run $0:h/getjson2csv $ALLROWS:r"
+    exit
+else
     setenv ARBASE "$ALLROWS:r"
 
     set vcolset = `csvstat -n "$ALLROWS" | awk '{ print $2 }' | egrep classifier_id`
@@ -35,8 +38,6 @@ if ( -e "$ALLROWS" ) then
 	    mv -f tmp.$$ "$ARBASE"-classes.txt
 	end
     endif
-else
-    exit
 endif
 
 if ( $?CLASSIFIERS == 0) then

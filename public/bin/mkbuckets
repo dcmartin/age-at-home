@@ -15,22 +15,22 @@ endif
 if ( -e "$ALLROWS" ) then
     setenv ARBASE "$ALLROWS:r"
 
-    if ( ! -e "$ARBASE"-day-ampm.csv ) then
+    if ( ! -e "$ARBASE"-buckets.csv ) then
 	set colset = `csvstat -n "$ALLROWS" | awk '{ print $2 }'`
 	set colnam = `echo $colset | sed "s/ /,/g"`
 	# note insertion of "id" in middle
 	set datetime = ( doc/year doc/month doc/day id doc/hour doc/minute doc/second )
 	set dtcolumns = `echo "$datetime" | sed "s/ /,/g"`
 
-	echo "STAT: creating $ARBASE-day-ampm.csv"
-	echo "interval,ampm,day,id" >! "$ARBASE"-day-ampm.csv
+	echo "STAT: creating $ARBASE-buckets.csv"
+	echo "interval,ampm,day,id" >! "$ARBASE"-buckets.csv
 
 	# note utilization of gawk(1)
 	csvcut -c "$dtcolumns" "$ALLROWS" | tail +2 | \
-	    gawk -F, '{ m=$5*60+$6; m = m / 15; t=mktime(sprintf("%4d %2d %2d %2d %2d %2d", $1, $2, $3, $5, $6, $7)); printf "%d,%s,%s,%s\n", m, strftime("%p",t),strftime("%A",t), $4 }' >> "$ARBASE"-day-ampm.csv
+	    gawk -F, '{ m=$5*60+$6; m = m / 15; t=mktime(sprintf("%4d %2d %2d %2d %2d %2d", $1, $2, $3, $5, $6, $7)); printf "%d,%s,%s,%s\n", m, strftime("%p",t),strftime("%A",t), $4 }' >> "$ARBASE"-buckets.csv
     else
-    	echo "$ARBASE-day-ampm.csv exists; run join2classvalues"
+    	echo "$ARBASE-buckets.csv exists"
     endif
 else
-    echo "$ALLROWS does not exist; run getjson2csv"
+    echo "$ALLROWS does not exist; run getjson2csv $ALLROWS:r"
 endif

@@ -37,8 +37,8 @@ if (! -e "$ALLROWS" ) then
     echo "$ALLROWS does not exist; run $0:h/getjson2csv $ALLROWS:r"
 else if ( ! -e "$ARBASE-class-values.csv" ) then
     echo "$ARBASE-class-values.csv does not exist; run $0:h/mkclassvalues $ALLROWS:r"
-else if ( ! -e "$ARBASE-day-ampm.csv" ) then
-    echo "$ARBASE-day-ampm.csv does not exists; run $0:h/mkdayampm $ALLROWS:r"
+else if ( ! -e "$ARBASE-buckets.csv" ) then
+    echo "$ARBASE-buckets.csv does not exists; run $0:h/mkbuckets $ALLROWS:r"
 else if ( ! -e "$ARBASE-$classifier-$bucket:t.csv" ) then
     echo "$ARBASE-$classsifier-$bucket:t.csv does not exists; run $0:h/mkclassbuckets $ALLROWS:r $classifier $bucket"
 else if (! -e "$OUTPUT" ) then

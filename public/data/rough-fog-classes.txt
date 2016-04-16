@@ -59,6 +59,7 @@ Casino
 Castle
 Celebrating
 Chainlink_Fence
+Cheese_Plate
 Chicken_Soup
 Child_Room
 Chips
@@ -146,6 +147,7 @@ Heavy_Truck
 Hedge
 Helicopter
 Home_Theater
+Hot_Chocolate
 Hotel_Building
 Ice_Skating
 Ice_Sport
