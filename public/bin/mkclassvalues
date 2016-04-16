@@ -21,12 +21,13 @@ if (! -e "$ALLROWS" ) then
 else
     setenv ARBASE "$ALLROWS:r"
 
-    set vcolset = `csvstat -n "$ALLROWS" | awk '{ print $2 }' | egrep classifier_id`
-    set acolset = `csvstat -n "$ALLROWS" | awk '{ print $2 }' | egrep alchemy/text`
 endif
 
+set vcolset = `csvstat -n "$ALLROWS" | awk '{ print $2 }' | egrep classifier_id`
+set acolset = `csvstat -n "$ALLROWS" | awk '{ print $2 }' | egrep alchemy/text`
+
 if ( $?CLASSIFIERS == 0) then
-    if ( ! -e "$ARBASE-classes.txt" ) then
+    if ( ( ! -e "$ARBASE-classes.txt" ) || ( (-M "$ALLROWS") > (-M "$ARBASE"-classes.txt))) then
 	echo "STAT: making $ARBASE-classes.txt"
 
 	foreach i ( $acolset )
@@ -45,7 +46,7 @@ else
     set classifiers = ( $CLASSIFIERS )
 endif
 
-if ($#classifiers > 0) then
+if ($#classifiers > 0 && ((-M "$ALLROWS") > (-M "$ARBASE-class-values.csv"))) then
     echo "STAT: total $#classifiers"
     set colset = `csvstat -n "$ALLROWS" | awk '{ print $2 }'`
     set colnam = `echo $colset | sed "s/ /,/g"`

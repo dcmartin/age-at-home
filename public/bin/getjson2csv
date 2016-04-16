@@ -28,13 +28,17 @@ else
 endif
 
 if ( $#argv > 0 ) then
-    setenv ALLJSON "$argv[1]".json
-    setenv ALLROWS "$argv[1]".csv
-else
-    setenv ALLJSON "$DB.json"
-    setenv ALLROWS "$DB.csv"
+    setenv DB "$argv[1]"
+    if ($#argv > 1) then
+	setenv TTL "$argv[2]"
+	if ($#argv > 2) then
+	    setenv OPERATIONS "$argv[3-]"
+	endif
+    endif
 endif
 
+setenv ALLJSON "$DB".json
+setenv ALLROWS "$DB".csv
 
 if ( ! -e "$ALLJSON" ) then
     echo "GET: $ALLJSON"
@@ -50,7 +54,7 @@ else
 endif
 
 # get all rows
-if ( ! -e "$ALLROWS" ) then
+if ( (! -e "$ALLROWS") || ((-M "$ALLJSON") > (-M "$ALLROWS")) ) then
     in2csv -k "rows" "$ALLJSON" >! "$ALLROWS"
 endif
 
@@ -66,11 +70,16 @@ endif
 # iterate over all columns calculating statistics
 # count does not return unit value nor structure - need to fix csvkit
 # set operations = ('min' 'max' 'sum' 'mean' 'median' 'stdev' 'nulls' 'unique' 'freq' 'len' 'count')
-set operations = ('min' 'max' 'sum' 'mean' 'median' 'stdev' 'nulls' 'unique' 'freq' 'len' )
-if ($#operations > 0) then
+if ($?OPERATIONS == 0) then
+    set operations = ('min' 'max' 'sum' 'mean' 'median' 'stdev' 'nulls' 'unique' 'freq' 'len' )
+else
+    set operations = ( $OPERATIONS )
+endif
+
+if ($#operations > 0 && $operations[1] != "none") then
     echo "STAT: $ALLROWS $#operations operations ( $operations )"
 else
-    echo "FAIL: $ALLROWS no operations"
+    echo "STAT: $ALLROWS no operations"
     exit
 endif
 

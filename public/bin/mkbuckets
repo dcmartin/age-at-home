@@ -15,7 +15,7 @@ endif
 if ( -e "$ALLROWS" ) then
     setenv ARBASE "$ALLROWS:r"
 
-    if ( ! -e "$ARBASE"-buckets.csv ) then
+    if ( (! -e "$ARBASE"-buckets.csv ) || ((-M "$ALLROWS") > (-M "$ARBASE-buckets.csv"))) then
 	set colset = `csvstat -n "$ALLROWS" | awk '{ print $2 }'`
 	set colnam = `echo $colset | sed "s/ /,/g"`
 	# note insertion of "id" in middle
@@ -29,7 +29,7 @@ if ( -e "$ALLROWS" ) then
 	csvcut -c "$dtcolumns" "$ALLROWS" | tail +2 | \
 	    gawk -F, '{ m=$5*60+$6; m = m / 15; t=mktime(sprintf("%4d %2d %2d %2d %2d %2d", $1, $2, $3, $5, $6, $7)); printf "%d,%s,%s,%s\n", m, strftime("%p",t),strftime("%A",t), $4 }' >> "$ARBASE"-buckets.csv
     else
-    	echo "$ARBASE-buckets.csv exists"
+    	echo "STAT: $ARBASE-buckets.csv up-to-date"
     endif
 else
     echo "$ALLROWS does not exist; run getjson2csv $ALLROWS:r"

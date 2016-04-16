@@ -1,0 +1,53 @@
+#!/bin/csh
+if ($#argv > 0) then
+    set TTL = $argv[1]
+else
+    set TTL = 300
+endif
+# get time
+set SECONDS = `date "+%s"`
+set TTLSECS = `echo $SECONDS \/ $TTL \* $TTL | bc`
+
+set INPUT = "rough-fog.$TTLSECS.json"
+if ( ! -e "$INPUT" ) then
+    echo "STAT: creating $INPUT"
+    /bin/rm -f "$INPUT:r:r".[0-9]*".json"
+    /bin/rm -f "rough-fog.json"
+    $0:h/getjson2csv rough-fog $TTL none
+    /bin/mv "rough-fog.json" "$INPUT"
+    ln -s "$INPUT" "rough-fog.json"
+endif
+
+set OUTPUT = "rough-fog-person.$TTLSECS.csv"
+if ( ! -e "$OUTPUT") then
+    echo "STAT: creating $OUTPUT"
+    /bin/rm -f "$OUTPUT:r:r".[0-9]*".csv"
+    $0:h/mkclassvalues rough-fog person
+    $0:h/mkbuckets rough-fog
+    csvgrep -c classifier -m "person" rough-fog-class-values.csv | csvjoin -c "id,id" - rough-fog-buckets.csv | csvcut -c "interval,day,classifier,score" >! "$OUTPUT"
+    /bin/rm -f "rough-fog-person.csv"
+    ln -s "$OUTPUT" "rough-fog-person.csv"
+endif
+echo "STAT: $OUTPUT:r:r.csv is current with TTL of $TTL"
+
+set days = ( Sunday Monday Tuesday Wednesday Thursday Friday Saturday )
+set intervals = `tail +2 rough-fog-person.csv | awk -F, '{ print $1 }' | sort -n | uniq`
+set intnames = `echo $intervals | sed "s/ /,/g"`
+
+set output = "person.csv"
+
+echo "day,$intnames" >! "$output"
+foreach d ( $days )
+    echo -n "$d : "
+    echo -n "$d," >> "$output"
+    @ j = 1
+    foreach i ( $intervals )
+	if ($j > 1) echo -n "," >> "$output"
+	set k = `egrep "^$i,$d," rough-fog-person.csv | wc -l | awk '{ print $1 }'`
+	echo -n "$k "
+	echo -n "$k" >> "$output"
+	@ j++
+    end
+    echo
+    echo  >> "$output"
+end
