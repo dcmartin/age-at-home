@@ -105,6 +105,19 @@ Here are some additional visualizations of the data.
 </tr>
 </table>
 <p>
+Additional analysis scripting and utilization of <a href="data/person.xlsx">Excel</a> provides the following:
+<p>
+<table>
+<tr>
+<td><img width="95%" src="images/person-active.png"></td>
+<td><img width="95%" src="images/person-normal-active.png"></td>
+</tr>
+<tr>
+<td><img width="95%" src="images/person-over-active.png"></td>
+<td><img width="95%" src="images/person-under-active.png"></td>
+</tr>
+</table>
+<p>
 The process of preparing JSON data for Watson Analytics is cumbersome. While replication from Cloudant into dashDB is provided and dashDB can be accessed from WA
 (n.b. you need a paid account), the refinement capabilities in WA are insufficient for any non-trivial transformation (e.g. time into day of week).
 I wrote UNIX shell scripts to download the JSON data, convert to CSV, calculate statistics on the columns -- also not provided by WA, extract classifiers' scores for all events, 
