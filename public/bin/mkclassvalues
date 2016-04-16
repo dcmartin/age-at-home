@@ -8,6 +8,9 @@ endif
 
 if ( $#argv > 0 ) then
     setenv ALLROWS "$argv[1]".csv
+    if ( $#argv > 1 ) then
+        setenv CLASSIFIERS "$argv[2-]"
+    endif
 else
     setenv ALLROWS "$DB".csv
 endif
@@ -15,11 +18,11 @@ endif
 if ( -e "$ALLROWS" ) then
     setenv ARBASE "$ALLROWS:r"
 
+    set vcolset = `csvstat -n "$ALLROWS" | awk '{ print $2 }' | egrep classifier_id`
+    set acolset = `csvstat -n "$ALLROWS" | awk '{ print $2 }' | egrep alchemy/text`
+
     if ( ! -e "$ARBASE-classes.txt" ) then
 	echo "STAT: making $ARBASE-classes.txt"
-
-	set vcolset = `csvstat -n "$ALLROWS" | awk '{ print $2 }' | egrep classifier_id`
-	set acolset = `csvstat -n "$ALLROWS" | awk '{ print $2 }' | egrep alchemy/text`
 
 	foreach i ( $acolset )
 	    csvcut -c "$i" "$ALLROWS" | tail +2 >>! "$ARBASE"-classes.txt
@@ -36,9 +39,13 @@ else
     exit
 endif
 
-set classifiers = ( `cat "$ARBASE"-classes.txt` )
+if ( $?CLASSIFIERS == 0) then
+    set classifiers = ( `cat "$ARBASE"-classes.txt` )
+else
+    set classifiers = ( $CLASSIFIERS )
+endif
 
-if ($#classifiers > 1) then
+if ($#classifiers > 0) then
     echo "STAT: total $#classifiers"
     set colset = `csvstat -n "$ALLROWS" | awk '{ print $2 }'`
     set colnam = `echo $colset | sed "s/ /,/g"`
@@ -59,10 +66,13 @@ if ($#classifiers > 1) then
 	    echo -n "."
 	end
 
-	foreach j ( $vcolset )
-	    csvcut -c "$j","$j:h/score","id","$dtcolumns" "$i.csv" | egrep "^$i," >> "$ARBASE-class-values.csv"
-	    echo -n "."
-	end
+	# condition to skip visualinsights classifiers when searching for only one, presumable 'person' from alchemy
+	if ($#classifiers > 1) then
+	    foreach j ( $vcolset )
+		csvcut -c "$j","$j:h/score","id","$dtcolumns" "$i.csv" | egrep "^$i," >> "$ARBASE-class-values.csv"
+		echo -n "."
+	    end
+	endif
 
 	echo 
 	rm "$i.csv"

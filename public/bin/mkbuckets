@@ -23,11 +23,11 @@ if ( -e "$ALLROWS" ) then
 	set dtcolumns = `echo "$datetime" | sed "s/ /,/g"`
 
 	echo "STAT: creating $ARBASE-day-ampm.csv"
-	echo "ampm,day,id" >! "$ARBASE"-day-ampm.csv
+	echo "interval,ampm,day,id" >! "$ARBASE"-day-ampm.csv
 
 	# note utilization of gawk(1)
 	csvcut -c "$dtcolumns" "$ALLROWS" | tail +2 | \
-	    gawk -F, '{ t=mktime(sprintf("%4d %2d %2d %2d %2d %2d", $1, $2, $3, $5, $6, $7)); printf "%s,%s,%s\n", strftime("%p",t),strftime("%A",t), $4 }' >> "$ARBASE"-day-ampm.csv
+	    gawk -F, '{ m=$5*60+$6; m = m / 15; t=mktime(sprintf("%4d %2d %2d %2d %2d %2d", $1, $2, $3, $5, $6, $7)); printf "%d,%s,%s,%s\n", m, strftime("%p",t),strftime("%A",t), $4 }' >> "$ARBASE"-day-ampm.csv
     else
     	echo "$ARBASE-day-ampm.csv exists; run join2classvalues"
     endif

@@ -125,12 +125,12 @@ across all days of the week for both AM and PM intervals.
 List of shell scripts - listed in the order they should be run:
 <ul>
 <li><a href="bin/getjson2csv"><code>getjson2csv</code></a> - Script to pull JSON from Cloudant and convert to CSV, including calculating statistics and encoding as CSV.
-<li><a href="bin/mkclassvalues"><code>mkclassvalues</code></a> - Script to pull all VisualInsights and Alchemy "classifiers" and create CSV with class, score, time, date and event ID
-<li><a href="bin/mkdayampm"><code>mkdayampm</code></a> - Script to calculate day of week and AM, PM designation for events
-<li><a href="bin/mkpersondays"><code>mkpersondays</code></a> - Script to calculate statistics for 'person' events occurence by 'hour' across AM and PM and days of week
+<li><a href="bin/mkclassvalues"><code>mkclassvalues</code></a> - Script to pull all VisualInsights and Alchemy "classifiers" and create CSV with class, score, time, date and event ID; can be specialized with DB and one or more classifiers; if only one classifier is specified, it assume Alchemy only (e.g. 'person').
+<li><a href="bin/mkbuckets"><code>mkbuckets</code></a> - Script to distinguish event time into 'buckets' -- 'day' of week, 'ampm' AM or PM, and 15 minute 'interval' in addition to default 'doc/hour' bucket
+<li><a href="bin/mkclassbuckets"><code>mkclassbuckets</code></a> - Script to calculate statistics for one classifier (default 'person') occurence by bucket (default 'doc/hour'; option 'interval') across AM and PM and days of week; note that 'doc/hour' is converted to simply 'hour' for output file.
 <li><a href="bin/csv2json"><code>csv2json</code></a> (<a href="bin/csv2json.awk"><code>AWK</code></a>)
-- Convert the CSV results of <code>mkpersondays</code> (e.g. <a href="data/rough-fog-person-days.csv">rough-fog-person-days.csv</a>) to a JSON object 
-(e.g. <a href="data/rough-fog-person-days.json">rough-fog-person-days.json</a>)
+- Convert the CSV results of <code>mkclassbuckets</code> (e.g. <a href="data/rough-fog-person-hour.csv">rough-fog-person-hour.csv</a>) to a JSON object 
+(e.g. <a href="data/rough-fog-person-hour.json">rough-fog-person-hour.json</a>)
 </ul>
 <p>
 I am thinking I am going to add new databases to Cloudant to store these statistical values, consume them on the Rpi when it starts, calculate any update from Cloudant historical record (e.g. start-up and/or recovery mode), and then update the values with each event processed on the Rpi (e.g. each motion detection event that generates the JSON payload).  I think it could be part of the basic IoT application (ala the QS + any JSON payload).
@@ -147,7 +147,7 @@ Image captured using motion detection algorithm based on changes in pixel count 
 The necessary equipment for this project is relatively inexpensive:
 A RaspberryPi3 with 32 GB uSD card and Playstation3 Eye USB camera
 <p>
-<img width="50%" src="images/camera.png">
+<.csvimg width="50%" src="images/camera.png">
 <br>
 <i>Installation on kitchen shelf</i>
 <p>
