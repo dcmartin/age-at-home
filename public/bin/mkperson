@@ -31,7 +31,14 @@ endif
 echo "STAT: $OUTPUT:r:r.csv is current with TTL of $TTL"
 
 set days = ( Sunday Monday Tuesday Wednesday Thursday Friday Saturday )
-set intervals = `tail +2 rough-fog-person.csv | awk -F, '{ print $1 }' | sort -n | uniq`
+# set intervals = `tail +2 rough-fog-person.csv | awk -F, '{ print $1 }' | sort -n | uniq`
+set intervals = ()
+@ i = 0
+# there are 96 15 minute intervals per day
+while ($i < 96)
+    set intervals = ( $intervals $i )
+    @ i++
+end
 set intnames = `echo $intervals | sed "s/ /,/g"`
 
 set output = "person.csv"
@@ -44,7 +51,7 @@ foreach d ( $days )
     foreach i ( $intervals )
 	if ($j > 1) echo -n "," >> "$output"
 	set k = `egrep "^$i,$d," rough-fog-person.csv | wc -l | awk '{ print $1 }'`
-	echo -n "$k "
+	echo -n "$i = $k "
 	echo -n "$k" >> "$output"
 	@ j++
     end
