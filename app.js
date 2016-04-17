@@ -41,20 +41,14 @@ var visual_insights = watson.visual_insights(credentials);
 // get profile summary image analysis
 app.get('/summary', function(req, res, next) {
   var datasets = {
-    person1: fs.createReadStream('./public/images/person1.zip'),
-    person2: fs.createReadStream('./public/images/person2.zip'),
+    person1: fs.createReadStream('./public/data/person.json'),
+    person2: fs.createReadStream('./public/data/rough-fog.json'),
   };
   var images_file = datasets[req.body.dataset];
 
-  if (!images_file)
+  if (!images_file) 
     return res.status(404).json({error:'The dataset is not found.  Please try again.', code:404});
-
-  visual_insights.summary({images_file: images_file}, function (err, result) {
-    if (err)
-      return next(err);
-    else
-      res.json(result);
-  });
+  res.json(images_files);
 });
 
 // get classifiers list
