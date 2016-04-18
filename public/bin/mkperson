@@ -51,7 +51,7 @@ foreach d ( $days )
     foreach i ( $intervals )
 	if ($j > 1) echo -n "," >> "$output"
 	set k = `egrep "^$i,$d," rough-fog-person.csv | wc -l | awk '{ print $1 }'`
-	echo -n "$i = $k "
+	echo -n "$k "
 	echo -n "$k" >> "$output"
 	@ j++
     end

@@ -44,10 +44,8 @@ app.get('/summary', function(req, res, next) {
     person1: fs.createReadStream('./public/data/person.json'),
     person2: fs.createReadStream('./public/data/rough-fog.json'),
   };
-  var images_file = datasets[req.body.dataset];
 
-  // if (!images_file) return res.status(404).json({error:'The dataset is not found.  Please try again.', code:404});
-  return res.json(images_files);
+  return res.status(404).json({error:'The dataset is not found.  Please try again.', code:404});
 });
 
 // get classifiers list
