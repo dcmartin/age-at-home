@@ -23,11 +23,11 @@ if ( -e "$ALLROWS" ) then
 	set dtcolumns = `echo "$datetime" | sed "s/ /,/g"`
 
 	echo "STAT: creating $ARBASE-buckets.csv"
-	echo "interval,ampm,day,id" >! "$ARBASE"-buckets.csv
+	echo "interval,ampm,week,day,id" >! "$ARBASE"-buckets.csv
 
 	# note utilization of gawk(1)
 	csvcut -c "$dtcolumns" "$ALLROWS" | tail +2 | \
-	    gawk -F, '{ m=$5*60+$6; m = m / 15; t=mktime(sprintf("%4d %2d %2d %2d %2d %2d", $1, $2, $3, $5, $6, $7)); printf "%d,%s,%s,%s\n", m, strftime("%p",t),strftime("%A",t), $4 }' >> "$ARBASE"-buckets.csv
+	    gawk -F, '{ m=$5*60+$6; m = m / 15; t=mktime(sprintf("%4d %2d %2d %2d %2d %2d", $1, $2, $3, $5, $6, $7)); printf "%d,%s,%s,%s,%s\n", m, strftime("%p",t),strftime("%U",t),strftime("%A",t), $4 }' >> "$ARBASE"-buckets.csv
     else
     	echo "STAT: $ARBASE-buckets.csv up-to-date"
     endif
