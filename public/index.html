@@ -65,10 +65,72 @@ GitHub repositories are publically accessible at:
 Initial Results
 </h2>
 <p>
-After one week of collecting data I am happy to announce initial results.  Utilizing only the 'person' classifier from the Alchemy API 
-image recognition algorithm, the mean time of a person being seen in the kitchen was calculated across all days for both AM and PM intervals.
-While not exactly the calculation of mean for "first occurence per day," that will have to wait for additional data -- and some additional
-scripting.
+With almost three (3) weeks of data collected patterns are emerging.  Will need to add new databases to Cloudant 
+to store these statistical values, consume them on the Rpi when it starts, calculate any update from Cloudant historical record
+(e.g. start-up and/or recovery mode), and then update the values with each event processed on the Rpi
+(e.g. each motion detection event that generates the JSON payload).
+<p> 
+Will need to setup another asynchronous thread to update the Cloudant DB periodically from a local file-system cache of the JSON encoded statistics; 
+That process will periodically test for the condition of no events within a specified period of time.  Will need to record the date/time in the statistics, 
+as well as the last seen record ID to request updates only and check for last known event when testing condition.
+<p>
+The graphs below articulate the following:
+<ol>
+<li>All Activity; the sum of 'person' events in the kitchen
+<li>Expected Activity; when 'person' count by 'intervals' "near" mean of interval count
+<li>Over Activity; when 'person' count by 'interval' is +2SD over mean of interval count
+<li>Under Activity; when 'person' count by 'interval' is -2SD under mean of interval count
+</ol>
+<p>
+<table>
+<tr>
+<td><img width="95%" src="images/person-active.png"></td>
+<td><img width="95%" src="images/person-normal-active.png"></td>
+</tr>
+<tr>
+<td><img width="95%" src="images/person-over-active.png"></td>
+<td><img width="95%" src="images/person-under-active.png"></td>
+</tr>
+</table>
+
+<h3>
+Data and Scripts
+</h3>
+<p>
+Link to data (rough-fog is the device DB name in Cloudant):
+<ul>
+<li><a href="data/person.xslx">person.xlsx</a> - Excel file that processes person.csv file and makes the pretty charts above.  Note: use the Excel "Data Refresh" menu option on the "person" tab to load new person.csv file.
+<li><a href="data/person.csv">person.csv</a> - Pivot table of sum of 'person' events across all 15 minutes 'intervals' per day with count of weeks in sum
+<li><a href="data/rough-fog.json">rough-fog.json</a> - This file is the JSON 'events' from the Cloudant database retrieved by the <code>getjson2csv</code> script; 
+the DB can be specified on the command line
+<li><a href="data/rough-fog.csv">rough-fog.csv</a> (<a href="data/rough-fog-stat.csv">statistics</a>) - 
+These two files are output of JSON to CSV conversion and the calculation of statistics on the columns; these files are produced by the <code>getjson2csv</code> script; [ <DB> [ "none" | <operations>+ ]] are options for DB name and if/what statistics to calculate
+<li><a href="data/rough-fog-class-values.csv">rough-fog-class-values.csv</a> (<a href="data/rough-fog-classes.txt">all classes</a>) - These two files are the classifiers and values for all 'events' in the CSV table (i.e. rough-fog) as well as a list of all classifiers, including null (&quot;&quot)
+<li><a href="data/rough-fog-day-ampm.csv">rough-fog-day-ampm.csv</a> - This file is the calculation of AM or PM and day of week (e.g. Sunday) for all 'events' in the CSV table
+<li><a href="data/rough-fog-person-hour.csv">rough-fog-person-hour.csv</a> (<a href="data/rough-fog-person-hour.json">JSON</a>) - This file is the calculation of the 'person' classifier (n.b. Alchemy API) statistics for all hours of the week for both AM and PM intervals.
+<li><a href="data/rough-fog-person-interval.csv">rough-fog-person-interval.csv</a> (<a href="data/rough-fog-person-interval.json">JSON</a>) - This file is the calculation of the 'person' classifier (n.b. Alchemy API) in increments of 15 minutes (interval) across all days of the week for both AM and PM intervals.
+</ul>
+<p>
+List of shell scripts - listed in the order they should be run:
+<ul>
+<li><a href="bin/mkperson"><code>mkperson</code></a> - Script to create person.csv file and all dependencies including download from Cloudant; defaults to 'rough-fog' and 15 minutes TTL for refresh, but can be specified on CLI.
+<li><a href="bin/getjson2csv"><code>getjson2csv</code></a> - Script to pull JSON from Cloudant and convert to CSV, including calculating statistics and encoding as CSV.
+<li><a href="bin/mkclassvalues"><code>mkclassvalues</code></a> - Script to pull all VisualInsights and Alchemy "classifiers" and create CSV with class, score, time, date and event ID; can be specialized with DB and one or more classifiers; if only one classifier is specified, it assume Alchemy only (e.g. 'person').
+<li><a href="bin/mkbuckets"><code>mkbuckets</code></a> - Script to distinguish event time into 'buckets' -- 'day' of week, 'ampm' AM or PM, and 15 minute 'interval' in addition to default 'doc/hour' bucket
+<li><a href="bin/mkclassbuckets"><code>mkclassbuckets</code></a> - Script to calculate statistics for one classifier (default 'person') occurence by bucket (default 'doc/hour'; option 'interval') across AM and PM and days of week; note that 'doc/hour' is converted to simply 'hour' for output file.
+<li><a href="bin/csv2json"><code>csv2json</code></a> (<a href="bin/csv2json.awk"><code>AWK</code></a>)
+- Convert the CSV results of <code>mkclassbuckets</code> (e.g. <a href="data/rough-fog-person-hour.csv">rough-fog-person-hour.csv</a>) to a JSON object 
+(e.g. <a href="data/rough-fog-person-hour.json">rough-fog-person-hour.json</a>)
+</ul>
+
+<h3>
+Watson Analytics
+</h3>
+<p>
+The process of preparing JSON data for Watson Analytics is cumbersome. While replication from Cloudant into dashDB is provided and dashDB can be accessed from WA
+(n.b. you need a paid account), the refinement capabilities in WA are insufficient for any non-trivial transformation (e.g. time into day of week).
+I wrote UNIX shell scripts to download the JSON data, convert to CSV, calculate statistics on the columns -- also not provided by WA, extract classifiers' scores for all events, 
+and catagorize events into day-of-week and AM-PM <i>bins</i>.  These scripts can take a long time to run on a laptop.
 <p>
 <table>
 <tr>
@@ -108,52 +170,6 @@ Here are some additional visualizations of the data.
 </td>
 </tr>
 </table>
-<p>
-Additional analysis scripting and utilization of <a href="data/person.xlsx">Excel</a> provides the following:
-<p>
-<table>
-<tr>
-<td><img width="95%" src="images/person-active.png"></td>
-<td><img width="95%" src="images/person-normal-active.png"></td>
-</tr>
-<tr>
-<td><img width="95%" src="images/person-over-active.png"></td>
-<td><img width="95%" src="images/person-under-active.png"></td>
-</tr>
-</table>
-<p>
-The process of preparing JSON data for Watson Analytics is cumbersome. While replication from Cloudant into dashDB is provided and dashDB can be accessed from WA
-(n.b. you need a paid account), the refinement capabilities in WA are insufficient for any non-trivial transformation (e.g. time into day of week).
-I wrote UNIX shell scripts to download the JSON data, convert to CSV, calculate statistics on the columns -- also not provided by WA, extract classifiers' scores for all events, 
-and catagorize events into day-of-week and AM-PM <i>bins</i>.  These scripts can take a long time to run on a laptop.
-<p>
-Link to data (rough-fog is the device DB name in Cloudant):
-<ul>
-<li><a href="data/rough-fog.json">rough-fog.json</a> - This file is the JSON 'events' from the Cloudant database retrieved by the <code>getjson2csv</code> script; 
-the DB can be specified on the command line
-<li><a href="data/rough-fog.csv">rough-fog.csv</a> (<a href="data/rough-fog-stat.csv">statistics</a>) - 
-These two files are output of JSON to CSV conversion and the calculation of statistics on the columns; these files are produced by the <code>getjson2csv</code> script
-<li><a href="data/rough-fog-class-values.csv">rough-fog-class-values.csv</a> (<a href="data/rough-fog-classes.txt">all classes</a>) - These two files are the classifiers and values for all 'events' in the CSV table (i.e. rough-fog) as well as a list of all classifiers, including null (&quot;&quot)
-<li><a href="data/rough-fog-day-ampm.csv">rough-fog-day-ampm.csv</a> - This file is the calculation of AM or PM and day of week (e.g. Sunday) for all 'events' in the CSV table
-<li><a href="data/rough-fog-person-hour.csv">rough-fog-person-hour.csv</a> (<a href="data/rough-fog-person-hour.json">JSON</a>) - This file is the calculation of the 'person' classifier (n.b. Alchemy API) statistics for all hours of the week for both AM and PM intervals.
-<li><a href="data/rough-fog-person-interval.csv">rough-fog-person-interval.csv</a> (<a href="data/rough-fog-person-interval.json">JSON</a>) - This file is the calculation of the 'person' classifier (n.b. Alchemy API) in increments of 15 minutes (interval) across all days of the week for both AM and PM intervals.
-</ul>
-<p>
-List of shell scripts - listed in the order they should be run:
-<ul>
-<li><a href="bin/getjson2csv"><code>getjson2csv</code></a> - Script to pull JSON from Cloudant and convert to CSV, including calculating statistics and encoding as CSV.
-<li><a href="bin/mkclassvalues"><code>mkclassvalues</code></a> - Script to pull all VisualInsights and Alchemy "classifiers" and create CSV with class, score, time, date and event ID; can be specialized with DB and one or more classifiers; if only one classifier is specified, it assume Alchemy only (e.g. 'person').
-<li><a href="bin/mkbuckets"><code>mkbuckets</code></a> - Script to distinguish event time into 'buckets' -- 'day' of week, 'ampm' AM or PM, and 15 minute 'interval' in addition to default 'doc/hour' bucket
-<li><a href="bin/mkclassbuckets"><code>mkclassbuckets</code></a> - Script to calculate statistics for one classifier (default 'person') occurence by bucket (default 'doc/hour'; option 'interval') across AM and PM and days of week; note that 'doc/hour' is converted to simply 'hour' for output file.
-<li><a href="bin/csv2json"><code>csv2json</code></a> (<a href="bin/csv2json.awk"><code>AWK</code></a>)
-- Convert the CSV results of <code>mkclassbuckets</code> (e.g. <a href="data/rough-fog-person-hour.csv">rough-fog-person-hour.csv</a>) to a JSON object 
-(e.g. <a href="data/rough-fog-person-hour.json">rough-fog-person-hour.json</a>)
-</ul>
-<p>
-I am thinking I am going to add new databases to Cloudant to store these statistical values, consume them on the Rpi when it starts, calculate any update from Cloudant historical record (e.g. start-up and/or recovery mode), and then update the values with each event processed on the Rpi (e.g. each motion detection event that generates the JSON payload).  I think it could be part of the basic IoT application (ala the QS + any JSON payload).
-<p> 
-I can setup another asynchronous thread to update the Cloudant DB periodically from a local file-system cache of the JSON encoded statistics; I can also use that process to periodically test for the condition of no events within a specified period of time.  I will need to record the date/time in the JSON for the statistics, as well as the last seen record to calculate updates and check for last known event when testing condition.
-<p>
 <h2>Examples</h2>
 Image captured using motion detection algorithm based on changes in pixel count (bounding box around centroid identifed).
 <p>
