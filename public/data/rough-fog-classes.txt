@@ -204,6 +204,7 @@ Night_Club
 Night_Sky
 Noodles
 Nursery
+Observatory
 Operating_Room
 Ostrich
 Oven
@@ -286,6 +287,7 @@ Swamp
 Swan
 Swedish_Meatball
 Sweet_Treat
+Swimsuit
 Synchronized_Swimming
 Table_Tennis
 Tae_Kwando
@@ -335,5 +337,6 @@ moon
 night
 person
 sky
+star
 wedding
 window
