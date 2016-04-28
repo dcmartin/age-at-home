@@ -11,7 +11,9 @@ set TTLSECS = `echo $SECONDS \/ $TTL \* $TTL | bc`
 set class = 'person'
 
 if ($?CLOUDANT_URL == 0) then
-    setenv CLOUDANT_URL "https://538e7925-b7f5-478b-bf75-2f292dcf642a-bluemix:d2eae1e230e961e2f1b0c6dc25e00a643d4b8a483f48468ca66466c0b4360c5f@538e7925-b7f5-478b-bf75-2f292dcf642a-bluemix.cloudant.com"
+    if (-e ~/.cloudant_url) then
+        setenv CLOUDANT_URL `cat ~/.cloudant_url`
+    endif
 endif
 
 if ($?DB == 0) then
@@ -96,5 +98,7 @@ if ($?CLOUDANT_OFF == 0 && $?CLOUDANT_URL && $?DB) then
 	endif
         curl -H "Content-type: application/json" -X PUT "$CLOUDANT_URL/$DB-stats/$class" -d "@$statjson"
     endif
+else
+    echo "STAT: No CLOUDANT defined $?CLOUDANT_OFF $CLOUDANT_URL $DB""
 endif
 
