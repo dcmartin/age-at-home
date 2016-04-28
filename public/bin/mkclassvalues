@@ -1,4 +1,4 @@
-#!/bin/csh
+#!/bin/tcsh
 
 if ($?CLOUDANT_DATABASE) then
     setenv DB "$CLOUDANT_DATABASE"
@@ -9,13 +9,17 @@ endif
 if ( $#argv > 0 ) then
     setenv ALLROWS "$argv[1]".csv
     if ( $#argv > 1 ) then
-        set classjson = $argv[2]
-	if (-e ".classifiers-$classjson.json") then
-	    set t = ( `jq ."$classjson"\[\].name ".classifiers-$classjson.json" | sed 's/"//g'` )
+	set classes = $argv[2]
+	if (-e ".classifiers-$classes.json") then
+	    set t = ( `jq ."$classes"\[\].name ".classifiers-$classes.json" | sed 's/"//g'` )
 	    echo $t
 	    setenv CLASSIFIERS "$t"
-	else
+	else if ($#argv > 3) then
 	    setenv CLASSIFIERS "$argv[2-]"
+	    set classes = "misc"
+	else
+	    setenv CLASSIFIERS "$argv[2]"
+	    set classes = "$argv[2]"
 	endif
     endif
 else
@@ -33,27 +37,29 @@ endif
 set vcolset = `csvstat -n "$ALLROWS" | awk '{ print $2 }' | egrep classifier_id`
 set acolset = `csvstat -n "$ALLROWS" | awk '{ print $2 }' | egrep alchemy/text`
 
-if ( $?CLASSIFIERS == 0) then
-    if ( ( ! -e "$ARBASE-classes.txt" ) || ( (-M "$ALLROWS") > (-M "$ARBASE"-classes.txt))) then
-	echo "STAT: making $ARBASE-classes.txt"
+if ($?CLASSIFIERS) then
+    set classifiers = ( $CLASSIFIERS )
+else
+    set classes = "all"
+    # build all classes
+    if ( ( ! -e "$ARBASE-$classes.txt" ) || ( (-M "$ALLROWS") > (-M "$ARBASE"-$classes.txt))) then
+	echo "STAT: making $ARBASE-$classes.txt"
 
 	foreach i ( $acolset )
-	    csvcut -c "$i" "$ALLROWS" | tail +2 >>! "$ARBASE"-classes.txt
-	    cat "$ARBASE"-classes.txt | sort | uniq >! tmp.$$
-	    mv -f tmp.$$ "$ARBASE"-classes.txt
+	    csvcut -c "$i" "$ALLROWS" | tail +2 >>! "$ARBASE"-$classes.txt
+	    cat "$ARBASE"-$classes.txt | sort | uniq >! tmp.$$
+	    mv -f tmp.$$ "$ARBASE"-$classes.txt
 	end
 	foreach i ( $vcolset )
-	    csvcut -c "$i" "$ALLROWS" | tail +2 >>! "$ARBASE"-classes.txt
-	    cat "$ARBASE"-classes.txt | sort | uniq >! tmp.$$
-	    mv -f tmp.$$ "$ARBASE"-classes.txt
+	    csvcut -c "$i" "$ALLROWS" | tail +2 >>! "$ARBASE"-$classes.txt
+	    cat "$ARBASE"-$classes.txt | sort | uniq >! tmp.$$
+	    mv -f tmp.$$ "$ARBASE"-$classes.txt
 	end
     endif
-    set classifiers = ( `cat "$ARBASE"-classes.txt` )
-else
-    set classifiers = ( $CLASSIFIERS )
+    set classifiers = ( `cat "$ARBASE"-$classes.txt` )
 endif
 
-if ($#classifiers > 0 && ((-M "$ALLROWS") > (-M "$ARBASE-class-values.csv"))) then
+if ($#classifiers > 0 && ((-M "$ALLROWS") > (-M "$ARBASE-$classes-values.csv"))) then
     echo "STAT: total $#classifiers"
     set colset = `csvstat -n "$ALLROWS" | awk '{ print $2 }'`
     set colnam = `echo $colset | sed "s/ /,/g"`
@@ -61,7 +67,7 @@ if ($#classifiers > 0 && ((-M "$ALLROWS") > (-M "$ARBASE-class-values.csv"))) th
     set datetime = ( doc/year doc/month doc/day doc/hour doc/minute doc/second )
     set dtcolumns = `echo "$datetime" | sed "s/ /,/g"`
 
-    echo "classifier,score,id,$dtcolumns" >! "$ARBASE-class-values.csv"
+    echo "classifier,score,id,$dtcolumns" >! "$ARBASE-$classes-values.csv"
     foreach i ( $classifiers )
 	if ($i == \"\") continue
 
@@ -70,14 +76,14 @@ if ($#classifiers > 0 && ((-M "$ALLROWS") > (-M "$ARBASE-class-values.csv"))) th
 	egrep ",$i," "$ALLROWS" >> "$i.csv"
 
 	foreach j ( $acolset )
-	    csvcut -c "$j","$j:h/score","id","$dtcolumns" "$i.csv" | egrep "^$i," >> "$ARBASE-class-values.csv"
+	    csvcut -c "$j","$j:h/score","id","$dtcolumns" "$i.csv" | egrep "^$i," >> "$ARBASE-$classes-values.csv"
 	    echo -n "."
 	end
 
 	# condition to skip visualinsights classifiers when searching for only one, presumable 'person' from alchemy
 	if ($#classifiers > 1) then
 	    foreach j ( $vcolset )
-		csvcut -c "$j","$j:h/score","id","$dtcolumns" "$i.csv" | egrep "^$i," >> "$ARBASE-class-values.csv"
+		csvcut -c "$j","$j:h/score","id","$dtcolumns" "$i.csv" | egrep "^$i," >> "$ARBASE-$classes-values.csv"
 		echo -n "."
 	    end
 	endif

@@ -1,4 +1,4 @@
-#!/bin/csh
+#!/bin/tcsh
 #
 if ($?CLOUDANT_USERNAME) then
     setenv CN $CLOUDANT_USERNAME
@@ -42,20 +42,21 @@ setenv ALLROWS "$DB".csv
 
 if ( ! -e "$ALLJSON" ) then
     echo "GET: $ALLJSON"
-    curl "$CU/$DB/_all_docs?include_docs=true" >! "$ALLJSON"
+    # curl "$CU/$DB/_all_docs?include_docs=true" >! "$ALLJSON"
+    curl "$CU/$DB/_changes?include_docs=true&since=0" >! "$ALLJSON"
 endif
 
 if ( ! -e "$ALLJSON" ) then
     echo "FAIL: $ALLJSON"
     exit
 else
-    set total_rows = `jq .total_rows "$ALLJSON"`
-    echo "STAT: $ALLJSON total_rows $total_rows"
+    set seqid = ( `jq .last_seq "$ALLJSON"` )
+    echo "STAT: $ALLJSON last_seq $seqid"
 endif
 
 # get all rows
 if ( (! -e "$ALLROWS") || ((-M "$ALLJSON") > (-M "$ALLROWS")) ) then
-    in2csv -k "rows" "$ALLJSON" >! "$ALLROWS"
+    in2csv -k "results" "$ALLJSON" >! "$ALLROWS"
 endif
 
 # get all columns

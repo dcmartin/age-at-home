@@ -1,4 +1,4 @@
-#!/bin/csh
+#!/bin/tcsh
 if ($#argv > 0) then
     set TTL = $argv[1]
 else
@@ -8,54 +8,93 @@ endif
 set SECONDS = `date "+%s"`
 set TTLSECS = `echo $SECONDS \/ $TTL \* $TTL | bc`
 
-set INPUT = "rough-fog.$TTLSECS.json"
+set class = 'person'
+
+if ($?CLOUDANT_URL == 0) then
+    setenv CLOUDANT_URL "https://538e7925-b7f5-478b-bf75-2f292dcf642a-bluemix:d2eae1e230e961e2f1b0c6dc25e00a643d4b8a483f48468ca66466c0b4360c5f@538e7925-b7f5-478b-bf75-2f292dcf642a-bluemix.cloudant.com"
+endif
+
+if ($?DB == 0) then
+    setenv DB "rough-fog"
+endif
+
+set INPUT = "$DB.$TTLSECS.json"
 if ( ! -e "$INPUT" ) then
     echo "STAT: creating $INPUT"
     /bin/rm -f "$INPUT:r:r".[0-9]*".json"
-    /bin/rm -f "rough-fog.json"
-    $0:h/getjson2csv rough-fog $TTL none
-    /bin/mv "rough-fog.json" "$INPUT"
-    ln -s "$INPUT" "rough-fog.json"
+    /bin/rm -f "$DB.json"
+    $0:h/getjson2csv $DB $TTL none
+    /bin/mv "$DB.json" "$INPUT"
+    /bin/cp "$INPUT" "$DB.json"
 endif
+set seqid = ( `jq .last_seq "$INPUT"` )
 
-set OUTPUT = "rough-fog-person.$TTLSECS.csv"
-if ( ! -e "$OUTPUT") then
-    echo "STAT: creating $OUTPUT"
-    /bin/rm -f "$OUTPUT:r:r".[0-9]*".csv"
-    $0:h/mkclassvalues rough-fog person
-    $0:h/mkbuckets rough-fog
-    csvgrep -c classifier -m "person" rough-fog-class-values.csv | csvjoin -c "id,id" - rough-fog-buckets.csv | csvcut -c "interval,day,week,classifier,score" >! "$OUTPUT"
-    /bin/rm -f "rough-fog-person.csv"
-    ln -s "$OUTPUT" "rough-fog-person.csv"
-endif
-echo "STAT: $OUTPUT:r:r.csv is current with TTL of $TTL"
+set OUTPUT = "$DB-$class.csv"
+echo "STAT: creating $OUTPUT"
+$0:h/mkclassvalues $DB $class
+$0:h/mkintervals $DB
+csvgrep -c classifier -m "$class" $DB-$class-values.csv | csvjoin -c "id,id" - $DB-intervals.csv | csvcut -c "interval,day,week,classifier,score" >! "$OUTPUT"
 
 set days = ( Sunday Monday Tuesday Wednesday Thursday Friday Saturday )
-# set intervals = `tail +2 rough-fog-person.csv | awk -F, '{ print $1 }' | sort -n | uniq`
+# set intervals = `tail +2 $DB-$class.csv | awk -F, '{ print $1 }' | sort -n | uniq`
 set intervals = ()
+set intvalues = ()
 @ i = 0
 # there are 96 15 minute intervals per day
 while ($i < 96)
     set intervals = ( $intervals $i )
+    set intvalues = ( $intvalues "count_$i,sum_$i" )
     @ i++
 end
-set intnames = `echo $intervals | sed "s/ /,/g"`
+set intnames = `echo $intvalues | sed "s/ /,/g"`
 
-set output = "person.csv"
+set output = "$DB-$class-intervals.csv"
 
 echo "day,weeks,$intnames" >! "$output"
 foreach d ( $days )
-    set nweek = `csvgrep -c day -m "$d" rough-fog-person.csv | csvcut -c week | tail +2 | sort | uniq | wc -l`
+    set nweek = `csvgrep -c day -m "$d" $DB-$class.csv | csvcut -c week | tail +2 | sort | uniq | wc -l`
     echo -n "$d [$nweek]: "
     echo -n "$d,$nweek," >> "$output"
     @ j = 1
     foreach i ( $intervals )
 	if ($j > 1) echo -n "," >> "$output"
-	set k = `egrep "^$i,$d," rough-fog-person.csv | wc -l | awk '{ print $1 }'`
-	echo -n "$k "
-	echo -n "$k" >> "$output"
+	set k = `egrep "^$i,$d," $DB-$class.csv | wc -l | awk '{ print $1 }'`
+	set l = `egrep "^$i,$d," $DB-$class.csv | awk -F, 'BEGIN { total=0 } { total=total+$5 } END { printf "%f", total }'`
+	echo -n "$k,$l "
+	echo -n "$k,$l" >> "$output"
 	@ j++
     end
     echo
     echo  >> "$output"
 end
+
+set statjson = "$output:r.json"
+echo $statjson
+
+set seqid = `echo $seqid | sed 's/"//g'`
+awk -v seqid="$seqid" -f $0:h/new2json.awk "$output" | sed "s/'/|/g" | sed 's/|/"/g' >! "$statjson"
+
+# Cloudant
+if ($?CLOUDANT_OFF == 0 && $?CLOUDANT_URL && $?DB) then
+    set DEVICE_DB = `curl -q -X GET "$CLOUDANT_URL/$DB-stats" | jq '.db_name'`
+    if ( "$DEVICE_DB" == "null" ) then
+        # create DB
+        set DEVICE_DB = `curl -q -X PUT "$CLOUDANT_URL/$DB-stats" | jq '.ok'`
+        # test for success
+        if ( "$DEVICE_DB" != "true" ) then
+            # failure
+            setenv CLOUDANT_OFF TRUE
+        endif
+    endif
+    if ( $?CLOUDANT_OFF == 0 ) then
+	set doc = ( `curl -q "$CLOUDANT_URL/$DB-stats/$class" | jq ._id,._rev | sed 's/"//g'` )
+	if ($#doc == 2 && $doc[1] == $class && $doc[2] != "") then
+	    set rev = $doc[2]
+	    curl -X DELETE "$CLOUDANT_URL/$DB-stats/$class?rev=$rev"
+	else
+	    echo "STAT: $class not found"
+	endif
+        curl -H "Content-type: application/json" -X PUT "$CLOUDANT_URL/$DB-stats/$class" -d "@$statjson"
+    endif
+endif
+

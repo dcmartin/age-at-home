@@ -40,12 +40,11 @@ var visual_insights = watson.visual_insights(credentials);
 
 // get profile summary image analysis
 app.get('/summary', function(req, res, next) {
-  var datasets = {
-    person1: fs.createReadStream('./public/data/person.json'),
-    person2: fs.createReadStream('./public/data/rough-fog.json'),
-  };
-
   return res.status(404).json({error:'The dataset is not found.  Please try again.', code:404});
+});
+
+app.get('/status',function(req,res) {
+   res.send('Hello world');
 });
 
 // get classifiers list
