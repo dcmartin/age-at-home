@@ -12,17 +12,17 @@ set class = 'person'
 
 set INPUT = "rough-fog.$TTLSECS.json"
 if ( ! -e "$INPUT" ) then
-    echo "STAT: creating $INPUT"
+    echo "STAT: $0 - creating $INPUT"
     /bin/rm -f "$INPUT:r:r".[0-9]*".json"
     /bin/rm -f "rough-fog.json"
-    $0:h/getjson2csv rough-fog $TTL none
+    $0:h/newjson2csv rough-fog $TTL none
     /bin/mv "rough-fog.json" "$INPUT"
     /bin/cp "$INPUT" "rough-fog.json"
 endif
 
 set OUTPUT = "rough-fog-$class.$TTLSECS.csv"
 if ( ! -e "$OUTPUT") then
-    echo "STAT: creating $OUTPUT"
+    echo "STAT: $0 - creating $OUTPUT"
     /bin/rm -f "$OUTPUT:r:r".[0-9]*".csv"
     $0:h/mkclassvalues rough-fog $class
     $0:h/mkintervals rough-fog
@@ -30,7 +30,7 @@ if ( ! -e "$OUTPUT") then
     /bin/rm -f "rough-fog-$class.csv"
     /bin/cp "$OUTPUT" "rough-fog-$class.csv"
 endif
-echo "STAT: $OUTPUT:r:r.csv is current with TTL of $TTL"
+echo "STAT: $0 - $OUTPUT:r:r.csv is current with TTL of $TTL"
 
 set days = ( Sunday Monday Tuesday Wednesday Thursday Friday Saturday )
 # set intervals = `tail +2 rough-fog-$class.csv | awk -F, '{ print $1 }' | sort -n | uniq`

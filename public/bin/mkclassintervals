@@ -11,7 +11,7 @@ if ( $#argv > 0 ) then
     if ( $#argv > 1 ) then
         setenv CLASSIFIER "$argv[2]"
 	if ($#argv > 2) then
-	    setenv BUCKET "$argv[3]"
+	    setenv INTERVAL "$argv[3]"
         endif
     endif
 else
@@ -24,25 +24,24 @@ else
     set classifier = $CLASSIFIER
 endif
 
-if ( $?BUCKET == 0) then
+if ( $?INTERVAL == 0) then
     # appropriate defaults are 'doc/hour'
     set interval = 'doc/hour'
 else
     # appropriate options are 'interval'
-    set interval = $BUCKET
+    set interval = $INTERVAL
 endif
 
-setenv ARBASE "$ALLROWS:r"
-setenv OUTPUT "$ARBASE-$classifier-$interval:t.csv"
+setenv OUTPUT "$DB-$classifier-$interval:t.csv"
 
 if (! -e "$ALLROWS" ) then
     echo "$ALLROWS does not exist; run $0:h/getjson2csv $ALLROWS:r"
-else if ( ! -e "$ARBASE-class-values.csv" ) then
-    echo "$ARBASE-class-values.csv does not exist; run $0:h/mkclassvalues $ALLROWS:r"
-else if ( ! -e "$ARBASE-intervals.csv" ) then
-    echo "$ARBASE-intervals.csv does not exists; run $0:h/mkintervals $ALLROWS:r"
+else if ( ! -e "$DB-class-values.csv" ) then
+    echo "$DB-class-values.csv does not exist; run $0:h/mkclassvalues $ALLROWS:r"
+else if ( ! -e "$DB-intervals.csv" ) then
+    echo "$DB-intervals.csv does not exists; run $0:h/mkintervals $ALLROWS:r"
 else if ( ! -e "$OUTPUT" ) then
-    echo "STAT: creating $OUTPUT"
+    echo "STAT: $0 - creating $OUTPUT"
     # only calculating numeric stats (freq must be last to flatten data)
     set operations = ('min' 'max' 'mean' 'median' 'stdev' 'count' 'freq')
     set opnames = `echo $operations | sed "s/ /,/g"`
@@ -53,16 +52,16 @@ else if ( ! -e "$OUTPUT" ) then
     # calculate for all days
     set i = ALL
     foreach j ( AM PM )
-	echo -n "STAT: calculating $j for all days -"
+	echo -n "STAT: $0 - calculating $j for all days -"
 	echo -n '"'"$classifier"'","'"$i"'","'"$j"'"' >> "$OUTPUT"
 	foreach k ( $operations )
 	    echo -n "," >> "$OUTPUT"
 	    set noglob
 	    # fix count
 	    if ($k == count) then
-		set h = `csvgrep -c 'classifier' -m "$classifier" "$ARBASE"-class-values.csv > ! /tmp/$0:t.$$; csvjoin -c 'id,id' /tmp/$0:t.$$ "$ARBASE"-intervals.csv | csvgrep -c 'ampm' -m "$j" | csvcut -c "$interval" | csvstat --$k | sed 's/Row count: \(.*\)/"\1"/'`
+		set h = `csvgrep -c 'classifier' -m "$classifier" "$DB"-class-values.csv > ! /tmp/$0:t.$$; csvjoin -c 'id,id' /tmp/$0:t.$$ "$DB"-intervals.csv | csvgrep -c 'ampm' -m "$j" | csvcut -c "$interval" | csvstat --$k | sed 's/Row count: \(.*\)/"\1"/'`
 	    else
-		set h = `csvgrep -c 'classifier' -m "$classifier" "$ARBASE"-class-values.csv > ! /tmp/$0:t.$$; csvjoin -c 'id,id' /tmp/$0:t.$$ "$ARBASE"-intervals.csv | csvgrep -c 'ampm' -m "$j" | csvcut -c "$interval" | csvstat --$k | sed 's/"//g' | sed 's/\(.*\)/"\1"/'`
+		set h = `csvgrep -c 'classifier' -m "$classifier" "$DB"-class-values.csv > ! /tmp/$0:t.$$; csvjoin -c 'id,id' /tmp/$0:t.$$ "$DB"-intervals.csv | csvgrep -c 'ampm' -m "$j" | csvcut -c "$interval" | csvstat --$k | sed 's/"//g' | sed 's/\(.*\)/"\1"/'`
 	    endif
 	    # flatten frequency
 	    if ($k == freq) then
@@ -80,16 +79,16 @@ else if ( ! -e "$OUTPUT" ) then
     # calculate for each day
     foreach i ( Sunday Monday Tuesday Wednesday Thursday Friday Saturday )
 	foreach j ( AM PM )
-	    echo -n "STAT: calculating $j for $i -"
+	    echo -n "STAT: $0 - calculating $j for $i -"
 	    echo -n '"'"$classifier"'","'"$i"'","'"$j"'"' >> "$OUTPUT"
 	    foreach k ( $operations )
 		echo -n "," >> "$OUTPUT"
 		set noglob
 		# fix count
 		if ($k == count) then
-		    set h = `csvgrep -c 'classifier' -m "$classifier" "$ARBASE"-class-values.csv > ! /tmp/$0:t.$$; csvjoin -c 'id,id' /tmp/$0:t.$$ "$ARBASE"-intervals.csv  | csvgrep -c 'day' -m "$i" | csvgrep -c 'ampm' -m "$j" | csvcut -c "$interval" | csvstat --$k | sed 's/Row count: \(.*\)/"\1"/'`
+		    set h = `csvgrep -c 'classifier' -m "$classifier" "$DB"-class-values.csv > ! /tmp/$0:t.$$; csvjoin -c 'id,id' /tmp/$0:t.$$ "$DB"-intervals.csv  | csvgrep -c 'day' -m "$i" | csvgrep -c 'ampm' -m "$j" | csvcut -c "$interval" | csvstat --$k | sed 's/Row count: \(.*\)/"\1"/'`
 		else
-		    set h = `csvgrep -c 'classifier' -m "$classifier" "$ARBASE"-class-values.csv > ! /tmp/$0:t.$$; csvjoin -c 'id,id' /tmp/$0:t.$$ "$ARBASE"-intervals.csv  | csvgrep -c 'day' -m "$i" | csvgrep -c 'ampm' -m "$j" | csvcut -c "$interval" | csvstat --$k | sed 's/"//g' | sed 's/\(.*\)/"\1"/'`
+		    set h = `csvgrep -c 'classifier' -m "$classifier" "$DB"-class-values.csv > ! /tmp/$0:t.$$; csvjoin -c 'id,id' /tmp/$0:t.$$ "$DB"-intervals.csv  | csvgrep -c 'day' -m "$i" | csvgrep -c 'ampm' -m "$j" | csvcut -c "$interval" | csvstat --$k | sed 's/"//g' | sed 's/\(.*\)/"\1"/'`
 		endif
 		# flatten frequency
 		if ($k == freq) then

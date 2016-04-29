@@ -1,14 +1,5 @@
 #!/bin/tcsh
 #
-if ($?CLOUDANT_USERNAME) then
-    setenv CN $CLOUDANT_USERNAME
-else
-    setenv CN "538e7925-b7f5-478b-bf75-2f292dcf642a-bluemix"
-endif
-
-if ($?CLOUDANT_PASSWORD) then
-    setenv CP $CLOUDANT_PASSWORD
-endif
 
 if ($?CLOUDANT_URL) then
     setenv CU $CLOUDANT_URL
@@ -65,22 +56,20 @@ if ( (! -e "$ALLROWS") || ((-M "$NEWJSON") > (-M "$ALLROWS")) ) then
     in2csv -k "results" "$NEWJSON" >! "$ALLROWS"
 endif
 
-setenv ARBASE "$ALLROWS:r"
-
 if ( -e "$ALLROWS" ) then
-    if ( (! -e "$ARBASE"-intervals.csv ) || ((-M "$ALLROWS") > (-M "$ARBASE-intervals.csv"))) then
+    if ( (! -e "$DB"-intervals.csv ) || ((-M "$ALLROWS") > (-M "$DB-intervals.csv"))) then
 	# note insertion of "id" in middle
 	set datetime = ( doc/year doc/month doc/day id doc/hour doc/minute doc/second )
 	set dtcolumns = `echo "$datetime" | sed "s/ /,/g"`
 
-	echo "STAT: creating $ARBASE-intervals.csv"
-	echo "interval,ampm,week,day,id" >! "$ARBASE"-intervals.csv
+	echo "STAT: $0 - creating $DB-intervals.csv"
+	echo "interval,ampm,week,day,id" >! "$DB"-intervals.csv
 
 	# note utilization of gawk(1)
 	csvcut -c "$dtcolumns" "$ALLROWS" | tail +2 | \
-	    gawk -F, '{ m=$5*60+$6; m = m / 15; t=mktime(sprintf("%4d %2d %2d %2d %2d %2d", $1, $2, $3, $5, $6, $7)); printf "%d,%s,%s,%s,%s\n", m, strftime("%p",t),strftime("%U",t),strftime("%A",t), $4 }' >> "$ARBASE"-intervals.csv
+	    gawk -F, '{ m=$5*60+$6; m = m / 15; t=mktime(sprintf("%4d %2d %2d %2d %2d %2d", $1, $2, $3, $5, $6, $7)); printf "%d,%s,%s,%s,%s\n", m, strftime("%p",t),strftime("%U",t),strftime("%A",t), $4 }' >> "$DB"-intervals.csv
     else
-    	echo "STAT: $ARBASE-intervals.csv up-to-date"
+    	echo "STAT: $0 - $DB-intervals.csv up-to-date"
     endif
 else
     echo "$ALLROWS does not exist; run newjson2csv $ALLROWS:r"
@@ -90,8 +79,8 @@ set classifiers = ( person )
 set class = person
 
 # extract classifier and score
-if ($#classifiers > 0 && ((-M "$ALLROWS") > (-M "$ARBASE-$class-values.csv"))) then
-    echo "STAT: total $#classifiers"
+if ($#classifiers > 0 && ((-M "$ALLROWS") > (-M "$DB-$class-values.csv"))) then
+    echo "STAT: $0 - total $#classifiers"
     set colset = `csvstat -n "$ALLROWS" | awk '{ print $2 }'`
     set colnam = `echo $colset | sed "s/ /,/g"`
     set acolset = ( 'doc/alchemy/text' )
@@ -99,16 +88,16 @@ if ($#classifiers > 0 && ((-M "$ALLROWS") > (-M "$ARBASE-$class-values.csv"))) t
     set datetime = ( doc/year doc/month doc/day doc/hour doc/minute doc/second )
     set dtcolumns = `echo "$datetime" | sed "s/ /,/g"`
 
-    echo "classifier,score,id,$dtcolumns" >! "$ARBASE-$class-values.csv"
+    echo "classifier,score,id,$dtcolumns" >! "$DB-$class-values.csv"
     foreach i ( $classifiers )
 	if ($i == \"\") continue
 
-	echo -n "STAT: $i"
+	echo -n "STAT: $0 - $i"
 	echo "$colnam" >! "$i.csv"
 	egrep ",$i," "$ALLROWS" >> "$i.csv"
 
 	foreach j ( $acolset )
-	    csvcut -c "$j","$j:h/score","id","$dtcolumns" "$i.csv" | egrep "^$i," >> "$ARBASE-$class-values.csv"
+	    csvcut -c "$j","$j:h/score","id","$dtcolumns" "$i.csv" | egrep "^$i," >> "$DB-$class-values.csv"
 	    echo -n "."
 	end
 
@@ -120,7 +109,7 @@ endif
 # make output
 set OUTPUT = "$DB-new-$class.csv"
 if ( ! -e "$OUTPUT") then
-    echo "STAT: creating $OUTPUT"
+    echo "STAT: $0 - creating $OUTPUT"
     /bin/rm -f "$OUTPUT:r:r".[0-9]*".csv"
     $0:h/mkclassvalues $DB $class
     $0:h/mkintervals $DB

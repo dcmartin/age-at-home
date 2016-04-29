@@ -1,0 +1,49 @@
+#!/bin/tcsh
+if ($?CLOUDANT_DATABASE) then
+    setenv DB "$CLOUDANT_DATABASE"
+else
+    setenv DB "rough-fog"
+endif
+
+set classes = all
+if ( $#argv > 0 ) then
+    setenv ALLROWS "$argv[1]".csv
+    if ( $#argv > 1 ) then
+        set classes = $argv[2]
+        if (-e ".classifiers-$classes.json") then
+            setenv CLASSIFIERS `jq ."$classes"\[\].name ".classifiers-$classes.json" | sed 's/"//g'`
+        else if ($#argv > 3) then
+            setenv CLASSIFIERS "$argv[2-]"
+            set classes = "misc"
+	else if ($classes == "alchemy") then
+	    # only process alchemy classifiers
+        else
+            setenv CLASSIFIERS "$argv[2]"
+            set classes = "$argv[2]"
+        endif
+    endif
+else
+    setenv ALLROWS "$DB".csv
+endif
+
+if (! -e "$ALLROWS" ) then
+    echo "$ALLROWS does not exist; run $0:h/getjson2csv $ALLROWS:r"
+    exit
+endif
+
+set acolset = `csvstat -n "$ALLROWS" | awk '{ print $2 }' | egrep alchemy/text`
+echo "STAT: $0 - Finding all in ($#acolset) $acolset"
+foreach i ( $acolset )
+    csvcut -c "$i" "$ALLROWS" | tail +2 >>! "$DB"-$classes.txt
+    cat "$DB"-$classes.txt | sort | uniq >! tmp.$$
+    mv -f tmp.$$ "$DB"-$classes.txt
+end
+if ($classes != "alchemy") then
+    set vcolset = `csvstat -n "$ALLROWS" | awk '{ print $2 }' | egrep classifier_id`
+    echo "STAT: $0 - Finding all in ($#vcolset) $vcolset"
+    foreach i ( $vcolset )
+	csvcut -c "$i" "$ALLROWS" | tail +2 >>! "$DB"-$classes.txt
+	cat "$DB"-$classes.txt | sort | uniq >! tmp.$$
+	mv -f tmp.$$ "$DB"-$classes.txt
+    end
+endif

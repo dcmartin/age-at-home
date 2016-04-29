@@ -1,0 +1,171 @@
+#!/bin/tcsh
+
+# get time
+set TTL = `echo "24 * 60 * 60" | bc`
+set SECONDS = `date "+%s"`
+set TTLSECS = `echo $SECONDS \/ $TTL \* $TTL | bc`
+
+#
+# setup CLOUDANT
+#
+if ($?CLOUDANT_USERNAME) then
+    setenv CN $CLOUDANT_USERNAME
+else
+    setenv CN "538e7925-b7f5-478b-bf75-2f292dcf642a-bluemix"
+endif
+
+if ($?CLOUDANT_URL) then
+    setenv CU $CLOUDANT_URL
+else
+    if (-e ~/.cloudant_url) then
+        setenv CU `cat ~/.cloudant_url`
+    else if ($?CN && $?CP) then
+        setenv CU "https://$CN":"$CP"@"$CN.cloudant.com"
+    else if ($?CN) then
+        setenv CU "https://$CN.cloudant.com"
+    else
+        echo "ERR: $0 - No Cloudant URL"
+	exit
+    endif
+endif
+
+if ($?CLOUDANT_DATABASE) then
+    setenv DB $CLOUDANT_DATABASE
+else
+    setenv DB "rough-fog"
+endif
+
+set classes = ( person )
+setenv CLASSIFIERS $classes
+
+if ( $#argv > 0 ) then
+    setenv DB "$argv[1]"
+    if ( $#argv > 1 ) then
+	set classes = "$argv[2]"
+        if (-e ".classifiers-$classes.json") then
+	    setenv CLASSIFIERS `jq ."$classes"\[\].name ".classifiers-$classes.json" | sed 's/"//g'`
+	else if ($classes == "all" || $classes == "alchemy") then
+	    if ( ! -e "$DB-$classes.txt") then
+	        $0:h/mkallclass $DB $classes
+	    endif
+	    setenv CLASSIFIERS `cat "$DB-$classes.txt"`
+        else if ($#argv > 3) then
+            set classes = "misc"
+            setenv CLASSIFIERS "$argv[2-]"
+        else
+            setenv CLASSIFIERS "$argv[2]"
+        endif
+    endif
+else
+    setenv DB "rough-fog"
+endif
+
+echo $CLASSIFIERS
+
+if ($?DB == 0) then
+    setenv DB "rough-fog"
+endif
+
+set INPUT = "$DB.$TTLSECS.json"
+if ( ! -e "$INPUT" ) then
+    echo "STAT: $0 - creating $INPUT"
+    /bin/rm -f "$INPUT:r:r".[0-9]*".json"
+    /bin/rm -f "$DB.json"
+    $0:h/getjson2csv $DB $TTL none
+    /bin/mv "$DB.json" "$INPUT"
+    /bin/cp "$INPUT" "$DB.json"
+    $0:h/mkintervals $DB
+endif
+set tintervals = `wc -l $DB-intervals.csv | awk '{ print $1-1 }' | bc`
+set seqid = ( `jq .last_seq "$INPUT"` )
+
+# setup days of week and intervals of day (15 minute increments)
+set days = ( Sunday Monday Tuesday Wednesday Thursday Friday Saturday )
+set intervals = ()
+set intvalues = ()
+@ i = 0
+# there are 96 15 minute intervals per day
+while ($i < 96)
+    set intervals = ( $intervals $i )
+    set intvalues = ( $intvalues "count_$i,sum_$i" )
+    @ i++
+end
+set intnames = `echo $intvalues | sed "s/ /,/g"`
+
+#
+# process all specified CLASSIFIERS
+#
+foreach class ( $CLASSIFIERS )
+    if ($class == \"\") continue
+    if ($class == "NO_TAGS") continue
+
+    set OUTPUT = "$DB-$class-intervals.csv"
+    if (! -e $OUTPUT || ((-M $INPUT) > (-M $OUTPUT))) then
+	echo "STAT: $0 - creating $OUTPUT"
+	$0:h/mkclassvalues $DB $class
+	csvgrep -c classifier -m "$class" $DB-$class-values.csv | csvjoin -c "id,id" - $DB-intervals.csv | csvcut -c "interval,day,week,classifier,score" >! "$OUTPUT"
+    endif
+
+    set cintervals = `wc -l $DB-$class-intervals.csv | awk '{ print $1-1 }' | bc`
+    set percent = `echo "$cintervals / $tintervals * 100" | bc -l`; set percent = $percent:r
+
+    set output = "$DB-$class.csv"
+    set statjson = "$output:r.json"
+
+    if ((($percent >= 50) || ($class == "person")) && ((! -e $output || ! -e $statjson) || ((-M $DB-$class-intervals.csv) > (-M $output)))) then
+	echo "day,weeks,$intnames" >! "$output"
+	foreach d ( $days )
+	    set nweek = `csvgrep -c day -m "$d" $DB-$class-intervals.csv | csvcut -c week | tail +2 | sort | uniq | wc -l`
+	    echo -n "$d [$nweek]: "
+	    echo -n "$d,$nweek," >> "$output"
+	    @ j = 1
+	    foreach i ( $intervals )
+		if ($j > 1) echo -n "," >> "$output"
+		set k = `egrep "^$i,$d," $DB-$class-intervals.csv | wc -l | awk '{ print $1 }'`
+		set l = `egrep "^$i,$d," $DB-$class-intervals.csv | awk -F, 'BEGIN { total=0 } { total=total+$5 } END { printf "%f", total }'`
+		echo -n "$k,$l "
+		echo -n "$k,$l" >> "$output"
+		@ j++
+	    end
+	    echo
+	    echo  >> "$output"
+	end
+	# test if JSON old
+	if ( ! -e $statjson || ((-M $output) > (-M $statjson))) then
+	    # convert to JSON & add sequence ID
+	    set seqid = `echo $seqid | sed 's/"//g'`
+	    awk -v seqid="$seqid" -f $0:h/new2json.awk "$output" | sed "s/'/|/g" | sed 's/|/"/g' >! "$statjson"
+	endif	
+    endif
+
+    # update Cloudant
+    if ($?CLOUDANT_OFF == 0 && $?CU && $?DB) then
+	set DEVICE_DB = `curl -s -q -X GET "$CU/$DB-stats" | jq '.db_name'`
+	if ( "$DEVICE_DB" == "null" ) then
+	    # create DB
+	    set DEVICE_DB = `curl -s -q -X PUT "$CU/$DB-stats" | jq '.ok'`
+	    # test for success
+	    if ( "$DEVICE_DB" != "true" ) then
+		# failure
+		setenv CLOUDANT_OFF TRUE
+	    endif
+	endif
+	if ( $?CLOUDANT_OFF == 0 ) then
+	    set doc = ( `curl -s -q "$CU/$DB-stats/$class" | jq ._id,._rev | sed 's/"//g'` )
+	    if ($#doc == 2 && $doc[1] == $class && $doc[2] != "") then
+		set rev = $doc[2]
+		curl -s -q -X DELETE "$CU/$DB-stats/$class?rev=$rev"
+	    endif
+	    if (($percent >= 50) || ($class == "person")) then
+		echo "STAT: $0 - STORED $class ($cintervals; $percent%)"
+		curl -s -q -H "Content-type: application/json" -X PUT "$CU/$DB-stats/$class" -d "@$statjson"
+	    else
+	        echo "STAT: $0 - DELETE $class ($cintervals; $percent%)"
+		rm $OUTPUT $output $statjson
+	    endif
+	endif
+    else
+	echo "STAT: $0 - No CLOUDANT defined $?CLOUDANT_OFF $CU $DB""
+    endif
+end
+

@@ -30,21 +30,20 @@ else
     set interval = "$INTERVAL"
 endif
 
-setenv ARBASE "$ALLROWS:r"
-setenv OUTPUT "$ARBASE-$classifier-$interval:t.json"
+setenv OUTPUT "$DB-$classifier-$interval:t.json"
 
 if (! -e "$ALLROWS" ) then
     echo "$ALLROWS does not exist; run $0:h/getjson2csv $ALLROWS:r"
-else if ( ! -e "$ARBASE-$classifier-values.csv" ) then
-    echo "$ARBASE-$classifier-values.csv does not exist; run $0:h/mkclassvalues $ALLROWS:r $classifier"
-else if ( ! -e "$ARBASE-intervals.csv" ) then
-    echo "$ARBASE-intervals.csv does not exists; run $0:h/mkintervals $ALLROWS:r"
-else if ( ! -e "$ARBASE-$classifier-$interval:t.csv" ) then
-    echo "$ARBASE-$classsifier-$interval:t.csv does not exists; run $0:h/mkclassintervals $ALLROWS:r $classifier $interval"
+else if ( ! -e "$DB-$classifier-values.csv" ) then
+    echo "$DB-$classifier-values.csv does not exist; run $0:h/mkclassvalues $ALLROWS:r $classifier"
+else if ( ! -e "$DB-intervals.csv" ) then
+    echo "$DB-intervals.csv does not exists; run $0:h/mkintervals $ALLROWS:r"
+else if ( ! -e "$DB-$classifier-$interval:t.csv" ) then
+    echo "$DB-$classsifier-$interval:t.csv does not exists; run $0:h/mkclassintervals $ALLROWS:r $classifier $interval"
 else if (! -e "$OUTPUT" ) then
-    echo "STAT: creating $OUTPUT"
+    echo "STAT: $0 - creating $OUTPUT"
 
-    awk -f "$0:h/csv2json.awk" "$ARBASE-$classifier-$interval:t.csv" | tr \' \" | sed 's/""/"/g' >! "$OUTPUT"
+    awk -f "$0:h/csv2json.awk" "$DB-$classifier-$interval:t.csv" | tr \' \" | sed 's/""/"/g' >! "$OUTPUT"
 else
     echo "$OUTPUT exists"
 endif

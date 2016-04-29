@@ -67,8 +67,9 @@ Initial Results
 <p>
 Link to data (rough-fog is the device DB name in Cloudant):
 <ul>
-<li><a href="https://538e7925-b7f5-478b-bf75-2f292dcf642a-bluemix.cloudant.com/rough-fog/_all_docs?include_docs=true">rough-fog</a>
-<li><a href="https://538e7925-b7f5-478b-bf75-2f292dcf642a-bluemix.cloudant.com/rough-fog-stats/_all_docs?include_docs=true">rough-fog-stats</a>
+<li><a href="https://538e7925-b7f5-478b-bf75-2f292dcf642a-bluemix.cloudant.com/rough-fog/_all_docs">rough-fog</a>
+<li><a href="https://538e7925-b7f5-478b-bf75-2f292dcf642a-bluemix.cloudant.com/rough-fog-stats/_all_docs">rough-fog-stats</a>
+<li><a href="https://538e7925-b7f5-478b-bf75-2f292dcf642a-bluemix.cloudant.com/rough-fog-stats/person">rough-fog-stats/person</a>
 </ul>
 <p>
 With almost three (3) weeks of data collected patterns are emerging.  Added new database to Cloudant (rough-fog-stats)
@@ -103,7 +104,7 @@ The graphs below articulate the following:
 Data and Scripts
 </h3>
 <ul>
-<li><a href="data/person.xslx">person.xlsx</a> - Excel file that processes person.csv file and makes the pretty charts above.  Note: use the Excel "Data Refresh" menu option on the "person" tab to load new person.csv file.
+<li><a href="data/rough-fog-person.xslx">rough-fog-person.xlsx</a> - Excel file that processes person.csv file and makes the pretty charts above.  Note: use the Excel "Data Refresh" menu option on the "person" tab to load new person.csv file.
 <li><a href="data/person.csv">person.csv</a> - Pivot table of sum of 'person' events across all 15 minutes 'intervals' per day with count of weeks in sum
 <li><a href="data/rough-fog.json">rough-fog.json</a> - This file is the JSON 'events' from the Cloudant database retrieved by the <code>getjson2csv</code> script; 
 the DB can be specified on the command line
@@ -117,14 +118,14 @@ These two files are output of JSON to CSV conversion and the calculation of stat
 <p>
 List of shell scripts - listed in the order they should be run:
 <ul>
-<li><a href="bin/mkperson"><code>mkperson</code></a> - Script to create person.csv file and all dependencies including download from Cloudant; defaults to 'rough-fog' and 15 minutes TTL for refresh, but can be specified on CLI.
+<li><a href="bin/mkclass"><code>mkclass</code></a> - Script to create rough-fog-person.csv file and all dependencies including download from Cloudant; defaults to 'rough-fog', 'person' (24 hours TTL for refresh, but can be changed in script)
 <li><a href="bin/getjson2csv"><code>getjson2csv</code></a> - Script to pull JSON from Cloudant and convert to CSV, including calculating statistics and encoding as CSV.
 <li><a href="bin/mkclassvalues"><code>mkclassvalues</code></a> - Script to pull all VisualInsights and Alchemy "classifiers" and create CSV with class, score, time, date and event ID; can be specialized with DB and one or more classifiers; if only one classifier is specified, it assume Alchemy only (e.g. 'person').
-<li><a href="bin/mkbuckets"><code>mkbuckets</code></a> - Script to distinguish event time into 'buckets' -- 'day' of week, 'ampm' AM or PM, and 15 minute 'interval' in addition to default 'doc/hour' bucket
-<li><a href="bin/mkclassbuckets"><code>mkclassbuckets</code></a> - Script to calculate statistics for one classifier (default 'person') occurence by bucket (default 'doc/hour'; option 'interval') across AM and PM and days of week; note that 'doc/hour' is converted to simply 'hour' for output file.
-<li><a href="bin/csv2json"><code>csv2json</code></a> (<a href="bin/csv2json.awk"><code>AWK</code></a>)
-- Convert the CSV results of <code>mkclassbuckets</code> (e.g. <a href="data/rough-fog-person-hour.csv">rough-fog-person-hour.csv</a>) to a JSON object 
-(e.g. <a href="data/rough-fog-person-hour.json">rough-fog-person-hour.json</a>)
+<li><a href="bin/mkintervals"><code>mkintervals</code></a> - Script to distinguish event time into 'day' of week, 'ampm' AM or PM, and 15 minute 'interval' in addition to default 'doc/hour' bucket
+<li><a href="bin/mkclassintervals"><code>mkclassintervals</code></a> - Script to calculate statistics for one classifier (default 'person') occurence by bucket (default 'doc/hour'; option 'interval') across AM and PM and days of week; note that 'doc/hour' is converted to simply 'hour' for output file.
+<li><a href="bin/new2json"><code>new2json</code></a> (<a href="bin/new2json.awk"><code>AWK</code></a>)
+- Convert the CSV results of <code>mkclass</code> (e.g. <a href="data/rough-fog-person.csv">rough-fog-person.csv</a>) to a JSON object 
+(e.g. <a href="data/rough-fog-person.json">rough-fog-person.json</a>)
 </ul>
 
 <h3>

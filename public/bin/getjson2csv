@@ -1,13 +1,12 @@
 #!/bin/tcsh
+
+#
+# setup CLOUDANT
 #
 if ($?CLOUDANT_USERNAME) then
     setenv CN $CLOUDANT_USERNAME
 else
     setenv CN "538e7925-b7f5-478b-bf75-2f292dcf642a-bluemix"
-endif
-
-if ($?CLOUDANT_PASSWORD) then
-    setenv CP $CLOUDANT_PASSWORD
 endif
 
 if ($?CLOUDANT_URL) then
@@ -19,7 +18,6 @@ else
 	setenv CU "https://$CN.cloudant.com"
     endif
 endif
-
 
 if ($?CLOUDANT_DATABASE) then
     setenv DB $CLOUDANT_DATABASE
@@ -42,7 +40,6 @@ setenv ALLROWS "$DB".csv
 
 if ( ! -e "$ALLJSON" ) then
     echo "GET: $ALLJSON"
-    # curl "$CU/$DB/_all_docs?include_docs=true" >! "$ALLJSON"
     curl "$CU/$DB/_changes?include_docs=true&since=0" >! "$ALLJSON"
 endif
 
@@ -51,7 +48,7 @@ if ( ! -e "$ALLJSON" ) then
     exit
 else
     set seqid = ( `jq .last_seq "$ALLJSON"` )
-    echo "STAT: $ALLJSON last_seq $seqid"
+    echo "STAT: $0 - $ALLJSON last_seq $seqid"
 endif
 
 # get all rows
@@ -62,7 +59,7 @@ endif
 # get all columns
 set columns = ( `csvstat -n "$ALLROWS" | awk '{ print $2 }'` )
 if ($#columns > 0) then
-    echo "STAT: $ALLROWS $#columns columns ( $columns )"
+    echo "STAT: $0 - $ALLROWS $#columns columns ( $columns )"
 else
     echo "FAIL: $ALLROWS no columns"
     exit
