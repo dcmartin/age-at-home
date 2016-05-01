@@ -40,6 +40,9 @@ set acolset = `csvstat -n "$ALLROWS" | awk '{ print $2 }' | egrep alchemy/text`
 if ($?CLASSIFIERS) then
     set classifiers = ( $CLASSIFIERS )
 else
+    if ( ! -e "$DB-$classes.txt" || ( (-M "$ALLROWS") > (-M "$DB"-$classes.txt))) then
+	$0:h/mkallclass $DB $classes
+    endif
     set classifiers = ( `cat "$DB-$classes.txt"` )
 endif
 

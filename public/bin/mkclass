@@ -1,7 +1,7 @@
 #!/bin/tcsh
 
 # get time
-set TTL = `echo "24 * 60 * 60" | bc`
+set TTL = `echo "1 * 60 * 60" | bc`
 set SECONDS = `date "+%s"`
 set TTLSECS = `echo $SECONDS \/ $TTL \* $TTL | bc`
 
@@ -60,8 +60,6 @@ else
     setenv DB "rough-fog"
 endif
 
-echo $CLASSIFIERS
-
 if ($?DB == 0) then
     setenv DB "rough-fog"
 endif
@@ -87,7 +85,7 @@ set intvalues = ()
 # there are 96 15 minute intervals per day
 while ($i < 96)
     set intervals = ( $intervals $i )
-    set intvalues = ( $intvalues "count_$i,sum_$i" )
+    set intvalues = ( $intvalues "c$i,s$i,m$i,d$i" )
     @ i++
 end
 set intnames = `echo $intvalues | sed "s/ /,/g"`
@@ -112,30 +110,33 @@ foreach class ( $CLASSIFIERS )
     set output = "$DB-$class.csv"
     set statjson = "$output:r.json"
 
-    if ((($percent >= 50) || ($class == "person")) && ((! -e $output || ! -e $statjson) || ((-M $DB-$class-intervals.csv) > (-M $output)))) then
+    if ((($percent >= 1) || ($class == "person")) && ((! -e $output || ! -e $statjson) || ((-M $DB-$class-intervals.csv) > (-M $output)))) then
+        echo "STAT: $0 - creating $output and $statjson"
 	echo "day,weeks,$intnames" >! "$output"
+	echo -n '{ "seqid":'$seqid',"days":[' >! "$statjson"
+	@ i = 0
 	foreach d ( $days )
+	    echo -n "$d "
+	    if ($i > 1) echo -n "," >> "$statjson"
 	    set nweek = `csvgrep -c day -m "$d" $DB-$class-intervals.csv | csvcut -c week | tail +2 | sort | uniq | wc -l`
-	    echo -n "$d [$nweek]: "
+	    echo -n '{"weekday":"'$d'","numwk":"'$nweek'","intervals":[' >> "$statjson"
 	    echo -n "$d,$nweek," >> "$output"
 	    @ j = 1
 	    foreach i ( $intervals )
+		if ($j > 1) echo -n "," >> "$statjson"
 		if ($j > 1) echo -n "," >> "$output"
-		set k = `egrep "^$i,$d," $DB-$class-intervals.csv | wc -l | awk '{ print $1 }'`
-		set l = `egrep "^$i,$d," $DB-$class-intervals.csv | awk -F, 'BEGIN { total=0 } { total=total+$5 } END { printf "%f", total }'`
-		echo -n "$k,$l "
-		echo -n "$k,$l" >> "$output"
+		set l = `egrep "^$i,$d," $DB-$class-intervals.csv | awk -F, 'BEGIN { c=0; s=0; m=0; v=0; vs=0 } { c++; s=s+$5; m=s/c; vs=vs+($5-m)^2; v=vs/c } END { sd=sqrt(v); printf "%d %f %f %f", c, s, m, sd }'`
+		echo -n '{"count":"'$l[1]'","sum":"'$l[2]'","mean":"'$l[3]'","stdev":"'$l[4]'"}' >> "$statjson"
+		echo -n "$l" >> "$output"
 		@ j++
+		echo -n '.'
 	    end
-	    echo
+	    echo "] }" >> "$statjson"
 	    echo  >> "$output"
+	    @ i++
+	    echo
 	end
-	# test if JSON old
-	if ( ! -e $statjson || ((-M $output) > (-M $statjson))) then
-	    # convert to JSON & add sequence ID
-	    set seqid = `echo $seqid | sed 's/"//g'`
-	    awk -v seqid="$seqid" -f $0:h/new2json.awk "$output" | sed "s/'/|/g" | sed 's/|/"/g' >! "$statjson"
-	endif	
+	echo "] }" >> "$statjson"
     endif
 
     # update Cloudant
@@ -156,12 +157,12 @@ foreach class ( $CLASSIFIERS )
 		set rev = $doc[2]
 		curl -s -q -X DELETE "$CU/$DB-stats/$class?rev=$rev"
 	    endif
-	    if (($percent >= 50) || ($class == "person")) then
+	    if (($percent >= 1) || ($class == "person")) then
 		echo "STAT: $0 - STORED $class ($cintervals; $percent%)"
 		curl -s -q -H "Content-type: application/json" -X PUT "$CU/$DB-stats/$class" -d "@$statjson"
 	    else
 	        echo "STAT: $0 - DELETE $class ($cintervals; $percent%)"
-		rm $OUTPUT $output $statjson
+		/bin/rm -f $OUTPUT $output $statjson
 	    endif
 	endif
     else
