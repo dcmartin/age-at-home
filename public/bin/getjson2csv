@@ -25,10 +25,12 @@ else
     setenv DB "rough-fog"
 endif
 
+setenv SEQID 0
+
 if ( $#argv > 0 ) then
     setenv DB "$argv[1]"
     if ($#argv > 1) then
-	setenv TTL "$argv[2]"
+	setenv SEQID "$argv[2]"
 	if ($#argv > 2) then
 	    setenv OPERATIONS "$argv[3-]"
 	endif
@@ -39,8 +41,8 @@ setenv ALLJSON "$DB".json
 setenv ALLROWS "$DB".csv
 
 if ( ! -e "$ALLJSON" ) then
-    echo "GET: $ALLJSON"
-    curl "$CU/$DB/_changes?include_docs=true&since=0" >! "$ALLJSON"
+    echo "GET: $ALLJSON (since $SEQID)"
+    curl "$CU/$DB/_changes?include_docs=true&since=$SEQID" >! "$ALLJSON"
 endif
 
 if ( ! -e "$ALLJSON" ) then
