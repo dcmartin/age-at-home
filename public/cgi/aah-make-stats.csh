@@ -187,7 +187,7 @@ set days = ( Sunday Monday Tuesday Wednesday Thursday Friday Saturday )
 foreach d ( $days )
 
 
-    if ($k > 0) echo -n "," >> "$NEW_STATS"
+    if ($k > 0) echo "," >> "$NEW_STATS"
 
     set nweek = `/usr/local/bin/csvgrep -c day -m "$d" $CLASS_INTERVAL_VALUES | /usr/local/bin/csvcut -c week | tail +2 | sort | uniq | wc -l`
     set numwk = `/usr/local/bin/jq '.days['$k'].numwk' "$OLD_STATS" | sed 's/"//g'`
@@ -199,7 +199,7 @@ foreach d ( $days )
 
     @ j = 1
     foreach i ( $intervals )
-	if ($j > 1) echo -n "," >> "$NEW_STATS"
+	if ($j > 1) echo "," >> "$NEW_STATS"
 
 	set count = `/usr/local/bin/jq '.days['$k'].intervals['$i'].count' "$OLD_STATS" | sed 's/"//g'`
 	set sum = `/usr/local/bin/jq '.days['$k'].intervals['$i'].sum' "$OLD_STATS" | sed 's/"//g'`
@@ -216,7 +216,7 @@ foreach d ( $days )
 	echo -n '{"count":"'$l[1]'","sum":"'$l[2]'","mean":"'$l[3]'","stdev":"'$l[4]'"}' >> "$NEW_STATS"
 	@ j++
     end
-    echo "] }" >> "$NEW_STATS"
+    echo -n "] }" >> "$NEW_STATS"
     @ k++
 end
 echo "] }" >> "$NEW_STATS"
