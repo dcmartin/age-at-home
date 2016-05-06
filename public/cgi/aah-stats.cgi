@@ -27,48 +27,35 @@ else
     endif
 endif
 
-if ($?QUERY_STRING != 0 && $QUERY_STRING != "") then
-    set DB = `echo $QUERY_STRING | sed "s/.*db=\([^&]*\).*/\1/"`
-    set class = `echo $QUERY_STRING | sed "s/.*id=\(.*\)/\1/"`
-else
+if ($?QUERY_STRING) then
+    set DB = `echo "$QUERY_STRING" | sed "s/.*db=\([^&]*\).*/\1/"`
+    set class = `echo "$QUERY_STRING" | sed "s/.*id=\([^&]*\)/\1/"`
+endif
+if ($?DB == 0) then
     set DB = rough-fog
     set class = person
-    setenv QUERY_STRING `echo "db=$DB&id=$class"`
 endif
+setenv QUERY_STRING "db=$DB&id=$class"
 
 set JSON = "$TMP/$APP-$API-$QUERY_STRING.$DATE.json"
 if (! -e "$JSON") then
-    echo "$APP-$API ($0 $$) -- Initiating ./$APP-make-$API.bash ($JSON)" >>! $TMP/LOG
+    /bin/rm -f "$TMP/$APP-$API-$QUERY_STRING.*.json"
+    echo "$APP-$API ($0 $$) -- initiating ./$APP-make-$API.bash ($JSON)" >>! $TMP/LOG
     ./$APP-make-$API.bash
-endif
-
-set JSON = ( `ls -1t "$TMP/$APP-$API-$QUERY_STRING".*.json` )
-
-if ($#JSON == 0) then
     echo "$APP-$API ($0 $$) -- Returning Redirect: $CU/$DB-$API/$class" >>! $TMP/LOG
     echo "Status: 303 Temporary Redirect"
     echo "Content-Type: application/json"
     echo "Location: $CU/$DB-$API/$class"
     echo ""
-else if ($#JSON > 0) then
-    if (-e "$JSON[1]") then
-	echo "$APP-$API ($0 $$) -- Using $JSON[1]" >>! $TMP/LOG
-
-	echo "Content-Type: application/json"
-	echo "Refresh: $TTL"
-	set AGE = `echo "$SECONDS - $DATE" | bc`
-	echo "Age: $AGE"
-	echo "Cache-Control: max-age=$TTL"
-	echo -n "Last-Modified: "
-	date -r "$DATE"
-	echo ""
-	cat "$JSON[1]"
-	if ($#JSON > 1) rm -f $JSON[2-]
-    else
-	echo "$API -- Processing $JSON" >>! $TMP/LOG
-	echo "Status: 307 Temporary Redirect"
-	echo "Content-Type: application/json"
-	echo "Location: $CU/$DB-$API/$class"
-	echo ""
-    endif
+else
+    echo "$APP-$API ($0 $$) -- using $JSON" >>! $TMP/LOG
+    echo "Content-Type: application/json"
+    echo "Refresh: $TTL"
+    set AGE = `echo "$SECONDS - $DATE" | bc`
+    echo "Age: $AGE"
+    echo "Cache-Control: max-age=$TTL"
+    echo -n "Last-Modified: "
+    date -r "$DATE"
+    echo ""
+    cat "$JSON"
 endif
