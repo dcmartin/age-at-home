@@ -21,7 +21,8 @@ var express = require('express'),
   bluemix = require('./config/bluemix'),
   extend = require('util')._extend,
   watson = require('watson-developer-cloud'),
-  fs = require('fs');
+  fs = require('fs'),
+  httpStats = require('http-status-codes');
 
 // Bootstrap application settings
 require('./config/express')(app);

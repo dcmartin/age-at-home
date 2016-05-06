@@ -11,15 +11,20 @@ RUN apt-get update && apt-get install -q -y --no-install-recommends \
     git \
     jq \
     gawk \
-    sysstat rsync ssh \
+    sysstat \
+    rsync \
+    ssh \
     curl \
     python2.7-dev \
     python-pip
 
-RUN git clone https://github.com/wireservice/csvkit; cd csv kit; pip install .
+#
+# install CSVKIT
+#
+RUN git clone https://github.com/wireservice/csvkit; cd csvkit; pip install .
 
 #
-# install data-dog (X86 container)
+# install data-dog (X86)
 #
 RUN sh -c "$(curl -L https://raw.githubusercontent.com/DataDog/dd-agent/master/packaging/datadog-agent/source/setup_agent.sh)"
 RUN mv ~/.datadog-agent/agent/datadog.conf.example ~/.datadog-agent/agent/datadog.conf \
@@ -42,7 +47,7 @@ COPY * ~_www/CGI/
 COPY ~/.cloudant_url ~_www/
 
 #
-# Ports for motion (control and stream)
+# Ports for CGI access
 #
 EXPOSE 80
 

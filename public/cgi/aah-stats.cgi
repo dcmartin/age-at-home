@@ -29,7 +29,7 @@ endif
 
 if ($?QUERY_STRING != 0 && $QUERY_STRING != "") then
     set DB = `echo $QUERY_STRING | sed "s/.*db=\([^&]*\).*/\1/"`
-    set class = `echo $QUERY_STRING | sed "s/.*id=\([A-Z]*[a-z]*\).*/\1/"`
+    set class = `echo $QUERY_STRING | sed "s/.*id=\(.*\)/\1/"`
 else
     set DB = rough-fog
     set class = person
