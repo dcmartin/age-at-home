@@ -55,7 +55,7 @@ endif
 
 # get all rows
 if ( (! -e "$ALLROWS") || ((-M "$ALLJSON") > (-M "$ALLROWS")) ) then
-    in2csv -k "results" "$ALLJSON" >! "$ALLROWS"
+    in2csv --no-inference -k "results" "$ALLJSON" >! "$ALLROWS"
 endif
 
 # get all columns

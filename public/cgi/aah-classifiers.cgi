@@ -9,36 +9,39 @@ set TTL = `echo "30 * 60" | bc`
 set SECONDS = `date "+%s"`
 set DATE = `echo $SECONDS \/ $TTL \* $TTL | bc`
 
-if ($?CLOUDANT_URL) then
-    setenv CU $CLOUDANT_URL
-else
-    if (-e ~$USER/.cloudant_url) then
-        set cc = ( `cat ~$USER/.cloudant_url` )
-        if ($#cc > 0) set CU = $cc[1]
-        if ($#cc > 1) set CN = $cc[2]
-        unset cc
-    endif
-    if ($?CN) then
-        setenv CU "https://$CN.cloudant.com"
-    else
-        echo "$APP-$API ($0 $$) -- No Cloudant URL" >>! $TMP/LOG
-        exit
-    endif
+echo "$APP-$API ($0 $$) -- $SECONDS" >>! $TMP/LOG
+
+if (-e ~$USER/.cloudant_url) then
+    echo "$APP-$API ($0 $$) - ~$USER/.cloudant_url" >>! $TMP/LOG
+    set cc = ( `cat ~$USER/.cloudant_url` )
+    if ($#cc > 0) set CU = $cc[1]
+    if ($#cc > 1) set CN = $cc[2]
+    if ($#cc > 2) set CP = $cc[3]
 endif
+
+if ($?CLOUDANT_URL) then
+    set CU = $CLOUDANT_URL
+else if ($?CN) then
+    set CU = "$CN.cloudant.com"
+else
+    echo "$APP-$API ($0 $$) -- No Cloudant URL" >>! $TMP/LOG
+    exit
+endif
+
+echo "$APP-$API ($0 $$) - CLOUDANT URL = $CU" >>! $TMP/LOG
 
 if ($?QUERY_STRING) then
     set DB = `echo "$QUERY_STRING" | sed "s/.*db=\([^&]*\).*/\1/"`
-    set FORCE = `echo "$QUERY_STRING" | sed "s/.*force=\([^&]*\).*/\1/"`
-endif
-if ($?DB == 0) then
+else
     set DB = rough-fog
-    setenv QUERY_STRING "db=$DB"
 endif
+setenv QUERY_STRING "db=$DB"
 
 set JSON = "$TMP/$APP-$API.$DATE.json"
-if (! -e "$JSON" || $?FORCE) then
-    echo "$APP-$API ($0 $$) -- creating ($JSON)" >>! $TMP/LOG
+if (! -e "$JSON") then
+    echo "$APP-$API ($0 $$) -- removing $TMP/$APP-$API.*.json" >>! $TMP/LOG
     rm -f "$TMP/$APP-$API.*.json"
+    echo "$APP-$API ($0 $$) -- gettting $CU/$DB-stats/_all_docs ($JSON)" >>! $TMP/LOG
     curl -s "$CU/$DB-stats/_all_docs" | /usr/local/bin/jq '.rows[].id' >! "$JSON"
 else
     echo "$APP-$API ($0 $$) -- using $JSON" >>! $TMP/LOG

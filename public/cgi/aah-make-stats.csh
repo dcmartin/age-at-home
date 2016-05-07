@@ -9,29 +9,29 @@ set TTL = `echo "30 * 60" | bc`
 set SECONDS = `date "+%s"`
 set DATE = `echo $SECONDS \/ $TTL \* $TTL | bc`
 
-if ($?CLOUDANT_URL) then
-    setenv CU $CLOUDANT_URL
-else
-    if (-e ~$USER/.cloudant_url) then
-        set cc = ( `cat ~$USER/.cloudant_url` )
-	if ($#cc > 0) set CU = $cc[1]
-	if ($#cc > 1) set CN = $cc[2]
-	if ($#cc > 2) set CP = $cc[3]
-	unset cc
-    endif
-    if ($?CN && $?CP) then
-        setenv CU "https://$CN":"$CP"@"$CN.cloudant.com"
-    else
-        echo "$APP-$API ($0 $$) -- No Cloudant URL" >>! $TMP/LOG
-	exit
-    endif
+if (-e ~$USER/.cloudant_url) then
+    echo "$APP-$API ($0 $$) - ~$USER/.cloudant_url" >>! $TMP/LOG
+    set cc = ( `cat ~$USER/.cloudant_url` )
+    if ($#cc > 0) set CU = $cc[1]
+    if ($#cc > 1) set CN = $cc[2]
+    if ($#cc > 2) set CP = $cc[3]
 endif
+
+if ($?CLOUDANT_URL) then
+    set CU = $CLOUDANT_URL
+else if ($?CN && $?CP) then
+    set CU = "$CN":"$CP"@"$CN.cloudant.com"
+else
+    echo "$APP-$API ($0 $$) -- No Cloudant URL" >>! $TMP/LOG
+    exit
+endif
+
+echo "$APP-$API ($0 $$) - CLOUDANT URL = $CU" >>! $TMP/LOG
 
 if ($?QUERY_STRING) then
     set DB = `echo "$QUERY_STRING" | sed "s/.*db=\([^&]*\).*/\1/"` 
     set class = `echo "$QUERY_STRING" | sed "s/.*id=\([^&]*\)/\1/"`
-endif
-if ($?DB == 0) then
+else
     set DB = rough-fog
     set class = person
 endif
@@ -39,7 +39,7 @@ setenv QUERY_STRING "db=$DB&id=$class"
 
 # output set
 set JSON = "$TMP/$APP-$API-$QUERY_STRING.$DATE.json"
-set INPROGRESS = ( `echo "$JSON"*` )
+set INPROGRESS = ( `echo "$JSON".*` )
 
 # check JSON in-progress for current interval
 if ($#INPROGRESS) then
@@ -56,7 +56,6 @@ else
 	echo "$APP-$API ($0 $$) -- No existing statistics ($CU/$DB-stats/$class)" >>! $TMP/LOG
 	exit
     else
-        cat "$OLD_STATS" >>! $TMP/LOG
 	# get last sequence # for class specified
 	set prev_seqid = `/usr/local/bin/jq '.seqid' "$OLD_STATS"`
 	if ($prev_seqid[1] == "null") set prev_seqid = 0
@@ -69,8 +68,6 @@ endif
 set NEW_JSON = "$TMP/$APP-$API-$DB-$class-changes.$$.json"
 set seqid = 0
 if ( ! -e "$NEW_JSON" ) then
-    # remove old
-    /bin/rm -f "$TMP/$APP-$API-$DB-$class-changes.*.json" >&! /dev/null
     echo "$APP-$API ($0 $$) -- creating $NEW_JSON" >>! $TMP/LOG
     curl -s -o "$NEW_JSON" "$CU/$DB/_changes?include_docs=true&since=$prev_seqid"
     set seqid = ( `/usr/local/bin/jq .last_seq "$NEW_JSON"` )
@@ -94,7 +91,7 @@ endif
 set NEW_ROWS = "$TMP/$APP-$API-$DB-$class-changes.$$.csv"
 if ((! -e "$NEW_ROWS") || ((-M "$NEW_JSON") > (-M "$NEW_ROWS"))) then
     echo "$APP-$API ($0 $$) -- creating $NEW_ROWS" >>! $TMP/LOG
-    /usr/local/bin/in2csv -k "results" "$NEW_JSON" >! "$NEW_ROWS"
+    /usr/local/bin/in2csv --no-inference -k "results" "$NEW_JSON" >! "$NEW_ROWS"
     # extract only rows with specified classifier
     head -1 "$NEW_ROWS" >! "$NEW_ROWS.$$"
     tail +2 "$NEW_ROWS" | egrep ",$class," >> "$NEW_ROWS.$$"
@@ -129,7 +126,7 @@ else
 endif
 
 #
-# get all intervals values for class
+# get all values for class
 #
 set CLASS_VALUES = "$TMP/$APP-$API-$DB-$class-values.$$.csv"
 if ((! -e "$CLASS_VALUES") || ((-M "$NEW_ROWS") > (-M "$CLASS_VALUES"))) then
@@ -162,7 +159,7 @@ endif
 #
 set CLASS_INTERVAL_VALUES = "$TMP/$APP-$API-$DB-$class-interval-values.$$.csv" 
 echo "$APP-$API ($0 $$) -- creating $CLASS_INTERVAL_VALUES " >>! $TMP/LOG
-cat "$CLASS_VALUES" | csvjoin -c "id,id" - "$CLASS_INTERVALS" | csvcut -c "interval,day,week,classifier,score" >! "$CLASS_INTERVAL_VALUES"
+cat "$CLASS_VALUES" | /usr/local/bin/csvjoin -c "id,id" - "$CLASS_INTERVALS" | /usr/local/bin/csvcut -c "interval,day,week,classifier,score" >! "$CLASS_INTERVAL_VALUES"
 
 #
 # setup analysis intervals
@@ -178,32 +175,23 @@ while ($i < 96)
 end
 set intnames = `echo $intvalues | sed "s/ /,/g"`
 
+# set dowindex = `date +%w`
+
 #
 # update JSON statistics 
 #
 set NEW_STATS = "$OLD_STATS.$$"
 # get current day-of-week
-set dowindex = `date +%w`
-set downame = `date +%A`
-
 echo "$APP-$API ($0 $$) -- creating NEW_STATS ($NEW_STATS)" >>! $TMP/LOG
 echo -n '{ "seqid":'$seqid',"days":[' >! "$NEW_STATS"
 set days = ( Sunday Monday Tuesday Wednesday Thursday Friday Saturday )
 @ k = 0
 foreach d ( $days )
-
-
     if ($k > 0) echo "," >> "$NEW_STATS"
 
     set nweek = `/usr/local/bin/csvgrep -c day -m "$d" $CLASS_INTERVAL_VALUES | /usr/local/bin/csvcut -c week | tail +2 | sort | uniq | wc -l`
     set numwk = `/usr/local/bin/jq '.days['$k'].numwk' "$OLD_STATS" | sed 's/"//g'`
     set newwk = `echo "$nweek + $numwk" | bc`
-
-    if ($d == $downame) then
-	echo "$APP-$API ($0 $$) -- calculating $d [TODAY] ($numwk + $nweek = $newwk)" >>! $TMP/LOG
-    else
-	echo "$APP-$API ($0 $$) -- calculating $d ($numwk + $nweek = $newwk)" >>! $TMP/LOG
-    endif
 
     echo -n '{"weekday":"'$d'","numwk":"'$newwk'","intervals":[' >> "$NEW_STATS"
 
@@ -221,15 +209,10 @@ foreach d ( $days )
 	set l = `egrep "^$i,$d," $CLASS_INTERVAL_VALUES | \
 	    /usr/local/bin/gawk -v "c=$count" -v "s=$sum" -v "m=$mean" -v "vs=$var" -F, '{ c++; s=s+$5; m=s/c; vs=vs+($5-m)^2; v=vs/c } END { sd=sqrt(v); printf "%d %f %f %f", c, s, m, sd }'`
 
-	@ dc = $count - $l[1]
-	if ($dc > 0) then
-	    echo "$APP-$API ($0 $$) -- day[$k].interval[$i] : $count $sum $mean $stdev" >>! $TMP/LOG
-	    echo "$APP-$API ($0 $$) -- day[$k].interval[$i] : $l" >>! $TMP/LOG
-	endif
-
 	echo -n '{"count":"'$l[1]'","sum":"'$l[2]'","mean":"'$l[3]'","stdev":"'$l[4]'"}' >> "$NEW_STATS"
 	@ j++
     end
+
     echo -n "] }" >> "$NEW_STATS"
     @ k++
 end
@@ -253,10 +236,11 @@ if ($?CLOUDANT_OFF == 0 && $?CU && $?DB) then
 	set doc = ( `cat "$OLD_STATS" | /usr/local/bin/jq ._id,._rev | sed 's/"//g'` )
 	if ($#doc == 2 && $doc[1] == $class && $doc[2] != "") then
 	    set rev = $doc[2]
-	    curl -s -X DELETE "$CU/$DB-stats/$class?rev=$rev"
+	    echo "$APP-$API ($0 $$) -- DELETE $rev" >>! $TMP/LOG
+	    curl -X DELETE "$CU/$DB-stats/$class?rev=$rev" >>! $TMP/LOG
 	endif
 	echo "$APP-$API ($0 $$) -- STORE $NEW_STATS" >>! $TMP/LOG
-	curl -s -H "Content-type: application/json" -X PUT "$CU/$DB-stats/$class" -d "@$NEW_STATS"
+	curl -H "Content-type: application/json" -X PUT "$CU/$DB-stats/$class" -d "@$NEW_STATS" >>! $TMP/LOG
     endif
     echo "$APP-$API ($0 $$) -- SUCCESS : $JSON" >>! $TMP/LOG
     # update statistics

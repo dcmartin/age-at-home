@@ -40,7 +40,7 @@ var visual_insights = watson.visual_insights(credentials);
 
 // get profile summary image analysis
 app.get('/summary', function(req, res, next) {
-  return res.status(404).json({error:'The dataset is not found.  Please try again.', code:404});
+   res.send('No summary (yet)');
 });
 
 app.get('/status',function(req,res) {
