@@ -16,7 +16,6 @@ if (-e ~$USER/.cloudant_url) then
     set cc = ( `cat ~$USER/.cloudant_url` )
     if ($#cc > 0) set CU = $cc[1]
     if ($#cc > 1) set CN = $cc[2]
-    if ($#cc > 2) set CP = $cc[3]
 endif
 
 if ($?CLOUDANT_URL) then
@@ -28,10 +27,9 @@ else
     exit
 endif
 
-echo "$APP-$API ($0 $$) - CLOUDANT URL = $CU" >>! $TMP/LOG
-
 if ($?QUERY_STRING) then
     set DB = `echo "$QUERY_STRING" | sed "s/.*db=\([^&]*\).*/\1/"`
+    if ($#DB == 0) set DB = rough-fog
 else
     set DB = rough-fog
 endif

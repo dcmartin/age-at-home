@@ -26,8 +26,6 @@ else
     exit
 endif
 
-echo "$APP-$API ($0 $$) - CLOUDANT URL = $CU" >>! $TMP/LOG
-
 if ($?QUERY_STRING) then
     set DB = `echo "$QUERY_STRING" | sed "s/.*db=\([^&]*\).*/\1/"` 
     set class = `echo "$QUERY_STRING" | sed "s/.*id=\([^&]*\)/\1/"`

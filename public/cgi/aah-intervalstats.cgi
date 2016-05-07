@@ -55,7 +55,7 @@ if ($interval != "all") then
     curl -s -L "$WWW/aah-stats.cgi?$QUERY_STRING" | \
 	/usr/local/bin/jq -c '.days[].intervals['$interval'].count' | \
 	sed 's/"//g' | \
-	/usr/local/bin/gawk 'BEGIN { c = 0; s = 0 } { if ($1 > 0) { c++; s += $1; m = s/c; vs += ($1 - m)^2; v=vs/c} } END { sd = sqrt(v/c); printf "{\"count\":%d,\"sum\":%d,\"mean\":%f,\"stdev\":%f}\n", c, s, m, sd  }'
+	/usr/local/bin/gawk 'BEGIN { c = 0; s = 0 } { if ($1 > 0) { c++; s += $1; m = s/c; vs += ($1 - m)^2; v=vs/c} } END { sd = sqrt(v/c); printf "{\"count\":\"%d\",\"sum\":\"%d\",\"mean\":\"%f\",\"stdev\":\"%f\"}\n", c, s, m, sd  }'
 else
     @ i = 0
     curl -s -L -o "$TMP/$APP-$API.$$.json" "$WWW/aah-stats.cgi?$QUERY_STRING"
@@ -64,7 +64,7 @@ else
 	if ($i > 0) echo ","
 	/usr/local/bin/jq -c '.days[].intervals['$i'].count' "$TMP/$APP-$API.$$.json" | \
 	sed 's/"//g' | \
-	/usr/local/bin/gawk 'BEGIN { c = 0; s = 0 } { if ($1 > 0) { c++; s += $1; m = s/c; vs += ($1 - m)^2; v=vs/c} } END { if (c > 0) { sd = sqrt(v/c) } else { sd = 0 }; printf "{\"count\":%d,\"sum\":%d,\"mean\":%f,\"stdev\":%f}", c, s, m, sd  }'
+	/usr/local/bin/gawk 'BEGIN { c = 0; s = 0 } { if ($1 > 0) { c++; s += $1; m = s/c; vs += ($1 - m)^2; v=vs/c} } END { if (c > 0) { sd = sqrt(v/c) } else { sd = 0 }; printf "{\"count\":\"%d\",\"sum\":\"%d\",\"mean\":\"%f\",\"stdev\":\"%f\"}", c, s, m, sd  }'
 	@ i++
     end
     echo "]}"
