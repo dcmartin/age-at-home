@@ -83,16 +83,11 @@ Implemented new dynamic updating of statistic from new events and built cache'in
 Still need additional deamon process on clock to the condition of no events within a specified period of time.
 Will probably need additional statistics added to the existing values, as well as consider additional state calculations (e.g. average "first" interval per day-of-week)
 <ul>
-<li><a href="data/rough-fog-person.xslx">Excel spreadsheet</a> that processes person.csv file and makes the pretty charts above.
-<li>Web service API for calculating statistics for arbitrary device and classifier (e.g. "db=rough-fog&id=person"); cache TTL of 30 minutes (<a href="http://www.dcmartin.com/CGI/aah-stats.cgi">aah-stats</a>)
+<li><a href="data/rough-fog-person.xslx">Excel spreadsheet</a> that processes person.csv file and makes the pretty charts below.
 <li>A <a href="https://gist.github.com/parente/7db992fae487d6e665e7b7dca841ffa2">Spark notebook</a> by Peter Parente (peterp@us.ibm.com)
 </ul>
 <p>
 <img width="75%" src="images/spark-graph.png">
-<p>
-Next step is call the microservice to get up-to-date (n.b. TTL of 30 minutes) maxtrix (7x96) of 
-historical statistics for the event classifier and score (i.e. count, sum, mean, stdev).
-Then compare current event classifier(s) and score(s) to historical values to identify out-of-bounds conditions (e.g. count > mean+3SD)
 <p>
 The graphs below are generated in the Excel spreadsheet and visualize the following:
 <ol>
@@ -139,6 +134,21 @@ List of shell scripts - listed in the order they should be run:
 - Convert the CSV results of <code>mkclass</code> (e.g. <a href="data/rough-fog-person.csv">rough-fog-person.csv</a>) to a JSON object 
 (e.g. <a href="data/rough-fog-person.json">rough-fog-person.json</a>)
 </ul>
+<h2>
+Web Services
+</h2>
+<ul>
+<li><a href="http://www.dcmartin.com/CGI/aah-stats.cgi?db=rough-fog&id=person"><code>aah-stats</code></a>
+Calculates / updates statistical model for device and classifier (e.g. "db=rough-fog&id=person"); cache TTL of 30 minutes
+<li><a href="http://www.dcmartin.com/CGI/aah-daystats.cgi?db=rough-fog&id=person&day=all"><code>aah-daystats</code></a>
+Calculates / updates statistical model for days of week or device and classifier (e.g. "db=rough-fog&id=person&day=all"); cache TTL of 30 minutes
+<li><a href="http://www.dcmartin.com/CGI/aah-intervalstats.cgi?db=rough-fog&id=person&interval=all"><code>aah-intervalstats</code></a>
+Calculates / updates statistical model for intervals of day for device and classifier (e.g. "db=rough-fog&id=person&day=all"); cache TTL of 30 minutes
+<li><a href="http://www.dcmartin.com/CGI/aah-classifiers.cgi?db=rough-fog"><code>aah-classifiers</code></a>
+Calculates / updates list of all classifiers for device (e.g. "db=rough-fog"); cache TTL of 12 hours
+</ul>
+Next step is call the Web services then compare current event classifier(s) and score(s) to historical values to identify out-of-bounds conditions (e.g. count > mean+3SD)
+<p>
 
 <h3>
 Watson Analytics
