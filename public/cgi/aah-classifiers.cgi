@@ -47,7 +47,6 @@ endif
 
 
 echo "Content-Type: application/json"
-echo "Refresh: $TTL"
 set AGE = `echo "$SECONDS - $DATE" | bc`
 echo "Age: $AGE"
 echo "Cache-Control: max-age=$TTL"
