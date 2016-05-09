@@ -187,13 +187,27 @@ set days = ( Sunday Monday Tuesday Wednesday Thursday Friday Saturday )
 foreach d ( $days )
     if ($k > 0) echo "," >> "$NEW_STATS"
 
-    # THIS IS A BUG !!!
-    set nweek = `/usr/local/bin/csvgrep -c day -m "$d" $CLASS_INTERVAL_VALUES | /usr/local/bin/csvcut -c week | tail +2 | sort | uniq | wc -l`
-    set numwk = `/usr/local/bin/jq '.days['$k'].numwk' "$OLD_STATS" | sed 's/"//g'`
-    set newwk = `echo "$nweek + $numwk" | bc`
-    # END BUG
+    # get new weeks
+    /usr/local/bin/csvgrep -c day -m "$d" $CLASS_INTERVAL_VALUES | /usr/local/bin/csvcut -c week | tail +2 | sort -nr | uniq >! "$TMP/$APP-$API-$QUERY_STRING-weeks.$$"
+    # get old weeks
+    /usr/local/bin/jq '.days['$k'].weeks[]' "$OLD_STATS" >> "$TMP/$APP-$API-$QUERY_STRING-weeks.$$"
+    # get uniq set
+    set weeks = `cat "$TMP/$APP-$API-$QUERY_STRING-weeks.$$" | sort -nr | uniq | awk 'BEGIN { c=0 } { if (c > 0) printf ", "; printf "\"%2d\"", $1; c++ }'`
+    # remove temporary file
+    rm -f "$TMP/$APP-$API-$QUERY_STRING-weeks.$$"
+    set weeks = `
 
-    echo -n '{"weekday":"'$d'","numwk":"'$newwk'","intervals":[' >> "$NEW_STATS"
+    set old_nweek = `
+    jq '.days[0].weeks[]'
+    set old_weeks =
+    | awk 'BEGIN { c=0 } { if (c > 0) printf ", "; printf "\"%2d\"", $1; c++ }'
+    set nweek = $#weeks
+
+    set old_nweek = `/usr/local/bin/jq '.days['$k'].weeks' "$OLD_STATS" | sed 's/"//g'`
+    set old_last = `/usr/local/bin/jq '.days['$k'].last' "$OLD_STATS" | sed 's/"//g'`
+    @ nweek = $old_week + ($last - $old_last)
+
+    echo -n '{"weekday":"'$d'","nweek":"'$#weeks'","weeks":['$weeks'],"intervals":[' >> "$NEW_STATS"
 
     @ j = 1
     foreach i ( $intervals )
