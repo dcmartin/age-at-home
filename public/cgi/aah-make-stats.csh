@@ -187,9 +187,11 @@ set days = ( Sunday Monday Tuesday Wednesday Thursday Friday Saturday )
 foreach d ( $days )
     if ($k > 0) echo "," >> "$NEW_STATS"
 
+    # THIS IS A BUG !!!
     set nweek = `/usr/local/bin/csvgrep -c day -m "$d" $CLASS_INTERVAL_VALUES | /usr/local/bin/csvcut -c week | tail +2 | sort | uniq | wc -l`
     set numwk = `/usr/local/bin/jq '.days['$k'].numwk' "$OLD_STATS" | sed 's/"//g'`
     set newwk = `echo "$nweek + $numwk" | bc`
+    # END BUG
 
     echo -n '{"weekday":"'$d'","numwk":"'$newwk'","intervals":[' >> "$NEW_STATS"
 

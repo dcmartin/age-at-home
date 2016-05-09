@@ -125,7 +125,7 @@ foreach class ( $CLASSIFIERS )
 	@ i = 0
 	foreach d ( $days )
 	    if ($i > 1) echo -n "," >> "$statjson"
-	    set nweek = `csvgrep -c day -m "$d" $DB-$class-intervals.csv | csvcut -c week | tail +2 | sort | uniq | wc -l`
+	    set nweek = `csvgrep -c day -m "$d" $DB-$class-intervals.csv | csvcut -c week | tail +2 | sort | uniq | wc -l | awk '{ print $1 }'`
 	    echo -n '{"weekday":"'$d'","numwk":"'$nweek'","intervals":[' >> "$statjson"
 	    echo -n "$d,$nweek," >> "$output"
 	    @ j = 1
