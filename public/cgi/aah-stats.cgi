@@ -59,7 +59,7 @@ if (! -e "$JSON") then
     echo "$APP-$API ($0 $$) -- initiating ./$APP-make-$API.bash ($JSON)" >>! $TMP/LOG
     ./$APP-make-$API.bash
     # find old results
-    set OLD_JSON = `ls -1t "$TMP/$APP-$API-QUERY_STRING.*.json"`
+    set OLD_JSON = `ls -1t $TMP/$APP-$API-QUERY_STRING.*.json`
     if ($#OLD_JSON == 0) then
 	# note change in DATE to last TTL interval (not necessarily the same as statistics interval, independent)
 	set DATE = `echo "(($SECONDS - $TTL ) / $TTL) * $TTL" | bc`
