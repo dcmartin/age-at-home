@@ -26,6 +26,7 @@ Banners
 Bar
 Barber_Shop
 Barn
+Basketball
 Bat_Sport
 Bathroom
 Bazaar
@@ -182,6 +183,7 @@ Indoor_Volleyball
 Indoors
 Industrial_Scene
 Industrial_Space
+Insect
 Irish_Coffee
 Jewel
 Judo
@@ -198,6 +200,7 @@ Log_Cabin
 Lumber_Mill
 Magenta
 Male_Adult
+Margarita
 Market
 Martini
 Maternity_Ward
@@ -209,6 +212,7 @@ Military_Plane
 Mint_Julep
 Mixed_Color
 Mixed_Drink
+Monastery
 Monkey
 Motor_Sport
 Mountains
@@ -239,6 +243,7 @@ Polo
 Popcorn
 Potatoes
 Power_Boating
+Preserves
 Primate
 Prison
 Professional_Wrestling
@@ -253,6 +258,7 @@ Rail_Fence
 Ranch
 Ranch_Style_House
 Recovery_Room
+Red_Wine
 Refinery
 Refrigerator
 Religious_Space
@@ -265,6 +271,7 @@ Rodent
 Rollerskating
 Rural_Building
 SUV
+Salad
 Sauna
 Schnitzel
 Scuba
@@ -277,6 +284,8 @@ Shoe_Store
 Shopping
 Shrine
 Skateboarding
+Ski_Jumping
+Skiing
 Skirt
 Sky_Scene
 Skyline
@@ -286,6 +295,7 @@ Snack_Food
 Snake
 Snooker
 Snow_Scene
+Snow_Sport
 Sparkling_Wine
 Speed_Skating
 Speed_Swimming
@@ -300,6 +310,7 @@ Store
 Storm
 Stove
 Street
+Sumo
 Sunroom
 Supermarket
 Suspension_Bridge
@@ -312,6 +323,7 @@ Synchronized_Swimming
 Table_Tennis
 Tae_Kwando
 Taj_Mahal
+Takoyaki
 Tamale
 Tea
 Team_Indoor_Sport
@@ -326,6 +338,7 @@ Tortilla_Chip
 Train
 Trestle_Bridge
 Truss_Bridge
+Underwater
 Violet
 Vivarium
 Voting_Booth
@@ -344,6 +357,7 @@ White
 White_Rice
 White_Wine
 Whitehouse
+Wild_Cat
 Wild_Fire
 Wine_Cellar
 Wine_or_Liquor
@@ -352,6 +366,7 @@ Yellow
 Zoo
 abandoned
 camera
+firework
 home
 hotel
 house

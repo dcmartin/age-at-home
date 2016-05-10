@@ -28,10 +28,9 @@ mixpanel.track("home");
 <h1>
 Age-At-Home
 </h1>
-<P><b><i>Funding:</i></b> US$196,985 from 384 investors</P>
 <h2>What is it?</h2>
 <p>
-Improve the elderlys' ability to age at home through understanding of daily activities inferred from image analysis.
+Improve the elderlys' ability to age at home through understanding of daily activities inferred from passive sensor analysis.
 <h2>
 How it Works
 </h2>
@@ -40,6 +39,7 @@ The need for helping elderly individuals or couples remain in their home is incr
 <p>
 Rather than depending on sensors worn on the body (and needing to be not forgotten, recharged, etc..) or installing sensors on individual devices (e.g. sink, cabinet, refrigerator, etc..), this solution utilizes passive monitoring devices, notably video camera(s) with multi-channel microphones, to sense activity, record events, and build a model of normative behavior.
 <p>
+<img width="75%" src="images/basic-scenario.png">
 <table>
 <tr valigh="top"><td width="70%">
 Initially we intend to monitor the kitchen and recognizes the presence of a person (not an individual) in the room. From this simple event detection we will build a normative baseline of daily activity and detect when that daily activity exhibits aberrations (e.g. no activity in kitchen after +2 std. dev. past median time).
@@ -52,9 +52,22 @@ This initial scenario may be easily extended to other passive monitoring capabil
 </tr>
 </table>
 <p>
-<i>Strawman Architecture</i>
+<h2>System Overview</h2>
+<p>
+The solution is patterned on a "do-it-yourself" (DIY) approach and utilizes inexpensive hardware, open source software, and free services from the IBM BlueMix cloud.  The local device is comprised of a RaspberryPi computer and PlayStation3 Eye USB camera with four (4) internal microphones.  Total cost of hardware is under US$80 on-line.
 <br>
-<img width="75%" src="images/strawman.png">
+<img width="75%" src="images/system-overview.png">
+<p>
+The IBM BlueMix cloud provides services to analyze the images through the Watson portfolio of cognitive services, notably the AlchemyImage and VisualInsights recognition services.  In addition, Cloudant provides a NoSQL repository for the JavaScript object-notation (JSON) data produced from the event and the two image analysis algorithms.
+<p>
+BlueMix also provides the dashDB hybrid relational data warehousing service that automatically replicates from the Cloudant repository and provides an SQL interface for SELECT, PROJECT and JOIN.  These SQL services can also be consumed by Watson Analytics and other third-party software packages (e.g. Looker).
+<p>
+Also on BlueMix, the IBM Internet of Things Foundation (IOTF) platform and associated Real-Time Insights (RTI) provide device registration and system status monitoring (1s intervals) for the RaspberryPi.  General purpose conditionals can be applied for integration with email, IFTTT (www.ifttt.com), Node.Red and arbitrary web-hook.
+<p>
+[IN PROGRESS] The BlueMix container service provides the run-time environment that processes the Cloudant event data and asynchronously builds the statistical model of normal and abnormal behaviour
+and enables configuration for event notification (still under development).
+<p>
+[NOT SHOWN] This web site is also running on the IBM BlueMix CloudFoundry platform-as-a-service (PAAS), coordinating credentialing, billing and operational metrics across the service catalog.  In addition, this site utilizes Mixpanel (www.mixpanel.com) and Intercom.io (www.intercom.io) to provide user tracking and near-line chat (n.b. look in lower right corner for chat icon).
 <p>
 GitHub repositories are publically accessible at:
 <ul>
@@ -77,11 +90,11 @@ Link to data (rough-fog is the device DB name in Cloudant):
 Analysis
 </h2>
 <p>
-Rebuilt statistics calculation script (<code><a href="public/bin/mkclass">mkclass</a></code>) and corresponding Excel spreadsheet.
-Implemented new dynamic updating of statistic from new events and built cache'ing proxy microservice (n.b. CGI script <code><a href="cgi/aah-stats.cgi">aah-stats</a></code>).
-<p> 
-Still need additional deamon process on clock to the condition of no events within a specified period of time.
-Will probably need additional statistics added to the existing values, as well as consider additional state calculations (e.g. average "first" interval per day-of-week)
+The statistical model is built initially using the <code><a href="bin/mkclass">mkclass</a></code> script.
+The script builds the 'person' classifier statistical model for the 'rough-fog' device by default, but can be parameterize by the device name and either a single classifier, a named classifier set (e.g. 'human' or 'all') or a list of classifiers separated by spaces.  When the model is calculated it is uploaded into device-specific database, e.g. rough-fog-stats, with each classifier model accessed by name (e.g. 'rough-fog-stats/person').
+<p>
+The results of the <code>mkclass</code> script are JSON and CSV files.  The CSV file for the 'person' classifier is consumed by the Excel spreadsheet to produce the charts below.
+<p>
 <ul>
 <li><a href="data/rough-fog-person.xslx">Excel spreadsheet</a> that processes person.csv file and makes the pretty charts below.
 <li>A <a href="https://gist.github.com/parente/7db992fae487d6e665e7b7dca841ffa2">Spark notebook</a> by Peter Parente (peterp@us.ibm.com)
@@ -107,6 +120,27 @@ The graphs below are generated in the Excel spreadsheet and visualize the follow
 <td><img width="95%" src="images/person-under-active.png"></td>
 </tr>
 </table>
+<h3>
+Web Services
+</h3>
+<ul>
+<li>
+Calculates / updates statistical model for device and classifier
+<a href="http://www.dcmartin.com/CGI/aah-stats.cgi?db=rough-fog&id=person"><code>aah-stats?db=rough-fog&id=person</code></a>
+<li>
+Calculates / updates statistical model for days of week or device and classifier
+<a href="http://www.dcmartin.com/CGI/aah-stats.cgi?db=rough-fog&id=person&day=all"><code>aah-stats?db=rough-fog&id=person&day=all</code></a>
+<li>
+Calculates / updates statistical model for intervals of day for device and classifier
+<a href="http://www.dcmartin.com/CGI/aah-stats.cgi?db=rough-fog&id=person&interval=all"><code>aah-stats?db=rough-fog&id=person&interval=all</code></a>
+<li>
+Calculate / update list of all classifiers for device (e.g. "db=rough-fog")
+<a href="http://www.dcmartin.com/CGI/aah-classifiers.cgi?db=rough-fog"><code>aah-classifiers</code></a> 
+</ul>
+The id= argument can be specified with any of the classifiers.  The day= and interval= arguments can be specified with &quot;all&quot; or a number for day (0-6) or interval (0-95).
+<p>
+<img width="75%" src="images/command-line.png">
+<p>
 
 <h3>
 Data and Scripts
@@ -135,24 +169,8 @@ List of shell scripts - listed in the order they should be run:
 (e.g. <a href="data/rough-fog-person.json">rough-fog-person.json</a>)
 </ul>
 <h2>
-Web Services
-</h2>
-<ul>
-<li><a href="http://www.dcmartin.com/CGI/aah-stats.cgi?db=rough-fog&id=person"><code>aah-stats</code></a>
-Calculates / updates statistical model for device and classifier (e.g. "db=rough-fog&id=person"); cache TTL of 30 minutes
-<li><a href="http://www.dcmartin.com/CGI/aah-daystats.cgi?db=rough-fog&id=person&day=all"><code>aah-daystats</code></a>
-Calculates / updates statistical model for days of week or device and classifier (e.g. "db=rough-fog&id=person&day=all"); cache TTL of 30 minutes
-<li><a href="http://www.dcmartin.com/CGI/aah-intervalstats.cgi?db=rough-fog&id=person&interval=all"><code>aah-intervalstats</code></a>
-Calculates / updates statistical model for intervals of day for device and classifier (e.g. "db=rough-fog&id=person&day=all"); cache TTL of 30 minutes
-<li><a href="http://www.dcmartin.com/CGI/aah-classifiers.cgi?db=rough-fog"><code>aah-classifiers</code></a>
-Calculates / updates list of all classifiers for device (e.g. "db=rough-fog"); cache TTL of 12 hours
-</ul>
-Next step is call the Web services then compare current event classifier(s) and score(s) to historical values to identify out-of-bounds conditions (e.g. count > mean+3SD)
-<p>
-
-<h3>
 Watson Analytics
-</h3>
+</h2>
 <p>
 The process of preparing JSON data for Watson Analytics is cumbersome. While replication from Cloudant into dashDB is provided and dashDB can be accessed from WA
 (n.b. you need a paid account), the refinement capabilities in WA are insufficient for any non-trivial transformation (e.g. time into day of week).
@@ -285,7 +303,11 @@ payload values using numeric comparison to static values, other payload values, 
 <br><i>IBM IOTF Real-time Insights <i>rule</i> <b>action</b> specification</i>
 <p>
 
-<h2>Other Related Projects</h2>
+<h2>IBM Cognitive Build Projects</h2>
+<p>
+The AgeAtHome project received internal virtual funding US$196,985 from 384 investors.  Thank you to all the investors.
+<p>Other interesting projects are listed below:
+<p>
 <table>
 <tr valign="bottom">
 <td width="20%">

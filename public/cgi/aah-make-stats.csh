@@ -195,17 +195,6 @@ foreach d ( $days )
     set weeks = `cat "$TMP/$APP-$API-$QUERY_STRING-weeks.$$" | sort -nr | uniq | awk 'BEGIN { c=0 } { if (c > 0) printf ", "; printf "\"%2d\"", $1; c++ }'`
     # remove temporary file
     rm -f "$TMP/$APP-$API-$QUERY_STRING-weeks.$$"
-    set weeks = `
-
-    set old_nweek = `
-    jq '.days[0].weeks[]'
-    set old_weeks =
-    | awk 'BEGIN { c=0 } { if (c > 0) printf ", "; printf "\"%2d\"", $1; c++ }'
-    set nweek = $#weeks
-
-    set old_nweek = `/usr/local/bin/jq '.days['$k'].weeks' "$OLD_STATS" | sed 's/"//g'`
-    set old_last = `/usr/local/bin/jq '.days['$k'].last' "$OLD_STATS" | sed 's/"//g'`
-    @ nweek = $old_week + ($last - $old_last)
 
     echo -n '{"weekday":"'$d'","nweek":"'$#weeks'","weeks":['$weeks'],"intervals":[' >> "$NEW_STATS"
 
@@ -214,16 +203,22 @@ foreach d ( $days )
 	if ($j > 1) echo "," >> "$NEW_STATS"
 
 	set count = `/usr/local/bin/jq '.days['$k'].intervals['$i'].count' "$OLD_STATS" | sed 's/"//g'`
+	set max = `/usr/local/bin/jq '.days['$k'].intervals['$i'].max' "$OLD_STATS" | sed 's/"//g'`
 	set sum = `/usr/local/bin/jq '.days['$k'].intervals['$i'].sum' "$OLD_STATS" | sed 's/"//g'`
 	set mean = `/usr/local/bin/jq '.days['$k'].intervals['$i'].mean' "$OLD_STATS" | sed 's/"//g'`
 	set stdev = `/usr/local/bin/jq '.days['$k'].intervals['$i'].stdev' "$OLD_STATS" | sed 's/"//g'`
 
 	# calculate existing variance
 	set var = `echo "$stdev * $stdev * $count" | bc -l`
-	set l = `egrep "^$i,$d," $CLASS_INTERVAL_VALUES | \
-	    /usr/local/bin/gawk -v "c=$count" -v "s=$sum" -v "m=$mean" -v "vs=$var" -F, '{ c++; s=s+$5; m=s/c; vs=vs+($5-m)^2; v=vs/c } END { sd=sqrt(v); printf "%d %f %f %f", c, s, m, sd }'`
-
-	echo -n '{"count":"'$l[1]'","sum":"'$l[2]'","mean":"'$l[3]'","stdev":"'$l[4]'"}' >> "$NEW_STATS"
+	egrep "^$i,$d," $CLASS_INTERVAL_VALUES | \
+	    /usr/local/bin/gawk \
+	        -v "c=$count" \
+		-v "mx=$max" \
+		-v "s=$sum" \
+		-v "m=$mean" \
+		-v "vs=$var" -F, \
+		'{ if ($5 > mx) mx = $5; c++; s=s+$5; m=s/c; vs=vs+($5-m)^2; v=vs/c } END { sd=sqrt(v); printf "{\"count\":\"%d\",\"max\":\"%f\",\"sum\":\"%f\",\"mean\":\"%f\",\"stdev\":\"%f\"}", c, mx, s, m, sd }' >> "$NEW_STATS"
+	# next!
 	@ j++
     end
 
@@ -232,6 +227,7 @@ foreach d ( $days )
 end
 echo "] }" >> "$NEW_STATS"
 
+cat "$NEW_STATS" >! $TMP/LOG
 #
 # update Cloudant
 #

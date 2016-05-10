@@ -93,7 +93,8 @@ set intvalues = ()
 # there are 96 15 minute intervals per day
 while ($i < 96)
     set intervals = ( $intervals $i )
-    set intvalues = ( $intvalues "c$i,s$i,m$i,d$i" )
+    # count, max, sum, mean, stdev 
+    set intvalues = ( $intvalues "c$i,mx$i,s$i,m$i,d$i" )
     @ i++
 end
 set intnames = `echo $intvalues | sed "s/ /,/g"`
@@ -133,8 +134,9 @@ foreach class ( $CLASSIFIERS )
 	    foreach i ( $intervals )
 		if ($j > 1) echo -n "," >> "$statjson"
 		if ($j > 1) echo -n "," >> "$output"
-		set l = `egrep "^$i,$d," $DB-$class-intervals.csv | awk -F, 'BEGIN { c=0; s=0; m=0; v=0; vs=0 } { c++; s=s+$5; m=s/c; vs=vs+($5-m)^2; v=vs/c } END { sd=sqrt(v); printf "%d %f %f %f", c, s, m, sd }'`
-		echo -n '{"count":"'$l[1]'","sum":"'$l[2]'","mean":"'$l[3]'","stdev":"'$l[4]'"}' >> "$statjson"
+
+		set l = `egrep "^$i,$d," $DB-$class-intervals.csv | awk -F, 'BEGIN { mx=0; c=0; s=0; m=0; v=0; vs=0 } { c++; if ($5 > mx) mx=$5; s=s+$5; m=s/c; vs=vs+($5-m)^2; v=vs/c } END { sd=sqrt(v); printf "%d %f %f %f %f", c, mx, s, m, sd }'`
+		echo -n '{"count":"'$l[1]'","max":"'$l[2]'","sum":"'$l[3]'","mean":"'$l[4]'","stdev":"'$l[5]'"}' >> "$statjson"
 		echo -n "$l" | sed "s/ /,/g" >> "$output"
 		@ j++
 		echo -n '.'
