@@ -190,9 +190,12 @@ foreach d ( $days )
     # get new weeks
     /usr/local/bin/csvgrep -c day -m "$d" $CLASS_INTERVAL_VALUES | /usr/local/bin/csvcut -c week | tail +2 | sort -nr | uniq >! "$TMP/$APP-$API-$QUERY_STRING-weeks.$$"
     # get old weeks
-    /usr/local/bin/jq '.days['$k'].weeks[]' "$OLD_STATS" >> "$TMP/$APP-$API-$QUERY_STRING-weeks.$$"
+    /usr/local/bin/jq '.days['$k'].weeks[]' "$OLD_STATS" | sed 's/"//g' >> "$TMP/$APP-$API-$QUERY_STRING-weeks.$$"
+
+echo "$APP-$API ($0 $$) --" `cat "$TMP/$APP-$API-$QUERY_STRING-weeks.$$"` >>! $TMP/LOG
+
     # get uniq set
-    set weeks = `cat "$TMP/$APP-$API-$QUERY_STRING-weeks.$$" | sort -nr | uniq | awk 'BEGIN { c=0 } { if (c > 0) printf ", "; printf "\"%2d\"", $1; c++ }'`
+    set weeks = `cat "$TMP/$APP-$API-$QUERY_STRING-weeks.$$" | sort -nr | uniq | awk 'BEGIN { c=0 } { if (c > 0) printf ", "; printf "\"%d\"", $1; c++ }'`
     # remove temporary file
     rm -f "$TMP/$APP-$API-$QUERY_STRING-weeks.$$"
 
