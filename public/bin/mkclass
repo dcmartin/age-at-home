@@ -190,13 +190,13 @@ if ($classes == "all") then
     echo "STAT: creating $DB-$classes-values.csv $DB-$classes-intervals.csv"
     /bin/rm -f $DB-$classes-values.csv $DB-$classes-intervals.csv
     @ j = 1
-    echo "STAT: classifiers ($#CLASSIFIERS)"
+    echo -n "STAT: classifiers "
     foreach i ( $CLASSIFIERS )
 	if ($i == \"\") continue;
 	if ($i == "NO_TAGS") continue;
 	if (! -e "$DB-$i-values.csv") continue;
 	if (! -e "$DB-$i-intervals.csv") continue;
-        echo -n "."
+	echo -n "($j):$i "
         if ($j == 1) then
 	    cat $DB-$i-values.csv >! $DB-$classes-values.csv
 	    cat $DB-$i-intervals.csv >! $DB-$classes-intervals.csv
@@ -204,7 +204,7 @@ if ($classes == "all") then
 	    tail +2 $DB-$i-values.csv >> $DB-$classes-values.csv
 	    tail +2 $DB-$i-intervals.csv >> $DB-$classes-intervals.csv
 	endif
-	if ($class != "person") then
+	if ($i != "person") then
 	    /bin/rm -f $DB-$i-values.csv $DB-$i-intervals.csv $DB-$i.csv $DB-$i.json
 	endif
 	@ j++
