@@ -192,8 +192,6 @@ foreach d ( $days )
     # get old weeks
     /usr/local/bin/jq '.days['$k'].weeks[]' "$OLD_STATS" | sed 's/"//g' >> "$TMP/$APP-$API-$QUERY_STRING-weeks.$$"
 
-# echo "+++ $APP-$API ($0 $$) --" `cat "$TMP/$APP-$API-$QUERY_STRING-weeks.$$"` >>! $TMP/LOG
-
     # get uniq set
     set weeks = `cat "$TMP/$APP-$API-$QUERY_STRING-weeks.$$" | sort -nr | uniq | awk 'BEGIN { c=0 } { if (c > 0) printf ", "; printf "\"%d\"", $1; c++ }'`
     # remove temporary file
@@ -213,14 +211,15 @@ foreach d ( $days )
 
 	# calculate existing variance
 	set var = `echo "$stdev * $stdev * $count" | bc -l`
+
 	egrep "^$i,$d," $CLASS_INTERVAL_VALUES | \
-	    /usr/local/bin/gawk \
+	    awk -F, \
 	        -v "c=$count" \
 		-v "mx=$max" \
 		-v "s=$sum" \
 		-v "m=$mean" \
-		-v "vs=$var" -F, \
-		'{ if ($5 > mx) mx = $5; c++; s=s+$5; m=s/c; vs=vs+($5-m)^2; v=vs/c } END { sd=sqrt(v); printf "{\"count\":\"%d\",\"max\":\"%f\",\"sum\":\"%f\",\"mean\":\"%f\",\"stdev\":\"%f\"}", c, mx, s, m, sd }' >> "$NEW_STATS"
+		-v "vs=$var" \
+		'{ c++; if ($5 > mx) mx=$5; s+=$5; m=s/c; vs+=(($5-m)^2) } END { sd=0; if (c > 0) sd=sqrt(vs/c); printf "{\"count\":\"%d\",\"max\":\"%f\",\"sum\":\"%f\",\"mean\":\"%f\",\"stdev\":\"%f\"}", c, mx, s, m, sd }' >> "$NEW_STATS"
 	# next!
 	@ j++
     end
