@@ -1,0 +1,71 @@
+#!/bin/csh -f
+setenv DEVICE_NAME rough-fog
+set INTERVAL = 15
+set DIR = /var/lib/motion
+# get events with oldest first
+set events = ( `ls -1t $DIR/20160*.json | sed "s|$DIR/\(.*\)-.*-.*.json|\1|" | sort -n | head -500` )
+if ($#events > 0) then
+    set EVENT = $events[1]
+
+    set JSON = ( $DIR/$EVENT-*-*.json )
+    if ($#JSON > 0) then
+        set JSON = $JSON[1]
+    else
+        echo "*** NO JSON ($JSON) ***"
+        exit
+    endif
+
+    set YEAR = `jq '.year' $JSON | sed 's/"//g'`
+    set MONTH = `jq '.month' $JSON | sed 's/"//g'`
+    set DAY = `jq '.day' $JSON | sed 's/"//g'`
+    set HOUR = `jq '.hour' $JSON | sed 's/"//g'`
+    set MINUTE = `jq '.minute' $JSON | sed 's/"//g'`
+    set SECOND = `jq '.second' $JSON | sed 's/"//g'`
+
+    set SEQNO = `echo "$JSON" | sed 's/.*-\(.*\)-\(.*\)\.json/\1/'`
+    set EPOCH = `echo "$YEAR" "$MONTH" "$DAY" "$HOUR" "$MINUTE" "$SECOND" | \
+	gawk '{ t=mktime(sprintf("%4d %2d %2d %2d %2d %2d", $1, $2, $3, $4, $5, $6)); printf "%d", strftime("%s",t) }'`
+ 
+    echo "+++ EPOCH = $EPOCH +++"
+    ./on_motion_detect.sh $SEQNO $YEAR $MONTH $DAY $HOUR $MINUTE $SECOND
+
+    echo "+++ STARTING EVENTS $#events +++"
+    set T = $EPOCH
+    foreach event ( $events[2-] )
+	set JSON = ( $DIR/$event-*-*.json )
+	if ($#JSON > 0) then
+	    set JSON = $JSON[1]
+	else
+	    echo "*** TOO MANY JSON ($JSON) ***"
+	    exit
+	endif
+
+	set YEAR = `jq '.year' $JSON | sed 's/"//g'`
+	set MONTH = `jq '.month' $JSON | sed 's/"//g'`
+	set DAY = `jq '.day' $JSON | sed 's/"//g'`
+	set HOUR = `jq '.hour' $JSON | sed 's/"//g'`
+	set MINUTE = `jq '.minute' $JSON | sed 's/"//g'`
+	set SECOND = `jq '.second' $JSON | sed 's/"//g'`
+
+	set SEQNO = `echo "$JSON" | sed 's/.*-\(.*\)-\(.*\)\.json/\1/'`
+	set INDEX = `echo "$YEAR" "$MONTH" "$DAY" "$HOUR" "$MINUTE" "$SECOND" | \
+	    gawk -v interval="$INTERVAL" '{ m=$4*60+$5; m/=interval; \
+	    t=mktime(sprintf("%4d %2d %2d %2d %2d %2d", $1, $2, $3, $4, $5, $6)); \
+	    printf "{ \"epoch\":\"%d\", \"interval\":\"%d\",\"AMPM\":\"%s\",\"week\":\"%d\",\"day\":\"%s\" }", \
+		strftime("%s",t),\
+		m, \
+		strftime("%p",t),\
+		strftime("%U",t),\
+		strftime("%w",t) }'`
+	set t = `echo $INDEX | jq '.epoch' | sed 's/"//g'`
+	echo $t $T
+	while ($t > $T) 
+	    set wait = `echo "( $t - $T ) / 100" | bc`
+	    echo "+++ WAITING $wait (100X) +++"
+	    # sleep $wait
+	    @ T = $t
+	end
+	./on_motion_detect.sh $SEQNO $YEAR $MONTH $DAY $HOUR $MINUTE $SECOND
+	@ T++
+   end
+endif
