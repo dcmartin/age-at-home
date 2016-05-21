@@ -1,13 +1,15 @@
-#!/bin/tcsh
+#!/bin/csh -fb
 setenv APP "aah"
 setenv API "stats"
 setenv WWW "http://www.dcmartin.com/CGI/"
 setenv LAN "192.168.1"
 if ($?TMP == 0) setenv TMP "/tmp"
-# don't update statistics more than once per 15 minutes
+# don't update statistics more than once per TTL seconds
 set TTL = 3600
 set SECONDS = `date "+%s"`
 set DATE = `echo $SECONDS \/ $TTL \* $TTL | bc`
+
+echo "$APP-$API ($0 $$) BEGIN $DATE" >>! $TMP/LOG
 
 if (-e ~$USER/.cloudant_url) then 
     set cc = ( `cat ~$USER/.cloudant_url` )
@@ -20,7 +22,7 @@ if ($?CLOUDANT_URL) then
 else if ($?CN) then
     set CU = "$CN.cloudant.com"
 else
-    echo "$APP-$API ($0 $$) -- No Cloudant URL" >>! $TMP/LOG
+    echo "$APP-$API ($0 $$) ** No Cloudant URL" >>! $TMP/LOG
     exit
 endif
 
@@ -34,7 +36,6 @@ if ($?QUERY_STRING) then
     set interval = `echo "$QUERY_STRING" | sed 's/.*interval=\([^&]*\).*/\1/'`
     if ($interval == "$QUERY_STRING") unset interval
 endif
-
 
 if ($?DB == 0) set DB = rough-fog
 if ($?class == 0) set class = person
@@ -55,39 +56,47 @@ echo "" >>! $TMP/LOG
 
 set JSON = "$TMP/$APP-$API-$QUERY_STRING.$DATE.json"
 
-if (! -e "$JSON") then
-    echo "$APP-$API ($0 $$) -- initiating ./$APP-make-$API.bash ($JSON)" >>! $TMP/LOG
+if (-e "$JSON") then
+    echo "$APP-$API ($0 $$) == CURRENT $JSON $DATE" >>! $TMP/LOG
+else
+    echo "$APP-$API ($0 $$) ++ MAKING ($JSON)" >>! $TMP/LOG
     ./$APP-make-$API.bash
     # find old results
-    set OLD_JSON = `ls -1t $TMP/$APP-$API-QUERY_STRING.*.json`
+    set OLD_JSON = ( `ls -1t "$TMP/$APP-$API-$QUERY_STRING".*.json` )
     if ($#OLD_JSON == 0) then
 	# note change in DATE to last TTL interval (not necessarily the same as statistics interval, independent)
 	set DATE = `echo "(($SECONDS - $TTL ) / $TTL) * $TTL" | bc`
-        set JSON = "/tmp/$APP-$API-$QUERY_STRING.$DATE.json"
-	echo "$APP-$API ($0 $$) -- retrieving $JSON" >>! $TMP/LOG
-	curl -s -o "$JSON" "https://$CU/$DB-$API/$class"
-	set ERROR = `jq '.error' "$JSON" | sed 's/"//g'`
+	set JSON = "$TMP/$APP-$API-$QUERY_STRING.$DATE.json"
+        if (! -e "$JSON") then
+	    echo "$APP-$API ($0 $$) << RETRIEVING ($JSON)" >>! $TMP/LOG
+	    curl -s -q -o "$JSON" "https://$CU/$DB-$API/$class"
+	endif
+	set ERROR = `/usr/local/bin/jq '.error' "$JSON" | sed 's/"//g'`
 	if ($ERROR == "not_found") then
-	    echo "$APP-$API ($0 $$) -- error ($ERROR)" >>! $TMP/LOG
+	    echo "$APP-$API ($0 $$) ** ERROR ($ERROR)" >>! $TMP/LOG
 	    exit
         endif
-    else if ($#OLD_JSON > 1) then
-	echo "$APP-$API ($0 $$) -- deleting $OLD_JSON[2-]" >>! $TMP/LOG
-        /bin/rm -f "$OLD_JSON[2-]"
+    else if ($#OLD_JSON > 0) then
+	echo "$APP-$API ($0 $$) == OLD $JSON ($OLD_JSON)" >>! $TMP/LOG
 	set JSON = "$OLD_JSON[1]"
+	if ($#OLD_JSON > 1) then
+	    echo "$APP-$API ($0 $$) -- DELETING $OLD_JSON[2-]" >>! $TMP/LOG
+	    /bin/rm -f "$OLD_JSON[2-]"
+	endif
     endif
 endif
 
 if ($#JSON == 0) then
-    echo "$APP-$API ($0 $$) -- No JSON ($JSON)" >>! $TMP/LOG
+    echo "$APP-$API ($0 $$) ** NONE ($JSON)" >>! $TMP/LOG
     echo "Status: 202 Accepted"
-    exit
+    goto done
+else if (-e "$JSON") then
+    echo "$APP-$API ($0 $$) --" `ls -al $JSON` >>! $TMP/LOG
 endif
 
 #
 # prepare for output
 #
-
 echo "Status: 200 OK"
 echo "Content-Type: application/json"
 set AGE = `echo "$SECONDS - $DATE" | bc`
@@ -96,28 +105,33 @@ echo "Cache-Control: max-age=$TTL"
 echo "Last-Modified:" `date -r $DATE '+%a, %d %b %Y %H:%M:%S %Z'`
 echo ""
 
-echo "$APP-$API ($0 $$) -- last-modified" `date -r $DATE` >>! $TMP/LOG
 
-echo "$APP-$API ($0 $$) -- day=$?day; interval=$?interval" >>! $TMP/LOG
+cat "$JSON"
+exit
 
 if ($?day && $?interval) then
     if ($day == "all" && $interval == "all") then
+        echo "+++ CALCULATING day ($day) and interval ($interval)" >>! $TMP/LOG
         # get statistics for all days across all intervals
 	cat "$JSON" | /usr/local/bin/jq -c '.days[].intervals[].count' | sed 's/"//g' | \
 	    /usr/local/bin/gawk 'BEGIN { mx=0; mn=0; c=0; nz=0; s=0;v=0 } { c++; if ($1 > mx) mx=$1; if ($1 < mn) mn=$1; if($1 > 0) { nz++; s += $1; m = s/nz; vs += ($1 - m)^2; v=vs/nz} } END { sd = sqrt(v); printf "{\"count\":\"%d\",\"non-zero\":\"%d\",\"min\":\"%d\",\"max\":\"%d\",\"sum\":\"%d\",\"mean\":\"%f\",\"stdev\":\"%f\"}\n", c, nz, mn, mx, s, m, sd  }'
-    	exit
+    	goto done
     else if ($day != "all" && $interval != "all") then
+        echo "+++ CALCULATING day ($day) and interval ($interval)" >>! $TMP/LOG
 	# get specific interval
 	cat "$JSON" | /usr/local/bin/jq -c '.days['$day'].intervals['$interval']'
-	exit
+	goto done
     endif
 endif
 
 if ($?day) then
     if ($day != "all") then
+        echo -n "+++ CALCULATING day ($day) " >>! $TMP/LOG
 	cat "$JSON" | /usr/local/bin/jq -c '.days['$day'].intervals[].count' | sed 's/"//g' | \
 	    /usr/local/bin/gawk 'BEGIN { mx=0; mn= 0; nz=0; c=0; s=0;v=0 } { c++; if ($1 > mx) mx=$1; if ($1 < mn) mn=$1; if($1 > 0) { nz++; s += $1; m = s/nz; vs += ($1 - m)^2; v=vs/nz} } END { sd = sqrt(v); printf "{\"count\":\"%d\",\"non-zero\":\"%d\",\"min\":\"%d\",\"max\":\"%d\",\"sum\":\"%d\",\"mean\":\"%f\",\"stdev\":\"%f\"}\n", c, nz, mn, mx, s, m, sd  }'
+        echo "+++" >>! $TMP/LOG
     else
+        echo -n "+++ CALCULATING day ($day) " >>! $TMP/LOG
 	@ i = 0
 	echo '{ "days": ['
 	while ($i < 7)
@@ -127,14 +141,17 @@ if ($?day) then
 	    @ i++
 	end
 	echo "]}"
+        echo "+++" >>! $TMP/LOG
 	rm -f "$TMP/$APP-$API.$$.json"
     endif
 # test interval
 else if ($?interval) then
     if ($interval != "all") then
+        echo "+++ CALCULATING interval ($interval)" >>! $TMP/LOG
 	cat "$JSON" | /usr/local/bin/jq -c '.days[].intervals['$interval'].count' | sed 's/"//g' | \
 	    /usr/local/bin/gawk 'BEGIN { mx=0; mn= 0; nz=0;c=0; s = 0 ;v=0} { c++; if ($1 > mx) mx=$1; if ($1 < mn) mn=$1; if($1 > 0) { nz++; s += $1; m = s/nz; vs += ($1 - m)^2; v=vs/nz} } END { sd = sqrt(v); printf "{\"count\":\"%d\",\"non-zero\":\"%d\",\"min\":\"%d\",\"max\":\"%d\",\"sum\":\"%d\",\"mean\":\"%f\",\"stdev\":\"%f\"}\n", c, nz, mn, mx, s, m, sd  }'
     else
+        echo "+++ CALCULATING interval ($interval)" >>! $TMP/LOG
 	@ i = 0
 	echo '{ "intervals": ['
 	while ($i < 96)
@@ -147,5 +164,9 @@ else if ($?interval) then
 	rm -f "$TMP/$APP-$API.$$.json"
     endif
 else
-    cat "$JSON"
+    cat "$JSON" | /usr/local/bin/jq -c '.days[].intervals[]'
 endif
+
+# all done
+done:
+    echo ""

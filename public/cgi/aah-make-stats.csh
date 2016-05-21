@@ -5,9 +5,11 @@ if ($?TMP == 0) setenv TMP "/tmp"
 setenv WWW "http://www.dcmartin.com/CGI/"
 setenv LAN "192.168.1"
 # don't update statistics more than once per 15 minutes
-set TTL = `echo "30 * 60" | bc`
+set TTL = 3600
 set SECONDS = `date "+%s"`
 set DATE = `echo $SECONDS \/ $TTL \* $TTL | bc`
+
+echo ">>> $APP-$API ($0 $$) - BEGIN $DATE" >>! $TMP/LOG
 
 if (-e ~$USER/.cloudant_url) then
     echo "+++ $APP-$API ($0 $$) - ~$USER/.cloudant_url" >>! $TMP/LOG
@@ -47,7 +49,7 @@ else
     # download stats
     set OLD_STATS = "$JSON.$$"
     echo "+++ $APP-$API ($0 $$) -- getting OLD_STATS ($OLD_STATS)" >>! $TMP/LOG
-    curl -s -o "$OLD_STATS" -X GET "$CU/$DB-stats/$class"
+    curl -s -q -o "$OLD_STATS" -X GET "$CU/$DB-stats/$class"
     # check iff successful
     set CLASS_DB = `/usr/local/bin/jq '._id' "$OLD_STATS" | sed 's/"//g'`
     if ($CLASS_DB != $class) then
@@ -67,7 +69,7 @@ set NEW_JSON = "$TMP/$APP-$API-$DB-$class-changes.$$.json"
 set seqid = 0
 if ( ! -e "$NEW_JSON" ) then
     echo "+++ $APP-$API ($0 $$) -- creating $NEW_JSON" >>! $TMP/LOG
-    curl -s -o "$NEW_JSON" "$CU/$DB/_changes?include_docs=true&since=$prev_seqid"
+    curl -s -q -o "$NEW_JSON" "$CU/$DB/_changes?include_docs=true&since=$prev_seqid"
     set seqid = ( `/usr/local/bin/jq .last_seq "$NEW_JSON"` )
     if ($seqid == "null") then
          echo "+++ $APP-$API ($0 $$) -- FAILURE RETRIEVING NEW_JSON" >>! $TMP/LOG
@@ -233,10 +235,10 @@ echo "] }" >> "$NEW_STATS"
 # update Cloudant
 #
 if ($?CLOUDANT_OFF == 0 && $?CU && $?DB) then
-    set DEVICE_DB = `curl -s -X GET "$CU/$DB-stats" | /usr/local/bin/jq '.db_name'`
+    set DEVICE_DB = `curl -s -q -X GET "$CU/$DB-stats" | /usr/local/bin/jq '.db_name'`
     if ( "$DEVICE_DB" == "null" ) then
 	# create DB
-	set DEVICE_DB = `curl -s -X PUT "$CU/$DB-stats" | /usr/local/bin/jq '.ok'`
+	set DEVICE_DB = `curl -s -q -X PUT "$CU/$DB-stats" | /usr/local/bin/jq '.ok'`
 	# test for success
 	if ( "$DEVICE_DB" != "true" ) then
 	    # failure
@@ -248,10 +250,10 @@ if ($?CLOUDANT_OFF == 0 && $?CU && $?DB) then
 	if ($#doc == 2 && $doc[1] == $class && $doc[2] != "") then
 	    set rev = $doc[2]
 	    echo "+++ $APP-$API ($0 $$) -- DELETE $rev" >>! $TMP/LOG
-	    curl -X DELETE "$CU/$DB-stats/$class?rev=$rev" >>! $TMP/LOG
+	    curl -s -q -X DELETE "$CU/$DB-stats/$class?rev=$rev" >>! $TMP/LOG
 	endif
 	echo "+++ $APP-$API ($0 $$) -- STORE $NEW_STATS" >>! $TMP/LOG
-	curl -H "Content-type: application/json" -X PUT "$CU/$DB-stats/$class" -d "@$NEW_STATS" >>! $TMP/LOG
+	curl -s -q -H "Content-type: application/json" -X PUT "$CU/$DB-stats/$class" -d "@$NEW_STATS" >>! $TMP/LOG
     endif
     echo "+++ $APP-$API ($0 $$) -- SUCCESS : $JSON" >>! $TMP/LOG
     # update statistics
