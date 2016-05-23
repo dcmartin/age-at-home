@@ -23,7 +23,7 @@ if ($#argv > 0) then
         set say = "$argv[$i-]"
     endif
 endif
-if ($?say == 0) set say = "make american great again"
+if ($?say == 0) set say = "make america great again"
 
 set creds = ~$USER/.watson.speech-to-text.json
 if (-e $creds) then

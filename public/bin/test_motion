@@ -2,19 +2,30 @@
 setenv DEVICE_NAME rough-fog
 set INTERVAL = 15
 set DIR = /var/lib/motion
-# get events with oldest first
-set events = ( `ls -1t $DIR/20160*.json | sed "s|$DIR/\(.*\)-.*-.*.json|\1|" | sort -n | head -500` )
-if ($#events > 0) then
-    set EVENT = $events[1]
+set BIN = "$0:h"
 
+# get events with oldest first
+set events = ( `ls -1t $DIR/20160*.json | sed "s|$DIR/\(.*\)-.*-.*.json|\1|" | sort -n` )
+# if we have any sample events
+if ($#events > 0) then
+    set nevent = $#events
+    set oldest = $events[1]
+    set newest = $events[$nevent]
+
+    echo "+++ $nevent EVENTS - oldest:$oldest, newest=$newest"
+
+    # use first event as initial time basis
+    set EVENT = $events[1]
     set JSON = ( $DIR/$EVENT-*-*.json )
     if ($#JSON > 0) then
         set JSON = $JSON[1]
-    else
+    endif
+    if (! -e "$JSON") then
         echo "*** NO JSON ($JSON) ***"
         exit
     endif
 
+    # get year, month, day and hour from event
     set YEAR = `jq '.year' $JSON | sed 's/"//g'`
     set MONTH = `jq '.month' $JSON | sed 's/"//g'`
     set DAY = `jq '.day' $JSON | sed 's/"//g'`
@@ -22,50 +33,77 @@ if ($#events > 0) then
     set MINUTE = `jq '.minute' $JSON | sed 's/"//g'`
     set SECOND = `jq '.second' $JSON | sed 's/"//g'`
 
-    set SEQNO = `echo "$JSON" | sed 's/.*-\(.*\)-\(.*\)\.json/\1/'`
     set EPOCH = `echo "$YEAR" "$MONTH" "$DAY" "$HOUR" "$MINUTE" "$SECOND" | \
 	gawk '{ t=mktime(sprintf("%4d %2d %2d %2d %2d %2d", $1, $2, $3, $4, $5, $6)); printf "%d", strftime("%s",t) }'`
- 
-    echo "+++ EPOCH = $EPOCH +++"
-    ./on_motion_detect.sh $SEQNO $YEAR $MONTH $DAY $HOUR $MINUTE $SECOND
 
-    echo "+++ STARTING EVENTS $#events +++"
-    set T = $EPOCH
-    foreach event ( $events[2-] )
-	set JSON = ( $DIR/$event-*-*.json )
+    # roll time back to start INTERVAL of activity at EPOCH
+    set T = `echo "$EPOCH / $INTERVAL * $INTERVAL" | bc`
+    @ eT = $EPOCH - $T
+ 
+    echo "+++ TIME = $T ($EPOCH) : $eT +++"
+    @ E = 1
+
+    while ($E <= $nevent)
+	# simulate a motion detection event
+	$BIN/on_motion_detect.sh $T $YEAR $MONTH $DAY $HOUR $MINUTE $SECOND
+
+	# test for end
+	if ($E == $nevent) break
+	# next event
+	@ E++
+	# get event ID
+	set EVENT = $events[$E]
+	# find event in history
+	set JSON = ( $DIR/$EVENT-*-*.json )
 	if ($#JSON > 0) then
 	    set JSON = $JSON[1]
-	else
-	    echo "*** TOO MANY JSON ($JSON) ***"
+	endif
+	if (! -e "$JSON") then
+	    echo "*** NO JSON ($JSON) ***"
 	    exit
 	endif
 
+	# get year, month, day and hour from event
 	set YEAR = `jq '.year' $JSON | sed 's/"//g'`
 	set MONTH = `jq '.month' $JSON | sed 's/"//g'`
 	set DAY = `jq '.day' $JSON | sed 's/"//g'`
 	set HOUR = `jq '.hour' $JSON | sed 's/"//g'`
 	set MINUTE = `jq '.minute' $JSON | sed 's/"//g'`
 	set SECOND = `jq '.second' $JSON | sed 's/"//g'`
+	
+	# calculate then that event occurs
+	set Tnext = `echo "$YEAR" "$MONTH" "$DAY" "$HOUR" "$MINUTE" "$SECOND" | \
+	    gawk '{ t=mktime(sprintf("%4d %2d %2d %2d %2d %2d", $1, $2, $3, $4, $5, $6)); printf "%d", strftime("%s",t) }'`
+ 
+	echo "+++ NEXT EVENT OCCURS AT" $Tnext
 
-	set SEQNO = `echo "$JSON" | sed 's/.*-\(.*\)-\(.*\)\.json/\1/'`
-	set INDEX = `echo "$YEAR" "$MONTH" "$DAY" "$HOUR" "$MINUTE" "$SECOND" | \
-	    gawk -v interval="$INTERVAL" '{ m=$4*60+$5; m/=interval; \
-	    t=mktime(sprintf("%4d %2d %2d %2d %2d %2d", $1, $2, $3, $4, $5, $6)); \
-	    printf "{ \"epoch\":\"%d\", \"interval\":\"%d\",\"AMPM\":\"%s\",\"week\":\"%d\",\"day\":\"%s\" }", \
-		strftime("%s",t),\
-		m, \
-		strftime("%p",t),\
-		strftime("%U",t),\
-		strftime("%w",t) }'`
-	set t = `echo $INDEX | jq '.epoch' | sed 's/"//g'`
-	echo $t $T
-	while ($t > $T) 
-	    set wait = `echo "( $t - $T ) / 100" | bc`
-	    echo "+++ WAITING $wait (100X) +++"
-	    # sleep $wait
-	    @ T = $t
+	while ($Tnext > $T) 
+	    set unit = 10
+	    set wait = `echo "( $Tnext - $T ) / $unit" | bc`
+	    @ W = 0
+	    while ($W < $wait)
+		sleep 1
+		# create time INDEX from time (in seconds)
+		set INDEX = `echo "$T" | \
+		    gawk '{ t=$1; printf "{ \"year\":\"%4d\", \"month\":\"%2d\",\"day\":\"%2d\",\"hour\":\"%2d\",\"minute\":\"%2d\",\"second\":\"%2d\" }", strftime("%Y",t), strftime("%m",t), strftime("%d",t), strftime("%H",t), strftime("%M",t), strftime("%S",t) }'`
+		# calculate CLI to script
+		set YEAR = `echo "$INDEX" | jq '.year' | sed 's/"//g'`
+		set MONTH = `echo "$INDEX" | jq '.month' | sed 's/"//g'`
+		set DAY = `echo "$INDEX" | jq '.day' | sed 's/"//g'`
+		set HOUR = `echo "$INDEX" | jq '.hour' | sed 's/"//g'`
+		set MINUTE = `echo "$INDEX" | jq '.minute' | sed 's/"//g'`
+		set SECOND = `echo "$INDEX" | jq '.second' | sed 's/"//g'`
+		# simulation motion event at time T
+		$BIN/on_motion_detect.sh $T $YEAR $MONTH $DAY $HOUR $MINUTE $SECOND
+		@ W++
+		@ T += $unit
+	    end
+	    echo "%%% NEXT = $Tnext NOW = $T" "REMAINING =" `echo "$Tnext - $T" | bc`
+	    @ T = $Tnext
 	end
-	./on_motion_detect.sh $SEQNO $YEAR $MONTH $DAY $HOUR $MINUTE $SECOND
+
+	# increment time
+	@ E++
 	@ T++
    end
 endif
