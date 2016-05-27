@@ -7,10 +7,10 @@ else
 endif
 
 if ( $#argv > 0 ) then
-    setenv ALLROWS "$argv[1]".csv
-else
-    setenv ALLROWS "$DB".csv
+    set DB = "$argv[1]"
 endif
+
+setenv ALLROWS "$DB".csv
 
 if ( -e "$ALLROWS" ) then
     if ( (! -e "$DB"-intervals.csv ) || ((-M "$ALLROWS") > (-M "$DB-intervals.csv"))) then

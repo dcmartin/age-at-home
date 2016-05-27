@@ -27,11 +27,29 @@ if ($?say == 0) set say = "make america great again"
 
 set creds = ~$USER/.watson.speech-to-text.json
 if (-e $creds) then
-     set username = `egrep username $creds | awk '{ print $2 }' | sed 's/.*"\(.*\)".*/\1/g'`
-     set password = `egrep password $creds | awk '{ print $2 }' | sed 's/.*"\(.*\)".*/\1/g'`
-     set url = `egrep url $creds | awk '{ print $2 }' | sed 's/".*https:\/\/\(.*\)".*/\1/g'`
-
-     set TU = 'https://'"$username"':'"$password"'@'"$url"'/'
+    set username = ( `jq '.[].credentials.username' $creds | sed 's/"//g'` )
+    if ($#username == 0) then
+	set username = ( `jq '.credentials.username' $creds | sed 's/"//g'` )
+    else if ($#username > 1) then
+        set username = $username[1]
+    endif
+    echo "--- USING USERNAME $username"
+    set password = ( `jq '.[].credentials.password' $creds | sed 's/"//g'` )
+    if ($#password == 0) then
+	set password = ( `jq '.credentials.password' $creds | sed 's/"//g'` )
+    else if ($#password > 1) then
+        set password = $password[1]
+    endif
+    echo "--- USING PASSWORD $password"
+    set url = ( `jq '.[].credentials.url' $creds | sed 's/"//g' | sed 's@https://@@'` )
+    if ($#url == 0) then
+	set url = ( `jq '.credentials.url' $creds | sed 's/"//g' | sed 's@https://@@'` )
+    else if ($#url > 1) then
+        set url = $url[1]
+    endif
+    echo "--- USING URL $url"
+    # set base
+    set TU = 'https://'"$username"':'"$password"'@'"$url"'/'
 else if ($?TU == 0) then
     echo "*** NO CREDENTIALS ($creds); create file and copy credentials from "Text-to-Speech" service on bluemix.net"
     exit

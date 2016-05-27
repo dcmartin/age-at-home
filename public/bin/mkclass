@@ -66,7 +66,7 @@ if ($?DB == 0) then
 endif
 
 # get last sequence # for class specified
-set prev_seqid = `curl "$CU/rough-fog-stats/$class" | jq .seqid`
+set prev_seqid = `curl "$CU/$DB-stats/$class" | jq .seqid`
 if ($prev_seqid[1] == "null") then
     set prev_seqid = 0
 endif
@@ -190,7 +190,7 @@ if ($classes == "all") then
     echo "STAT: creating $DB-$classes-values.csv $DB-$classes-intervals.csv"
     /bin/rm -f $DB-$classes-values.csv $DB-$classes-intervals.csv
     @ j = 1
-    echo -n "STAT: classifiers "
+    echo -n "STAT: classifiers $CLASSIFIERS"
     foreach i ( $CLASSIFIERS )
 	if ($i == \"\") continue;
 	if ($i == "NO_TAGS") continue;
