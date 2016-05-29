@@ -62,8 +62,6 @@ The IBM BlueMix cloud provides services to analyze the images through the Watson
 <p>
 BlueMix also provides the dashDB hybrid relational data warehousing service that automatically replicates from the Cloudant repository and provides an SQL interface for SELECT, PROJECT and JOIN.  These SQL services can also be consumed by Watson Analytics and other third-party software packages (e.g. Looker).
 <p>
-<img src="images/dashDB.png" width="75%">
-<p>
 Also on BlueMix, the IBM Internet of Things Foundation (IOTF) platform and associated Real-Time Insights (RTI) provide device registration and system status monitoring (1s intervals) for the RaspberryPi.  General purpose conditionals can be applied for integration with email, IFTTT (www.ifttt.com), Node.Red and arbitrary web-hook.
 <p>
 [IN PROGRESS] The BlueMix container service provides the run-time environment that processes the Cloudant event data and asynchronously builds the statistical model of normal and abnormal behaviour
@@ -71,47 +69,85 @@ and enables configuration for event notification (still under development).
 <p>
 [NOT SHOWN] This web site is also running on the IBM BlueMix CloudFoundry platform-as-a-service (PAAS), coordinating credentialing, billing and operational metrics across the service catalog.  In addition, this site utilizes Mixpanel (www.mixpanel.com) and Intercom.io (www.intercom.io) to provide user tracking and near-line chat (n.b. look in lower right corner for chat icon).
 <p>
+<h3>
+System Detail
+</h3>
+<a href="images/system-detail.png"><img src="images/system-detail.png" width="75%"></a>
+<p>
 GitHub repositories are publically accessible at:
 <ul>
 <li><a href="https://github.com/dcmartin/AgeAtHome">RaspberryPi container for resin.io deployment</a>.
 <li><a href="https://github.com/dcmartin/age-at-home">BlueMix CloudFoundry application</a>.
 </ul>
 <h2>
-Initial Results
-</h2>
-<p>
-With almost five (5) weeks of data collected patterns are emerging.  Added new database to Cloudant (rough-fog-stats)
-to store the statistical values.
-Link to data (rough-fog is the device DB name in Cloudant):
-<ul>
-<li>All events (need to add <code>?include_docs=true</code> to see event details (<a href="https://538e7925-b7f5-478b-bf75-2f292dcf642a-bluemix.cloudant.com/rough-fog/_all_docs">rough-fog</a>)
-<li>All classification statistics ({count, mean, sum, stdev} for each of 7 days x 96 time-intervals: <a href="https://538e7925-b7f5-478b-bf75-2f292dcf642a-bluemix.cloudant.com/rough-fog-stats/_all_docs">rough-fog-stats</a>)
-<li>Classification statistics for "person" (Alchemy API) (<a href="https://538e7925-b7f5-478b-bf75-2f292dcf642a-bluemix.cloudant.com/rough-fog-stats/person">rough-fog-stats/person</a>)
-</ul>
-<h2>
 Analysis
 </h2>
 <p>
-The statistical model is built initially using the <code><a href="bin/mkclass">mkclass</a></code> script.
-The script builds the 'person' classifier statistical model for the 'rough-fog' device by default, but can be parameterize by the device name and either a single classifier, a named classifier set (e.g. 'human' or 'all') or a list of classifiers separated by spaces.  When the model is calculated it is uploaded into device-specific database, e.g. rough-fog-stats, with each classifier model accessed by name (e.g. 'rough-fog-stats/person').
+With several weeks of data collected patterns are emerging.  Initial analysis step was to understand the classsifiers tagged in the images.
+<h3>
+Step 1: Watson Analytics
+</h3>
 <p>
-The results of the <code>mkclass</code> script are JSON and CSV files.  The CSV file for the 'person' classifier is consumed by the Excel spreadsheet to produce the charts below.
-<p>
+Data was processed from JSON in Cloudant into CSV files for each device.  Resulting data included listing of all classifiers by fifteen (15) minute interval per day.
 <ul>
-<li><a href="data/rough-fog-person.xslx">Excel spreadsheet</a> that processes person.csv file and makes the pretty charts below.
-<li>A <a href="https://gist.github.com/parente/7db992fae487d6e665e7b7dca841ffa2">Jupyter notebook</a> by Peter Parente (peterp@us.ibm.com)
+<li> <a href="data/rough-fog-all-intervals.csv">All classifiers by interval for rough-fog</a>
+<li> <a href="data/damp-cloud-all-intervals.csv">All classifiers by interval for damp-cloud</a>
 </ul>
 <p>
-<a href="https://gist.github.com/parente/7db992fae487d6e665e7b7dca841ffa2"><img width="75%" src="images/spark-graph.png"></a>
+These images are created using <a href="https://watson.analytics.ibmcloud.com/">Watson Analytics</a>.  It is simple to get a free account and load the CSV files.
+Import these CSV files into Watson Analytics, refine the data model and explore yields the following graphical displays of the classifier space.
 <p>
-The graphs below are generated in the Excel spreadsheet and visualize the following:
+<table width="100%">
+<tr valign="top">
+<td width="30%" align="center">
+<figure>
+    <a href="images/classifier-heatmap.png"><img width="95%" src="images/classifier-heatmap.png"></a>
+    <figcaption>Heatmap of classifiers</figcaption>
+</figure>
+</td>
+<td width="30%" align="center">
+<figure>
+    <a href="images/score-hour-classifier.png"><img width="95%" src="images/score-hour-classifier.png"></a>
+    <figcaption>Primary Classifiers</figcaption>
+</figure>
+</td>
+<td width="30%" align="center">
+<figure>
+    <a href="images/hour-classifier-relationship.png"><img width="95%" src="images/hour-classifier-relationship.png"></a>
+    <figcaption>Relationship between hour, day and classifier</figcaption>
+</figure>
+</td>
+</tr>
+</table>
+<p>
+The heatmap of classifiers as well as the primary classifiers across hour of day were both highly informative.  This insight lead the selection of the following classifiers 
+from the VisualInsights recognition algorithms for further investigation using Looker.
+<h3>
+Step 2: Looker
+</h3>
+<p>
+Analysis of the underlying events which generated the classifications lead to analysis using Looker.  Looker generates SQL for the dashDB replicant of the Cloudant JSON event history 
+and then makes that output available for visualization and download as JSON.  The following two graphics are "live" views of the rough-fog and damp-cloud events.
+<p>
+<iframe src='https://ibmcds.looker.com/embed/public/M9B2vPX7RD9Sf4PwDyNWQ6dR46pCS5qd' width='1000' height='350' frameborder='0'></iframe>
+<p>
+<iframe src='https://ibmcds.looker.com/embed/public/gXpvq8ykFPkMv2xFF3Tzg3mrG3jVt4HJ' width='1000' height='350' frameborder='0'></iframe>
+<h3>
+Step 3: Excel
+</h3>
+<p>
+The same UNIX script 
+(<code><a href="bin/mkclass">mkclass</a></code>)
+that converts the Cloudant JSON into CSV files suitable to Watson Analytics is also suitable 
+for consumption by Excel.
+The script builds the classifier (or classifier set, e.g. 'people') population statistics model for the specified device.
+The results are processed in the <a href="data/rough-fog-person.xslx">Excel spreadsheet</a> to produce the charts below.
 <ol>
 <li>All Activity; the sum of 'person' events in the kitchen
 <li>Expected Activity; when 'person' count by 'intervals' "near" mean of interval count
 <li>Over Activity; when 'person' count by 'interval' is +2SD over mean of interval count
 <li>Under Activity; when 'person' count by 'interval' is -2SD under mean of interval count
 </ol>
-<p>
 <table>
 <tr>
 <td><a href="images/person-active.png"><img width="95%" src="images/person-active.png"></a></td>
@@ -122,9 +158,15 @@ The graphs below are generated in the Excel spreadsheet and visualize the follow
 <td><a href="images/person-under-active.png"><img width="95%" src="images/person-under-active.png"></a></td>
 </tr>
 </table>
-<h3>
+<h2>
 Web Services
-</h3>
+</h2>
+With analytical understanding of the event classifier space and corresponding activity for specific classifiers by day of week and interval of day,
+a model can now be constructed to determine the average time of first activity in the AM.  That model is calculated on the server, based on the historical 
+event data and supplied to the device on demand through a Web service.
+The Web service is a HTTP address with parameters that invokes logic to to return a result, e.g. the average score for Person in a given interval of time.
+<p>
+Below are some examples of the <code>aah-stats</code> Web service:
 <ul>
 <li>
 Calculates / updates statistical model for device and classifier
@@ -142,104 +184,6 @@ Calculate / update list of all classifiers for device (e.g. "db=rough-fog")
 The id= argument can be specified with any of the classifiers.  The day= and interval= arguments can be specified with &quot;all&quot; or a number for day (0-6) or interval (0-95).
 <p>
 <img width="75%" src="images/command-line.png">
-<p>
-
-<h3>
-Data and Scripts
-</h3>
-<ul>
-<li><a href="data/rough-fog-person.csv">rough-fog-person.csv</a> - Pivot table of sum of 'person' events across all 15 minutes 'intervals' per day with count of weeks in sum
-<li><a href="data/rough-fog.json">rough-fog.json</a> - This file is the JSON 'events' from the Cloudant database retrieved by the <code>getjson2csv</code> script; 
-the DB can be specified on the command line
-<li><a href="data/rough-fog.csv">rough-fog.csv</a> (<a href="data/rough-fog-stat.csv">statistics</a>) - 
-These two files are output of JSON to CSV conversion and the calculation of statistics on the columns; these files are produced by the <code>getjson2csv</code> script; [ <DB> [ "none" | <operations>+ ]] are options for DB name and if/what statistics to calculate
-<li><a href="data/rough-fog-class-values.csv">rough-fog-class-values.csv</a> (<a href="data/rough-fog-classes.txt">all classes</a>) - These two files are the classifiers and values for all 'events' in the CSV table (i.e. rough-fog) as well as a list of all classifiers, including null (&quot;&quot)
-<li><a href="data/rough-fog-day-ampm.csv">rough-fog-day-ampm.csv</a> - This file is the calculation of AM or PM and day of week (e.g. Sunday) for all 'events' in the CSV table
-<li><a href="data/rough-fog-person-hour.csv">rough-fog-person-hour.csv</a> (<a href="data/rough-fog-person-hour.json">JSON</a>) - This file is the calculation of the 'person' classifier (n.b. Alchemy API) statistics for all hours of the week for both AM and PM intervals.
-<li><a href="data/rough-fog-person-interval.csv">rough-fog-person-interval.csv</a> (<a href="data/rough-fog-person-interval.json">JSON</a>) - This file is the calculation of the 'person' classifier (n.b. Alchemy API) in increments of 15 minutes (interval) across all days of the week for both AM and PM intervals.
-</ul>
-<p>
-List of shell scripts - listed in the order they should be run:
-<ul>
-<li><a href="bin/mkclass"><code>mkclass</code></a> - Script to create rough-fog-person.csv file and all dependencies including download from Cloudant; defaults to 'rough-fog', 'person' (24 hours TTL for refresh, but can be changed in script)
-<li><a href="bin/getjson2csv"><code>getjson2csv</code></a> - Script to pull JSON from Cloudant and convert to CSV, including calculating statistics and encoding as CSV.
-<li><a href="bin/mkclassvalues"><code>mkclassvalues</code></a> - Script to pull all VisualInsights and Alchemy "classifiers" and create CSV with class, score, time, date and event ID; can be specialized with DB and one or more classifiers; if only one classifier is specified, it assume Alchemy only (e.g. 'person').
-<li><a href="bin/mkintervals"><code>mkintervals</code></a> - Script to distinguish event time into 'day' of week, 'ampm' AM or PM, and 15 minute 'interval' in addition to default 'doc/hour' bucket
-<li><a href="bin/mkclassintervals"><code>mkclassintervals</code></a> - Script to calculate statistics for one classifier (default 'person') occurence by bucket (default 'doc/hour'; option 'interval') across AM and PM and days of week; note that 'doc/hour' is converted to simply 'hour' for output file.
-<li><a href="bin/new2json"><code>new2json</code></a> (<a href="bin/new2json.awk"><code>AWK</code></a>)
-- Convert the CSV results of <code>mkclass</code> (e.g. <a href="data/rough-fog-person.csv">rough-fog-person.csv</a>) to a JSON object 
-(e.g. <a href="data/rough-fog-person.json">rough-fog-person.json</a>)
-</ul>
-<h2>
-Watson Analytics
-</h2>
-<p>
-The process of preparing JSON data for Watson Analytics is cumbersome. While replication from Cloudant into dashDB is provided and dashDB can be accessed from WA
-(n.b. you need a paid account), the refinement capabilities in WA are insufficient for any non-trivial transformation (e.g. time into day of week).
-I wrote UNIX shell scripts to download the JSON data, convert to CSV, calculate statistics on the columns -- also not provided by WA, extract classifiers' scores for all events, 
-and catagorize events into day-of-week and AM-PM <i>bins</i>.  These scripts can take a long time to run on a laptop.
-<p>
-<table>
-<tr>
-<td align="center">
-<a href="images/mean-day-ampm.png"><img width="95%" src="images/mean-day-ampm.png"></a>
-<br><i>Trend of mean time for person in kitchen over days of week</i>
-</td>
-<td align="center">
-<a href="images/stdev-day-ampm.png"><img width="95%" src="images/stdev-day-ampm.png"></a>
-<br><i>Trend of standard deviation for person in kitchen over days of week</i>
-</td>
-</tr>
-</table>
-<p>
-These images are created using <a href="https://watson.analytics.ibmcloud.com/">Watson Analytics</a>.  It is simple to get a free account and load the CSV files.
-Here are some additional visualizations of the data.
-<br>
-<table width="100%">
-<tr valign="top">
-<td width="30%" align="center">
-<figure>
-    <a href="images/score-hour-classifier.png"><img width="95%" src="images/score-hour-classifier.png"></a>
-    <figcaption>Primary Classifiers</figcaption>
-</figure>
-</td>
-<td width="30%" align="center">
-<figure>
-    <a href="images/hour-classifier-relationship.png"><img width="95%" src="images/hour-classifier-relationship.png"></a>
-    <figcaption>Relationship between hour, day and classifier</figcaption>
-</figure>
-</td>
-<td width="30%" align="center">
-<figure>
-    <a href="images/classifier-heatmap.png"><img width="95%" src="images/classifier-heatmap.png"></a>
-    <figcaption>Heatmap of classifiers</figcaption>
-</figure>
-</td>
-</tr>
-</table>
-<h3>Looker</h3>
-One of IBM business partners, <a href="http://www.looker.com">Looker</a>, provides a GUI interface to <a href="http://www-01.ibm.com/software/data/dashdb/">dashDB</a>.
-A kind soul at Looker, Erin, analyzed the data in the rough-fog Cloudant database through its dashDB replication warehouse and provided the following example.
-<p>
-<a href="images/looker.png"><img width="75%" src="images/looker.png"></a>
-<br>
-<i>Static image from Looker UI</i>
-<p>
-<iframe src='https://ibmcds.looker.com/embed/public/WkqT2NkmksNyVCQfjTBKB37gFbQwHsB6' width='600' height='338' frameborder='0'></iframe>
-<br>
-<i>Analysis of Person on rough-fog</i>
-<p>
-<iframe src='https://ibmcds.looker.com/embed/public/tZgfnw8nJ27mkxf3QwbfkZ2yjtxnMJs6' width='600' height='338' frameborder='0'></iframe>
-<br>
-<i>Analysis of VisualInsights set { Big_Group,Adult,Female_Adult,Riot,Group_of_People,People,People_Activity,Male_Adult,Human,Individual_Person,Full_Body }  on rough-fog</i>
-<p>
-<iframe src='https://ibmcds.looker.com/embed/public/fNX9w7HH2y6kFHmksjWRM7NsDJ9Mq9Gp' width='600' height='338' frameborder='0'></iframe>
-<br>
-<i>Analysis of VisualInsights set { Big_Group,Adult,Female_Adult,Riot,Group_of_People,People,People_Activity,Male_Adult,Human,Individual_Person,Full_Body }  on damp-cloud</i>
-<p>
-<iframe src='https://ibmcds.looker.com/embed/public/mkppc4JcgRJR6Y9nVndTd2CyF539xmxS' width='600' height='338' frameborder='0'></iframe>
-<br>
-<i>Analysis of all VisualInsights classifiers on damp-cloud</i>
 <p>
 <h2>Examples</h2>
 Image captured using motion detection algorithm based on changes in pixel count (bounding box around centroid identifed).
