@@ -1,5 +1,7 @@
 # Age-At-Home Cognitive Build Project
 
+[![Join the chat at https://gitter.im/dcmartin/age-at-home](https://badges.gitter.im/dcmartin/age-at-home.svg)](https://gitter.im/dcmartin/age-at-home?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
+
 This repository contains the server-side components of the AgeAtHome project.
 
 There are two primary components:
