@@ -199,7 +199,7 @@ foreach d ( $days )
     # remove temporary file
     rm -f "$TMP/$APP-$API-$QUERY_STRING-weeks.$$"
 
-    echo -n '{"weekday":"'$d'","nweek":"'$#weeks'","weeks":['$weeks'],"intervals":[' >> "$NEW_STATS"
+    echo -n '{"weekday":"'$d'","nweek":'$#weeks',"weeks":['$weeks'],"intervals":[' >> "$NEW_STATS"
 
     @ j = 1
     foreach i ( $intervals )
@@ -221,7 +221,7 @@ foreach d ( $days )
 		-v "s=$sum" \
 		-v "m=$mean" \
 		-v "vs=$var" \
-		'{ c++; if ($5 > mx) mx=$5; s+=$5; m=s/c; vs+=(($5-m)^2) } END { sd=0; if (c > 0) sd=sqrt(vs/c); printf "{\"count\":\"%d\",\"max\":\"%f\",\"sum\":\"%f\",\"mean\":\"%f\",\"stdev\":\"%f\"}", c, mx, s, m, sd }' >> "$NEW_STATS"
+		'{ c++; if ($5 > mx) mx=$5; s+=$5; m=s/c; vs+=(($5-m)^2) } END { sd=0; if (c > 0) sd=sqrt(vs/c); printf "{\"count\":%d,\"max\":%f,\"sum\":%f,\"mean\":%f,\"stdev\":%f}", c, mx, s, m, sd }' >> "$NEW_STATS"
 	# next!
 	@ j++
     end

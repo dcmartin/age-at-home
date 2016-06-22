@@ -127,7 +127,7 @@ foreach class ( $CLASSIFIERS )
 	foreach d ( $days )
 	    if ($i > 1) echo -n "," >> "$statjson"
 	    set weeks = `csvgrep -c day -m "$d" $DB-$class-intervals.csv | csvcut -c week | tail +2 | sort -rn | uniq | awk 'BEGIN { c=0 } { if (c > 0) printf ", "; printf "\"%d\"", $1; c++ }'`
-	    echo -n '{"weekday":"'$d'","nweek":"'$#weeks'","weeks":['$weeks'],"intervals":[' >> "$statjson"
+	    echo -n '{"weekday":"'$d'","nweek":'$#weeks',"weeks":['$weeks'],"intervals":[' >> "$statjson"
 	    echo -n "$d,$#weeks," >> "$output"
 	    @ j = 1
 	    echo -n "$d "
@@ -136,7 +136,7 @@ foreach class ( $CLASSIFIERS )
 		if ($j > 1) echo -n "," >> "$output"
 
 		set l = `egrep "^$i,$d," $DB-$class-intervals.csv | awk -F, 'BEGIN { mx=0; c=0; s=0; m=0; v=0; vs=0 } { c++; if ($5 > mx) mx=$5; s=s+$5; m=s/c; vs=vs+($5-m)^2; v=vs/c } END { sd=sqrt(v); printf "%d %f %f %f %f", c, mx, s, m, sd }'`
-		echo -n '{"count":"'$l[1]'","max":"'$l[2]'","sum":"'$l[3]'","mean":"'$l[4]'","stdev":"'$l[5]'"}' >> "$statjson"
+		echo -n '{"count":'$l[1]',"max":'$l[2]',"sum":'$l[3]',"mean":'$l[4]',"stdev":'$l[5]'}' >> "$statjson"
 		echo -n "$l" | sed "s/ /,/g" >> "$output"
 		@ j++
 		echo -n '.'

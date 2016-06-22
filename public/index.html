@@ -5,7 +5,7 @@
 <style>
   body {
     font-family: 'Open+Sans', sans;
-    font-size: 20px;
+    font-size: 14px;
   }
 </style>
 <title>Age At Home</title>
@@ -58,27 +58,22 @@ The solution is patterned on a "do-it-yourself" (DIY) approach and utilizes inex
 <br>
 <img width="75%" src="images/system-overview.png">
 <p>
-The IBM BlueMix cloud provides services to analyze the images through the Watson cognitive portfolio, notably the AlchemyImage and VisualInsights recognition services.  In addition, Cloudant provides a NoSQL repository for the JavaScript object-notation (JSON) data produced from the event and the two image analysis algorithms.
+The <a href="http://www.bluemix.net/">IBM BlueMix</a> cloud provides a suite of services for the application, including this Web site, which is a Node.js CloudFoundry application.
+The BlueMix environment enables this application context to apply to other services, 
+notably the IBM Watson <a href="http://www.ibm.com/smarterplanet/us/en/ibmwatson/developercloud/visual-recognition.html">image recognition services</a>.  
+In addition, the <a href="http://cloudant.com/">Cloudant</a> NoSQL repository stores the historical event and image recognition information.
 <p>
-BlueMix also provides the dashDB hybrid relational data warehousing service that automatically replicates from the Cloudant repository and provides an SQL interface for SELECT, PROJECT and JOIN.  These SQL services can also be consumed by Watson Analytics and other third-party software packages (e.g. Looker).
+BlueMix also provides the <a href="http://www.ibm.com/software/data/dashdb/">dashDB</a> hybrid relational data warehousing service.  
+This service automatically replicates from the Cloudant repository and provides an SQL interface for SELECT, PROJECT and JOIN.
+This SQL services can also be consumed by <a href="http://watson.analytics.ibmcloud.com">Watson Analytics</a> and other third-party software packages from IBM 
+and business partners (e.g. <a href="http://www.looker.com">Looker</a>).
 <p>
-Also on BlueMix, the IBM Internet of Things Foundation (IOTF) platform and associated Real-Time Insights (RTI) provide device registration and system status monitoring (1s intervals) for the RaspberryPi.  General purpose conditionals can be applied for integration with email, IFTTT (www.ifttt.com), Node.Red and arbitrary web-hook.
+Also on BlueMix, the IBM <a href="https://internetofthings.ibmcloud.com/">Internet of Things</a> platform and 
+associated <a href="https://iotrti-prod.mam.ibmserviceengage.com/">Real-Time Insights</a> provide device registration and system status monitoring for the RaspberryPi.
+General purpose conditionals can be applied for integration with email, <a href="http://www.ifttt.com">IFTTT</a>, Node.Red and arbitrary web-hook.
 <p>
-[IN PROGRESS] The BlueMix container service provides the run-time environment that processes the Cloudant event data and asynchronously builds the statistical model of normal and abnormal behaviour
-and enables configuration for event notification (still under development).
-<p>
-[NOT SHOWN] This web site is also running on the IBM BlueMix CloudFoundry platform-as-a-service (PAAS), coordinating credentialing, billing and operational metrics across the service catalog.  In addition, this site utilizes Mixpanel (www.mixpanel.com) and Intercom.io (www.intercom.io) to provide user tracking and near-line chat (n.b. look in lower right corner for chat icon).
-<p>
-<h3>
-System Detail
-</h3>
-<a href="images/system-detail.png"><img src="images/system-detail.png" width="75%"></a>
-<p>
-GitHub repositories are publically accessible at:
-<ul>
-<li><a href="https://github.com/dcmartin/AgeAtHome">RaspberryPi container for resin.io deployment</a>.
-<li><a href="https://github.com/dcmartin/age-at-home">BlueMix CloudFoundry application</a>.
-</ul>
+In addition, this site utilizes Mixpanel (www.mixpanel.com) and Intercom.io (www.intercom.io) to provide user tracking and near-line chat
+(n.b. look in lower right corner for chat icon).
 <h2>
 Analysis
 </h2>
@@ -129,9 +124,21 @@ Step 2: Looker
 Analysis of the underlying events which generated the classifications lead to analysis using Looker.  Looker generates SQL for the dashDB replicant of the Cloudant JSON event history 
 and then makes that output available for visualization and download as JSON.  The following two graphics are "live" views of the rough-fog and damp-cloud events.
 <p>
+<iframe src='https://ibmcds.looker.com/embed/public/vQFVvQSgTFKHpgfmrPXKc8bsspQ2pF2Z' width='1000' height='350' frameborder='0'></iframe>
+<p>
 <iframe src='https://ibmcds.looker.com/embed/public/M9B2vPX7RD9Sf4PwDyNWQ6dR46pCS5qd' width='1000' height='350' frameborder='0'></iframe>
 <p>
+<iframe src='https://ibmcds.looker.com/embed/public/ZMdS9gbqv7mvmGqnvZHTbmGY4n53TBXV' width='1000' height='350' frameborder='0'></iframe>
+<p>
+<iframe src='https://ibmcds.looker.com/embed/public/J8Y8FBCQCTXHtC3KGN2bW96bksMczNbX' width='1000' height='350' frameborder='0'></iframe>
+<p>
+<iframe src='https://ibmcds.looker.com/embed/public/vmFgFKSvCpN6qY2JjyZWnCjzrh3qSHK7' width='1000' height='350' frameborder='0'></iframe>
+<p>
 <iframe src='https://ibmcds.looker.com/embed/public/gXpvq8ykFPkMv2xFF3Tzg3mrG3jVt4HJ' width='1000' height='350' frameborder='0'></iframe>
+<p>
+<iframe src='https://ibmcds.looker.com/embed/public/bhRrfdbXN6vwd5SpFWvGgbRXDW6mxhTD' width='1000' height='350' frameborder='0'></iframe>
+<p>
+<iframe src='https://ibmcds.looker.com/embed/public/MVDPdzgN9mckKZvnScxGHhGTTcKczjC3' width='1000' height='350' frameborder='0'></iframe>
 <h3>
 Step 3: Excel
 </h3>
@@ -159,7 +166,7 @@ The results are processed in the <a href="data/rough-fog-person.xslx">Excel spre
 </tr>
 </table>
 <h2>
-Web Services
+Step 4: Web Services
 </h2>
 With analytical understanding of the event classifier space and corresponding activity for specific classifiers by day of week and interval of day,
 a model can now be constructed to determine the average time of first activity in the AM.  That model is calculated on the server, based on the historical 
@@ -185,6 +192,8 @@ The id= argument can be specified with any of the classifiers.  The day= and int
 <p>
 <img width="75%" src="images/command-line.png">
 <p>
+This information is consumed by the RaspberryPi and utilized to compare current events with the historical population statistics.
+Local conditional testing is currently in-progress, utilizing the <code>motion</code> package capability for additional event processing.
 <h2>Examples</h2>
 Image captured using motion detection algorithm based on changes in pixel count (bounding box around centroid identifed).
 <p>
@@ -242,7 +251,7 @@ to the environment and you can see a <a href="https://quickstart.internetofthing
 of instrumentation data.  The dashboard below is shown once a device is registered to a BlueMix account and affiliated with an organization (another level of indirection 
 off your BlueMix account).
 <p>
-<img width="50%" src="images/iotf-platform-dashboard.png">
+<img width="33%" src="images/iotf-platform-dashboard.png">
 <br> <i>IBM IoTF Platform Dashboard</i>
 <p>
 Changes were made to both Dockerfile as well as initial script to enable IoTF/QS and sample C program only sends system status.  Will need to change
@@ -255,16 +264,37 @@ through a shared repository for the JSON events received by the platform; the JS
 The IOTF-RTI environment provides for rules to be specified in conjunction with JSON
 payload values using numeric comparison to static values, other payload values, and context parameters (n.b. unsure where or how these values are set).
 <p>
-<img width="50%" src="images/iotf-realtime-insights.png">
+<img width="33%" src="images/iotf-realtime-insights.png">
 <br><i>IBM IOTF Real-time Insights <i>rule</i> specification</i>
 <p>
-<img width="50%" src="images/iotf-realtime-insights-condition.png">
+<img width="33%" src="images/iotf-realtime-insights-condition.png">
 <br><i>IBM IOTF Real-time Insights <i>rule</i> <b>condition</b> specification</i>
 <p>
-<img width="50%" src="images/iotf-realtime-insights-action.png">
+<img width="33%" src="images/iotf-realtime-insights-action.png">
 <br><i>IBM IOTF Real-time Insights <i>rule</i> <b>action</b> specification</i>
+<h2>
+System Detail
+</h2>
 <p>
-
+The following image is a more detailed diagram of the system operational components and process.
+<p>
+<a href="images/system-detail.png"><img src="images/system-detail.png" width="75%"></a>
+<p>
+GitHub repositories are publically accessible at:
+<ul>
+<li><a href="https://github.com/dcmartin/AgeAtHome">RaspberryPi container for resin.io deployment</a>
+<li><a href="https://github.com/dcmartin/age-at-home">BlueMix CloudFoundry application</a>.
+</ul>
+SETUP (in-progress):
+<ol>
+<li><a href="http://www.dcmartin.com/CGI/appstore.cgi">Download</a> RaspberryPi image (Ethernet only; working on WiFi)
+<li>Use <a href="http://www.etcher.io/">Etcher</a> to copy image to SD card
+<li>Insert SD card in RaspberryPi & connect camera and power
+<li>Configure RaspberryPi using Web browser (port <a href="http://192.168.1.97:8080/">8080</a> ; image at port <a href="192.168.1.97:8081">8081</a>)
+<li>Send me an <a href="mailto:dcmartin@us.ibm.com">email</a> to setup server side; working on automation
+<li>View <i>your</i> Looker graphs on-line (in progress)
+<li>Setup conditionals for notification (in progress)
+</ol>
 <h2>More Information</h2>
 <img width="5%" src="images/dcm.jpg">
 <p>

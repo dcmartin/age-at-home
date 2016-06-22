@@ -106,15 +106,15 @@ echo "Last-Modified:" `date -r $DATE '+%a, %d %b %Y %H:%M:%S %Z'`
 echo ""
 
 
-cat "$JSON"
-exit
+# cat "$JSON"
+# exit
 
 if ($?day && $?interval) then
     if ($day == "all" && $interval == "all") then
         echo "+++ CALCULATING day ($day) and interval ($interval)" >>! $TMP/LOG
         # get statistics for all days across all intervals
 	cat "$JSON" | /usr/local/bin/jq -c '.days[].intervals[].count' | sed 's/"//g' | \
-	    /usr/local/bin/gawk 'BEGIN { mx=0; mn=0; c=0; nz=0; s=0;v=0 } { c++; if ($1 > mx) mx=$1; if ($1 < mn) mn=$1; if($1 > 0) { nz++; s += $1; m = s/nz; vs += ($1 - m)^2; v=vs/nz} } END { sd = sqrt(v); printf "{\"count\":\"%d\",\"non-zero\":\"%d\",\"min\":\"%d\",\"max\":\"%d\",\"sum\":\"%d\",\"mean\":\"%f\",\"stdev\":\"%f\"}\n", c, nz, mn, mx, s, m, sd  }'
+	    /usr/local/bin/gawk 'BEGIN { mx=0; mn=0; c=0; nz=0; s=0;v=0 } { c++; if ($1 > mx) mx=$1; if ($1 < mn) mn=$1; if($1 > 0) { nz++; s += $1; m = s/nz; vs += ($1 - m)^2; v=vs/nz} } END { sd = sqrt(v); printf "{\"count\":%d,\"non-zero\":%d,\"min\":%d,\"max\":%d,\"sum\":%d,\"mean\":%f,\"stdev\":%f}\n", c, nz, mn, mx, s, m, sd  }'
     	goto done
     else if ($day != "all" && $interval != "all") then
         echo "+++ CALCULATING day ($day) and interval ($interval)" >>! $TMP/LOG
@@ -128,7 +128,7 @@ if ($?day) then
     if ($day != "all") then
         echo -n "+++ CALCULATING day ($day) " >>! $TMP/LOG
 	cat "$JSON" | /usr/local/bin/jq -c '.days['$day'].intervals[].count' | sed 's/"//g' | \
-	    /usr/local/bin/gawk 'BEGIN { mx=0; mn= 0; nz=0; c=0; s=0;v=0 } { c++; if ($1 > mx) mx=$1; if ($1 < mn) mn=$1; if($1 > 0) { nz++; s += $1; m = s/nz; vs += ($1 - m)^2; v=vs/nz} } END { sd = sqrt(v); printf "{\"count\":\"%d\",\"non-zero\":\"%d\",\"min\":\"%d\",\"max\":\"%d\",\"sum\":\"%d\",\"mean\":\"%f\",\"stdev\":\"%f\"}\n", c, nz, mn, mx, s, m, sd  }'
+	    /usr/local/bin/gawk 'BEGIN { mx=0; mn= 0; nz=0; c=0; s=0;v=0 } { c++; if ($1 > mx) mx=$1; if ($1 < mn) mn=$1; if($1 > 0) { nz++; s += $1; m = s/nz; vs += ($1 - m)^2; v=vs/nz} } END { sd = sqrt(v); printf "{\"count\":%d,\"non-zero\":%d,\"min\":%d,\"max\":%d,\"sum\":%d,\"mean\":%f,\"stdev\":%f}\n", c, nz, mn, mx, s, m, sd  }'
         echo "+++" >>! $TMP/LOG
     else
         echo -n "+++ CALCULATING day ($day) " >>! $TMP/LOG
@@ -137,7 +137,7 @@ if ($?day) then
 	while ($i < 7)
 	    if ($i > 0) echo ","
 	    cat "$JSON" | /usr/local/bin/jq -c '.days['$i'].intervals[].count' | sed 's/"//g' | \
-		/usr/local/bin/gawk 'BEGIN { mx=0; mn= 0; nz=0;c=0; s = 0;v=0 } { c++; if ($1 > mx) mx=$1; if ($1 < mn) mn=$1; if($1 > 0) { nz++; s += $1; m = s/nz; vs += ($1 - m)^2; v=vs/nz} } END { sd = sqrt(v); printf "{\"count\":\"%d\",\"non-zero\":\"%d\",\"min\":\"%d\",\"max\":\"%d\",\"sum\":\"%d\",\"mean\":\"%f\",\"stdev\":\"%f\"}", c, nz, mn, mx, s, m, sd  }'
+		/usr/local/bin/gawk 'BEGIN { mx=0; mn= 0; nz=0;c=0; s = 0;v=0 } { c++; if ($1 > mx) mx=$1; if ($1 < mn) mn=$1; if($1 > 0) { nz++; s += $1; m = s/nz; vs += ($1 - m)^2; v=vs/nz} } END { sd = sqrt(v); printf "{\"count\":%d,\"non-zero\":%d,\"min\":%d,\"max\":%d,\"sum\":%d,\"mean\":%f,\"stdev\":%f}", c, nz, mn, mx, s, m, sd  }'
 	    @ i++
 	end
 	echo "]}"
@@ -149,7 +149,7 @@ else if ($?interval) then
     if ($interval != "all") then
         echo "+++ CALCULATING interval ($interval)" >>! $TMP/LOG
 	cat "$JSON" | /usr/local/bin/jq -c '.days[].intervals['$interval'].count' | sed 's/"//g' | \
-	    /usr/local/bin/gawk 'BEGIN { mx=0; mn= 0; nz=0;c=0; s = 0 ;v=0} { c++; if ($1 > mx) mx=$1; if ($1 < mn) mn=$1; if($1 > 0) { nz++; s += $1; m = s/nz; vs += ($1 - m)^2; v=vs/nz} } END { sd = sqrt(v); printf "{\"count\":\"%d\",\"non-zero\":\"%d\",\"min\":\"%d\",\"max\":\"%d\",\"sum\":\"%d\",\"mean\":\"%f\",\"stdev\":\"%f\"}\n", c, nz, mn, mx, s, m, sd  }'
+	    /usr/local/bin/gawk 'BEGIN { mx=0; mn= 0; nz=0;c=0; s = 0 ;v=0} { c++; if ($1 > mx) mx=$1; if ($1 < mn) mn=$1; if($1 > 0) { nz++; s += $1; m = s/nz; vs += ($1 - m)^2; v=vs/nz} } END { sd = sqrt(v); printf "{\"count\":%d,\"non-zero\":%d,\"min\":%d,\"max\":%d,\"sum\":%d,\"mean\":%f,\"stdev\":%f}\n", c, nz, mn, mx, s, m, sd  }'
     else
         echo "+++ CALCULATING interval ($interval)" >>! $TMP/LOG
 	@ i = 0
@@ -157,7 +157,7 @@ else if ($?interval) then
 	while ($i < 96)
 	    if ($i > 0) echo ","
 	    cat "$JSON" | /usr/local/bin/jq -c '.days[].intervals['$i'].count' | sed 's/"//g' | \
-		/usr/local/bin/gawk 'BEGIN { mx=0; mn= 0; nz=0;c=0; s = 0;v=0 } { c++; if ($1 > mx) mx=$1; if ($1 < mn) mn=$1; if($1 > 0) { nz++; s += $1; m = s/nz; vs += ($1 - m)^2; v=vs/nz} } END { sd = sqrt(v); printf "{\"count\":\"%d\",\"non-zero\":\"%d\",\"min\":\"%d\",\"max\":\"%d\",\"sum\":\"%d\",\"mean\":\"%f\",\"stdev\":\"%f\"}", c, nz, mn, mx, s, m, sd  }'
+		/usr/local/bin/gawk 'BEGIN { mx=0; mn= 0; nz=0;c=0; s = 0;v=0 } { c++; if ($1 > mx) mx=$1; if ($1 < mn) mn=$1; if($1 > 0) { nz++; s += $1; m = s/nz; vs += ($1 - m)^2; v=vs/nz} } END { sd = sqrt(v); printf "{\"count\":%d,\"non-zero\":%d,\"min\":%d,\"max\":%d,\"sum\":%d,\"mean\":%f,\"stdev\":%f}", c, nz, mn, mx, s, m, sd  }'
 	    @ i++
 	end
 	echo "]}"
