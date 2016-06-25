@@ -1,6 +1,6 @@
 #!/bin/csh -fb
 setenv APP "aah"
-setenv API "counts"
+setenv API "count"
 setenv WWW "http://www.dcmartin.com/CGI/"
 setenv LAN "192.168.1"
 if ($?TMP == 0) setenv TMP "/tmp"

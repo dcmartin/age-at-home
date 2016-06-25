@@ -1,6 +1,6 @@
 #!/bin/csh -fb
 setenv APP "aah"
-setenv API "average"
+setenv API "countHumans"
 setenv WWW "http://www.dcmartin.com/CGI/"
 setenv LAN "192.168.1"
 if ($?TMP == 0) setenv TMP "/tmp"
@@ -19,27 +19,29 @@ else
 endif
 setenv QUERY_STRING "db=$DB"
 
-set OUTPUT = "$TMP/$APP-$API.$DB.$DATE.csv"
+set OUTPUT = "$TMP/$APP-$API.$DB.$DATE.json"
 if (! -e "$OUTPUT") then
-    rm -f $TMP/$APP-$API.$DB.*.csv
+    rm -f $TMP/$APP-$API.$DB.*.json
     if ($DB == "damp-cloud") then
-	curl -L -s -q -o "$OUTPUT" "https://ibmcds.looker.com/looks/bhRrfdbXN6vwd5SpFWvGgbRXDW6mxhTD.csv?apply_formatting=true"
+	curl -L -s -q -o "$OUTPUT" "https://ibmcds.looker.com/looks/gXpvq8ykFPkMv2xFF3Tzg3mrG3jVt4HJ.json?apply_formatting=true
     else
-	curl -L -s -q -o "$OUTPUT" "https://ibmcds.looker.com/looks/ZMdS9gbqv7mvmGqnvZHTbmGY4n53TBXV.csv?apply_formatting=true"
+	curl -L -s -q -o "$OUTPUT" "https://ibmcds.looker.com/looks/M9B2vPX7RD9Sf4PwDyNWQ6dR46pCS5qd.json?apply_formatting=true"
     endif
+    echo '{"device":"'$DB'", "counts":' >! "$OUTPUT".$$
     if ($DB == "damp-cloud") then
 	cat "$OUTPUT" \
-	    | sed "s/dampcloud\.15_minute_//" \
+	    | sed "s/intervals\.//" \
 	    | sed "s/dampcloud_visual_scores\.//g" >> "$OUTPUT".$$
     else
 	cat "$OUTPUT" \
-	    | sed "s/roughfog\.15_minute_//" \
+	    | sed "s/intervals\.//" \
 	    | sed "s/roughfog_visual_scores\.//g" >> "$OUTPUT".$$
     endif
+    echo '}' >> "$OUTPUT.$$"
     mv -f "$OUTPUT".$$ "$OUTPUT"
 endif
 
-echo "Content-Type: text/csv; charset=utf-8"
+echo "Content-Type: application/json; charset=utf-8"
 echo "Access-Control-Allow-Origin: *"
 set AGE = `echo "$SECONDS - $DATE" | bc`
 echo "Age: $AGE"
