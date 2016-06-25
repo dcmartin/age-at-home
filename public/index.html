@@ -52,11 +52,15 @@ This initial scenario may be easily extended to other passive monitoring capabil
 </tr>
 </table>
 <p>
-
+<h2>
+First and Last
+</h2>
+The table below has the first and last events today in which a Human classifier was identified.  This result is via a Looker generated SQL provisioning a JSON result that is then cleaned-up using a CGI script.
+<p>
 <table border="1">
-<tr><th>Location</th><th>Last Seen</th></tr>
-<tr valign="top"><td>Kitchen</td><td><div id="rf_div"></div></td></tr>
-<tr valign="top"><td>Bathroom</td><td><div id="dc_div"></div></td></tr>
+<tr><th>Location</th><th>First Seen</th><th>Last Seen</th></tr>
+<tr valign="top"><td>Kitchen</td><td><div id="rf_first_div"></div></td><td><div id="rf_div"></div></td></tr>
+<tr valign="top"><td>Bathroom</td><td><div id="dc_first_div"></div></td><td><div id="dc_div"></div></td></tr>
 </table>
 
 <script>
@@ -74,12 +78,34 @@ function rf_handler() {
    rf_div.innerHTML = datetime;
  }
 }
+function dc_first() {
+ if(this.status == 200 && this.responseText != null) {
+   j = JSON.parse(this.responseText);
+   datetime = j.datetime;
+   dc_first_div.innerHTML = datetime;
+ }
+}
+function rf_first() {
+ if(this.status == 200 && this.responseText != null) {
+   j = JSON.parse(this.responseText);
+   datetime = j.datetime;
+   rf_first_div.innerHTML = datetime;
+ }
+}
+
+var dc_first_req = new XMLHttpRequest();
+dc_first_req.onload = dc_first;
+dc_first_req.open("GET", "http://www.dcmartin.com/CGI/aah-first.cgi?db=damp-cloud", true);
+dc_first_req.send();
+var rf_first_req = new XMLHttpRequest();
+rf_first_req.onload = rf_first;
+rf_first_req.open("GET", "http://www.dcmartin.com/CGI/aah-first.cgi?db=rough-fog", true);
+rf_first_req.send();
 
 var dc_req = new XMLHttpRequest();
 dc_req.onload = dc_handler;
 dc_req.open("GET", "http://www.dcmartin.com/CGI/aah-last.cgi?db=damp-cloud", true);
 dc_req.send();
-
 var rf_req = new XMLHttpRequest();
 rf_req.onload = rf_handler;
 rf_req.open("GET", "http://www.dcmartin.com/CGI/aah-last.cgi?db=rough-fog", true);
@@ -162,19 +188,21 @@ and then makes that output available for visualization and download as JSON.  Th
 <p>
 <iframe src='https://ibmcds.looker.com/embed/public/vQFVvQSgTFKHpgfmrPXKc8bsspQ2pF2Z' width='1000' height='350' frameborder='0'></iframe>
 <p>
+<iframe src='https://ibmcds.looker.com/embed/public/vmFgFKSvCpN6qY2JjyZWnCjzrh3qSHK7' width='1000' height='350' frameborder='0'></iframe>
+<!--
+<p>
 <iframe src='https://ibmcds.looker.com/embed/public/M9B2vPX7RD9Sf4PwDyNWQ6dR46pCS5qd' width='1000' height='350' frameborder='0'></iframe>
 <p>
 <iframe src='https://ibmcds.looker.com/embed/public/ZMdS9gbqv7mvmGqnvZHTbmGY4n53TBXV' width='1000' height='350' frameborder='0'></iframe>
 <p>
 <iframe src='https://ibmcds.looker.com/embed/public/J8Y8FBCQCTXHtC3KGN2bW96bksMczNbX' width='1000' height='350' frameborder='0'></iframe>
 <p>
-<iframe src='https://ibmcds.looker.com/embed/public/vmFgFKSvCpN6qY2JjyZWnCjzrh3qSHK7' width='1000' height='350' frameborder='0'></iframe>
-<p>
 <iframe src='https://ibmcds.looker.com/embed/public/gXpvq8ykFPkMv2xFF3Tzg3mrG3jVt4HJ' width='1000' height='350' frameborder='0'></iframe>
 <p>
 <iframe src='https://ibmcds.looker.com/embed/public/bhRrfdbXN6vwd5SpFWvGgbRXDW6mxhTD' width='1000' height='350' frameborder='0'></iframe>
 <p>
 <iframe src='https://ibmcds.looker.com/embed/public/MVDPdzgN9mckKZvnScxGHhGTTcKczjC3' width='1000' height='350' frameborder='0'></iframe>
+-->
 <h3>
 Step 3: Excel
 </h3>
