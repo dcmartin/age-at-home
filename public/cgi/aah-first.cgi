@@ -1,6 +1,6 @@
 #!/bin/csh -fb
 setenv APP "aah"
-setenv API "last"
+setenv API "first"
 setenv WWW "http://www.dcmartin.com/CGI/"
 setenv LAN "192.168.1"
 if ($?TMP == 0) setenv TMP "/tmp"
@@ -23,9 +23,9 @@ set OUTPUT = "$TMP/$APP-$API.$DB.$DATE.json"
 if (! -e "$OUTPUT") then
     rm -f $TMP/$APP-$API.$DB.*.json
     if ($DB == "damp-cloud") then
-	curl -L -s -q -o "$OUTPUT" "https://ibmcds.looker.com/looks/QYMvmW69kbcPxf3MkN43jSrgJ2NvBg9D.json"
+	curl -L -s -q -o "$OUTPUT" "https://ibmcds.looker.com/looks/y4dP4n52YGGcjpKHGjFQVXtCR56xT7kX.json?apply_formatting=true"
     else
-	curl -L -s -q -o "$OUTPUT" "https://ibmcds.looker.com/looks/P7QkTrRjNVpGfj4Vgz8m8Qzb7cFw8Z4X.json"
+	curl -L -s -q -o "$OUTPUT" "https://ibmcds.looker.com/looks/vNhq2H5mWFwPB5pgT3j5Rs4wGbRKHpH7.json?apply_formatting=true"
     endif
 endif
 if ($DB == "damp-cloud") then
