@@ -54,29 +54,37 @@ This initial scenario may be easily extended to other passive monitoring capabil
 <p>
 
 <table border="1">
-<tr><th>Location</th><th>Date-Time</th></tr>
-<tr valign="top"><td>Kitchen</td><td height="10"><img src="https://ibmcds.looker.com/looks/P7QkTrRjNVpGfj4Vgz8m8Qzb7cFw8Z4X.png"></td></tr>
-<tr valign="top"><td>Bathroom</td><td height="10"><img src="https://ibmcds.looker.com/looks/QYMvmW69kbcPxf3MkN43jSrgJ2NvBg9D.png"</td></tr>
+<tr><th>Location</th><th>Last Seen</th></tr>
+<tr valign="top"><td>Kitchen</td><td><div id="rf_div"></div></td></tr>
+<tr valign="top"><td>Bathroom</td><td><div id="dc_div"></div></td></tr>
 </table>
 
-<div id="id01" />
 <script>
-function handler() {
- if(this.status == 200 &&
-   this.responseXML != null &&
-   this.responseXML.getElementById('dampcloud.alchemy_time').textContent) {
-   // success!
-   id01.innerHTML = this.responseXML.getElementById('dampcloud.alchemy_time').textContent;
- } else {
-   // something went wrong
+function dc_handler() {
+ if(this.status == 200 && this.responseText != null) {
+   j = JSON.parse(this.responseText);
+   datetime = j.datetime;
+   dc_div.innerHTML = datetime;
+ }
+}
+function rf_handler() {
+ if(this.status == 200 && this.responseText != null) {
+   j = JSON.parse(this.responseText);
+   datetime = j.datetime;
+   rf_div.innerHTML = datetime;
  }
 }
 
-var url = "http://www.dcmartin.com/CGI/aah-last.cgi";
-var client = new XMLHttpRequest();
-client.onload = handler;
-client.open("GET", url, true);
-client.send();
+var dc_req = new XMLHttpRequest();
+dc_req.onload = dc_handler;
+dc_req.open("GET", "http://www.dcmartin.com/CGI/aah-last.cgi?db=damp-cloud", true);
+dc_req.send();
+
+var rf_req = new XMLHttpRequest();
+rf_req.onload = rf_handler;
+rf_req.open("GET", "http://www.dcmartin.com/CGI/aah-last.cgi?db=rough-fog", true);
+rf_req.send();
+
 </script>
 
 <p>
