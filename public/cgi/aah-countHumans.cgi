@@ -23,18 +23,18 @@ set OUTPUT = "$TMP/$APP-$API.$DB.$DATE.json"
 if (! -e "$OUTPUT") then
     rm -f $TMP/$APP-$API.$DB.*.json
     if ($DB == "damp-cloud") then
-	curl -L -s -q -o "$OUTPUT" "https://ibmcds.looker.com/looks/gXpvq8ykFPkMv2xFF3Tzg3mrG3jVt4HJ.json?apply_formatting=true
+	curl -L -s -q -o "$OUTPUT" "https://ibmcds.looker.com/looks/gXpvq8ykFPkMv2xFF3Tzg3mrG3jVt4HJ.json?apply_formatting=true"
     else
 	curl -L -s -q -o "$OUTPUT" "https://ibmcds.looker.com/looks/M9B2vPX7RD9Sf4PwDyNWQ6dR46pCS5qd.json?apply_formatting=true"
     endif
     echo '{"device":"'$DB'", "counts":' >! "$OUTPUT".$$
     if ($DB == "damp-cloud") then
 	cat "$OUTPUT" \
-	    | sed "s/intervals\.//" \
+	    | sed "s/dampcloud\.15_minute_interval/interval/" \
 	    | sed "s/dampcloud_visual_scores\.//g" >> "$OUTPUT".$$
     else
 	cat "$OUTPUT" \
-	    | sed "s/intervals\.//" \
+	    | sed "s/roughfog\.15_minute_interval/interval/" \
 	    | sed "s/roughfog_visual_scores\.//g" >> "$OUTPUT".$$
     endif
     echo '}' >> "$OUTPUT.$$"
@@ -42,7 +42,7 @@ if (! -e "$OUTPUT") then
 endif
 
 echo "Content-Type: application/json; charset=utf-8"
-echo "Access-Control-Allow-Origin: *"
+echo "Access-Control-Allow-Origin: http://age-at-home.mybluemix.net/*"
 set AGE = `echo "$SECONDS - $DATE" | bc`
 echo "Age: $AGE"
 echo "Cache-Control: max-age=$TTL"
