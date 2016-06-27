@@ -1,4 +1,5 @@
 <!DOCTYPE html>
+
 <html>
 <head>
 <link href="https://fonts.googleapis.com/css?family=Open+Sans" rel="stylesheet" type="text/css">
@@ -22,12 +23,37 @@ mixpanel.track("home");
 </script>
 <!-- end Mixpanel -->
 <body>
+<!-- BEGIN FACEBOOK -->
+<script>
+  window.fbAsyncInit = function() {
+    FB.init({
+      appId      : '987455534707663',
+      xfbml      : true,
+      version    : 'v2.6'
+    });
+  };
+
+  (function(d, s, id){
+     var js, fjs = d.getElementsByTagName(s)[0];
+     if (d.getElementById(id)) {return;}
+     js = d.createElement(s); js.id = id;
+     js.src = "//connect.facebook.net/en_US/sdk.js";
+     fjs.parentNode.insertBefore(js, fjs);
+   }(document, 'script', 'facebook-jssdk'));
+</script>
+<!-- END FACEBOOK -->
 <a href="https://cognitivebuild.bluefundit.com/project/56ee0073f6ec6de43b0d6344">
 <img width="10%" src="images/age-at-home.jpg">
 </a>
 <h1>
 Age-At-Home
 </h1>
+<div
+  class="fb-like"
+  data-share="true"
+  data-width="450"
+  data-show-faces="true">
+</div>
 <h2>What is it?</h2>
 <p>
 Improve the elderlys' ability to age at home through understanding of daily activities inferred from passive sensor analysis.

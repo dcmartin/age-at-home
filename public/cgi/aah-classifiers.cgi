@@ -47,7 +47,7 @@ endif
 
 
 echo "Content-Type: application/json; charset=utf-8"
-echo "Access-Control-Allow-Origin: http://age-at-home.mybluemix.net/*"
+echo "Access-Control-Allow-Origin: *"
 set AGE = `echo "$SECONDS - $DATE" | bc`
 echo "Age: $AGE"
 echo "Cache-Control: max-age=$TTL"
