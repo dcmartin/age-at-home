@@ -81,7 +81,8 @@ This initial scenario may be easily extended to other passive monitoring capabil
 <h2>
 First and Last
 </h2>
-The table below has the first and last events today in which a Human classifier was identified.  This result is via a Looker generated SQL provisioning a JSON result that is then cleaned-up using a CGI script.
+The table below has the first and last events today in which a Human classifier was identified.  This result is via a Looker generated SQL provisioning a JSON result that is then cleaned-up using a CGI script.  There is a bug in that the public dashDB instance I am sharing has its timezone set to GMT; this does not appear to something I can change in a simple or straight-forward fashion.  
+The results may be NULL until I find a fix.
 <p>
 <table border="1">
 <tr><th>Location</th><th>First Seen</th><th>Last Seen</th></tr>
