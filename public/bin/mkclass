@@ -1,4 +1,4 @@
-#!/bin/tcsh
+#!/bin/csh -fb
 
 # get time
 set TTL = `echo "12 * 60 * 60" | bc`
@@ -137,7 +137,8 @@ foreach class ( $CLASSIFIERS )
 
 		set l = `egrep "^$i,$d," $DB-$class-intervals.csv | awk -F, 'BEGIN { mx=0; c=0; s=0; m=0; v=0; vs=0 } { c++; if ($5 > mx) mx=$5; s=s+$5; m=s/c; vs=vs+($5-m)^2; v=vs/c } END { sd=sqrt(v); printf "%d %f %f %f %f", c, mx, s, m, sd }'`
 		echo -n '{"count":'$l[1]',"max":'$l[2]',"sum":'$l[3]',"mean":'$l[4]',"stdev":'$l[5]'}' >> "$statjson"
-		echo -n "$l" | sed "s/ /,/g" >> "$output"
+		set m = `echo "$l" | sed "s/ /,/g"`
+		echo -n "$m" >> "$output"
 		@ j++
 		echo -n '.'
 	    end

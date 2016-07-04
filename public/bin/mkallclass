@@ -1,4 +1,4 @@
-#!/bin/tcsh
+#!/bin/csh -fb
 if ($?CLOUDANT_DATABASE) then
     setenv DB "$CLOUDANT_DATABASE"
 else

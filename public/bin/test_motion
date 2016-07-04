@@ -1,4 +1,4 @@
-#!/bin/csh -f
+#!/bin/csh -fb
 setenv DEVICE_NAME rough-fog
 set INTERVAL = 15
 set DIR = /var/lib/motion
