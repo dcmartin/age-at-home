@@ -9,7 +9,7 @@ set TTL = `echo "30 * 60" | bc`
 set SECONDS = `date "+%s"`
 set DATE = `echo $SECONDS \/ $TTL \* $TTL | bc`
 
-echo "$APP-$API ($0 $$) -- $SECONDS" >>! $TMP/LOG
+echo ">>> $APP-$API ($0 $$)" `date` >>! $TMP/LOG
 
 set JSON = ~$USER/.aah-classifierSets.json
 if (! -e "$JSON") then

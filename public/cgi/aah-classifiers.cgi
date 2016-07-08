@@ -9,7 +9,7 @@ set TTL = `echo "30 * 60" | bc`
 set SECONDS = `date "+%s"`
 set DATE = `echo $SECONDS \/ $TTL \* $TTL | bc`
 
-echo "$APP-$API ($0 $$) -- $SECONDS" >>! $TMP/LOG
+echo ">>> $APP-$API ($0 $$)" `date` >>! $TMP/LOG
 
 if (-e ~$USER/.cloudant_url) then
     echo "$APP-$API ($0 $$) - ~$USER/.cloudant_url" >>! $TMP/LOG

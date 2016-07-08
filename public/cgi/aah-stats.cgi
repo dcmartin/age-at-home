@@ -9,7 +9,7 @@ set TTL = 3600
 set SECONDS = `date "+%s"`
 set DATE = `echo $SECONDS \/ $TTL \* $TTL | bc`
 
-echo "$APP-$API ($0 $$) BEGIN $DATE" >>! $TMP/LOG
+echo ">>> $APP-$API ($0 $$)" `date` >>! $TMP/LOG
 
 if (-e ~$USER/.cloudant_url) then 
     set cc = ( `cat ~$USER/.cloudant_url` )

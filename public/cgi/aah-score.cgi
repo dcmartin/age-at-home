@@ -1,11 +1,11 @@
 #!/bin/csh -fb
 setenv APP "aah"
-setenv API "averageHuman"
+setenv API "score"
 setenv WWW "http://www.dcmartin.com/CGI/"
 setenv LAN "192.168.1"
 if ($?TMP == 0) setenv TMP "/tmp"
-# don't update statistics more than once per 15 minutes
-set TTL = `echo "30 * 60" | bc`
+# don't update statistics more than once per 24 hours
+set TTL = `echo "24 * 60 * 60" | bc`
 set SECONDS = `date "+%s"`
 set DATE = `echo $SECONDS \/ $TTL \* $TTL | bc`
 
@@ -23,22 +23,26 @@ set OUTPUT = "$TMP/$APP-$API.$DB.$DATE.json"
 if (! -e "$OUTPUT") then
     rm -f $TMP/$APP-$API.$DB.*.json
     if ($DB == "damp-cloud") then
-	curl -L -s -q -o "$OUTPUT" "https://ibmcds.looker.com/looks/bhRrfdbXN6vwd5SpFWvGgbRXDW6mxhTD.json?apply_formatting=true"
+    	# damp cloud (visual-classifier, score, time) Public Access
+	curl -L -s -q -o "$OUTPUT.$$" "https://ibmcds.looker.com/looks/gGt5s3SmqfMt2HDbr7R2pCNcM2th3h4s.json?apply_formatting=true"
     else
-	curl -L -s -q -o "$OUTPUT" "https://ibmcds.looker.com/looks/ZMdS9gbqv7mvmGqnvZHTbmGY4n53TBXV.json?apply_formatting=true"
+	curl -L -s -q -o "$OUTPUT.$$" "https://ibmcds.looker.com/looks/9fBDPkqVtjHyBJqQBr6xrW4JP9dXgkRv.json?apply_formatting=true"
     endif
-    echo '{"device":"'$DB'", "averages":' >! "$OUTPUT".$$
+
+    echo '{"device":"'$DB'", "scores":' >! "$OUTPUT".$$.$$
+
     if ($DB == "damp-cloud") then
-	cat "$OUTPUT" \
-	    | sed "s/dampcloud\.15_minute_//" \
-	    | sed "s/dampcloud_visual_scores\.//g" >> "$OUTPUT".$$
+	cat "$OUTPUT".$$ \
+	    | sed "s/dampcloud\.alchemy_//" \
+	    | sed "s/dampcloud_visual_scores\.//g" >> "$OUTPUT".$$.$$
     else
-	cat "$OUTPUT" \
-	    | sed "s/roughfog\.15_minute_//" \
-	    | sed "s/roughfog_visual_scores\.//g" >> "$OUTPUT".$$
+	cat "$OUTPUT".$$ \
+	    | sed "s/roughfog\.alchemy_//" \
+	    | sed "s/roughfog_visual_scores\.//g" >> "$OUTPUT".$$.$$
     endif
-    echo '}' >> "$OUTPUT.$$"
-    mv -f "$OUTPUT".$$ "$OUTPUT"
+    rm -f "$OUTPUT.$$"
+    echo '}' >> "$OUTPUT.$$.$$"
+    mv -f "$OUTPUT".$$.$$ "$OUTPUT"
 endif
 
 echo "Content-Type: application/json; charset=utf-8"

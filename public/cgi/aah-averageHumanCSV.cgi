@@ -8,8 +8,8 @@ if ($?TMP == 0) setenv TMP "/tmp"
 set TTL = `echo "30 * 60" | bc`
 set SECONDS = `date "+%s"`
 set DATE = `echo $SECONDS \/ $TTL \* $TTL | bc`
-
-echo "$APP-$API ($0 $$) -- $SECONDS" >>! $TMP/LOG
+ 
+echo ">>> $APP-$API ($0 $$)" `date` >>! $TMP/LOG
 
 if ($?QUERY_STRING) then
     set DB = `echo "$QUERY_STRING" | sed "s/.*db=\([^&]*\).*/\1/"`
