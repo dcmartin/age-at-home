@@ -1,0 +1,91 @@
+#!/bin/csh -fb
+
+if (! -e /usr/local/bin/brew) then
+   echo "*** NO HOME BREW?  Install from http://brew.sh"
+   exit
+endif
+if (! -e /usr/local/bin/jq) then 
+   echo "*** BREWING 'jq' ..."
+   brew install jq
+endif
+if (! -e /usr/local/bin/mplayer) then
+   echo "*** BREWING 'mplayer' ..."
+   brew install mplayer
+endif
+
+if ($#argv > 0) then
+    @ i = 1
+    set t = "$argv[1]"
+    if (($#t == 1) && ($#argv > 1)) then
+	if ($t == "-v") then
+	    set voice = $argv[2]
+	    @ i = 2
+	endif
+    endif
+    if ($#argv > $i) then
+	@ i++
+        set say = "$argv[$i-]"
+    endif
+endif
+if ($?say == 0) set say = "Did you take your medications"
+
+set creds = ~$USER/.watson.text-to-speech.json
+if (-e $creds) then
+    set username = ( `jq '.[].credentials.username' $creds | sed 's/"//g'` )
+    if ($#username > 1) then
+        set username = $username[1]
+    else if ($username == null) then
+	set username = ( `jq '.credentials.username' $creds | sed 's/"//g'` )
+    endif
+    echo "--- USING USERNAME $username"
+    set password = ( `jq '.[].credentials.password' $creds | sed 's/"//g'` )
+    if ($#password > 1) then
+        set password = $password[1]
+    else if ($password == null) then
+	set password = ( `jq '.credentials.password' $creds | sed 's/"//g'` )
+    endif
+    echo "--- USING PASSWORD $password"
+    set url = ( `jq '.[].credentials.url' $creds | sed 's/"//g' | sed 's@https://@@'` )
+    if ($#url > 1) then
+        set url = $url[1]
+    else if ($url == null) then
+	set url = ( `jq '.credentials.url' $creds | sed 's/"//g' | sed 's@https://@@'` )
+    endif
+    echo "--- USING URL $url"
+    # set base
+    set TU = 'https://'"$username"':'"$password"'@'"$url"'/'
+else if ($?TU == 0) then
+    echo "*** NO CREDENTIALS ($creds); create file and copy credentials from 'speech-to-text' service on bluemix.net"
+    exit
+endif
+
+# 
+echo "*** USING API AT URL: $TU"
+
+# report on voices
+echo "*** AVAILABLE VOICES"
+set voices = `curl -s -q -L "$TU/v1/voices"`
+set langs = `echo "$voices" | jq '.[][].language'`
+@ i = 0
+set en_voices = ()
+foreach l ( $langs )
+    set en = `echo $l | sed 's/^"en-\(.*\)"/en/'`
+    if ($en == "en") then
+	set ev = `echo $voices | jq '.[]['$i'].name' | sed 's/"//g'`
+	set en_voices = ( $en_voices $ev )
+    endif
+    @ i++
+end
+
+if ($#en_voices == 0) exit
+
+echo $say
+echo '{"text":"'$say'"}' >! /tmp/$0:t.input.$$.json
+foreach v ( $en_voices )
+    echo "+++ USING VOICE: $v"
+    curl -s -q -L -X POST --header 'Content-Type: application/json' --header 'Accept: audio/wav' --data @/tmp/$0:t.input.$$.json "$TU/v1/synthesize?voice=$v" --output /tmp/$0:t.output.$$.wav
+    mplayer /tmp/$0:t.output.$$.wav
+    sleep 2
+    rm /tmp/$0:t.output.$$.wav
+end
+rm -f /tmp/$0:t.input.$$.json

@@ -1,4 +1,4 @@
-#!/bin/tcsh
+#!/bin/csh -fb
 setenv APP "aah"
 setenv API "scores"
 if ($?TMP == 0) setenv TMP "/tmp"
@@ -9,7 +9,7 @@ set TTL = `echo "12 * 60 * 60" | bc`
 set SECONDS = `date "+%s"`
 set DATE = `echo $SECONDS \/ $TTL \* $TTL | bc`
 
-echo ">>> $APP-$API ($0 $$) - BEGIN $DATE" >>! $TMP/LOG
+echo ">>> $APP-$API ($0 $$) - BEGIN" `date` >>! $TMP/LOG
 
 if (-e ~$USER/.cloudant_url) then
     set cc = ( `cat ~$USER/.cloudant_url` )
@@ -23,16 +23,17 @@ if ($?CLOUDANT_URL) then
 else if ($?CN && $?CP) then
     set CU = "$CN":"$CP"@"$CN.cloudant.com"
 else
-    echo "+++ $APP-$API ($0 $$) -- No Cloudant URL" >>! $TMP/LOG
-    exit
+    echo "+++ $APP-$API ($0 $$) -- no Cloudant URL" >>! $TMP/LOG
+    goto done
 endif
 
 if ($?QUERY_STRING) then
     set DB = `echo "$QUERY_STRING" | sed "s/.*db=\([^&]*\).*/\1/"` 
-    set class = `echo "$QUERY_STRING" | sed "s/.*id=\([^&]*\)/\1/"`
+    # only process "all" (for now)
+    # set class = `echo "$QUERY_STRING" | sed "s/.*id=\([^&]*\)/\1/"`
 endif
-if ($#DB == 0) set DB = rough-fog
-if ($#class == 0) set class = all
+if ($DB != "damp-cloud") set DB = rough-fog
+if ($?class == 0) set class = all
 setenv QUERY_STRING "db=$DB&id=$class"
 
 # output set
@@ -41,8 +42,8 @@ set INPROGRESS = ( `echo "$JSON".*` )
 
 # check JSON in-progress for current interval
 if ($#INPROGRESS) then
-    echo "+++ $APP-$API ($0 $$) - IN-PROGRESS $INPROGRESS - EXIT" >>! $TMP/LOG
-    exit
+    echo "+++ $APP-$API ($0 $$) -- in-progress ($INPROGRESS)" >>! $TMP/LOG
+    goto done    
 else
     if ($DB == "damp-cloud") then
         # damp cloud (visual-classifier, score, time) Public Access
@@ -70,20 +71,19 @@ else
     mv -f "$JSON".$$.$$ "$JSON"
 endif
 
-# update cloudant later
-exit
-
 #
 # update Cloudant
 #
-if ($?CLOUDANT_OFF == 0 && $?CU && $?DB) then
+if ($?CLOUDANT_OFF == 0 && $?CU && $?DB && (-s $JSON)) then
     set DEVICE_DB = `curl -s -q -X GET "$CU/$DB-$API" | /usr/local/bin/jq '.db_name'`
     if ( "$DEVICE_DB" == "null" ) then
+	echo "+++ $APP-$API ($0 $$) -- create Cloudant ($DB-$API)" >>! $TMP/LOG
 	# create DB
 	set DEVICE_DB = `curl -s -q -X PUT "$CU/$DB-$API" | /usr/local/bin/jq '.ok'`
 	# test for success
 	if ( "$DEVICE_DB" != "true" ) then
 	    # failure
+	    echo "+++ $APP-$API ($0 $$) -- FAILED: create Cloudant ($DB-$API)" >>! $TMP/LOG
 	    setenv CLOUDANT_OFF TRUE
 	endif
     endif
@@ -98,5 +98,10 @@ if ($?CLOUDANT_OFF == 0 && $?CU && $?DB) then
 	curl -s -q -H "Content-type: application/json" -X PUT "$CU/$DB-$API/$class" -d "@$JSON" >>! $TMP/LOG
     endif
 else
-    echo "+++ $APP-$API ($0 $$) -- No CLOUDANT update" >>! $TMP/LOG
+    echo "+++ $APP-$API ($0 $$) -- no Cloudant update" >>! $TMP/LOG
 endif
+
+cleanup:
+
+done:
+    echo "<<< $APP-$API ($0 $$) -- END" `date` >>! $TMP/LOG

@@ -11,6 +11,22 @@ set DATE = `echo $SECONDS \/ $TTL \* $TTL | bc`
 
 echo ">>> $APP-$API ($0 $$)" `date` >>! $TMP/LOG
 
+if (-e ~$USER/.cloudant_url) then
+    echo "$APP-$API ($0 $$) - ~$USER/.cloudant_url" >>! $TMP/LOG
+    set cc = ( `cat ~$USER/.cloudant_url` )
+    if ($#cc > 0) set CU = $cc[1]
+    if ($#cc > 1) set CN = $cc[2]
+endif
+
+if ($?CLOUDANT_URL) then
+    set CU = $CLOUDANT_URL
+else if ($?CN) then
+    set CU = "$CN.cloudant.com"
+else
+    echo "$APP-$API ($0 $$) -- No Cloudant URL" >>! $TMP/LOG
+    exit
+endif
+
 if ($?QUERY_STRING) then
     set DB = `echo "$QUERY_STRING" | sed "s/.*db=\([^&]*\).*/\1/"` 
     set class = `echo "$QUERY_STRING" | sed "s/.*id=\([^&]*\)/\1/"`
@@ -36,7 +52,10 @@ else
             /bin/rm -f "$OLD_JSON[2-]"
         endif
     else
-        set JSON = ()
+        # return re-direct to previous copy (presumably)
+	echo "Location: https://$CU/$DB-$API/$class?include_docs=true"
+	echo ""
+	exit
     endif
 endif
 

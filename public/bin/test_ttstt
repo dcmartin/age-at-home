@@ -1,0 +1,192 @@
+#!/bin/csh -fb
+
+if (! -e /usr/local/bin/brew) then
+   echo "--- NO HOME BREW?  Install from http://brew.sh"
+   exit
+endif
+if (! -e /usr/local/bin/jq) then 
+   echo "--- BREWING 'jq' ..."
+   brew install jq
+endif
+if (! -e /usr/local/bin/mplayer) then
+   echo "--- BREWING 'mplayer' ..."
+   brew install mplayer
+endif
+
+if ($#argv > 0) then
+    set say = "$argv[1]"
+endif
+if ($?say == 0) set say = "did you take your medications"
+
+set tts_creds = ~$USER/.watson.text-to-speech.json
+if (-e $tts_creds) then
+    set tts_username = ( `jq '.[].credentials.username' $tts_creds | sed 's/"//g'` )
+    if ($#tts_username > 1) then
+        set tts_username = $tts_username[1]
+    else if ($tts_username == null) then
+	set tts_username = ( `jq '.credentials.username' $tts_creds | sed 's/"//g'` )
+    endif
+    set tts_password = ( `jq '.[].credentials.password' $tts_creds | sed 's/"//g'` )
+    if ($#tts_password > 1) then
+        set tts_password = $tts_password[1]
+    else if ($tts_password == null) then
+	set tts_password = ( `jq '.credentials.password' $tts_creds | sed 's/"//g'` )
+    endif
+    set tts_url = ( `jq '.[].credentials.url' $tts_creds | sed 's/"//g' | sed 's@https://@@'` )
+    if ($#tts_url > 1) then
+        set tts_url = $tts_url[1]
+    else if ($tts_url == null) then
+	set tts_url = ( `jq '.credentials.url' $tts_creds | sed 's/"//g' | sed 's@https://@@'` )
+    endif
+    # set base
+    set TTS_URL = 'https://'"$tts_username"':'"$tts_password"'@'"$tts_url"'/'
+else if ($?TTS_URL == 0) then
+    echo "--- NO CREDENTIALS ($tts_creds); create file and copy credentials from 'text-to-speech' service on bluemix.net"
+    exit
+endif
+
+set stt_creds = ~$USER/.watson.speech-to-text.json
+if (-e $stt_creds) then
+    set stt_username = ( `jq '.[].credentials.username' $stt_creds | sed 's/"//g'` )
+    if ($#stt_username > 1) then
+        set stt_username = $stt_username[1]
+    else if ($stt_username == null) then
+	set stt_username = ( `jq '.credentials.username' $stt_creds | sed 's/"//g'` )
+    endif
+    set stt_password = ( `jq '.[].credentials.password' $stt_creds | sed 's/"//g'` )
+    if ($#stt_password > 1) then
+        set stt_password = $stt_password[1]
+    else if ($stt_password == null) then
+	set stt_password = ( `jq '.credentials.password' $stt_creds | sed 's/"//g'` )
+    endif
+    set stt_url = ( `jq '.[].credentials.url' $stt_creds | sed 's/"//g' | sed 's@https://@@'` )
+    if ($#stt_url > 1) then
+        set stt_url = $stt_url[1]
+    else if ($stt_url == null) then
+	set stt_url = ( `jq '.credentials.url' $stt_creds | sed 's/"//g' | sed 's@https://@@'` )
+    endif
+    # set base
+    set STT_URL = 'https://'"$stt_username"':'"$stt_password"'@'"$stt_url"'/'
+else if ($?STT_URL == 0) then
+    echo "--- NO CREDENTIALS ($stt_creds); create file and copy credentials from 'speech-to-text' service on bluemix.net"
+    exit
+endif
+
+
+# report on models
+echo "--- AVAILABLE MODELS"
+set models = `curl -s -q -L $STT_URL/v1/models`
+echo $models | jq '.models[].name'
+set default_model = "en-US_BroadbandModel"
+echo "--- DETAILS ON DEFAULT MODEL ( $default_model )"
+curl -s -q -L $STT_URL/v1/models/$default_model | /usr/local/bin/jq -c .
+
+set langs = `echo "$models" | jq '.[][].language'`
+@ i = 0
+set en_models = ()
+foreach l ( $langs )
+    set en = `echo $l | sed 's/^"en-\(.*\)"/en/'`
+    if ($en == "en") then
+	set ev = `echo $models | jq '.[]['$i'].name' | sed 's/"//g'`
+	set en_models = ( $en_models $ev )
+    endif
+    @ i++
+end
+if ($?CHATTY) echo "Total $#langs models; $#en_models English" | say -v Alex
+
+# report on voices
+echo "--- AVAILABLE VOICES"
+set voices = `curl -s -q -L "$TTS_URL/v1/voices"`
+echo $voices | jq '.voices[].name'
+set langs = `echo "$voices" | jq '.[][].language'`
+@ i = 0
+set aa_voices = ()
+set en_voices = ()
+foreach l ( $langs )
+    set ev = `echo $voices | jq '.[]['$i'].name' | sed 's/"//g'`
+    set en = `echo $l | sed 's/^"en-\(.*\)"/en/'`
+    if ($en == "en") then
+	set en_voices = ( $en_voices $ev )
+    endif
+    set aa_voices = ( $aa_voices $ev )
+    @ i++
+end
+if ($?CHATTY) echo "Total $#langs voices; $#en_voices English" | say -v Alex
+
+if ($#en_voices == 0) exit
+
+if ($?CHATTY) echo "The test phrase is $say" | say -v Alex
+
+# make input 
+echo '{"text":"'$say'"}' >! /tmp/$0:t.input.$$.json
+
+foreach voice ( $aa_voices )
+    set voice_name = `echo $voice | sed "s/..-.._\(.*\)Voice/\1/"`
+    if ($?CHATTY) echo "Making sound file for voice $voice_name" | say -v Alex
+    curl -s -q -L -X POST \
+    	--header 'Content-Type: application/json' \
+	--header 'Accept: audio/wav' \
+	--data @/tmp/$0:t.input.$$.json \
+	--output "/tmp/$0:t.$$.wav" \
+	"$TTS_URL/v1/synthesize?voice=$voice" 
+    if (-e /tmp/$0:t.$$.wav) then
+	# play audio file
+        if ($?CHATTY) mplayer /tmp/$0:t.$$.wav >& /dev/null
+	# report on size
+        set size = `ls -l /tmp/$0:t.$$.wav | awk '{ printf("%d", $5/1000) }'`
+	if ($?CHATTY) echo "Submiting file size $size kilobytes" | say -v Alex
+	@ it = `date +%s`
+	echo "--- SUBMITTING WAVE FILE SAYING ($say) USING VOICE ($voice)"
+	curl -s -q -L -X POST \
+	    --header 'Content-Type: audio/wav' \
+	    --data-binary @"/tmp/$0:t.$$.wav" \
+	    --output /tmp/$0:t.$$.json \
+	    $STT_URL'/v1/recognize?timestamps=true&word_alternatives_threshold=0.9' 
+	# get end seconds and calculate elapsed
+	@ tt = `date +%s`
+	@ et = $tt - $it
+	set error = `jq '.error' "/tmp/$0:t.$$.json"`
+        if ("$error" != null) then
+            echo "--- FAILURE: $error"
+            if ($?CHATTY) echo "Watson failed with message $error" | say -v Alex
+        else
+            set results = `jq '.results[]' /tmp/$0:t.$$.json`
+	    if ($#results == 0) then
+		echo "--- FAILURE: no results"
+		if ($?CHATTY) echo "Watson did not recognize $voice" | say -v Alex
+	    else
+		set transcript = `jq '.results[].alternatives[]|.transcript' /tmp/$0:t.$$.json`
+		set confidence = `jq '.results[].alternatives[]|.confidence' /tmp/$0:t.$$.json`
+		echo -n "*** RESULTS ($voice - $et seconds; confidence $confidence): $transcript "
+		set t = ( `echo $transcript | sed 's/"//g'` )
+		set s = ( `echo $say | sed 's/"//g'` )
+		if ($#t == $#s) then
+		    @ j = 1
+		    foreach i ( $t )
+		       if ($t[$j] != $s[$j]) break
+		       @ j++
+		    end
+		    if ($j > $#t) then
+			echo "[SUCCESS]"
+		    else
+			echo "[FAIL]"
+		    endif
+		else
+		    echo "[FAIL]"
+		endif
+		set percent = `echo "$confidence * 100" | bc`
+		if ($?CHATTY) echo "Watson recognized $voice_name saying" | say -v Alex
+		if ($?CHATTY) echo $transcript | say -v Alex
+		if ($?CHATTY) echo "with a confidence of" $percent:r "percent in" $et "seconds" | say -v Alex
+	    endif
+        endif
+	rm -f /tmp/$0:t.$$.*
+    else
+	echo "NO SOUND FILE?"
+    endif
+end
+
+cleanup:
+   rm /tmp/$0:t.input.$$.json
+
+done:

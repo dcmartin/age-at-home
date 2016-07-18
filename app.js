@@ -34,9 +34,19 @@ var credentials = extend({
   version: 'v1-experimental'
 }, bluemix.getServiceCreds('visual_insights')); // VCAP_SERVICES
 
-
 // wrapper
 var visual_insights = watson.visual_insights(credentials);
+
+// if bluemix credentials exists, then override local
+var tts_credentials = extend({
+  url: '<url>',
+  username: '<username>',
+  password: '<password>',
+  version: 'v1'
+}, bluemix.getServiceCreds('text-to-speech')); // VCAP_SERVICES
+
+// wrapper
+var text_to_speech = watson.text_to_speech(tts_credentials);
 
 // get profile summary image analysis
 app.get('/summary', function(req, res, next) {
@@ -50,6 +60,11 @@ app.get('/status',function(req,res) {
 // get classifiers list
 app.get('/classifiers', function(req, res) {
   visual_insights.classifiers(req.query).pipe(res);
+});
+
+// get classifiers list
+app.get('/voices', function(req, res) {
+  text_to_speech.voices(req.query).pipe(res);
 });
 
 // error-handler settings

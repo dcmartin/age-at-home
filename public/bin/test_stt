@@ -28,30 +28,30 @@ if ($?say == 0) set say = "make america great again"
 set creds = ~$USER/.watson.speech-to-text.json
 if (-e $creds) then
     set username = ( `jq '.[].credentials.username' $creds | sed 's/"//g'` )
-    if ($#username == 0) then
-	set username = ( `jq '.credentials.username' $creds | sed 's/"//g'` )
-    else if ($#username > 1) then
+    if ($#username > 1) then
         set username = $username[1]
+    else if ($username == null) then
+	set username = ( `jq '.credentials.username' $creds | sed 's/"//g'` )
     endif
     echo "--- USING USERNAME $username"
     set password = ( `jq '.[].credentials.password' $creds | sed 's/"//g'` )
-    if ($#password == 0) then
-	set password = ( `jq '.credentials.password' $creds | sed 's/"//g'` )
-    else if ($#password > 1) then
+    if ($#password > 1) then
         set password = $password[1]
+    else if ($password == null) then
+	set password = ( `jq '.credentials.password' $creds | sed 's/"//g'` )
     endif
     echo "--- USING PASSWORD $password"
     set url = ( `jq '.[].credentials.url' $creds | sed 's/"//g' | sed 's@https://@@'` )
-    if ($#url == 0) then
-	set url = ( `jq '.credentials.url' $creds | sed 's/"//g' | sed 's@https://@@'` )
-    else if ($#url > 1) then
+    if ($#url > 1) then
         set url = $url[1]
+    else if ($url == null) then
+	set url = ( `jq '.credentials.url' $creds | sed 's/"//g' | sed 's@https://@@'` )
     endif
     echo "--- USING URL $url"
     # set base
     set TU = 'https://'"$username"':'"$password"'@'"$url"'/'
 else if ($?TU == 0) then
-    echo "*** NO CREDENTIALS ($creds); create file and copy credentials from "Text-to-Speech" service on bluemix.net"
+    echo "*** NO CREDENTIALS ($creds); create file and copy credentials from "speech-to-text" service on bluemix.net"
     exit
 endif
 
@@ -80,8 +80,10 @@ if ($voice != "all") set voices_en = $voice
 foreach voice ($voices_en) 
     echo "*** MAKING A WAVE FILE /tmp/$0:t.$$.wav"
     echo "$say" | say -v $voice -o /tmp/$0:t.$$.wav --data-format=LEF32@16000
-    # echo "$say" | say -v $voice 
+    # report on size
     if (-e /tmp/$0:t.$$.wav) then
+	set size = `ls -l /tmp/$0:t.$$.wav | awk '{ printf("%d", $5/1000) }'`
+	echo "File size $size kilobytes" | say -v Alex
 	@ it = `date +%s`
 	echo "*** SUBMITTING WAVE FILE SAYING ($say) USING VOICE ($voice)"
 	curl -s -q -L $TU'/v1/recognize?timestamps=true&word_alternatives_threshold=0.9' \
@@ -93,8 +95,12 @@ foreach voice ($voices_en)
 	@ tt = `date +%s`
 	@ et = $tt - $it
 	echo "*** RESULTS USING $default_model (/tmp/$0:t.$$.json)"
-	set results = `/usr/local/bin/jq '.results[]' /tmp/$0:t.$$.json`
-	if ($#results != 0) then
+	set error = `jq '.error' /tmp/$0:t.$$.json`
+	if ($error != null) then
+	    echo "*** FAILURE: error"
+	    echo "Watson failed with message $error" | say -r 225 -v Alex
+	else
+	    set results = `/usr/local/bin/jq '.results[]' /tmp/$0:t.$$.json`
 	    /usr/local/bin/jq -c '.' /tmp/$0:t.$$.json
 	    echo "*** SUMMARY ($et seconds)"
 	    set transcript = `/usr/local/bin/jq '.results[].alternatives[]|.transcript' /tmp/$0:t.$$.json`
@@ -102,12 +108,7 @@ foreach voice ($voices_en)
 	    set percent = `echo "$confidence * 100" | bc`
 	    echo "*** TRANSCRIPT: $transcript"
 	    echo "Watson recognized $voice saying" | say -r 225 -v Alex
-	else
-	    echo "*** FAILURE: no results"
-	    echo "Watson did not recognize $voice saying" | say -r 225 -v Alex
-	endif
 	echo $say | say -v $voice
-	if ($#results != 0) then
 	    echo "as the phrase" | say -r 225 -v Alex
 	    echo $transcript | say -v Alex
 	    echo "with a confidence of" $percent:r "percent in" $et "seconds" | say -r 225 -v Alex
