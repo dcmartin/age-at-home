@@ -14,27 +14,52 @@ echo ">>> $APP-$API ($0 $$)" `date` >>! $TMP/LOG
 if ($?QUERY_STRING) then
     set DB = `echo "$QUERY_STRING" | sed "s/.*db=\([^&]*\).*/\1/"`
     if ($#DB == 0) set DB = rough-fog
+    set ALG = `echo "$QUERY_STRING" | sed "s/.*alg=\([^&]*\).*/\1/"`
+    if ($#ALG == 0) set ALG = visual
 else
     set DB = rough-fog
+    set ALG = visual
 endif
-setenv QUERY_STRING "db=$DB"
+setenv QUERY_STRING "db=$DB&alg=$ALG"
 
-set OUTPUT = "$TMP/$APP-$API.$DB.$DATE.csv"
+set OUTPUT = "$TMP/$APP-$API.$QUERY_STRING.$DATE.csv"
 if (! -e "$OUTPUT") then
-    rm -f $TMP/$APP-$API.$DB.*.csv
+    rm -f $TMP/$APP-$API.$QUERY_STRING.*.csv
     if ($DB == "damp-cloud") then
-	curl -L -s -q -o "$OUTPUT" "https://ibmcds.looker.com/looks/vmFgFKSvCpN6qY2JjyZWnCjzrh3qSHK7.csv?apply_formatting=true"
-    else
-	curl -L -s -q -o "$OUTPUT" "https://ibmcds.looker.com/looks/vQFVvQSgTFKHpgfmrPXKc8bsspQ2pF2Z.csv?apply_formatting=true"
+	if ($ALG == "visual") then
+	    curl -L -s -q -o "$OUTPUT" "https://ibmcds.looker.com/looks/vmFgFKSvCpN6qY2JjyZWnCjzrh3qSHK7.csv?apply_formatting=true"
+	else if ($ALG == "alchemy") then
+	    # ALCHEMY ALL - https://ibmcds.looker.com/looks/NGrbjz6SFfWspMzQ8pb7VN92Cr9qZNtr.csv?apply_formatting=true
+	endif
+    else if ($DB == "rough-fog") then
+	if ($ALG == "visual") then
+	    curl -L -s -q -o "$OUTPUT" "https://ibmcds.looker.com/looks/vQFVvQSgTFKHpgfmrPXKc8bsspQ2pF2Z.csv?apply_formatting=true"
+	else
+	    # ALCHEMY ALL - https://ibmcds.looker.com/looks/4qFmv5338FTCnbRWG47K6fG5vggfNxwN.csv?apply_formatting=true
+	endif
     endif
     if ($DB == "damp-cloud") then
-	cat "$OUTPUT" \
-	    | sed "s/Intervals Interval/Interval/" \
-	    | sed "s/\([^ ]\) Dampcloud Visual Scores Count/\1/g" >> "$OUTPUT".$$
-    else
-	cat "$OUTPUT" \
-	    | sed "s/Intervals Interval/Interval/" \
-	    | sed "s/\([^ ]*\) Roughfog Visual Scores Count/\1/g" >> "$OUTPUT".$$
+	if ($ALG == "visual") then
+	    cat "$OUTPUT" \
+		| sed "s/Intervals Interval/Interval/" \
+		| sed "s/\([^ ]*\) Dampcloud Visual Scores Count/\1/g" >> "$OUTPUT".$$
+	else if ($ALG == "alchemy") then
+	    cat "$OUTPUT" \
+		| sed "s/Intervals Interval/Interval/" \
+		| sed "s/\([^ ]*\) Dampcloud Count/\1/g" >> "$OUTPUT".$$
+	endif
+    else if ($DB == "rough-fog") then
+	if ($ALG == "visual") then
+	    cat "$OUTPUT" \
+		| sed "s/Intervals Interval/Interval/" \
+		| sed "s/\([^ ]*\) Roughfog Visual Scores Count/\1/g" >> "$OUTPUT".$$
+	else if ($ALG == "alchemy") then
+	    cat "$OUTPUT" \
+		| sed "s/Intervals Interval/Interval/" \
+		| sed "s/\([^ ]*\) Roughfog Count/\1/g" >> "$OUTPUT".$$
+
+	    # ALCHEMY
+	endif
     endif
     mv -f "$OUTPUT".$$ "$OUTPUT"
 endif
