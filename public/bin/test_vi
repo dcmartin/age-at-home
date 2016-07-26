@@ -1,0 +1,74 @@
+#!/bin/csh -fb
+
+if (! -e /usr/local/bin/brew) then
+   echo "*** NO HOME BREW?  Install from http://brew.sh" >& /dev/stderr
+   exit
+endif
+if (! -e /usr/local/bin/jq) then
+   echo "*** BREWING 'jq' ..." >& /dev/stderr
+   brew install jq >& /dev/stderr
+endif
+
+if ($#argv > 0) then
+    @ i = 0
+    set t = "$argv[1]"
+    if (($#t == 1) && ($#argv > 1)) then
+	if ($t == "-v") then
+	    set voice = $argv[2]
+	    @ i = 2
+	endif
+    endif
+    if ($#argv > $i) then
+	@ i++
+        set IMAGE_FILE = "$argv[$i-]"
+    endif
+endif
+if ($?IMAGE_FILE == 0) set IMAGE_FILE = ""
+
+set creds = ~$USER/.watson.visual-insights.json
+set noglob
+if (-e $creds) then
+    set username = ( `jq '.[].credentials.username' $creds | sed 's/"//g'` )
+    if ($#username == 0) then
+	set username = ( `jq '.credentials.username' $creds | sed 's/"//g'` )
+    else if ($#username > 1) then
+        set username = $username[1]
+    endif
+    echo "--- USING USERNAME $username" >& /dev/stderr
+    set password = ( `jq '.[].credentials.password' $creds | sed 's/"//g'` )
+    if ($#password == 0) then
+	set password = ( `jq '.credentials.password' $creds | sed 's/"//g'` )
+    else if ($#password > 1) then
+        set password = $password[1]
+    endif
+    echo "--- USING PASSWORD $password" >& /dev/stderr
+    set url = ( `jq '.[].credentials.url' $creds | sed 's/"//g' | sed 's@https://@@'` )
+    if ($#url == 0) then
+	set url = ( `jq '.credentials.url' $creds | sed 's/"//g' | sed 's@https://@@'` )
+    else if ($#url > 1) then
+        set url = $url[1]
+    endif
+    echo "--- USING URL $url" >& /dev/stderr
+    # set base
+    set TU = 'https://'"$username"':'"$password"'@'"$url"'/'
+else if ($?TU == 0) then
+    echo "*** NO CREDENTIALS ($creds); create file and copy credentials from "Visual Insights" service on bluemix.net" >& /dev/stderr
+    exit
+endif
+unset noglob
+
+# list all available classifiers
+set URL = "$TU:h:h"/classifiers
+set QUERY_STRING = `echo "$url" | sed "s@.*\?\(.*\)@\1@"`
+curl -o /tmp/$0:h.$$.json -s -q -L -u "$username":"$password" -X GET "$URL?$QUERY_STRING" 
+if (-s /tmp/$0:h.$$.json) then
+    jq -c '.' /tmp/$0:h.$$.json >& /dev/stderr
+endif
+
+if ($#IMAGE_FILE == 1 && -e "$IMAGE_FILE") then
+    echo "*** SUBMITTING IMAGE FILE ($IMAGE_FILE)" >& /dev/stderr
+    curl -L -o /tmp/$0:t.$$.json -u "$username":"$password" -X POST -F "images_file=@$IMAGE_FILE" "$TU"
+    jq -c '.' /tmp/$0:t.$$.json
+else
+    echo "*** PLEASE SPECIFY ONE IMAGE FILE" >& /dev/stderr
+endif

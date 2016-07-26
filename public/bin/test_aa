@@ -1,0 +1,60 @@
+#!/bin/csh -fb
+
+if (! -e /usr/local/bin/brew) then
+   echo "*** NO HOME BREW?  Install from http://brew.sh" >& /dev/stderr
+   exit
+endif
+if (! -e /usr/local/bin/jq) then
+   echo "*** BREWING 'jq' ..." >& /dev/stderr
+   brew install jq >& /dev/stderr
+endif
+
+if ($#argv > 0) then
+    @ i = 0
+    set t = "$argv[1]"
+    if (($#t == 1) && ($#argv > 1)) then
+	if ($t == "-v") then
+	    set voice = $argv[2]
+	    @ i = 2
+	endif
+    endif
+    if ($#argv > $i) then
+	@ i++
+        set IMAGE_FILE = "$argv[$i-]"
+    endif
+endif
+if ($?IMAGE_FILE == 0) set IMAGE_FILE = ""
+
+set creds = ~$USER/.watson.alchemy.json
+set noglob
+if (-e $creds) then
+    set apikey = ( `jq '.credentials.apikey' $creds | sed 's/"//g'` )
+    echo "--- USING APIKEY $apikey" >& /dev/stderr
+    set url = ( `jq '.credentials.url' $creds | sed 's/"//g'` )
+    echo "--- USING URL $url" >& /dev/stderr
+    # set base
+    set TU = $url
+else if ($?TU == 0) then
+    echo "*** NO CREDENTIALS ($creds); create file and copy credentials from visual-recognition service on bluemix.net" >& /dev/stderr
+    exit
+endif
+unset noglob
+
+if ($#IMAGE_FILE == 1 && -s "$IMAGE_FILE") then
+    echo "+++ CLASSIFIERS +++"
+    curl -q -s -L -o /tmp/$0:t.$$.json -X POST --data-binary "@$IMAGE_FILE" "$TU/image/ImageGetRankedImageKeywords?apikey=$apikey&imagePostMode=raw&outputMode=json"
+    jq '.' /tmp/$0:t.$$.json
+    echo "+++ FACES +++"
+    curl -q -s -L -o /tmp/$0:t.$$.json -X POST --data-binary "@$IMAGE_FILE" "$TU/image/ImageGetRankedImageFaceTags?apikey=$apikey&imagePostMode=raw&outputMode=json"
+    # curl -L -o /tmp/$0:t.$$.json -X POST -F "images_file=@$IMAGE_FILE" -H "Accept-Language: en" "$TU/v3/detect_faces?api_key=$apikey&version=2016-05-20"
+    jq '.' /tmp/$0:t.$$.json
+    echo "+++ TEXT +++"
+    curl -q -s -L -o /tmp/$0:t.$$.json -X POST --data-binary "@$IMAGE_FILE" "$TU/image/ImageGetRankedImageSceneText?apikey=$apikey&imagePostMode=raw&outputMode=json"
+    # curl -L -o /tmp/$0:t.$$.json -X POST -F "images_file=@$IMAGE_FILE" -H "Accept-Language: en" "$TU/v3/recognize_text?api_key=$apikey&version=2016-05-20"
+    jq '.' /tmp/$0:t.$$.json
+else
+    echo "*** PLEASE SPECIFY ONE IMAGE FILE" >& /dev/stderr
+endif
+
+cleanup:
+rm /tmp/$0:t.$$.json
