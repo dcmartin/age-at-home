@@ -79,13 +79,18 @@ end
 
 if ($#en_voices == 0) exit
 
-echo $say
-echo '{"text":"'$say'"}' >! /tmp/$0:t.input.$$.json
+echo "$say"
+
+echo '{"text":"'"$say"'"}' >! /tmp/$0:t.input.$$.json
 foreach v ( $en_voices )
-    echo "+++ USING VOICE: $v"
-    curl -s -q -L -X POST --header 'Content-Type: application/json' --header 'Accept: audio/wav' --data @/tmp/$0:t.input.$$.json "$TU/v1/synthesize?voice=$v" --output /tmp/$0:t.output.$$.wav
-    mplayer /tmp/$0:t.output.$$.wav
-    sleep 2
-    rm /tmp/$0:t.output.$$.wav
+    if ($voice == "all" || $voice == "$v") then
+	echo "+++ USING VOICE: $v"
+	set speaker = `echo "$v" | sed "s/.*_\(.*\)Voice/\1/"`
+	if ($?CHATTY) echo "Using voice $speaker" | say -v Alex
+	curl -s -q -L -X POST --header 'Content-Type: application/json' --header 'Accept: audio/wav' --data @/tmp/$0:t.input.$$.json "$TU/v1/synthesize?voice=$v" --output /tmp/$0:t.output.$$.wav
+	mplayer /tmp/$0:t.output.$$.wav >& /dev/null
+	sleep 2
+    endif
+    if ($voice != "$v") rm /tmp/$0:t.output.$$.wav
 end
 rm -f /tmp/$0:t.input.$$.json

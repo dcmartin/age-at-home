@@ -23,15 +23,18 @@ set OUTPUT = "$TMP/$APP-$API.$DB.$DATE.json"
 if (! -e "$OUTPUT") then
     rm -f $TMP/$APP-$API.$DB.*.json
     if ($DB == "damp-cloud") then
-	curl -L -s -q -o "$OUTPUT" "https://ibmcds.looker.com/looks/y4dP4n52YGGcjpKHGjFQVXtCR56xT7kX.json?apply_formatting=true"
+	# new URL for "person" or "people" from Alchemy text
+	curl -L -s -q -o "$OUTPUT" "https://ibmcds.looker.com/looks/Bck9m3sbyxX23t4S4tvy7fGpSw4mYPcx.json?apply_formatting=true" 
     else
+	# NEED new URL for "person" or "people" from Alchemy text
 	curl -L -s -q -o "$OUTPUT" "https://ibmcds.looker.com/looks/vNhq2H5mWFwPB5pgT3j5Rs4wGbRKHpH7.json?apply_formatting=true"
     endif
 endif
 if ($DB == "damp-cloud") then
-    set DATETIME = `/usr/local/bin/jq '.[]."dampcloud.alchemy_time"' $OUTPUT`
+    set DATETIME = `/usr/local/bin/jq '.[0]."dampcloud.15_minute_interval"' $OUTPUT`
+
 else
-    set DATETIME = `/usr/local/bin/jq '.[]."roughfog.alchemy_time"' $OUTPUT`
+    set DATETIME = `/usr/local/bin/jq '.[0]."roughfog.15_minute_interval"' $OUTPUT`
 endif
 
 echo "Content-Type: application/json; charset=utf-8"
