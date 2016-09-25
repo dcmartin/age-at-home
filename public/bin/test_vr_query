@@ -1,0 +1,195 @@
+#!/bin/csh -fb
+
+# catch interrups and cleanup on exit
+onintr done
+
+if (! -e /usr/local/bin/brew) then
+   echo "*** NO HOME BREW?  Install from http://brew.sh"
+   exit
+endif
+if (! -e /usr/local/bin/jq) then 
+   echo "*** BREWING 'jq' ..."
+   brew install jq
+endif
+if (! -e /usr/local/bin/mplayer) then
+   echo "*** BREWING 'mplayer' ..."
+   brew install mplayer
+endif
+
+set voice = "any"
+if ($#argv > 0) then
+    @ i = 1
+    set t = "$argv[1]"
+    if (($#t == 1) && ($#argv > 1)) then
+	if ($t == "-v") then
+	    set voice = $argv[2]
+	    @ i = 2
+	endif
+    endif
+    if ($#argv > $i) then
+        @ i++
+        set IMAGE_FILE = ( $argv[$i-] )
+    endif
+endif
+
+set creds = ~$USER/.watson.text-to-speech.json
+if (-e $creds) then
+    set username = ( `jq '.[].credentials.username' $creds | sed 's/"//g'` )
+    if ($#username > 1) then
+        set username = $username[1]
+    else if ($username == null) then
+	set username = ( `jq '.credentials.username' $creds | sed 's/"//g'` )
+    endif
+    echo "--- USING USERNAME $username"
+    set password = ( `jq '.[].credentials.password' $creds | sed 's/"//g'` )
+    if ($#password > 1) then
+        set password = $password[1]
+    else if ($password == null) then
+	set password = ( `jq '.credentials.password' $creds | sed 's/"//g'` )
+    endif
+    echo "--- USING PASSWORD $password"
+    set url = ( `jq '.[].credentials.url' $creds | sed 's/"//g' | sed 's@https://@@'` )
+    if ($#url > 1) then
+        set url = $url[1]
+    else if ($url == null) then
+	set url = ( `jq '.credentials.url' $creds | sed 's/"//g' | sed 's@https://@@'` )
+    endif
+    echo "--- USING URL $url"
+    # set base
+    set TU = 'https://'"$username"':'"$password"'@'"$url"'/'
+else if ($?TU == 0) then
+    echo "*** NO CREDENTIALS ($creds); create file and copy credentials from 'speech-to-text' service on bluemix.net"
+    exit
+endif
+
+# 
+echo "*** USING API AT URL: $TU"
+
+# report on voices
+set voices = `curl -s -q -L "$TU/v1/voices"`
+echo "*** AVAILABLE VOICES"
+echo "$voices" | jq -c '.'
+set langs = `echo "$voices" | jq '.[][].language'`
+@ i = 0
+set en_voices = ()
+foreach l ( $langs )
+    set en = `echo $l | sed 's/^"en-\(.*\)"/en/'`
+    if ($en == "en") then
+	set ev = `echo $voices | jq '.[]['$i'].name' | sed 's/"//g'`
+	set en_voices = ( $en_voices $ev )
+    endif
+    @ i++
+end
+
+if ($?say == 0) then
+    set say = "I detect motion; is anyone there?"
+endif
+
+
+
+if ($#en_voices > 0) then
+    if ($voice == "any") set voice = $en_voices[1]
+    set speaker = `echo "$voice" | sed "s/.*_\(.*\)Voice/\1/"`
+    echo "+++ USING VOICE: $voice"
+    if ($?CHATTY) echo "Using voice $speaker" | say -v Alex
+    echo '{"text":"'"$say"'"}' >! /tmp/$0:t.$$.say.json
+    curl -s -q -L -X POST --header 'Content-Type: application/json' --header 'Accept: audio/wav' --data @/tmp/$0:t.$$.say.json "$TU/v1/synthesize?voice=$voice" --output /tmp/$0:t.$$.say.wav
+    # rm -f /tmp/$0:t.$$.say.json
+endif
+
+if (-s /tmp/$0:t.$$.say.wav) then
+else
+    echo "*** NOTHING TO SAY? ($say)"
+    goto done
+endif
+
+set creds = ~$USER/.watson.visual-recognition.json
+set noglob
+if (-e $creds) then
+    set api_key = ( `jq '.credentials.api_key' $creds | sed 's/"//g'` )
+    echo "--- USING APIKEY $api_key" >& /dev/stderr
+    set url = ( `jq '.credentials.url' $creds | sed 's/"//g'` )
+    echo "--- USING URL $url" >& /dev/stderr
+    # set base
+    set VR = $url
+else if ($?VR == 0) then
+    echo "*** NO CREDENTIALS ($creds); create file and copy credentials from visual-recognition service on bluemix.net" >& /dev/stderr
+    exit
+endif
+unset noglob
+
+if ($?IMAGE_FILE == 0) then
+    echo "*** NO IMAGE ?"
+    goto done
+else
+    echo "--- $IMAGE_FILE"
+endif
+
+set answer = ()
+
+foreach image ( $IMAGE_FILE )
+    echo -n "--- IMAGE: $image"
+    if (-s "$image") then
+	echo -n " exists "
+	set type = `file "$image" | sed "s/.*: \(.*\)/\1/" | egrep "JPEG|PNG"`
+	if ($#type > 0) then
+	    echo " of type $type"
+	else
+	    echo " of invalid type (JPEG or PNG only)"
+	    continue
+	endif
+    else
+	echo " does not exist or is of zero size"
+	continue
+    endif
+    echo "+++ CLASSIFYING $image +++"
+    curl -L -o /tmp/$0:t.$$.classify.json -X POST -F "images_file=@$image" -H "Accept-Language: en" "$VR/v3/classify?api_key=$api_key&classifier_ids=default&owners=IBM&threshold=0.000001&version=2016-05-20"
+    jq '.' /tmp/$0:t.$$.classify.json
+
+    set seen = `jq '.images[0].classifiers[0].classes[]' /tmp/$0:t.$$.classify.json`
+    if ($#seen > 0) then
+        set class = ( `echo "$seen" | jq '.class' | sed 's/"//g'` )
+        set score = ( `echo "$seen" | jq '.score'` )
+        set type = ( `echo "$seen" | jq '.type_hierarchy' | sed 's/"//g'` )
+	set ask = "I detected a $class; is that correct?"
+
+	echo "--- ASKING $ask"
+	echo '{"text":"'"$ask"'"}' >! /tmp/$0:t.$$.ask.json
+	curl -s -q -L -X POST --header 'Content-Type: application/json' --header 'Accept: audio/wav' --data @/tmp/$0:t.$$.ask.json "$TU/v1/synthesize?voice=$voice" --output /tmp/$0:t.$$.ask.wav
+	if ($?CHATTY) echo "$speaker asks" | say -v Alex 
+	mplayer /tmp/$0:t.$$.ask.wav >& /dev/null
+	open "$image"
+	echo -n "Please type N or Y [N]: "
+	set yn = $<
+        if ($yn == "Y" || $yn == "y") then
+	    echo "$image" >>! /tmp/$0:t."$class"
+	    set answer = "$class"
+	else
+	    echo "$image" >>! /tmp/$0:t.no"$class"
+	endif
+    else
+	echo "--- ASKING $say"
+	if ($?CHATTY) echo "$speaker says" | say -v Alex 
+	mplayer /tmp/$0:t.say.$$.wav >& /dev/null
+	open "$image"
+	echo -n "Please type N or Y [N]: "
+	set yn = $<
+        if ($yn == "Y" || $yn == "y") then
+	    echo "$image" >>! /tmp/$0:t.person
+	else
+	    echo "$image" >>! /tmp/$0:t.noperson
+	endif
+    endif
+	
+    # echo "+++ FACES +++"
+    # curl -L -o /tmp/$0:t.$$.json -X POST -F "images_file=@$IMAGE_FILE" -H "Accept-Language: en" "$VR/v3/detect_faces?api_key=$api_key&version=2016-05-20"
+    # jq '.' /tmp/$0:t.$$.json
+    # echo "+++ TEXT +++"
+    # curl -L -o /tmp/$0:t.$$.json -X POST -F "images_file=@$IMAGE_FILE" -H "Accept-Language: en" "$VR/v3/recognize_text?api_key=$api_key&version=2016-05-20"
+    # jq '.' /tmp/$0:t.$$.json
+end
+
+
+done:
+# cleanup
+# rm /tmp/$0:t.*

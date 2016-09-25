@@ -1,11 +1,4 @@
 ---
-declared-services:
-  visual-insights-service:
-    label: visual_insights
-    plan: experimental
-applications:
-- services:
-  - visual-insights-service
   name: age-at-home
   command: node app.js
   path: .
