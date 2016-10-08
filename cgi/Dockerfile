@@ -19,31 +19,18 @@ RUN apt-get update && apt-get install -q -y --no-install-recommends \
     python-pip
 
 #
+# update pip
+#
+RUN pip install --upgrade pip
+#
 # install CSVKIT
 #
 RUN git clone https://github.com/wireservice/csvkit; cd csvkit; pip install .
 
 #
-# install data-dog (X86)
-#
-# RUN sh -c "$(curl -L https://raw.githubusercontent.com/DataDog/dd-agent/master/packaging/datadog-agent/source/setup_agent.sh)"
-# RUN mv ~/.datadog-agent/agent/datadog.conf.example ~/.datadog-agent/agent/datadog.conf \
-#    && sed -i -e"s/^.*non_local_traffic:.*$/non_local_traffic: yes/" ~/.datadog-agent/agent/datadog.conf \
-#    && sed -i -e"s/^.*log_to_syslog:.*$/log_to_syslog: no/" ~/.datadog-agent/agent/datadog.conf \
-#    && rm ~/.datadog-agent/agent/conf.d/network.yaml.default
-
-#
-# install IBM IoTF quickstart (Raspberry Pi)
-#
-#
-# RUN echo "#! /bin/sh\nexit 0" > /usr/sbin/policy-rc.d
-# RUN curl -LO https://github.com/ibm-messaging/iot-raspberrypi/releases/download/1.0.2.1/iot_1.0-2_armhf.deb
-# RUN dpkg -i iot_1.0-2_armhf.deb
-
-#
 # Copy "AAH" scripts & credentials
 #
-COPY * ~_www/CGI/
+COPY *.cgi *.csh *.bash ~_www/CGI/
 COPY ~/.cloudant_url ~_www/
 
 #
@@ -54,7 +41,7 @@ EXPOSE 80
 #
 # Create volume to store cache'd copies and temporary files
 #
-ENV TMP /var/lib/aah
+ENV TMP /var/lib/age-at-home
 WORKDIR ${TMP}
 VOLUME ["${TMP}"]
 

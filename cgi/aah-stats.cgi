@@ -3,7 +3,7 @@ setenv APP "aah"
 setenv API "stats"
 setenv WWW "http://www.dcmartin.com/CGI/"
 setenv LAN "192.168.1"
-if ($?TMP == 0) setenv TMP "/tmp"
+if ($?TMP == 0) setenv TMP "/var/lib/age-at-home"
 # don't update statistics more than once per TTL seconds
 set TTL = 3600
 set SECONDS = `date "+%s"`

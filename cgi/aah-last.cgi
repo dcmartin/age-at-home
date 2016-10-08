@@ -3,7 +3,7 @@ setenv APP "aah"
 setenv API "last"
 setenv WWW "http://www.dcmartin.com/CGI/"
 setenv LAN "192.168.1"
-if ($?TMP == 0) setenv TMP "/tmp"
+if ($?TMP == 0) setenv TMP "/var/lib/age-at-home"
 # don't update statistics more than once per 15 minutes
 set TTL = `echo "30 * 60" | bc`
 set SECONDS = `date "+%s"`
