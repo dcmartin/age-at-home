@@ -169,8 +169,6 @@ foreach line ( `/usr/local/bin/jq -c '[.file,.tag,.score,.day,.interval]' "$RESU
     endif
 end
 
-endif
-
 #
 # MAKE NEW STATISTICS
 #
