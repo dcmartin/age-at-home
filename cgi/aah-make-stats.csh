@@ -8,10 +8,10 @@ set TTL = 3600
 set SECONDS = `date "+%s"`
 set DATE = `echo $SECONDS \/ $TTL \* $TTL | bc`
 
-echo ">>> $APP-$API ($0 $$) - BEGIN $DATE" >>! $TMP/LOG
+echo `date` "$0 $$ - START" >>! $TMP/LOG
 
 if (-e ~$USER/.cloudant_url) then
-    echo "+++ $APP-$API ($0 $$) - ~$USER/.cloudant_url" >>! $TMP/LOG
+    echo `date` "$0 $$ -- ~$USER/.cloudant_url" >>! $TMP/LOG
     set cc = ( `cat ~$USER/.cloudant_url` )
     if ($#cc > 0) set CU = $cc[1]
     if ($#cc > 1) set CN = $cc[2]
@@ -23,7 +23,7 @@ if ($?CLOUDANT_URL) then
 else if ($?CN && $?CP) then
     set CU = "$CN":"$CP"@"$CN.cloudant.com"
 else
-    echo "+++ $APP-$API ($0 $$) -- No Cloudant URL" >>! $TMP/LOG
+    echo `date` "$0 $$ -- No Cloudant URL" >>! $TMP/LOG
     exit
 endif
 
@@ -42,17 +42,17 @@ set INPROGRESS = ( `echo "$JSON".*` )
 
 # check JSON in-progress for current interval
 if ($#INPROGRESS) then
-    echo "+++ $APP-$API ($0 $$) - In-progress $JSON" >>! $TMP/LOG
-    exit
+    echo `date` "$0 $$ -- in-progress" >>! $TMP/LOG
+    goto done
 else
     # download stats
     set OLD_STATS = "$JSON.$$"
-    echo "+++ $APP-$API ($0 $$) -- getting OLD_STATS ($OLD_STATS)" >>! $TMP/LOG
+    echo `date` "$0 $$ -- getting OLD_STATS ($OLD_STATS)" >>! $TMP/LOG
     curl -s -q -o "$OLD_STATS" -X GET "$CU/$DB-stats/$class"
     # check iff successful
     set CLASS_DB = `/usr/local/bin/jq '._id' "$OLD_STATS" | sed 's/"//g'`
     if ($CLASS_DB != $class) then
-	echo "+++ $APP-$API ($0 $$) -- No existing statistics ($CU/$DB-stats/$class)" >>! $TMP/LOG
+	echo `date` "$0 $$ -- no existing statistics ($CU/$DB-stats/$class)" >>! $TMP/LOG
 	exit
     else
 	# get last sequence # for class specified
@@ -67,21 +67,21 @@ endif
 set NEW_JSON = "$TMP/$APP-$API-$DB-$class-changes.$$.json"
 set seqid = 0
 if ( ! -e "$NEW_JSON" ) then
-    echo "+++ $APP-$API ($0 $$) -- creating $NEW_JSON" >>! $TMP/LOG
+    echo `date` "$0 $$ -- creating $NEW_JSON" >>! $TMP/LOG
     curl -s -q -o "$NEW_JSON" "$CU/$DB/_changes?include_docs=true&since=$prev_seqid"
     set seqid = ( `/usr/local/bin/jq .last_seq "$NEW_JSON"` )
     if ($seqid == "null") then
-         echo "+++ $APP-$API ($0 $$) -- FAILURE RETRIEVING NEW_JSON" >>! $TMP/LOG
+         echo `date` "$0 $$ -- FAILURE RETRIEVING NEW_JSON" >>! $TMP/LOG
 	 exit
     endif
 else
     set seqid = ( `/usr/local/bin/jq .last_seq "$NEW_JSON"` )
     if ($seqid == "null") then
-         echo "+++ $APP-$API ($0 $$) -- BAD JSON $NEW_JSON" >>! $TMP/LOG
+         echo `date` "$0 $$ -- BAD JSON $NEW_JSON" >>! $TMP/LOG
 	 exit
     endif
     set ttyl = `echo "$SECONDS - $DATE" | bc`
-    echo "+++ $APP-$API ($0 $$) -- JSON ($NEW_JSON) is current with TTL of $TTL; next update in $ttyl seconds" >>! $TMP/LOG
+    echo `date` "$0 $$ -- JSON ($NEW_JSON) is current with TTL of $TTL; next update in $ttyl seconds" >>! $TMP/LOG
 endif
 
 #
@@ -89,14 +89,14 @@ endif
 #
 set NEW_ROWS = "$TMP/$APP-$API-$DB-$class-changes.$$.csv"
 if ((! -e "$NEW_ROWS") || ((-M "$NEW_JSON") > (-M "$NEW_ROWS"))) then
-    echo "+++ $APP-$API ($0 $$) -- creating $NEW_ROWS" >>! $TMP/LOG
+    echo `date` "$0 $$ -- creating $NEW_ROWS" >>! $TMP/LOG
     /usr/local/bin/in2csv --no-inference -k "results" "$NEW_JSON" >! "$NEW_ROWS"
     # extract only rows with specified classifier
     head -1 "$NEW_ROWS" >! "$NEW_ROWS.$$"
     tail +2 "$NEW_ROWS" | egrep ",$class," >> "$NEW_ROWS.$$"
     mv -f "$NEW_ROWS.$$" "$NEW_ROWS"
 else
-    echo "+++ $APP-$API ($0 $$) -- $NEW_ROWS is current with $NEW_JSON" >>! $TMP/LOG
+    echo `date` "$0 $$ -- $NEW_ROWS is current with $NEW_JSON" >>! $TMP/LOG
 endif
 
 #
@@ -111,7 +111,7 @@ if ((! -e "$CLASS_INTERVALS") || ((-M "$NEW_ROWS") > (-M "$CLASS_INTERVALS"))) t
     # get all columns as set and convert to CSV header
     set colnam = `echo $colset | sed "s/ /,/g"`
 
-    echo "+++ $APP-$API ($0 $$) -- creating $CLASS_INTERVALS" >>! $TMP/LOG
+    echo `date` "$0 $$ -- creating $CLASS_INTERVALS" >>! $TMP/LOG
     echo "interval,ampm,week,day,id" >! "$TMP/$APP-$API-$DB-$class-intervals.$$.csv"
 
     # cut out data/time columns and produce interval calculations using GAWK
@@ -121,7 +121,7 @@ if ((! -e "$CLASS_INTERVALS") || ((-M "$NEW_ROWS") > (-M "$CLASS_INTERVALS"))) t
 	tail +2 | \
 	/usr/local/bin/gawk -F, '{ m=$5*60+$6; m = m / 15; t=mktime(sprintf("%4d %2d %2d %2d %2d %2d", $2, $3, $4, $5, $6, $7)); printf "%d,%s,%s,%s,%s\n", m, strftime("%p",t),strftime("%U",t),strftime("%A",t), $1 }' >> "$CLASS_INTERVALS"
 else
-    echo "+++ $APP-$API ($0 $$) -- $CLASS_INTERVALS is current with $NEW_ROWS" >>! $TMP/LOG
+    echo `date` "$0 $$ -- $CLASS_INTERVALS is current with $NEW_ROWS" >>! $TMP/LOG
 endif
 
 #
@@ -150,14 +150,14 @@ if ((! -e "$CLASS_VALUES") || ((-M "$NEW_ROWS") > (-M "$CLASS_VALUES"))) then
 	end
     endif
 else
-    echo "+++ $APP-$API ($0 $$) -- $CLASS_VALUES is current with $NEW_ROWS" >>! $TMP/LOG
+    echo `date` "$0 $$ -- $CLASS_VALUES is current with $NEW_ROWS" >>! $TMP/LOG
 endif
 
 #
 # extract only events by classifier specified
 #
 set CLASS_INTERVAL_VALUES = "$TMP/$APP-$API-$DB-$class-interval-values.$$.csv" 
-echo "+++ $APP-$API ($0 $$) -- creating $CLASS_INTERVAL_VALUES " >>! $TMP/LOG
+echo `date` "$0 $$ -- creating $CLASS_INTERVAL_VALUES " >>! $TMP/LOG
 cat "$CLASS_VALUES" | /usr/local/bin/csvjoin -c "id,id" - "$CLASS_INTERVALS" | /usr/local/bin/csvcut -c "interval,day,week,classifier,score" >! "$CLASS_INTERVAL_VALUES"
 
 #
@@ -181,7 +181,7 @@ set intnames = `echo $intvalues | sed "s/ /,/g"`
 #
 set NEW_STATS = "$OLD_STATS.$$"
 # get current day-of-week
-echo "+++ $APP-$API ($0 $$) -- creating NEW_STATS ($NEW_STATS)" >>! $TMP/LOG
+echo `date` "$0 $$ -- creating NEW_STATS ($NEW_STATS)" >>! $TMP/LOG
 echo -n '{ "seqid":'$seqid',"days":[' >! "$NEW_STATS"
 set days = ( Sunday Monday Tuesday Wednesday Thursday Friday Saturday )
 @ k = 0
@@ -248,17 +248,21 @@ if ($?CLOUDANT_OFF == 0 && $?CU && $?DB) then
 	set doc = ( `cat "$OLD_STATS" | /usr/local/bin/jq ._id,._rev | sed 's/"//g'` )
 	if ($#doc == 2 && $doc[1] == $class && $doc[2] != "") then
 	    set rev = $doc[2]
-	    echo "+++ $APP-$API ($0 $$) -- DELETE $rev" >>! $TMP/LOG
+	    echo `date` "$0 $$ -- DELETE $rev" >>! $TMP/LOG
 	    curl -s -q -X DELETE "$CU/$DB-stats/$class?rev=$rev" >>! $TMP/LOG
 	endif
-	echo "+++ $APP-$API ($0 $$) -- STORE $NEW_STATS" >>! $TMP/LOG
+	echo `date` "$0 $$ -- STORE $NEW_STATS" >>! $TMP/LOG
 	curl -s -q -H "Content-type: application/json" -X PUT "$CU/$DB-stats/$class" -d "@$NEW_STATS" >>! $TMP/LOG
     endif
-    echo "+++ $APP-$API ($0 $$) -- SUCCESS : $JSON" >>! $TMP/LOG
+    echo `date` "$0 $$ -- SUCCESS : $JSON" >>! $TMP/LOG
     # update statistics
     mv -f "$NEW_STATS" "$JSON"
     # remove temporary files
     rm -f $OLD_STATS $NEW_JSON $NEW_ROWS $CLASS_INTERVALS $CLASS_VALUES $CLASS_INTERVAL_VALUES
 else
-    echo "+++ $APP-$API ($0 $$) -- No CLOUDANT update" >>! $TMP/LOG
+    echo `date` "$0 $$ -- no CLOUDANT update" >>! $TMP/LOG
 endif
+
+done:
+
+echo `date` "$0 $$ - START" >>! $TMP/LOG

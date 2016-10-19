@@ -8,7 +8,7 @@ set TTL = `echo "30 * 60" | bc`
 set SECONDS = `date "+%s"`
 set DATE = `echo $SECONDS \/ $TTL \* $TTL | bc`
 
-echo ">>> $APP-$API ($0 $$)" `date` >>! $TMP/LOG
+echo `date` "$0 $$ -- START" >>! $TMP/LOG
 
 if ($?QUERY_STRING) then
     set DB = `echo "$QUERY_STRING" | sed "s/.*db=\([^&]*\).*/\1/"`
@@ -21,9 +21,9 @@ else
 endif
 setenv QUERY_STRING "db=$DB&alg=$ALG"
 
-set OUTPUT = "$TMP/$APP-$API.$QUERY_STRING.$DATE.json"
+set OUTPUT = "$TMP/$APP-$API-$QUERY_STRING.$DATE.json"
 if (! -e "$OUTPUT") then
-    rm -f $TMP/$APP-$API.$QUERY_STRING.*.json
+    rm -f "$TMP/$APP-$API-$QUERY_STRING".*.json
     if ($DB == "damp-cloud") then
         if ($ALG == "visual") then
 	    curl -L -s -q -o "$OUTPUT" "https://ibmcds.looker.com/looks/vmFgFKSvCpN6qY2JjyZWnCjzrh3qSHK7.json?apply_formatting=true"
@@ -63,11 +63,7 @@ if (! -e "$OUTPUT") then
     mv -f "$OUTPUT".$$ "$OUTPUT"
 endif
 
-    if ($DB == "damp-cloud") then
-    else
-    endif
-    mv -f "$OUTPUT".$$ "$OUTPUT"
-endif
+output:
 
 echo "Content-Type: application/json; charset=utf-8"
 echo "Access-Control-Allow-Origin: *"
@@ -77,3 +73,7 @@ echo "Cache-Control: max-age=$TTL"
 echo "Last-Modified:" `date -r $DATE '+%a, %d %b %Y %H:%M:%S %Z'`
 echo ""
 cat "$OUTPUT"
+
+done:
+
+echo `date` "$0 $$ -- FINISH" >>! $TMP/LOG

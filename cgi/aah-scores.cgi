@@ -8,7 +8,7 @@ set TTL = `echo "12 * 60 * 60" | bc`
 set SECONDS = `date "+%s"`
 set DATE = `echo $SECONDS \/ $TTL \* $TTL | bc`
 
-echo ">>> $APP-$API ($0 $$)" `date` >>! $TMP/LOG
+echo `date` "$0 $$ -- START" >>! $TMP/LOG
 
 if (-e ~$USER/.cloudant_url) then
     echo "$APP-$API ($0 $$) - ~$USER/.cloudant_url" >>! $TMP/LOG
@@ -22,7 +22,7 @@ if ($?CLOUDANT_URL) then
 else if ($?CN) then
     set CU = "$CN.cloudant.com"
 else
-    echo "$APP-$API ($0 $$) -- No Cloudant URL" >>! $TMP/LOG
+    echo `date` "$0 $$ -- No Cloudant URL" >>! $TMP/LOG
     exit
 endif
 
@@ -37,17 +37,17 @@ setenv QUERY_STRING "db=$DB&id=$class"
 set JSON = "$TMP/$APP-$API-$QUERY_STRING.$DATE.json"
 
 if (-e "$JSON") then
-    echo "$APP-$API ($0 $$) == CURRENT $JSON $DATE" >>! $TMP/LOG
+    echo `date` "$0 $$ == CURRENT $JSON $DATE" >>! $TMP/LOG
 else
-    echo "$APP-$API ($0 $$) ++ CALLING ./$APP-make-$API.bash QUERY_STRING=$QUERY_STRING" >>! $TMP/LOG
+    echo `date` "$0 $$ -- CALLING ./$APP-make-$API.bash QUERY_STRING=$QUERY_STRING" >>! $TMP/LOG
     ./$APP-make-$API.bash
     # find old results
     set OLD_JSON = ( `ls -1t "$TMP/$APP-$API-$QUERY_STRING".*.json` )
     if ($#OLD_JSON > 0) then
-        echo "$APP-$API ($0 $$) == OLD $JSON ($OLD_JSON)" >>! $TMP/LOG
+        echo `date` "$0 $$ -- OLD $JSON ($OLD_JSON)" >>! $TMP/LOG
         set JSON = "$OLD_JSON[1]"
         if ($#OLD_JSON > 1) then
-            echo "$APP-$API ($0 $$) -- DELETING $OLD_JSON[2-]" >>! $TMP/LOG
+            echo `date` "$0 $$ -- DELETING $OLD_JSON[2-]" >>! $TMP/LOG
             /bin/rm -f "$OLD_JSON[2-]"
         endif
     else
@@ -59,7 +59,7 @@ else
 endif
 
 if ($#JSON == 0) then
-    echo "$APP-$API ($0 $$) ** NONE" >>! $TMP/LOG
+    echo `date` "$0 $$ -- NONE" >>! $TMP/LOG
 endif
 
 #
@@ -74,3 +74,7 @@ echo "Last-Modified:" `date -r $DATE '+%a, %d %b %Y %H:%M:%S %Z'`
 echo ""
 
 cat "$JSON"
+
+done:
+
+echo `date` "$0 $$ -- FINISH" >>! $TMP/LOG

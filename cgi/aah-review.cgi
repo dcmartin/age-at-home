@@ -9,7 +9,7 @@ set TTL = `echo "1 * 60 * 60" | bc`
 set SECONDS = `date "+%s"`
 set DATE = `echo $SECONDS \/ $TTL \* $TTL | bc`
 
-echo "BEGIN: $APP-$API ($0 $$) " $DATE >>! $TMP/LOG
+echo `date` "$0 $$ -- START" >>! $TMP/LOG
 
 if ($?QUERY_STRING) then
     set DB = `echo "$QUERY_STRING" | sed 's/.*db=\([^&]*\).*/\1/'`
@@ -37,7 +37,7 @@ if ($?CLOUDANT_URL) then
 else if ($?CN) then
     set CU = "$CN"@"$CN.cloudant.com"
 else
-    echo "DEBUG: $APP-$API ($0 $$) -- no Cloudant URL" >>! $TMP/LOG
+    echo `date` "$0 $$ -- no Cloudant URL" >>! $TMP/LOG
     goto done
 endif
 
@@ -46,39 +46,22 @@ set OUTPUT = "$TMP/$APP-$API-$QUERY_STRING.$DATE.json"
 
 # check OUTPUT exists
 if (-s "$OUTPUT") then
-    echo "DEBUG: $APP-$API ($0 $$) -- existing ($OUTPUT)" >>! $TMP/LOG
+    echo `date` "$0 $$ -- existing ($OUTPUT)" >>! $TMP/LOG
     goto output
 else
-    echo "DEBUG: $APP-$API ($0 $$) ++ requesting ($OUTPUT)" >>! $TMP/LOG
+    echo `date` "$0 $$ ++ requesting ($OUTPUT)" >>! $TMP/LOG
     ./$APP-make-$API.bash
-    # find old results
-    set OLD = ( `ls -1t "$TMP/$APP-$API-$QUERY_STRING".*.json` )
-    if ($#OLD == 0) then
-        set URL = "https://$CU/$DB-$API/$class"
-	echo "DEBUG: $APP-$API ($0 $$) -- returning redirect ($URL)" >>! $TMP/LOG
-	echo "Status: 302 Found"
-	echo "Location: $URL"
-	echo ""
-	goto done
-    else if ($#OLD > 0) then
-	echo "DEBUG: $APP-$API ($0 $$) == OLD $OUTPUT ($OLD)" >>! $TMP/LOG
-	set OUTPUT = "$OLD[1]"
-	if ($#OLD > 1) then
-	    echo "DEBUG: $APP-$API ($0 $$) -- DELETING $OLD[2-]" >>! $TMP/LOG
-	    /bin/rm -f "$OLD[2-]"
-	endif
-    endif
-endif
-
-if ($#OUTPUT == 0) then
-    echo "DEBUG: $APP-$API ($0 $$) ** NONE ($OUTPUT)" >>! $TMP/LOG
-    echo "Status: 202 Accepted"
+    # remove old results
+    rm -f "$OUTPUT:r:r".*.json
+    # return redirect
+    set URL = "https://$CU/$DB-$API/$class"
+    echo `date` "$0 $$ -- returning redirect ($URL)" >>! $TMP/LOG
+    echo "Status: 302 Found"
+    echo "Location: $URL"
+    echo ""
     goto done
-else if (-s "$OUTPUT") then
-    echo "DEBUG: $APP-$API ($0 $$) -- FOUND ($OUTPUT)" >>! $TMP/LOG
 endif
 
-# output
 output:
 
 #
@@ -91,10 +74,9 @@ echo "Age: $AGE"
 echo "Cache-Control: max-age=$TTL"
 echo "Last-Modified:" `date -r $DATE '+%a, %d %b %Y %H:%M:%S %Z'`
 echo ""
-
 cat "$OUTPUT"
 
 # done
 done:
 
-echo "FINISH: $APP-$API ($0 $$) " $DATE >>! $TMP/LOG
+echo `date` "$0 $$ -- FINISH" >>! $TMP/LOG

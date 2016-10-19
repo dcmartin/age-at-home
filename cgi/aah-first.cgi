@@ -8,7 +8,7 @@ set TTL = `echo "30 * 60" | bc`
 set SECONDS = `date "+%s"`
 set DATE = `echo $SECONDS \/ $TTL \* $TTL | bc`
 
-echo ">>> $APP-$API ($0 $$)" `date` >>! $TMP/LOG
+echo `date` "$0 $$ -- START" >>! $TMP/LOG
 
 if ($?QUERY_STRING) then
     set DB = `echo "$QUERY_STRING" | sed "s/.*db=\([^&]*\).*/\1/"`
@@ -18,9 +18,9 @@ else
 endif
 setenv QUERY_STRING "db=$DB"
 
-set OUTPUT = "$TMP/$APP-$API.$DB.$DATE.json"
+set OUTPUT = "$TMP/$APP-$API-$QUERY_STRING.$DATE.json"
 if (! -e "$OUTPUT") then
-    rm -f $TMP/$APP-$API.$DB.*.json
+    rm -f "$TMP/$APP-$API-$QUERY_STRING".*.json
     if ($DB == "damp-cloud") then
 	# new URL for "person" or "people" from Alchemy text
 	curl -L -s -q -o "$OUTPUT" "https://ibmcds.looker.com/looks/Bck9m3sbyxX23t4S4tvy7fGpSw4mYPcx.json?apply_formatting=true" 
@@ -36,6 +36,8 @@ else
     set DATETIME = `/usr/local/bin/jq '.[0]."roughfog.15_minute_interval"' $OUTPUT`
 endif
 
+output:
+
 echo "Content-Type: application/json; charset=utf-8"
 echo "Access-Control-Allow-Origin: *"
 set AGE = `echo "$SECONDS - $DATE" | bc`
@@ -44,3 +46,7 @@ echo "Cache-Control: max-age=$TTL"
 echo "Last-Modified:" `date -r $DATE '+%a, %d %b %Y %H:%M:%S %Z'`
 echo ""
 echo '{"device":"'$DB'", "datetime":'$DATETIME' }'
+
+done:
+
+echo `date` "$0 $$ -- FINISH" >>! $TMP/LOG

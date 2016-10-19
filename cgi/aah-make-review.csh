@@ -10,7 +10,7 @@ set TTL = `echo "1 * 60 * 60" | bc`
 set SECONDS = `date "+%s"`
 set DATE = `echo $SECONDS \/ $TTL \* $TTL | bc`
 
-echo "BEGIN: $APP-$API ($0 $$) - " `date` >>! $TMP/LOG
+echo `date` "$0 $$ -- START"  >>! $TMP/LOG
 
 if (-e ~$USER/.cloudant_url) then
     set cc = ( `cat ~$USER/.cloudant_url` )
@@ -24,34 +24,27 @@ if ($?CLOUDANT_URL) then
 else if ($?CN && $?CP) then
     set CU = "$CN":"$CP"@"$CN.cloudant.com"
 else
-    echo "DEBUGG: $APP-$API ($0 $$) -- no Cloudant URL" >>! $TMP/LOG
+    echo `date` "$0 $$ -- no Cloudant URL" >>! $TMP/LOG
     goto done
 endif
 
 if ($?QUERY_STRING) then
     set DB = `echo "$QUERY_STRING" | sed 's/.*db=\([^&]*\).*/\1/'`
     if ($DB == "$QUERY_STRING") unset DB
-    # set class = `echo "$QUERY_STRING" | sed 's/.*id=\([^&]*\).*/\1/'`
-    # if ($class == "$QUERY_STRING") unset class
-    # set day = `echo "$QUERY_STRING" | sed 's/.*day=\([^&]*\).*/\1/'`
-    # if ($day == "$QUERY_STRING") unset day
-    # set interval = `echo "$QUERY_STRING" | sed 's/.*interval=\([^&]*\).*/\1/'`
-    # if ($interval == "$QUERY_STRING") unset interval
 endif
 
 #
 # defaults to rough-fog (kitchen) and all classes
 #
 if ($?DB == 0) set DB = rough-fog
-if ($?class == 0) set class = all
-setenv QUERY_STRING "db=$DB&id=$class"
+setenv QUERY_STRING "db=$DB"
 
 if ($DB == "rough-fog" && $?LANIP == 0) then
     setenv LANIP "192.168.1.34"
 else if ($DB == "damp-cloud" && $?LANIP == 0) then
     setenv LANIP "192.168.1.35"
 else
-    echo "DEBUG: $APP-$API ($0 $$) -- no LANIP" >>! $TMP/LOG
+    echo `date` "$0 $$ -- no LANIP" >>! $TMP/LOG
     goto done
 endif
 
@@ -60,20 +53,20 @@ set OUTPUT = "$TMP/$APP-$API-$QUERY_STRING.$DATE.json"
 set INPROGRESS = ( `echo "$OUTPUT".*` )
 # check OUTPUT in-progress for current interval
 if ($#INPROGRESS) then
-    echo "DEBUG: $APP-$API ($0 $$) - In-progress $OUTPUT" >>! $TMP/LOG
-    exit
+    echo `date` "$0 $$ -- in-progress $DATE" >>! $TMP/LOG
+    goto done
 endif
 
 #
 # download old result
 #
 set OLD = "$OUTPUT".$$
-echo "DEBUG: $APP-$API ($0 $$) -- getting OLD ($OLD)" >>! $TMP/LOG
+echo `date` "$0 $$ -- getting OLD ($OLD)" >>! $TMP/LOG
 curl -s -q -o "$OLD" -X GET "$CU/$DB-$API/$class"
 # check iff successful
 set CLASS_DB = `/usr/local/bin/jq '._id' "$OLD" | sed 's/"//g'`
 if ($CLASS_DB != $class) then
-    echo "DEBUG: $APP-$API ($0 $$) -- Not found ($CU/$DB-$API/$class)" >>! $TMP/LOG
+    echo `date` "$0 $$ -- not found ($CU/$DB-$API/$class)" >>! $TMP/LOG
     set prev_seqid = 0
 else
     # get last sequence # for class specified
@@ -84,29 +77,35 @@ endif
 #
 # get CHANGES records
 #
-set CHANGES = "$TMP/$APP-$API-changes.$$.json"
+set CHANGES = "$TMP/$APP-$API.changes.$seqid.json"
 set seqid = 0
 if ( ! -e "$CHANGES" ) then
-    echo "DEBUG: $APP-$API ($0 $$) -- creating $CHANGES" >>! $TMP/LOG
+    # remove old changes
+    echo `date` "$0 $$ -- removing old changes $CHANGES:r:r" >>! $TMP/LOG
+    rm -f "$CHANGES:r:r".*.json
+    echo `date` "$0 $$ -- creating $CHANGES" >>! $TMP/LOG
     curl -s -q -o "$CHANGES" "$CU/$DB/_changes?descending=true&include_docs=true&since=$prev_seqid"
     set seqid = ( `/usr/local/bin/jq .last_seq "$CHANGES"` )
     if ($seqid == "null") then
-         echo "DEBUG: $APP-$API ($0 $$) -- FAILURE RETRIEVING CHANGES" >>! $TMP/LOG
+         echo `date` "$0 $$ -- failure retrieving changes" >>! $TMP/LOG
          exit
     endif
 else
     set seqid = ( `/usr/local/bin/jq .last_seq "$CHANGES"` )
     if ($seqid == "null") then
-         echo "DEBUG: $APP-$API ($0 $$) -- BAD $CHANGES" >>! $TMP/LOG
+         echo `date` "$0 $$ -- invalid changes" >>! $TMP/LOG
          exit
     endif
     set ttyl = `echo "$SECONDS - $DATE" | bc`
-    echo "DEBUG: $APP-$API ($0 $$) -- CURRENT: $CHANGES ($TTL) UPDATE $ttyl" >>! $TMP/LOG
+    echo `date` "$0 $$ -- changes are current ($TTL) update in $ttyl" >>! $TMP/LOG
 endif
 
-set RESULTS = "$TMP/$APP-$API-results.$$.json"
+set RESULTS = "$TMP/$APP-$API.results.$seqid.json"
 if (-s "$CHANGES" && (! -s "$RESULTS" || ((-M "$CHANGES") > (-M "$RESULTS")))) then
-    echo "DEBUG: $APP-$API ($0 $$) -- CREATING ($RESULTS)" >>! $TMP/LOG
+    # remove old results
+    echo `date` "$0 $$ -- removing old results $RESULTS:r:r" >>! $TMP/LOG
+    rm -f "$RESULTS:r:r".*.json
+    echo `date` "$0 $$ -- creating results from changes" >>! $TMP/LOG
     /usr/local/bin/jq -c '[.results[].doc|{file:.visual.image,tag:.alchemy.text,score:.alchemy.score,year:.year,month:.month,day:.day,hour:.hour,minute:.minute,second:.second}]' "$CHANGES" \
 	| /usr/local/bin/jq -c '{results:.[]|[.file,.tag,.score,.year,.month,.day,.hour,.minute,.second]}' \
 	| sed 's/"//g' \
@@ -119,7 +118,7 @@ if (-s "$CHANGES" && (! -s "$RESULTS" || ((-M "$CHANGES") > (-M "$RESULTS")))) t
 	   }' \
 	| sort -r >! "$RESULTS"
 else
-    echo "DEBUG: $APP-$API ($0 $$) -- CURRENT: $RESULTS ($TTL); UPDATE $ttyl" >>! $TMP/LOG
+    echo `date` "$0 $$ -- results are current with changes" >>! $TMP/LOG
 endif
 
 
@@ -130,68 +129,68 @@ endif
 #
 
 if ($?FTP_GET == 0) then
-
-# create temporary output for processing sequentially; ignore "ampm"
-foreach line ( `/usr/local/bin/jq -c '[.file,.tag,.score,.day,.interval]' "$RESULTS" | sed 's/\[//' | sed 's/\]//' | sed 's/ /_/g' | awk -F, '{ printf("%s,%s,%f,%s,%d\n", $1,$2,$3,$4,$5) }'` )
-    set tuple = ( `echo "$line" | sed 's/,/ /g'` )
-    if ($#tuple < 2) then
-	echo "DEBUG: $APP-$API ($0 $$) -- bad tuple ($tuple) ($line)" >>! $TMP/LOG
-	continue
-    endif
-    set tag = `echo $tuple[2] | sed 's/"//g'`
-    if (($tag == $class) || ($class == "all") && $tag != "null") then
-	# get filename
-	set file = `echo $tuple[1] | sed 's/"//g'`
-	# build image fullpath
-	set image = "$TMP/$DB/$tag/$file"
-	# ensure directory exists
-	mkdir -p "$image:h"
-	# test if image already exists
-	if (! -s "$image") then
-	    set ftp = "ftp://$LANIP/$file" 
-	    curl -s -q "$ftp" -o "$image"
-	    if ($status != 0) then
-		echo "DEBUG: $APP-$API ($0 $$) -- FAIL ($ftp)" >>! $TMP/LOG
-		break
-	    endif
-	    if (-s "$image") then
-		echo "DEBUG: $APP-$API ($0 $$) -- SUCCESS ($image)" >>! $TMP/LOG
-		# optionally delete the source
-		if ($?FTP_DELETE) then
-		    echo "DEBUG: $APP-$API ($0 $$) -- deleting ($file)" >>! $TMP/LOG
-		    curl -s -q "ftp://$LANIP/" -Q "-DELE $file"
-		endif
-	   else
-		echo "DEBUG: $APP-$API ($0 $$) -- ZERO ($image)" >>! $TMP/LOG
-	   endif
-	else
+    echo `date` $0 $$ -- getting new images" >>! $TMP/LOG
+    # create temporary output for processing sequentially; ignore "ampm"
+    foreach line ( `/usr/local/bin/jq -c '[.file,.tag,.score,.day,.interval]' "$RESULTS" | sed 's/\[//' | sed 's/\]//' | sed 's/ /_/g' | awk -F, '{ printf("%s,%s,%f,%s,%d\n", $1,$2,$3,$4,$5) }'` )
+	set tuple = ( `echo "$line" | sed 's/,/ /g'` )
+	if ($#tuple < 2) then
+	    echo `date` "$0 $$ -- bad tuple ($tuple) ($line)" >>! $TMP/LOG
+	    continue
 	endif
-    endif
-end
+	set tag = `echo $tuple[2] | sed 's/"//g'`
+	if (($tag == $class) || ($class == "all") && $tag != "null") then
+	    # get filename
+	    set file = `echo $tuple[1] | sed 's/"//g'`
+	    # build image fullpath
+	    set image = "$TMP/$DB/$tag/$file"
+	    # ensure directory exists
+	    mkdir -p "$image:h"
+	    # test if image already exists
+	    if (! -s "$image") then
+		set ftp = "ftp://$LANIP/$file" 
+		curl -s -q "$ftp" -o "$image"
+		if ($status != 0) then
+		    echo `date` "$0 $$ -- fail ($ftp)" >>! $TMP/LOG
+		    break
+		endif
+		if (-s "$image") then
+		    echo `date` "$0 $$ -- success ($image)" >>! $TMP/LOG
+		    # optionally delete the source
+		    if ($?FTP_DELETE) then
+			echo `date` "$0 $$ -- deleting ($file)" >>! $TMP/LOG
+			curl -s -q "ftp://$LANIP/" -Q "-DELE $file"
+		    endif
+	       else
+		    echo `date` "$0 $$ -- removing ZERO ($image)" >>! $TMP/LOG
+		    rm -f "$image"
+	       endif
+	    else
+	    endif
+	endif
+    end
+else
+    echo `date` $0 $$ -- skipping new images" >>! $TMP/LOG
+endif
 
 #
 # MAKE NEW STATISTICS
 #
 
-# cleanup
-rmdir "$TMP/$DB/"* >&! /dev/null
-
 set classes = ( `/bin/ls -1 "$TMP/$DB"` )
-echo "DEBUG: $APP-$API ($0 $$) -- CLASSES: $#classes" >>! $TMP/LOG
+echo `date` "$0 $$ -- found $#classes classes" >>! $TMP/LOG
 
 set NEW = "$OLD.$$"
-echo -n '{ "seqid":'$seqid',"device":"'"$DB"'","count":'$#classes',"classes":[' >! "$NEW"
+echo -n '{ "seqid":'$seqid',"date":"'`date`',"device":"'"$DB"'","count":'$#classes',"classes":[' >! "$NEW"
 
 @ k = 0
 foreach i ( $classes )
     if ($k > 0) echo "," >> "$NEW"
-    set files = ( `/bin/ls -1 "$TMP/$DB/$i"` )
-    echo -n '{"name":"'$i'","count":'$#files'}' >> "$NEW"
+    set nfiles = ( `/bin/ls -1 "$TMP/$DB/$i" | wc | awk '{ print $1 }'` )
+    echo -n '{"name":"'$i'","count":'$nfiles'}' >> "$NEW"
     @ k++
 end
 echo -n ']}' >> "$NEW"
 
-echo "DEBUG: $APP-$API ($0 $$) -- CLASSES: ALL DONE" >>! $TMP/LOG
 
 #
 # update Cloudant
@@ -204,6 +203,7 @@ if ($?CLOUDANT_OFF == 0 && $?CU && $?DB) then
         # test for success
         if ( "$DEVICE_DB" != "true" ) then
             # failure
+	    echo `date` "$0 $$ -- failure creating Cloudant database ($DB-$API)" >>! $TMP/LOG
             setenv CLOUDANT_OFF TRUE
         endif
     endif
@@ -211,24 +211,24 @@ if ($?CLOUDANT_OFF == 0 && $?CU && $?DB) then
         set doc = ( `cat "$OLD" | /usr/local/bin/jq ._id,._rev | sed 's/"//g'` )
         if ($#doc == 2 && $doc[1] == $class && $doc[2] != "") then
             set rev = $doc[2]
-            echo "DEBUG: $APP-$API ($0 $$) -- DELETE $rev" >>! $TMP/LOG
+            echo `date` "$0 $$ -- deleting old output ($rev)" >>! $TMP/LOG
             curl -s -q -X DELETE "$CU/$DB-$API/$class?rev=$rev" >>! $TMP/LOG
         endif
-        echo "DEBUG: $APP-$API ($0 $$) -- STORE $NEW" >>! $TMP/LOG
+        echo `date` "$0 $$ -- storing new output" >>! $TMP/LOG
         curl -s -q -H "Content-type: application/json" -X PUT "$CU/$DB-$API/$class" -d "@$NEW" >>! $TMP/LOG
+    else
+	echo `date` "$0 $$ -- Cloudant OFF ($DB-$API)" >>! $TMP/LOG
     endif
-    echo "DEBUG: $APP-$API ($0 $$) -- SUCCESS : $NEW" >>! $TMP/LOG
+    echo `date` "$0 $$ -- success ($NEW)" >>! $TMP/LOG
     # update statistics
     mv -f "$NEW" "$OUTPUT"
-    # remove temporary files
-    rm -f $OLD
 else
-    echo "DEBUG: $APP-$API ($0 $$) -- No CLOUDANT update" >>! $TMP/LOG
+    echo `date` "$0 $$ -- no Cloudant update" >>! $TMP/LOG
 endif
 
-
-# done
 done:
 
-echo "FINISH: $APP-$API ($0 $$) - " `date` >>! $TMP/LOG
-/bin/rm -f "$OUTPUT".* "$RESULTS" "$CHANGES"
+# remove temporary files
+rm -f $OLD
+
+echo `date` "$0 $$ -- START"  >>! $TMP/LOG

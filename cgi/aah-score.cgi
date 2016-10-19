@@ -8,7 +8,7 @@ set TTL = `echo "24 * 60 * 60" | bc`
 set SECONDS = `date "+%s"`
 set DATE = `echo $SECONDS \/ $TTL \* $TTL | bc`
 
-echo ">>> $APP-$API ($0 $$)" `date` >>! $TMP/LOG
+echo `date` "$0 $$ -- START" >>! $TMP/LOG
 
 if ($?QUERY_STRING) then
     set DB = `echo "$QUERY_STRING" | sed "s/.*db=\([^&]*\).*/\1/"`
@@ -18,9 +18,9 @@ else
 endif
 setenv QUERY_STRING "db=$DB"
 
-set OUTPUT = "$TMP/$APP-$API.$DB.$DATE.json"
+set OUTPUT = "$TMP/$APP-$API-$QUERY_STRING.$DATE.json"
 if (! -e "$OUTPUT") then
-    rm -f $TMP/$APP-$API.$DB.*.json
+    rm -f "$TMP/$APP-$API-$QUERY_STRING".*.json
     if ($DB == "damp-cloud") then
     	# damp cloud (visual-classifier, score, time) Public Access
 	curl -L -s -q -o "$OUTPUT.$$" "https://ibmcds.looker.com/looks/gGt5s3SmqfMt2HDbr7R2pCNcM2th3h4s.json?apply_formatting=true"
@@ -52,3 +52,7 @@ echo "Cache-Control: max-age=$TTL"
 echo "Last-Modified:" `date -r $DATE '+%a, %d %b %Y %H:%M:%S %Z'`
 echo ""
 cat "$OUTPUT"
+
+done:
+
+echo `date` "$0 $$ -- FINISH" >>! $TMP/LOG

@@ -8,7 +8,7 @@ set TTL = `echo "12 * 60 * 60" | bc`
 set SECONDS = `date "+%s"`
 set DATE = `echo $SECONDS \/ $TTL \* $TTL | bc`
 
-echo ">>> $APP-$API ($0 $$) - BEGIN" `date` >>! $TMP/LOG
+echo `date` "$0 $$ -- START" >>! $TMP/LOG
 
 if (-e ~$USER/.cloudant_url) then
     set cc = ( `cat ~$USER/.cloudant_url` )
@@ -22,7 +22,7 @@ if ($?CLOUDANT_URL) then
 else if ($?CN && $?CP) then
     set CU = "$CN":"$CP"@"$CN.cloudant.com"
 else
-    echo "+++ $APP-$API ($0 $$) -- no Cloudant URL" >>! $TMP/LOG
+    echo `date` "$0 $$ -- no Cloudant URL" >>! $TMP/LOG
     goto done
 endif
 
@@ -41,7 +41,7 @@ set INPROGRESS = ( `echo "$JSON".*` )
 
 # check JSON in-progress for current interval
 if ($#INPROGRESS) then
-    echo "+++ $APP-$API ($0 $$) -- in-progress ($INPROGRESS)" >>! $TMP/LOG
+    echo `date` "$0 $$ -- in-progress" >>! $TMP/LOG
     goto done    
 else
     if ($DB == "damp-cloud") then
@@ -76,13 +76,13 @@ endif
 if ($?CLOUDANT_OFF == 0 && $?CU && $?DB && (-s $JSON)) then
     set DEVICE_DB = `curl -s -q -X GET "$CU/$DB-$API" | /usr/local/bin/jq '.db_name'`
     if ( "$DEVICE_DB" == "null" ) then
-	echo "+++ $APP-$API ($0 $$) -- create Cloudant ($DB-$API)" >>! $TMP/LOG
+	echo `date` "$0 $$ -- create Cloudant ($DB-$API)" >>! $TMP/LOG
 	# create DB
 	set DEVICE_DB = `curl -s -q -X PUT "$CU/$DB-$API" | /usr/local/bin/jq '.ok'`
 	# test for success
 	if ( "$DEVICE_DB" != "true" ) then
 	    # failure
-	    echo "+++ $APP-$API ($0 $$) -- FAILED: create Cloudant ($DB-$API)" >>! $TMP/LOG
+	    echo `date` "$0 $$ -- FAILED: create Cloudant ($DB-$API)" >>! $TMP/LOG
 	    setenv CLOUDANT_OFF TRUE
 	endif
     endif
@@ -90,17 +90,15 @@ if ($?CLOUDANT_OFF == 0 && $?CU && $?DB && (-s $JSON)) then
 	set doc = ( `curl -s -q "$CU/$DB-$API/$class" | jq ._id,._rev | sed 's/"//g'` )
 	if ($#doc == 2 && $doc[1] == $class && $doc[2] != "") then
 	    set rev = $doc[2]
-	    echo "+++ $APP-$API ($0 $$) -- DELETE $CU/$DB-$API/$class $rev" >>! $TMP/LOG
+	    echo `date` "$0 $$ -- DELETE $CU/$DB-$API/$class $rev" >>! $TMP/LOG
 	    curl -s -q -X DELETE "$CU/$DB-$API/$class?rev=$rev"
 	endif
-	echo "+++ $APP-$API ($0 $$) -- STORE $CU/$DB-$API/$class" >>! $TMP/LOG
+	echo `date` "$0 $$ -- STORE $CU/$DB-$API/$class" >>! $TMP/LOG
 	curl -s -q -H "Content-type: application/json" -X PUT "$CU/$DB-$API/$class" -d "@$JSON" >>! $TMP/LOG
     endif
 else
-    echo "+++ $APP-$API ($0 $$) -- no Cloudant update" >>! $TMP/LOG
+    echo `date` "$0 $$ -- no Cloudant update" >>! $TMP/LOG
 endif
 
-cleanup:
-
 done:
-    echo "<<< $APP-$API ($0 $$) -- END" `date` >>! $TMP/LOG
+    echo `date` "$0 $$ -- FINISH" >>! $TMP/LOG

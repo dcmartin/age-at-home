@@ -8,7 +8,7 @@ set TTL = `echo "30 * 60" | bc`
 set SECONDS = `date "+%s"`
 set DATE = `echo $SECONDS \/ $TTL \* $TTL | bc`
  
-echo ">>> $APP-$API ($0 $$)" `date` >>! $TMP/LOG
+echo `date` "$0 $$ -- START" >>! $TMP/LOG
 
 if ($?QUERY_STRING) then
     set DB = `echo "$QUERY_STRING" | sed "s/.*db=\([^&]*\).*/\1/"`
@@ -18,9 +18,9 @@ else
 endif
 setenv QUERY_STRING "db=$DB"
 
-set OUTPUT = "$TMP/$APP-$API.$DB.$DATE.csv"
+set OUTPUT = "$TMP/$APP-$API.$QUERY_STRING.$DATE.csv"
 if (! -e "$OUTPUT") then
-    rm -f $TMP/$APP-$API.$DB.*.csv
+    rm -f $TMP/$APP-$API.$QUERY_STRING.*.csv
     if ($DB == "damp-cloud") then
 	curl -L -s -q -o "$OUTPUT" "https://ibmcds.looker.com/looks/bhRrfdbXN6vwd5SpFWvGgbRXDW6mxhTD.csv?apply_formatting=true"
     else
@@ -46,3 +46,5 @@ echo "Cache-Control: max-age=$TTL"
 echo "Last-Modified:" `date -r $DATE '+%a, %d %b %Y %H:%M:%S %Z'`
 echo ""
 cat "$OUTPUT"
+
+echo `date` "$0 $$ -- FINISH" >>! $TMP/LOG

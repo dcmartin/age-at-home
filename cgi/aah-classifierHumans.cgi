@@ -8,7 +8,7 @@ set TTL = `echo "30 * 60" | bc`
 set SECONDS = `date "+%s"`
 set DATE = `echo $SECONDS \/ $TTL \* $TTL | bc`
 
-echo ">>> $APP-$API ($0 $$)" `date` >>! $TMP/LOG
+echo `date` "$0 $$ -- START" >>! $TMP/LOG
 
 set JSON = ~$USER/.aah-classifierSets.json
 if (! -e "$JSON") then
@@ -26,3 +26,5 @@ echo "Cache-Control: max-age=$TTL"
 echo "Last-Modified:" `date -r $DATE '+%a, %d %b %Y %H:%M:%S %Z'`
 echo ""
 /usr/local/bin/jq '.humans[].name' "$JSON"
+
+echo `date` "$0 $$ -- FINISH" >>! $TMP/LOG

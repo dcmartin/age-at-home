@@ -3,12 +3,13 @@ setenv APP "aah"
 setenv API "averageHuman"
 setenv LAN "192.168.1"
 if ($?TMP == 0) setenv TMP "/var/lib/age-at-home"
-# don't update statistics more than once per 15 minutes
+
+# don't update output more than once per (in seconds)
 set TTL = `echo "30 * 60" | bc`
 set SECONDS = `date "+%s"`
 set DATE = `echo $SECONDS \/ $TTL \* $TTL | bc`
 
-echo ">>> $APP-$API ($0 $$)" `date` >>! $TMP/LOG
+echo `date` "$0 $$ -- START" >>! $TMP/LOG
 
 if ($?QUERY_STRING) then
     set DB = `echo "$QUERY_STRING" | sed "s/.*db=\([^&]*\).*/\1/"`
@@ -18,9 +19,9 @@ else
 endif
 setenv QUERY_STRING "db=$DB"
 
-set OUTPUT = "$TMP/$APP-$API.$DB.$DATE.json"
+set OUTPUT = "$TMP/$APP-$API.$QUERY_STRING.$DATE.json"
 if (! -e "$OUTPUT") then
-    rm -f $TMP/$APP-$API.$DB.*.json
+    rm -f $TMP/$APP-$API.$QUERY_STRING.*.json
     if ($DB == "damp-cloud") then
 	curl -L -s -q -o "$OUTPUT" "https://ibmcds.looker.com/looks/bhRrfdbXN6vwd5SpFWvGgbRXDW6mxhTD.json?apply_formatting=true"
     else
@@ -48,3 +49,6 @@ echo "Cache-Control: max-age=$TTL"
 echo "Last-Modified:" `date -r $DATE '+%a, %d %b %Y %H:%M:%S %Z'`
 echo ""
 cat "$OUTPUT"
+
+done:
+echo `date` "$0 $$ -- FINISH" >>! $TMP/LOG
