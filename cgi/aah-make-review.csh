@@ -180,7 +180,7 @@ set classes = ( `/bin/ls -1 "$TMP/$DB"` )
 echo `date` "$0 $$ -- found $#classes classes" >>! $TMP/LOG
 
 set NEW = "$OLD.$$"
-echo -n '{ "seqid":'$seqid',"date":"'`date`',"device":"'"$DB"'","count":'$#classes',"classes":[' >! "$NEW"
+echo -n '{ "seqid":'$seqid',"date":"'`date`'","device":"'"$DB"'","count":'$#classes',"classes":[' >! "$NEW"
 
 @ k = 0
 foreach i ( $classes )

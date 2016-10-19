@@ -78,7 +78,7 @@ else
 
     # new output
     set NEW = "$OUTPUT.$$"
-    echo -n '{ "seqid":'$seqid',"device":"'"$DB"'","match":"'"$match"'","class":"'"$class"'",' >! "$NEW"
+    echo -n '{ "seqid":'$seqid',"date":"'`date`'","device":"'"$DB"'","match":"'"$match"'","class":"'"$class"'",' >! "$NEW"
 
     set CDIR = "$TMP/$DB/$class"
     if (-d "$CDIR") then
