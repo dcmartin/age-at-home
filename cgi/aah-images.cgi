@@ -6,9 +6,9 @@ setenv WWW "www.dcmartin.com"
 if ($?TMP == 0) setenv TMP "/var/lib/age-at-home"
 
 # don't update statistics more than once per 12 hours
-set TTL = `echo "12 * 60 * 60" | bc`
-set SECONDS = `date "+%s"`
-set DATE = `echo $SECONDS \/ $TTL \* $TTL | bc`
+setenv TTL 30
+setenv SECONDS `date "+%s"`
+setenv DATE `echo $SECONDS \/ $TTL \* $TTL | bc`
 
 echo "BEGIN: $APP-$API ($0 $$) - " $DATE >>! $TMP/LOG
 
@@ -71,29 +71,23 @@ else
     endif
 
     set NEW = "$OUTPUT.$$"
-    set CDIR = "$TMP/$DB/$class"
 
     echo -n '{ "seqid":'$seqid',"device":"'"$DB"'","match":"'"$match"'","class":"'"$class"'",' >! "$NEW"
+
+    set CDIR = "$TMP/$DB/$class"
     if (-d "$CDIR") then
 	echo "DEBUG: $APP-$API ($0 $$) -- FILES: $CDIR/$match*" >>! $TMP/LOG
-	set files = ( `/bin/ls -1r "$CDIR/$match"*` )
-	echo "DEBUG: $APP-$API ($0 $$) -- FILES: $#files" >>! $TMP/LOG
-	echo -n '"count":'$#files',' >> "$NEW"
-	@ k = 0
 	echo -n '"images":[' >> "$NEW"
-	foreach j ( $files )
-	    if ($k > 0) echo -n "," >> "$NEW"
-	    # echo -n '"http://'"$WEB/$APP/$DB/$j:t"'"' >> "$NEW"
-	    echo -n '"'$j:t'"' >> "$NEW"
-	    @ k++
-	    if ($?IMAGE_LIMIT) then
-		if ($k > $IMAGE_LIMIT) then
-		    echo "DEBUG: $APP-$API ($0 $$) -- IMAGE LIMIT EXCEEDED: $k of $#files" >>! $TMP/LOG
-		    break
-		endif
+	@ k = 0
+	foreach j ( `find "$CDIR" -name "$match*" -print` )
+	    if ($k < $IMAGE_LIMIT) then
+		if ($k > 0) echo -n "," >> "$NEW"
+		echo -n '"'$j:t'"' >> "$NEW"
 	    endif
+	    @ k++
 	end
-	echo "] }" >> "$NEW"
+	echo '],"count":'$k' }' >> "$NEW"
+	echo "DEBUG: $APP-$API ($0 $$) -- FILES: $k" >>! $TMP/LOG
     else
 	echo -n '"count":0',' >> "$NEW"
 	echo -n '"images":[' >> "$NEW"

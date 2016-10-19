@@ -42,7 +42,7 @@ else
     # remove old 
     rm -f "$TMP/$APP-$API-$QUERY_STRING."*".json"
     # get review information (hmmm..)
-    set IMAGES = "$TMP/$APP-$API-$QUERY_STRING-images.$$.json"
+    set IMAGES = "$TMP/$APP-$API-images.$$.json"
     echo "DEBUG: $APP-$API ($0 $$) -- getting $IMAGES" >>! $TMP/LOG
     curl -L -q -s "http://www.dcmartin.com/CGI/aah-images.cgi?db=$DB&id=$class&match=$match" >! "$IMAGES"
     if ($status == 0 && (-s "$IMAGES")) then
@@ -68,10 +68,9 @@ else
     echo '<script type="text/javascript" src="'$MIXPANELJS'"></script><script>mixpanel.track('"'"$APP-$API"');</script>" >> "$NEW"
     echo '<BODY>' >> "$NEW"
 
-    echo "SEQID: $seqid" "<br>" >> "$NEW"
-    echo "DEVICE: $DB" "<br>" >> "$NEW"
-    echo "MATCH: $match" "<br>" >> "$NEW"
-    echo "CLASS: $class" "<br>" >> "$NEW"
+    echo "<h1>$DB $class $match</h1>" >> "$NEW"
+    echo "<b>" `date` "</b>" >> "$NEW"
+    echo "<p>$seqid</p>" >> "$NEW"
 
     foreach image ( `/usr/local/bin/jq '.images[]' "$IMAGES" | sed 's/"//g'` )
 	echo '<img src="http://'"$WWW/$APP/$DB/$class/$image"'">' >> "$NEW"
@@ -79,6 +78,8 @@ else
 
     echo '</BODY>' >> "$NEW"
     echo '</HTML>' >> "$NEW"
+
+    rm -f "$IMAGES"
 
     mv "$NEW" "$OUTPUT"
 endif
