@@ -61,6 +61,11 @@ else
     if ($seqid == "null") then
 	echo `date` "$0 $$ -- no sequence id" >>! $TMP/LOG
     endif
+    # get seqid 
+    set date = ( `/usr/local/bin/jq '.date' "$REVIEW" | sed 's/"//g'` )
+    if ($date == "null") then
+	echo `date` "$0 $$ -- no date" >>! $TMP/LOG
+    endif
 
     # calculate expected class list
     set classes = ( `/usr/local/bin/jq '.classes[]|.name' "$REVIEW" | sed 's/"//g'` )
@@ -78,14 +83,14 @@ else
 
     # new output
     set NEW = "$OUTPUT.$$"
-    echo -n '{ "seqid":'$seqid',"date":"'`date`'","device":"'"$DB"'","match":"'"$match"'","class":"'"$class"'",' >! "$NEW"
+    echo -n '{ "seqid":'$seqid',"date":"'$date'","device":"'"$DB"'","match":"'"$match"'","class":"'"$class"'",' >! "$NEW"
 
     set CDIR = "$TMP/$DB/$class"
     if (-d "$CDIR") then
 	echo `date` "$0 $$ -- finding images in ($CDIR) matching ($match)" >>! $TMP/LOG
 	echo -n '"images":[' >> "$NEW"
 	@ k = 0
-	foreach j ( `find "$CDIR" -name "$match*" -print` )
+	foreach j ( `find "$CDIR" -name "$match*" -print | sort -r` )
 	    if ($k < $IMAGE_LIMIT) then
 		if ($k > 0) echo -n "," >> "$NEW"
 		echo -n '"'$j:t'"' >> "$NEW"
