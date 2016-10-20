@@ -52,7 +52,10 @@ else
     echo `date` "$0 $$ ++ requesting ($OUTPUT)" >>! $TMP/LOG
     ./$APP-make-$API.bash
     # remove old results
-    rm -f "$OUTPUT:r:r".*.json
+    set o = "$OUTPUT:r"
+    set oo = "$o:r"
+    echo `date` "$0 $$ ++ removing ($oo)" >>! $TMP/LOG
+    rm -f "$oo".*.json
     # return redirect
     set URL = "https://$CU/$DB-$API/$class"
     echo `date` "$0 $$ -- returning redirect ($URL)" >>! $TMP/LOG

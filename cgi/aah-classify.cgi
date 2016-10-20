@@ -46,10 +46,11 @@ if (-e "$OUTPUT") then
     goto output
 else
     # get review information (hmmm..)
-    set IMAGES = "$TMP/$APP-$API-images.$$.json"
-    echo `date` "$0 $$ -- curl aah-images $DB $class $match into $IMAGES" >>! $TMP/LOG
+    set IMAGES = "$TMP/$APP-$API-images.json"
+    echo `date` "$0 $$ -- get aah-images $DB $class $match" >>! $TMP/LOG
     curl -L -q -s "http://www.dcmartin.com/CGI/aah-images.cgi?db=$DB&id=$class&match=$match" >! "$IMAGES"
     if ($status == 0 && (-s "$IMAGES")) then
+	echo `date` "$0 $$ -- got ($IMAGES)" >>! $TMP/LOG
 	# get seqid 
 	set seqid = ( `/usr/local/bin/jq '.seqid' "$IMAGES"` )
 	if ($status == 0 && $#seqid > 0) then
@@ -63,7 +64,7 @@ else
 	    echo `date` "$0 $$ -- success with date ($date)" >>! $TMP/LOG
 	else
 	    echo `date` "$0 $$ -- failure with date ($date)" >>! $TMP/LOG
-	    set date = "Unspecified"
+	    set date = () 
 	endif
     else
 	echo `date` "$0 $$ -- failure no images" >>! $TMP/LOG
@@ -80,7 +81,13 @@ else
     echo '<BODY>' >> "$NEW"
 
     echo "<h1>$DB $class $match</h1>" >> "$NEW"
-    echo "<b>"$date"</b>" >> "$NEW"
+    echo "<B>"
+    if ($?date) then
+	date -r $date >> "$NEW"
+    else
+        date >> "$NEW"
+    endif
+    echo "</B>"
     echo "<p>$seqid</p>" >> "$NEW"
 
     # process images
@@ -96,7 +103,8 @@ else
 
     # remove old 
     echo `date` "$0 $$ -- removing old $OUTPUT:r:r" >>! $TMP/LOG
-    rm -f "$OUTPUT:r:r"*.json
+    set old = ( `ls -1 "$OUTPUT:r:r"*.json` )
+    if ($#old > 0) rm -f $old
 
     # new OUTPUT
     mv "$NEW" "$OUTPUT"

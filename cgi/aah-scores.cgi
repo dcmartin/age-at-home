@@ -42,7 +42,8 @@ else
     echo `date` "$0 $$ -- requesting output ($OUTPUT)" >>! $TMP/LOG
     ./$APP-make-$API.bash
     # remove old results
-    rm -f "$OUTPUT:r:r".*.json
+    set old = ( `ls -1 "$OUTPUT:r:r"*.json` )
+    if ($#old > 0) rm -f $old
     # return redirect
     set URL = "https://$CU/$DB-$API/$class?include_docs=true"
     echo `date` "$0 $$ -- returning redirect ($URL)" >>! $TMP/LOG

@@ -73,6 +73,7 @@ else
     echo `date` "$0 $$ -- found $#classes classes" >>! $TMP/LOG
 
     # search for matching class
+    set i = ()
     foreach i ( $classes )
         if ($i == $class) break
     end
@@ -108,7 +109,6 @@ else
     # cleanup 
     echo `date` "$0 $$ -- removing $REVIEW and any old $OUTPUT:r:r" >>! $TMP/LOG
     rm -f "$REVIEW"
-    rm -f "$OUTPUT:r:r".*.json
     # create new OUTPUT
     mv "$NEW" "$OUTPUT"
 endif

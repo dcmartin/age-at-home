@@ -67,16 +67,22 @@ set OLD = "$OUTPUT".$$
 echo `date` "$0 $$ -- get OLD ($CU/$DB-$API/$class)" >>! $TMP/LOG
 /usr/bin/curl -s -q -o "$OLD" -X GET "$CU/$DB-$API/$class"
 echo `date` "$0 $$ -- got OLD ($OLD)" >>! $TMP/LOG
+# default
+set prev_seqid = 0
 # check iff successful
 set CLASS_DB = `/usr/local/bin/jq '._id' "$OLD" | sed 's/"//g'`
 if ($CLASS_DB != $class) then
     echo `date` "$0 $$ -- not found ($CU/$DB-$API/$class)" >>! $TMP/LOG
-    set prev_seqid = 0
 else
+    echo `date` "$0 $$ -- class found ($CLASS_DB)" >>! $TMP/LOG
     # get last sequence # for class specified
     set prev_seqid = `/usr/local/bin/jq '.seqid' "$OLD" | sed 's/"//g'`
+    echo `date` "$0 $$ -- prev_seqid ($prev_seqid)" >>! $TMP/LOG
+    if ($#prev_seqid < 1) set prev_seqid = 0
     if ($prev_seqid[1] == "null") set prev_seqid = 0
 endif
+
+echo `date` "$0 $$ -- prev_seqid ($prev_seqid)" >>! $TMP/LOG
 
 #
 # get CHANGES records
@@ -85,12 +91,9 @@ set CHANGES = "$TMP/$APP-$API-$QUERY_STRING.changes.$DATE.json"
 set seqid = 0
 if ( ! -e "$CHANGES" ) then
     # remove old changes
-    set oldchanges = ( `ls -1 "$CHANGES:r:r"*.json` )
-    echo `date` "$0 $$ -- found $#oldchanges old changes" >>! $TMP/LOG
-    if ($#oldchanges > 0) then
-	echo `date` "$0 $$ -- removing old changes $CHANGES:r:r" >>! $TMP/LOG
-	rm -f "$oldchanges"
-    endif
+    set old = ( `ls -1 "$TMP/$APP-$API-$QUERY_STRING.changes".*.json` )
+    echo `date` "$0 $$ -- removing old changes ($old)" >>! $TMP/LOG
+    if ($#old > 0) rm -f $old
     echo `date` "$0 $$ -- get changes ($CU/$DB/_changes?descending=true&include_docs=true&since=$prev_seqid)" >>! $TMP/LOG
     /usr/bin/curl -s -q -o "$CHANGES" "$CU/$DB/_changes?descending=true&include_docs=true&since=$prev_seqid"
     echo `date` "$0 $$ -- got ($CHANGES)" >>! $TMP/LOG
@@ -114,12 +117,9 @@ endif
 set RESULTS = "$TMP/$APP-$API-$QUERY_STRING.results.$DATE.json"
 if (-s "$CHANGES" && (! -s "$RESULTS" || ((-M "$CHANGES") > (-M "$RESULTS")))) then
     # remove old results
-    set oldresults = ( `ls -1 "$RESULTS:r:r"*.json` )
-    echo `date` "$0 $$ -- found $#oldresults old results" >>! $TMP/LOG
-    if ($#oldresults > 0) then
-	echo `date` "$0 $$ -- removing old results $RESULTS:r:r" >>! $TMP/LOG
-	rm -f "$oldresults"
-    endif
+    set old = ( `ls -1 "$TMP/$APP-$API-$QUERY_STRING.results".*.json` )
+    echo `date` "$0 $$ -- removing old results ($old)" >>! $TMP/LOG
+    if ($#old > 0) rm -f $old
     echo `date` "$0 $$ -- creating results from changes" >>! $TMP/LOG
     /usr/local/bin/jq -c '[.results[].doc|{file:.visual.image,tag:.alchemy.text,score:.alchemy.score,year:.year,month:.month,day:.day,hour:.hour,minute:.minute,second:.second}]' "$CHANGES" \
 	| /usr/local/bin/jq -c '{results:.[]|[.file,.tag,.score,.year,.month,.day,.hour,.minute,.second]}' \
@@ -209,6 +209,11 @@ foreach i ( $classes )
     @ k++
 end
 echo -n ']}' >> "$NEW"
+
+/usr/local/bin/jq -c '.' "$NEW" >>! $TMP/LOG
+if ($status != 0) then
+    echo `date` "$0 $$ -- malformed JSON ($NEW)" >>! $TMP/LOG
+endif
 
 #
 # update Cloudant
