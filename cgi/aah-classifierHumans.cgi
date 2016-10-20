@@ -12,9 +12,9 @@ echo `date` "$0 $$ -- START" >>! $TMP/LOG
 
 set JSON = ~$USER/.aah-classifierSets.json
 if (! -e "$JSON") then
-    echo "$APP-$API ($0 $$) -- no $JSON" >>! $TMP/LOG
+    echo `date` "$0 $$ -- no $JSON" >>! $TMP/LOG
 else
-    echo "$APP-$API ($0 $$) -- using $JSON" >>! $TMP/LOG
+    echo `date` "$0 $$ -- using $JSON" >>! $TMP/LOG
 endif
 
 

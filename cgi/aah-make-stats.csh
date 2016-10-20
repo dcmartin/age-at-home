@@ -129,7 +129,7 @@ endif
 #
 set CLASS_VALUES = "$TMP/$APP-$API-$DB-$class-values.$$.csv"
 if ((! -e "$CLASS_VALUES") || ((-M "$NEW_ROWS") > (-M "$CLASS_VALUES"))) then
-    echo "+++ $APP-$API ($0 $$) -- creating $CLASS_VALUES " >>! $TMP/LOG
+    echo `date` "$0 $$ -- creating $CLASS_VALUES " >>! $TMP/LOG
     echo "classifier,score,$dtcolumns,id" >! "$CLASS_VALUES"
 
     # check Alchemy when classifier is lowercase

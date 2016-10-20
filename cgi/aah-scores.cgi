@@ -11,7 +11,7 @@ set DATE = `echo $SECONDS \/ $TTL \* $TTL | bc`
 echo `date` "$0 $$ -- START" >>! $TMP/LOG
 
 if (-e ~$USER/.cloudant_url) then
-    echo "$APP-$API ($0 $$) - ~$USER/.cloudant_url" >>! $TMP/LOG
+    echo `date` "$0 $$ -- ~$USER/.cloudant_url" >>! $TMP/LOG
     set cc = ( `cat ~$USER/.cloudant_url` )
     if ($#cc > 0) set CU = $cc[1]
     if ($#cc > 1) set CN = $cc[2]
@@ -34,37 +34,31 @@ if ($#DB == 0) set DB = rough-fog
 if ($#class == 0) set class = all
 setenv QUERY_STRING "db=$DB&id=$class"
 
-set JSON = "$TMP/$APP-$API-$QUERY_STRING.$DATE.json"
+set OUTPUT = "$TMP/$APP-$API-$QUERY_STRING.$DATE.json"
 
-if (-e "$JSON") then
-    echo `date` "$0 $$ == CURRENT $JSON $DATE" >>! $TMP/LOG
+if (-e "$OUTPUT") then
+    echo `date` "$0 $$ == CURRENT $OUTPUT $DATE" >>! $TMP/LOG
 else
-    echo `date` "$0 $$ -- CALLING ./$APP-make-$API.bash QUERY_STRING=$QUERY_STRING" >>! $TMP/LOG
+    echo `date` "$0 $$ -- requesting output ($OUTPUT)" >>! $TMP/LOG
     ./$APP-make-$API.bash
-    # find old results
-    set OLD_JSON = ( `ls -1t "$TMP/$APP-$API-$QUERY_STRING".*.json` )
-    if ($#OLD_JSON > 0) then
-        echo `date` "$0 $$ -- OLD $JSON ($OLD_JSON)" >>! $TMP/LOG
-        set JSON = "$OLD_JSON[1]"
-        if ($#OLD_JSON > 1) then
-            echo `date` "$0 $$ -- DELETING $OLD_JSON[2-]" >>! $TMP/LOG
-            /bin/rm -f "$OLD_JSON[2-]"
-        endif
-    else
-        # return re-direct to previous copy (presumably)
-	echo "Location: https://$CU/$DB-$API/$class?include_docs=true"
-	echo ""
-	exit
-    endif
+    # remove old results
+    rm -f "$OUTPUT:r:r".*.json
+    # return redirect
+    set URL = "https://$CU/$DB-$API/$class?include_docs=true"
+    echo `date` "$0 $$ -- returning redirect ($URL)" >>! $TMP/LOG
+    set AGE = `echo "$SECONDS - $DATE" | bc`
+    echo "Age: $AGE"
+    echo "Cache-Control: max-age=$TTL"
+    echo "Last-Modified:" `date -r $DATE '+%a, %d %b %Y %H:%M:%S %Z'`
+    echo "Status: 302 Found"
+    echo "Location: $URL"
+    echo ""
+    goto done
 endif
 
-if ($#JSON == 0) then
-    echo `date` "$0 $$ -- NONE" >>! $TMP/LOG
-endif
+output:
 
-#
 # prepare for output
-#
 echo "Content-Type: application/json; charset=utf-8"
 echo "Access-Control-Allow-Origin: *"
 set AGE = `echo "$SECONDS - $DATE" | bc`
@@ -72,8 +66,7 @@ echo "Age: $AGE"
 echo "Cache-Control: max-age=$TTL"
 echo "Last-Modified:" `date -r $DATE '+%a, %d %b %Y %H:%M:%S %Z'`
 echo ""
-
-cat "$JSON"
+cat "$OUTPUT"
 
 done:
 

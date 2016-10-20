@@ -11,7 +11,7 @@ set DATE = `echo $SECONDS \/ $TTL \* $TTL | bc`
 echo `date` "$0 $$ -- START" >>! $TMP/LOG
 
 if (-e ~$USER/.cloudant_url) then
-    echo "$APP-$API ($0 $$) - ~$USER/.cloudant_url" >>! $TMP/LOG
+    echo `date` "$0 $$ -- ~$USER/.cloudant_url" >>! $TMP/LOG
     set cc = ( `cat ~$USER/.cloudant_url` )
     if ($#cc > 0) set CU = $cc[1]
     if ($#cc > 1) set CN = $cc[2]

@@ -56,6 +56,10 @@ else
     # return redirect
     set URL = "https://$CU/$DB-$API/$class"
     echo `date` "$0 $$ -- returning redirect ($URL)" >>! $TMP/LOG
+    set AGE = `echo "$SECONDS - $DATE" | bc`
+    echo "Age: $AGE"
+    echo "Cache-Control: max-age=$TTL"
+    echo "Last-Modified:" `date -r $DATE '+%a, %d %b %Y %H:%M:%S %Z'`
     echo "Status: 302 Found"
     echo "Location: $URL"
     echo ""

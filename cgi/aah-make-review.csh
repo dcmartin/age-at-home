@@ -38,6 +38,8 @@ endif
 #
 if ($?DB == 0) set DB = rough-fog
 setenv QUERY_STRING "db=$DB"
+# always process all classes (for now)
+set class = "all"
 
 if ($DB == "rough-fog" && $?LANIP == 0) then
     setenv LANIP "192.168.1.34"
@@ -77,7 +79,7 @@ endif
 #
 # get CHANGES records
 #
-set CHANGES = "$TMP/$APP-$API.changes.$seqid.json"
+set CHANGES = "$TMP/$APP-$API.changes.$DATE.json"
 set seqid = 0
 if ( ! -e "$CHANGES" ) then
     # remove old changes
@@ -100,7 +102,7 @@ else
     echo `date` "$0 $$ -- changes are current ($TTL) update in $ttyl" >>! $TMP/LOG
 endif
 
-set RESULTS = "$TMP/$APP-$API.results.$seqid.json"
+set RESULTS = "$TMP/$APP-$API.results.$DATE.json"
 if (-s "$CHANGES" && (! -s "$RESULTS" || ((-M "$CHANGES") > (-M "$RESULTS")))) then
     # remove old results
     echo `date` "$0 $$ -- removing old results $RESULTS:r:r" >>! $TMP/LOG
@@ -111,7 +113,7 @@ if (-s "$CHANGES" && (! -s "$RESULTS" || ((-M "$CHANGES") > (-M "$RESULTS")))) t
 	| sed 's/"//g' \
 	| sed 's/{results:\[//' \
 	| sed 's/\]}//' \
-	| gawk -F, \
+	| /usr/local/bin/gawk -F, \
 	  '{ m=($7*60+$8)/15; \
 	     t=mktime(sprintf("%4d %2d %2d %2d %2d %2d",$4,$5,$6,$7,$8,$9)); \
 	     printf("{\"file\":\"%s\",\"tag\":\"%s\",\"score\":%f,\"ampm\":\"%s\",\"day\":\"%s\",\"interval\":%d}\n",$1,$2,$3,strftime("%p",t),strftime("%A",t),m); \
@@ -121,7 +123,6 @@ else
     echo `date` "$0 $$ -- results are current with changes" >>! $TMP/LOG
 endif
 
-
 #
 # download images from RESULTS of CHANGES 
 #
@@ -129,7 +130,7 @@ endif
 #
 
 if ($?FTP_GET == 0) then
-    echo `date` $0 $$ -- getting new images" >>! $TMP/LOG
+    echo `date` "$0 $$ -- getting new images" >>! $TMP/LOG
     # create temporary output for processing sequentially; ignore "ampm"
     foreach line ( `/usr/local/bin/jq -c '[.file,.tag,.score,.day,.interval]' "$RESULTS" | sed 's/\[//' | sed 's/\]//' | sed 's/ /_/g' | awk -F, '{ printf("%s,%s,%f,%s,%d\n", $1,$2,$3,$4,$5) }'` )
 	set tuple = ( `echo "$line" | sed 's/,/ /g'` )
@@ -176,13 +177,15 @@ endif
 # MAKE NEW STATISTICS
 #
 
+# only works for limited # and format of class names (no space)
 set classes = ( `/bin/ls -1 "$TMP/$DB"` )
 echo `date` "$0 $$ -- found $#classes classes" >>! $TMP/LOG
 
 set NEW = "$OLD.$$"
-echo -n '{ "seqid":'$seqid',"date":"'`date`'","device":"'"$DB"'","count":'$#classes',"classes":[' >! "$NEW"
+echo -n '{ "seqid":'$seqid',"date":"'$DATE'","device":"'"$DB"'","count":'$#classes',"classes":[' >! "$NEW"
 
 @ k = 0
+# this should really be fed by a find(1) command
 foreach i ( $classes )
     if ($k > 0) echo "," >> "$NEW"
     set nfiles = ( `/bin/ls -1 "$TMP/$DB/$i" | wc | awk '{ print $1 }'` )
@@ -190,7 +193,6 @@ foreach i ( $classes )
     @ k++
 end
 echo -n ']}' >> "$NEW"
-
 
 #
 # update Cloudant
@@ -220,15 +222,15 @@ if ($?CLOUDANT_OFF == 0 && $?CU && $?DB) then
 	echo `date` "$0 $$ -- Cloudant OFF ($DB-$API)" >>! $TMP/LOG
     endif
     echo `date` "$0 $$ -- success ($NEW)" >>! $TMP/LOG
-    # update statistics
-    mv -f "$NEW" "$OUTPUT"
 else
     echo `date` "$0 $$ -- no Cloudant update" >>! $TMP/LOG
 endif
 
+# update statistics
+mv -f "$NEW" "$OUTPUT"
+# remove OLD
+rm -f "$OLD"
+
 done:
 
-# remove temporary files
-rm -f $OLD
-
-echo `date` "$0 $$ -- START"  >>! $TMP/LOG
+echo `date` "$0 $$ -- FINISH"  >>! $TMP/LOG

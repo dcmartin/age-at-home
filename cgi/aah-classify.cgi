@@ -53,10 +53,17 @@ else
 	# get seqid 
 	set seqid = ( `/usr/local/bin/jq '.seqid' "$IMAGES"` )
 	if ($status == 0 && $#seqid > 0) then
-	    echo `date` "$0 $$ -- success with $seqid" >>! $TMP/LOG
+	    echo `date` "$0 $$ -- success with seqid ($seqid)" >>! $TMP/LOG
 	else
-	    echo `date` "$0 $$ -- success no $seqid" >>! $TMP/LOG
+	    echo `date` "$0 $$ -- failure bad seqid ($seqid)" >>! $TMP/LOG
 	    goto done
+	endif
+	set date = ( `/usr/local/bin/jq '.date' "$IMAGES"` )
+	if ($status == 0 && $#date > 0) then
+	    echo `date` "$0 $$ -- success with date ($date)" >>! $TMP/LOG
+	else
+	    echo `date` "$0 $$ -- failure with date ($date)" >>! $TMP/LOG
+	    set date = "Unspecified"
 	endif
     else
 	echo `date` "$0 $$ -- failure no images" >>! $TMP/LOG
@@ -73,7 +80,7 @@ else
     echo '<BODY>' >> "$NEW"
 
     echo "<h1>$DB $class $match</h1>" >> "$NEW"
-    echo "<b>" `date` "</b>" >> "$NEW"
+    echo "<b>"$date"</b>" >> "$NEW"
     echo "<p>$seqid</p>" >> "$NEW"
 
     # process images
