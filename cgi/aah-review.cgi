@@ -4,12 +4,10 @@ setenv API "review"
 setenv LAN "192.168.1"
 if ($?TMP == 0) setenv TMP "/var/lib/age-at-home"
 
-# don't update statistics more than once per 12 hours
-set TTL = `echo "1 * 60 * 60" | bc`
-set SECONDS = `date "+%s"`
-set DATE = `echo $SECONDS \/ $TTL \* $TTL | bc`
-
-echo `date` "$0 $$ -- START" >>! $TMP/LOG
+# don't update statistics more than once per (in seconds)
+setenv TTL 300
+setenv SECONDS `date "+%s"`
+setenv DATE `echo $SECONDS \/ $TTL \* $TTL | bc`
 
 if ($?QUERY_STRING) then
     set DB = `echo "$QUERY_STRING" | sed 's/.*db=\([^&]*\).*/\1/'`
@@ -25,6 +23,8 @@ endif
 if ($?DB == 0) set DB = rough-fog
 if ($?class == 0) set class = all
 setenv QUERY_STRING "db=$DB&id=$class"
+
+echo `date` "$0 $$ -- START ($QUERY_STRING)" >>! $TMP/LOG
 
 if (-e ~$USER/.cloudant_url) then
     set cc = ( `cat ~$USER/.cloudant_url` )
@@ -51,16 +51,25 @@ if (-s "$OUTPUT") then
 else
     echo `date` "$0 $$ ++ requesting ($OUTPUT)" >>! $TMP/LOG
     ./$APP-make-$API.bash
-    # remove old results
-    set o = "$OUTPUT:r"
-    set oo = "$o:r"
-    echo `date` "$0 $$ ++ removing ($oo)" >>! $TMP/LOG
-    rm -f "$oo".*.json
+    set old = ( `find "$TMP/" -name "$APP-$API-$QUERY_STRING.*.json" -print | sort -t . -k 2,2 -n -r` )
+    if ($#old > 0) then
+        set OUTPUT = $old[1]
+        echo `date` "$0 $$ -- using old output ($OUTPUT)" >>! $TMP/LOG
+        setenv DATE `echo "$OUTPUT" | awk -F. '{ print $2 }'`
+	if ($#old > 1) then
+	    echo `date` "$0 $$ -- removing old output ($old[2-])" >>! $TMP/LOG
+	    rm -f $old[2-]
+	endif
+        goto output
+    endif
     # return redirect
     set URL = "https://$CU/$DB-$API/$class"
     echo `date` "$0 $$ -- returning redirect ($URL)" >>! $TMP/LOG
-    set AGE = `echo "$SECONDS - $DATE" | bc`
-    echo "Age: $AGE"
+    set age = `echo "$SECONDS - $DATE" | bc`
+    echo "Age: $age"
+    set refresh = `echo "$TTL - $age | bc`
+    if ($refresh < 0) set refresh = 0
+    echo "Refresh: $refresh"
     echo "Cache-Control: max-age=$TTL"
     echo "Last-Modified:" `date -r $DATE '+%a, %d %b %Y %H:%M:%S %Z'`
     echo "Status: 302 Found"
@@ -76,12 +85,14 @@ output:
 #
 echo "Content-Type: application/json; charset=utf-8"
 echo "Access-Control-Allow-Origin: *"
-set AGE = `echo "$SECONDS - $DATE" | bc`
-echo "Age: $AGE"
+set age = `echo "$SECONDS - $DATE" | bc`
+set refresh = `echo "$TTL - $age | bc`
+echo "Age: $age"
+echo "Refresh: $refresh"
 echo "Cache-Control: max-age=$TTL"
 echo "Last-Modified:" `date -r $DATE '+%a, %d %b %Y %H:%M:%S %Z'`
 echo ""
-cat "$OUTPUT"
+/usr/local/bin/jq -c '.' "$OUTPUT"
 
 # done
 done:

@@ -13,7 +13,6 @@ setenv DATE `echo $SECONDS \/ $TTL \* $TTL | bc`
 # default image limit
 if ($?IMAGE_LIMIT == 0) setenv IMAGE_LIMIT 100
 
-echo `date` "$0 $$ - START" >>! $TMP/LOG
 
 if ($?QUERY_STRING) then
     set DB = `echo "$QUERY_STRING" | sed 's/.*db=\([^&]*\).*/\1/'`
@@ -35,24 +34,61 @@ if ($?match == 0) set match = `date '+%Y%m'`
 if ($?limit == 0) set limit = $IMAGE_LIMIT
 
 # standardize QUERY_STRING to cache results
-setenv QUERY_STRING "db=$DB&id=$class&match=$match"
+setenv QUERY_STRING "db=$DB&id=$class&match=$match&limit=$limit"
+
+echo `date` "$0 $$ - START ($QUERY_STRING)" >>! $TMP/LOG
 
 # output set
 set OUTPUT = "$TMP/$APP-$API-$QUERY_STRING.$DATE.json"
 
 # check OUTPUT exists
-if (-e "$OUTPUT") then
-    echo `date` "$0 $$ -- returning existing ($OUTPUT)" >>! $TMP/LOG
+if (-s "$OUTPUT") then
+    echo `date` "$0 $$ -- existing ($OUTPUT)" >>! $TMP/LOG
     goto output
+else if ($?USE_OLD_OUTPUT) then
+    echo `date` "$0 $$ ++ requesting ($OUTPUT)" >>! $TMP/LOG
+    ./$APP-make-$API.bash
+    set old = ( `find "$TMP/" -name "$APP-$API-$QUERY_STRING.*.json" -print | sort -t . -k 2,2 -n -r` )
+    if ($#old > 0) then
+        set OUTPUT = $old[1]
+	echo `date` "$0 $$ -- using old output ($OUTPUT)" >>! $TMP/LOG
+	setenv DATE `echo "$OUTPUT" | awk -F. '{ print $2 }'`
+	if ($#old > 1) then
+	    echo `date` "$0 $$ -- removing old output ($old[2-])" >>! $TMP/LOG
+	    rm -f $old[2-]
+	endif
+	goto output
+    endif
+    # return redirect
+    set URL = "https://$CU/$DB-$API/$class-images"
+    echo `date` "$0 $$ -- returning redirect ($URL)" >>! $TMP/LOG
+    set age = `echo "$SECONDS - $DATE" | bc`
+    set refresh = `echo "$TTL - $age | bc`
+    echo "Age: $age"
+    echo "Refresh: $refresh"
+    echo "Cache-Control: max-age=$TTL"
+    echo "Last-Modified:" `date -r $DATE '+%a, %d %b %Y %H:%M:%S %Z'`
+    echo "Status: 302 Found"
+    echo "Location: $URL"
+    echo ""
+    goto done
 else
+    set old = ( `find "$TMP/" -name "$APP-$API-$QUERY_STRING.*.json" -print | sort -t . -k 2,2 -n -r` )
+    if ($#old > 0) then
+	echo `date` "$0 $$ -- removing old output ($old)" >>! $TMP/LOG
+	rm -f $old
+    endif
     # get review information (hmmm..)
     set REVIEW = "$TMP/$APP-$API.$$.review.json"
-    echo `date` "$0 $$ -- curl aah-review $DB ($REVIEW)" >>! $TMP/LOG
-    curl -L -s -q "http://$WWW/CGI/aah-review.cgi?db=$DB" >! "$REVIEW"
+    echo `date` "$0 $$ -- get http://$WWW/CGI/aah-review.cgi?db=$DB" >>! $TMP/LOG
+    curl -L -s -q "http://$WWW/CGI/aah-review.cgi?db=$DB" -o "$REVIEW"
     if ($status == 0 && (-s "$REVIEW")) then
-	echo `date` "$0 $$ -- success ($REVIEW)" >>! $TMP/LOG
+	echo -n `date` "$0 $$ -- got " >>! $TMP/LOG
+	/usr/local/bin/jq -c '.' "$REVIEW" >>! $TMP/LOG
     else
-	echo `date` "$0 $$ -- failure ($REVIEW)" >>! $TMP/LOG
+	echo `date` "$0 $$ -- fail ($REVIEW)" >>! $TMP/LOG
+	cat "$REVIEW" >>! $TMP/LOG
+	rm -f "$REVIEW"
 	goto done
     endif
 
@@ -78,21 +114,20 @@ else
         if ($i == $class) break
     end
     if ($i != $class) then
-	echo `date` "$0 $$ -- no matching class ($class" >>! $TMP/LOG
+	echo `date` "$0 $$ -- no matching class ($class)" >>! $TMP/LOG
         goto done
     endif
 
     # new output
     set NEW = "$OUTPUT.$$"
-    echo -n '{ "seqid":'$seqid',"date":"'$date'","device":"'"$DB"'","match":"'"$match"'","class":"'"$class"'",' >! "$NEW"
+    echo -n '{ "seqid":'$seqid',"date":"'$date'","device":"'"$DB"'","match":"'"$match"'","class":"'"$class"'","limit":"'"$limit"'","images":[' >> "$NEW"
 
     set CDIR = "$TMP/$DB/$class"
     if (-d "$CDIR") then
 	echo `date` "$0 $$ -- finding images in ($CDIR) matching ($match)" >>! $TMP/LOG
-	echo -n '"images":[' >> "$NEW"
 	@ k = 0
-	foreach j ( `find "$CDIR" -name "$match*" -print | sort -r` )
-	    if ($k < $IMAGE_LIMIT) then
+	foreach j ( `find "$CDIR/" -name "$match*" -print | sort -r` )
+	    if ($k < $limit) then
 		if ($k > 0) echo -n "," >> "$NEW"
 		echo -n '"'$j:t'"' >> "$NEW"
 	    endif
@@ -102,12 +137,10 @@ else
 	echo `date` "$0 $$ -- found $k images" >>! $TMP/LOG
     else
 	echo `date` "$0 $$ -- directory $CDIR does not exist" >>! $TMP/LOG
-	echo -n '"count":0',' >> "$NEW"
-	echo -n '"images":[' >> "$NEW"
-	echo "] }" >> "$NEW"
+	echo '],"count":0 }' >> "$NEW"
     endif
     # cleanup 
-    echo `date` "$0 $$ -- removing $REVIEW and any old $OUTPUT:r:r" >>! $TMP/LOG
+    echo `date` "$0 $$ -- removing $REVIEW" >>! $TMP/LOG
     rm -f "$REVIEW"
     # create new OUTPUT
     mv "$NEW" "$OUTPUT"
@@ -120,16 +153,18 @@ output:
 #
 echo "Content-Type: application/json; charset=utf-8"
 echo "Access-Control-Allow-Origin: *"
-set AGE = `echo "$SECONDS - $DATE" | bc`
-echo "Age: $AGE"
+set age = `echo "$SECONDS - $DATE" | bc`
+set refresh = `echo "$TTL - $age" | bc`
+echo "Age: $age"
+echo "Refresh: $refresh"
 echo "Cache-Control: max-age=$TTL"
 echo "Last-Modified:" `date -r $DATE '+%a, %d %b %Y %H:%M:%S %Z'`
 echo ""
-cat "$OUTPUT"
+/usr/local/bin/jq -c '.' "$OUTPUT"
 
 #
 # all done
 #
 done:
 
-echo `date` "$0 $$ - FINISH" >>! $TMP/LOG
+echo `date` "$0 $$ -- FINISH ($QUERY_STRING)" >>! $TMP/LOG

@@ -5,15 +5,13 @@ setenv WWW "www.dcmartin.com"
 setenv LAN "192.168.1"
 if ($?TMP == 0) setenv TMP "/var/lib/age-at-home"
 
-# don't update statistics more than once per 12 hours
+# don't update statistics more than once per (in seconds)
 set TTL = 15
 set SECONDS = `date "+%s"`
 set DATE = `echo $SECONDS \/ $TTL \* $TTL | bc`
 
 # default image limit
 if ($?IMAGE_LIMIT == 0) setenv IMAGE_LIMIT 100
-
-echo `date` "$0 $$ - START" >>! $TMP/LOG
 
 if ($?QUERY_STRING) then
     set DB = `echo "$QUERY_STRING" | sed 's/.*db=\([^&]*\).*/\1/'`
@@ -37,6 +35,8 @@ if ($?limit == 0) set limit = $IMAGE_LIMIT
 # standardize QUERY_STRING to cache results
 setenv QUERY_STRING "db=$DB&id=$class&match=$match&limit=$limit"
 
+echo `date` "$0 $$ -- START ($QUERY_STRING)" >>! $TMP/LOG
+
 # output set
 set OUTPUT = "$TMP/$APP-$API-$QUERY_STRING.$DATE.json"
 
@@ -46,20 +46,21 @@ if (-e "$OUTPUT") then
     goto output
 else
     # get review information (hmmm..)
-    set IMAGES = "$TMP/$APP-$API-images.json"
-    echo `date` "$0 $$ -- get aah-images $DB $class $match" >>! $TMP/LOG
-    curl -L -q -s "http://www.dcmartin.com/CGI/aah-images.cgi?db=$DB&id=$class&match=$match" >! "$IMAGES"
+    set IMAGES = "$TMP/$APP-$API-images.$$.json"
+    echo `date` "$0 $$ -- get http://www.dcmartin.com/CGI/aah-images.cgi?db=$DB&id=$class&match=$match&limit=$limit" >>! $TMP/LOG
+    curl -L -q -s "http://$WWW/CGI/$APP-images.cgi?db=$DB&id=$class&match=$match&limit=$limit" >! "$IMAGES"
     if ($status == 0 && (-s "$IMAGES")) then
-	echo `date` "$0 $$ -- got ($IMAGES)" >>! $TMP/LOG
+	echo -n `date` "$0 $$ -- got " >>! $TMP/LOG
+	/usr/local/bin/jq -c '.' "$IMAGES" >>! $TMP/LOG
 	# get seqid 
 	set seqid = ( `/usr/local/bin/jq '.seqid' "$IMAGES"` )
 	if ($status == 0 && $#seqid > 0) then
 	    echo `date` "$0 $$ -- success with seqid ($seqid)" >>! $TMP/LOG
 	else
 	    echo `date` "$0 $$ -- failure bad seqid ($seqid)" >>! $TMP/LOG
-	    goto done
+	    set seqid = ()
 	endif
-	set date = ( `/usr/local/bin/jq '.date' "$IMAGES"` )
+	set date = ( `/usr/local/bin/jq '.date' "$IMAGES" | sed 's/"//g'` )
 	if ($status == 0 && $#date > 0) then
 	    echo `date` "$0 $$ -- success with date ($date)" >>! $TMP/LOG
 	else
@@ -77,22 +78,28 @@ else
     set MIXPANELJS = "http://$WWW/CGI/script/mixpanel-aah.js"
 
     echo '<HTML>' >! "$NEW"
+    echo "<HEAD><TITLE>$DB $class $match $limit</TITLE></HEAD>" >> "$NEW"
     echo '<script type="text/javascript" src="'$MIXPANELJS'"></script><script>mixpanel.track('"'"$APP-$API"');</script>" >> "$NEW"
     echo '<BODY>' >> "$NEW"
 
-    echo "<h1>$DB $class $match</h1>" >> "$NEW"
-    echo "<B>"
-    if ($?date) then
-	date -r $date >> "$NEW"
-    else
-        date >> "$NEW"
+    echo "<H1>" >> "$NEW"
+    echo '{ "device":"'$DB'","id":"'$class'","match":"'$match'","limit":"'$limit'" }' >> "$NEW"
+    echo "</H1>" >> "$NEW"
+    if ($#date > 0) then
+	echo `date` "$0 $$ -- date ($date)" >>! $TMP/LOG
+	echo "<h2>" `date -r $date` "</h2>" >> "$NEW"
     endif
-    echo "</B>"
-    echo "<p>$seqid</p>" >> "$NEW"
+    if ($#seqid > 0) then
+	echo `date` "$0 $$ -- seqid ($seqid)" >>! $TMP/LOG
+	echo "<h3>$seqid</h3>" >> "$NEW"
+    endif
 
     # process images
     foreach image ( `/usr/local/bin/jq '.images[]' "$IMAGES" | sed 's/"//g'` )
-	echo '<img src="http://'"$WWW/$APP/$DB/$class/$image"'">' >> "$NEW"
+	set url = "http://$WWW/CGI/$APP-label.cgi?db=$DB&id=$class&image=$image"
+	echo '<a href="'"$url"'">' >> "$NEW"
+	set url = "http://$WWW/$APP/$DB/$class/$image"
+	echo '<img alt="'$class/$image'" width="20%" src="'"$url"'"></a>' >> "$NEW"
     end
 
     echo '</BODY>' >> "$NEW"
@@ -102,9 +109,11 @@ else
     rm -f "$IMAGES"
 
     # remove old 
-    echo `date` "$0 $$ -- removing old $OUTPUT:r:r" >>! $TMP/LOG
     set old = ( `ls -1 "$OUTPUT:r:r"*.json` )
-    if ($#old > 0) rm -f $old
+    if ($#old > 0) then
+	echo `date` "$0 $$ -- removing old ($old)" >>! $TMP/LOG
+	rm -f $old
+    endif
 
     # new OUTPUT
     mv "$NEW" "$OUTPUT"
@@ -116,8 +125,10 @@ output:
 # prepare for output
 #
 echo "Content-Type: text/html; charset=utf-8"
-set AGE = `echo "$SECONDS - $DATE" | bc`
-echo "Age: $AGE"
+set age = `echo "$SECONDS - $DATE" | bc`
+set refresh = `echo "$TTL - $age" | bc`
+echo "Age: $age"
+echo "Refresh: $refresh"
 echo "Cache-Control: max-age=$TTL"
 echo "Last-Modified:" `date -r $DATE '+%a, %d %b %Y %H:%M:%S %Z'`
 echo ""
@@ -125,4 +136,4 @@ cat "$OUTPUT"
 
 done:
 
-echo `date` "$0 $$ - FINISH" >>! $TMP/LOG
+echo `date` "$0 $$ -- FINISH ($QUERY_STRING)" >>! $TMP/LOG
