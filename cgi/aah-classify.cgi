@@ -47,11 +47,11 @@ if (-e "$OUTPUT") then
 else
     # get review information (hmmm..)
     set IMAGES = "$TMP/$APP-$API-images.$$.json"
-    echo `date` "$0 $$ -- get http://www.dcmartin.com/CGI/aah-images.cgi?db=$DB&id=$class&match=$match&limit=$limit" >>! $TMP/LOG
+    echo `date` "$0 $$ -- get http://$WWW/CGI/$APP-images.cgi?db=$DB&id=$class&match=$match&limit=$limit" >>! $TMP/LOG
     curl -L -q -s "http://$WWW/CGI/$APP-images.cgi?db=$DB&id=$class&match=$match&limit=$limit" >! "$IMAGES"
     if ($status == 0 && (-s "$IMAGES")) then
-	echo -n `date` "$0 $$ -- got " >>! $TMP/LOG
-	/usr/local/bin/jq -c '.' "$IMAGES" >>! $TMP/LOG
+	# echo -n `date` "$0 $$ -- got " >>! $TMP/LOG
+	# /usr/local/bin/jq -c '.' "$IMAGES" >>! $TMP/LOG
 	# get seqid 
 	set seqid = ( `/usr/local/bin/jq '.seqid' "$IMAGES"` )
 	if ($status == 0 && $#seqid > 0) then
@@ -78,29 +78,68 @@ else
     set MIXPANELJS = "http://$WWW/CGI/script/mixpanel-aah.js"
 
     echo '<HTML>' >! "$NEW"
-    echo "<HEAD><TITLE>$DB $class $match $limit</TITLE></HEAD>" >> "$NEW"
+    echo "<HEAD><TITLE>Label Images ($DB/$class/$match/$limit)</TITLE></HEAD>" >> "$NEW"
     echo '<script type="text/javascript" src="'$MIXPANELJS'"></script><script>mixpanel.track('"'"$APP-$API"');</script>" >> "$NEW"
     echo '<BODY>' >> "$NEW"
 
     echo "<H1>" >> "$NEW"
-    echo '{ "device":"'$DB'","id":"'$class'","match":"'$match'","limit":"'$limit'" }' >> "$NEW"
+    echo "LABEL IMAGES" >> "$NEW"
     echo "</H1>" >> "$NEW"
-    if ($#date > 0) then
-	echo `date` "$0 $$ -- date ($date)" >>! $TMP/LOG
-	echo "<h2>" `date -r $date` "</h2>" >> "$NEW"
-    endif
-    if ($#seqid > 0) then
-	echo `date` "$0 $$ -- seqid ($seqid)" >>! $TMP/LOG
-	echo "<h3>$seqid</h3>" >> "$NEW"
-    endif
+    # echo '{ "device":"'$DB'","id":"'$class'","match":"'$match'","limit":"'$limit'" }' >> "$NEW"
+    if ($#date > 0) echo "<h3>Last updated: <i>" `date -r $date` "</i></h3>" >> "$NEW"
+    # if ($#seqid > 0) echo "<h4>$seqid</h4>" >> "$NEW"
+    echo '<p><b>Instructions:</b> Click on an image to label as "person" or choose class from menu and click "OK"</p>' >> "$NEW"
+
+    # get all classes
+    set allclasses = ( `curl -s -q -L "http://$WWW/CGI/aah-review.cgi?db=$DB" | /usr/local/bin/jq -c '.classes|sort_by(.count)[]|.name' | sed 's/"//g'` )
+
+    # start table
+    echo '<table border="1"><tr>' >> "$NEW"
+    @ nimg = 0
+    @ ncolumns = 5
+    @ width = 100
 
     # process images
     foreach image ( `/usr/local/bin/jq '.images[]' "$IMAGES" | sed 's/"//g'` )
-	set url = "http://$WWW/CGI/$APP-label.cgi?db=$DB&id=$class&image=$image"
-	echo '<a href="'"$url"'">' >> "$NEW"
-	set url = "http://$WWW/$APP/$DB/$class/$image"
-	echo '<img alt="'$class/$image'" width="20%" src="'"$url"'"></a>' >> "$NEW"
+	if ($class == all) then
+	    # class of image is encoded as head of path, e.g. <class>/<jpeg>
+	    set dir = $image:h
+	    set jpg = $image:t
+	    set txt = "$image:h"
+	else
+	    set dir = $class
+	    set jpg = $image
+	    set txt = "$class"
+	endif
+	set img = "http://$WWW/$APP/$DB/$dir/$jpg"
+	set ref = "http://$WWW/CGI/$APP-classify.cgi?db=$DB&match=$match&limit=$limit&id=$dir"
+	set act = "http://$WWW/CGI/$APP-label.cgi"
+	set cgi = "$act?db=$DB&id=$dir&image=$jpg&class=person"
+
+        if ($nimg % $ncolumns == 0) echo '</tr><tr>' >> "$NEW"
+	echo '<td><figure>' >> "$NEW"
+
+	echo '<form id="classform" action="'"$act"'" method="get">' >> "$NEW"
+	echo '<input type="hidden" name="DB" value="'"$DB"'">' >> "$NEW"
+	echo '<input type="hidden" name="id" value="'"$dir"'">' >> "$NEW"
+	echo '<input type="hidden" name="image" value="'"$jpg"'">' >> "$NEW"
+	# create selection list
+	echo '<select name="class">' >> "$NEW"
+	foreach c ( $allclasses )
+	    if ($c != "NO_TAGS") echo '<option value="'"$c"'"">'"$c"'</option>' >> "$NEW"
+	end
+	echo '</select>' >> "$NEW"
+	echo '<input type="submit" value="OK">' >> "$NEW"
+	echo '</form>' >> "$NEW"
+
+	echo '<a href="'"$cgi"'"><img width="'$width'%" alt="'$class/$image'" src="'"$img"'"></a>' >> "$NEW"
+	if ($class == all) echo '<figcaption>Class <a href="'"$ref"'">'"$txt"'</a></figcaption>' >> "$NEW" 
+
+	echo '</figure></td>' >> "$NEW"
+	@ nimg++
     end
+
+    echo "</tr></table>" >> "$NEW"
 
     echo '</BODY>' >> "$NEW"
     echo '</HTML>' >> "$NEW"
@@ -109,7 +148,7 @@ else
     rm -f "$IMAGES"
 
     # remove old 
-    set old = ( `ls -1 "$OUTPUT:r:r"*.json` )
+    set old = ( `ls -1 "$TMP/$APP-$API-$QUERY_STRING".*.json` )
     if ($#old > 0) then
 	echo `date` "$0 $$ -- removing old ($old)" >>! $TMP/LOG
 	rm -f $old
@@ -126,8 +165,8 @@ output:
 #
 echo "Content-Type: text/html; charset=utf-8"
 set age = `echo "$SECONDS - $DATE" | bc`
-set refresh = `echo "$TTL - $age" | bc`
 echo "Age: $age"
+set refresh = `echo "$TTL - $age" | bc`
 echo "Refresh: $refresh"
 echo "Cache-Control: max-age=$TTL"
 echo "Last-Modified:" `date -r $DATE '+%a, %d %b %Y %H:%M:%S %Z'`

@@ -1,5 +1,4 @@
 #!/bin/csh -fb
-onintr done
 setenv APP "aah"
 setenv API "review"
 setenv LAN "192.168.1"
@@ -40,6 +39,18 @@ setenv QUERY_STRING "db=$DB&id=$class"
 
 echo `date` "$0 $$ -- START ($QUERY_STRING)"  >>! $TMP/LOG
 
+# output target
+set OUTPUT = "$TMP/$APP-$API-$QUERY_STRING.$DATE.json"
+set INPROGRESS = ( `echo "$OUTPUT".*` )
+# check OUTPUT in-progress for current interval
+if ($#INPROGRESS) then
+    echo `date` "$0 $$ -- in-progress $DATE" >>! $TMP/LOG
+    goto done
+else
+    onintr done
+    touch "$OUTPUT".$$
+endif
+
 if ($DB == "rough-fog" && $?LANIP == 0) then
     setenv LANIP "192.168.1.34"
 else if ($DB == "damp-cloud" && $?LANIP == 0) then
@@ -49,35 +60,61 @@ else
     goto done
 endif
 
-# output set
-set OUTPUT = "$TMP/$APP-$API-$QUERY_STRING.$DATE.json"
-set INPROGRESS = ( `echo "$OUTPUT".*` )
-# check OUTPUT in-progress for current interval
-if ($#INPROGRESS) then
-    echo `date` "$0 $$ -- in-progress $DATE" >>! $TMP/LOG
-    goto done
+# check for old OUTPUT
+set old = ( `find "$TMP/" -name "$APP-$API-$QUERY_STRING.*.json" -print | sort -t . -k 2,2 -n -r` )
+if ($#old > 0) then
+    set OLD = $old[1]
+    echo `date` "$0 $$ -- found old results ($OLD)" >>! $TMP/LOG
+    if ($#old > 1) then
+	echo `date` "$0 $$ -- removing old results ($old[2-])" >>! $TMP/LOG
+	rm -f $old[2-]
+    endif
+    # test old
+    set class_id = `/usr/local/bin/jq '._id' "$OLD" | sed 's/"//g'`
+    if ($class_id != $class) then
+	echo `date` "$0 $$ -- bad results ($OLD)" >>! $TMP/LOG
+	rm -f "$OLD"
+    else
+	echo `date` "$0 $$ -- results match ($class_id == $class)" >>! $TMP/LOG
+    endif
 endif
 
 #
-# download old result
-#
-set OLD = "$OUTPUT".$$
-echo `date` "$0 $$ -- get OLD ($CU/$DB-$API/$class)" >>! $TMP/LOG
-/usr/bin/curl -s -q -o "$OLD" -X GET "$CU/$DB-$API/$class"
-echo `date` "$0 $$ -- got OLD ($OLD)" >>! $TMP/LOG
-# default
 set prev_seqid = 0
-# check iff successful
-set CLASS_DB = `/usr/local/bin/jq '._id' "$OLD" | sed 's/"//g'`
-if ($CLASS_DB != $class) then
-    echo `date` "$0 $$ -- not found ($CU/$DB-$API/$class)" >>! $TMP/LOG
-else
-    echo `date` "$0 $$ -- class found ($CLASS_DB)" >>! $TMP/LOG
-    # get last sequence # for class specified
-    set prev_seqid = `/usr/local/bin/jq '.seqid' "$OLD" | sed 's/"//g'`
-    echo `date` "$0 $$ -- prev_seqid ($prev_seqid)" >>! $TMP/LOG
-    if ($#prev_seqid < 1) set prev_seqid = 0
-    if ($prev_seqid[1] == "null") set prev_seqid = 0
+# if we don't find it locally, download
+if ($?OLD == 0) then
+    # create temporary file
+    set OLD = "$TMP/$APP-$API-$class.$$.json"
+    echo `date` "$0 $$ -- get OLD ($CU/$DB-$API/$class)" >>! $TMP/LOG
+    /usr/bin/curl -s -q -o "$OLD" -X GET "$CU/$DB-$API/$class"
+    if ($status == 0 && (-s "$OLD")) then
+	echo `date` "$0 $$ -- got OLD ($OLD)" >>! $TMP/LOG
+	set class_id = `/usr/local/bin/jq '._id' "$OLD" | sed 's/"//g'`
+	if ($class_id != $class) then
+	    echo `date` "$0 $$ -- DB ($class_id) != ID ($class)" >>! $TMP/LOG
+	    rm -f "$OLD"
+	    set prev_seqid = 0
+	else
+	    # get prev_seqid
+	    echo `date` "$0 $$ -- match found ($class_id == $class)" >>! $TMP/LOG
+	    # get last sequence for old output
+	    set prev_seqid = `/usr/local/bin/jq '.seqid' "$OLD" | sed 's/"//g'`
+	    if ($status == 0) then
+		echo `date` "$0 $$ -- OLD seqid ($prev_seqid)" >>! $TMP/LOG
+		set date = `/usr/local/bin/jq '.date' "$OLD" | sed 's/"//g'`
+		mv "$OLD" "$TMP/$APP-$API-$QUERY_STRING.$date.json"
+	    else
+		echo `date` "$0 $$ -- invalid OLD ($OLD; $prev_seqid)" >>! $TMP/LOG
+	        rm -f "$OLD"
+		set prev_seqid = 0
+	    endif
+	endif
+    else
+	echo `date` "$0 $$ ** failure getting $CU/$DB-$API/$class" >>! $TMP/LOG
+	set prev_seqid = 0
+	rm -f "$OLD"
+        goto done
+    endif
 endif
 
 echo `date` "$0 $$ -- prev_seqid ($prev_seqid)" >>! $TMP/LOG
@@ -88,28 +125,38 @@ echo `date` "$0 $$ -- prev_seqid ($prev_seqid)" >>! $TMP/LOG
 set CHANGES = "$TMP/$APP-$API-$QUERY_STRING-changes.$DATE.json"
 set seqid = $prev_seqid
 if ( ! -e "$CHANGES" ) then
-    # remove old changes
-    set old = ( `ls -1 "$TMP/$APP-$API-$QUERY_STRING-changes".*.json` )
-    echo `date` "$0 $$ -- removing old changes ($old)" >>! $TMP/LOG
-    if ($#old > 0) rm -f $old
-    echo `date` "$0 $$ -- get changes ($CU/$DB/_changes?descending=true&include_docs=true&since=$prev_seqid)" >>! $TMP/LOG
-    /usr/bin/curl -s -q -o "$CHANGES" "$CU/$DB/_changes?descending=true&include_docs=true&since=$prev_seqid"
+    echo `date` "$0 $$ -- get changes ($CU/$DB/_changes?descending=true&include_docs=true&since=$prev_seqid" >>! $TMP/LOG
+    /usr/bin/curl -s -q -o "$CHANGES" "$CU/$DB/_changes?descending=true&include_docs=true&since=$prev_seqid" >>&! $TMP/LOG
     echo `date` "$0 $$ -- got ($CHANGES)" >>! $TMP/LOG
     set seqid = ( `/usr/local/bin/jq .last_seq "$CHANGES" | sed 's/"//g'` )
     if ($seqid == "null") then
-         echo `date` "$0 $$ -- failure retrieving changes" >>! $TMP/LOG
+         echo `date` "$0 $$ -- failure processing changes" >>! $TMP/LOG
          goto done
     endif
-else
-    set seqid = ( `/usr/local/bin/jq .last_seq "$CHANGES" | sed 's/"//g'` )
-    if ($seqid == "null") then
-        echo `date` "$0 $$ -- invalid changes" >>! $TMP/LOG
-        goto done
-    else
-        echo `date` "$0 $$ -- last sequence ($seqid)" >>! $TMP/LOG
+    # remove old changes
+    set old = ( `find "$TMP/" -name "$APP-$API-$QUERY_STRING-changes.*.json" -print | sort -t . -k 2,2 -n -r` )
+    if ($#old > 1) then
+	echo `date` "$0 $$ -- removing old changes ($old[2-])" >>! $TMP/LOG
+	rm -f $old[2-]
     endif
-    set ttyl = `echo "$SECONDS - $DATE" | bc`
-    echo `date` "$0 $$ -- changes are current ($TTL) update in $ttyl" >>! $TMP/LOG
+else
+    echo `date` "$0 $$ -- changes are current ($TTL) update in " `echo "$SECONDS - $DATE" | bc` >>! $TMP/LOG
+endif
+set seqid = ( `/usr/local/bin/jq .last_seq "$CHANGES" | sed 's/"//g'` )
+if ($#seqid == 0 || $seqid == "null") then
+    echo `date` "$0 $$ -- invalid changes ($CHANGES)" >>! $TMP/LOG
+    goto done
+else
+    echo `date` "$0 $$ -- last sequence ($seqid)" >>! $TMP/LOG
+endif
+
+if ($?seqid && $?prev_seqid) then
+    if ($#seqid > 0 && $#prev_seqid > 0 && $prev_seqid != 0 && $seqid != 0) then
+	if ("$seqid" == "$prev_seqid") then
+	    echo `date` "$0 $$ !! NO NEW EVENTS ($seqid)" >>! $TMP/LOG
+	    goto done
+	endif
+    endif
 endif
 
 set RESULTS = "$TMP/$APP-$API-$QUERY_STRING-results.$DATE.json"
@@ -195,8 +242,10 @@ endif
 set classes = ( `/bin/ls -1 "$TMP/$DB"` )
 echo `date` "$0 $$ -- found $#classes classes" >>! $TMP/LOG
 
-set NEW = "$OLD.$$"
+set NEW = "$OUTPUT".$$
 echo -n '{ "seqid":"'$seqid'","date":"'$DATE'","device":"'"$DB"'","count":'$#classes',"classes":[' >! "$NEW"
+
+echo `date` "$0 $$ -- iterating over $classes" >>! $TMP/LOG
 
 @ k = 0
 # this should really be fed by a find(1) command
@@ -204,21 +253,28 @@ foreach i ( $classes )
     if ($k > 0) echo "," >> "$NEW"
     set nfiles = ( `/bin/ls -1 "$TMP/$DB/$i" | wc | awk '{ print $1 }'` )
     echo -n '{"name":"'$i'","count":'$nfiles'}' >> "$NEW"
+    echo `date` "$0 $$ -- $i, $nfiles" >>! $TMP/LOG
     @ k++
 end
 echo -n ']}' >> "$NEW"
 
-/usr/local/bin/jq -c '.' "$NEW" >& /dev/null
+/usr/local/bin/jq -c '.' "$NEW" >>! $TMP/LOG
 if ($status != 0) then
     echo `date` "$0 $$ -- malformed JSON: `cat "$NEW"` >>! $TMP/LOG
     rm -f "$NEW"
     goto done
+else
+    echo `date` "$0 $$ -- good JSON ($NEW)" >>! $TMP/LOG
 endif
+
+# update statistics
+mv -f "$NEW" "$OUTPUT"
 
 #
 # update Cloudant
 #
 if ($?CLOUDANT_OFF == 0 && $?CU && $?DB) then
+    echo `date` "$0 $$ -- test if DB exists ($CU/$DB-$API)" >>! $TMP/LOG
     set DEVICE_DB = `/usr/bin/curl -s -q -X GET "$CU/$DB-$API" | /usr/local/bin/jq '.db_name'`
     if ( "$DEVICE_DB" == "null" ) then
 	echo `date` "$0 $$ -- creating DB $CU/$DB-$API" >>! $TMP/LOG
@@ -234,16 +290,19 @@ if ($?CLOUDANT_OFF == 0 && $?CU && $?DB) then
         endif
     endif
     if ( $?CLOUDANT_OFF == 0 ) then
-        set doc = ( `cat "$OLD" | /usr/local/bin/jq ._id,._rev | sed 's/"//g'` )
-        if ($#doc == 2 && $doc[1] == $class && $doc[2] != "") then
-            set rev = $doc[2]
-            echo `date` "$0 $$ -- deleting old output ($rev)" >>! $TMP/LOG
-            /usr/bin/curl -s -q -X DELETE "$CU/$DB-$API/$class?rev=$rev" >>! $TMP/LOG
+	curl -s -q -o "$OLD" "$CU/$DB-$API/$class" >>&! $TMP/LOG
+	if (-s "$OLD") then
+	    set doc = ( `cat "$OLD" | /usr/local/bin/jq ._id,._rev | sed 's/"//g'` )
+	    if ($#doc == 2 && $doc[1] == $class && $doc[2] != "") then
+		set rev = $doc[2]
+		echo `date` "$0 $$ -- deleting old output ($rev)" >>! $TMP/LOG
+		/usr/bin/curl -s -q -X DELETE "$CU/$DB-$API/$class?rev=$rev" >>&! $TMP/LOG
+	    endif
 	else
             echo `date` "$0 $$ -- no old output to delete" >>! $TMP/LOG
         endif
         echo `date` "$0 $$ -- storing new output" >>! $TMP/LOG
-        /usr/bin/curl -s -q -H "Content-type: application/json" -X PUT "$CU/$DB-$API/$class" -d "@$NEW" >>! $TMP/LOG
+        /usr/bin/curl -s -q -H "Content-type: application/json" -X PUT "$CU/$DB-$API/$class" -d "@$OUTPUT" >>&! $TMP/LOG
 	if ($status == 0) then
 	    echo `date` "$0 $$ -- success storing new output" >>! $TMP/LOG
 	else
@@ -256,11 +315,5 @@ else
     echo `date` "$0 $$ -- no Cloudant update" >>! $TMP/LOG
 endif
 
-# update statistics
-mv -f "$NEW" "$OUTPUT"
-# remove OLD
-rm -f "$OLD"
-
 done:
-
 echo `date` "$0 $$ -- FINISH"  >>! $TMP/LOG

@@ -104,16 +104,16 @@ else
     endif
 
     # calculate expected class list
-    set classes = ( `/usr/local/bin/jq '.classes[]|.name' "$REVIEW" | sed 's/"//g'` )
+    set allclasses = ( `/usr/local/bin/jq '.classes[]|.name' "$REVIEW" | sed 's/"//g'` )
 
-    echo `date` "$0 $$ -- found $#classes classes" >>! $TMP/LOG
+    echo `date` "$0 $$ -- found $#allclasses classes" >>! $TMP/LOG
 
     # search for matching class
-    set i = ()
-    foreach i ( $classes )
+    set i = all
+    foreach i ( $allclasses )
         if ($i == $class) break
     end
-    if ($i != $class) then
+    if ($i != $class && $class != all) then
 	echo `date` "$0 $$ -- no matching class ($class)" >>! $TMP/LOG
         goto done
     endif
@@ -122,14 +122,23 @@ else
     set NEW = "$OUTPUT.$$"
     echo -n '{ "seqid":'$seqid',"date":"'$date'","device":"'"$DB"'","match":"'"$match"'","class":"'"$class"'","limit":"'"$limit"'","images":[' >> "$NEW"
 
-    set CDIR = "$TMP/$DB/$class"
+    if ($class == all) then
+        set CDIR = "$TMP/$DB"
+    else
+	set CDIR = "$TMP/$DB/$class"
+    endif
     if (-d "$CDIR") then
 	echo `date` "$0 $$ -- finding images in ($CDIR) matching ($match)" >>! $TMP/LOG
 	@ k = 0
-	foreach j ( `find "$CDIR/" -name "$match*" -print | sort -r` )
+	foreach j ( `find "$CDIR" -name "$match*" -print | sort -t / -k 7,7 -n -r` )
 	    if ($k < $limit) then
+		echo `date` "$0 $$ -- file ($j)" >>! $TMP/LOG
 		if ($k > 0) echo -n "," >> "$NEW"
-		echo -n '"'$j:t'"' >> "$NEW"
+		if ($class == all) then
+		    echo -n '"'$j:h:t/$j:t'"' >> "$NEW"
+		else
+		    echo -n '"'$j:t'"' >> "$NEW"
+		endif
 	    endif
 	    @ k++
 	end

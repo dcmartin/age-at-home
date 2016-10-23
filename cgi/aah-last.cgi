@@ -8,8 +8,6 @@ set TTL = `echo "30 * 60" | bc`
 set SECONDS = `date "+%s"`
 set DATE = `echo $SECONDS \/ $TTL \* $TTL | bc`
 
-echo `date` "$0 $$ -- START" >>! $TMP/LOG
-
 if ($?QUERY_STRING) then
     set DB = `echo "$QUERY_STRING" | sed "s/.*db=\([^&]*\).*/\1/"`
     if ($#DB == 0) set DB = rough-fog
@@ -17,6 +15,8 @@ else
     set DB = rough-fog
 endif
 setenv QUERY_STRING "db=$DB"
+
+echo `date` "$0 $$ -- START ($QUERY_STRING)" >>! $TMP/LOG
 
 set OUTPUT = "$TMP/$APP-$API-$QUERY_STRING.$DATE.json"
 if (! -e "$OUTPUT") then
@@ -46,4 +46,4 @@ echo '{"device":"'$DB'", "datetime":'$DATETIME' }'
 
 done:
 
-echo `date` "$0 $$ -- START" >>! $TMP/LOG
+echo `date` "$0 $$ -- FINISH ($QUERY_STRING)" >>! $TMP/LOG
