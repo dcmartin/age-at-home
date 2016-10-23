@@ -6,7 +6,7 @@ setenv LAN "192.168.1"
 if ($?TMP == 0) setenv TMP "/var/lib/age-at-home"
 
 # don't update statistics more than once per (in seconds)
-set TTL = 15
+set TTL = 300
 set SECONDS = `date "+%s"`
 set DATE = `echo $SECONDS \/ $TTL \* $TTL | bc`
 
@@ -47,7 +47,7 @@ if (-e "$OUTPUT") then
 else
     # get review information (hmmm..)
     set IMAGES = "$TMP/$APP-$API-images.$$.json"
-    echo `date` "$0 $$ -- get http://$WWW/CGI/$APP-images.cgi?db=$DB&id=$class&match=$match&limit=$limit" >>! $TMP/LOG
+    if ($?DEBUG) echo `date` "$0 $$ -- get http://$WWW/CGI/$APP-images.cgi?db=$DB&id=$class&match=$match&limit=$limit" >>! $TMP/LOG
     curl -L -q -s "http://$WWW/CGI/$APP-images.cgi?db=$DB&id=$class&match=$match&limit=$limit" >! "$IMAGES"
     if ($status == 0 && (-s "$IMAGES")) then
 	# echo -n `date` "$0 $$ -- got " >>! $TMP/LOG
@@ -55,20 +55,20 @@ else
 	# get seqid 
 	set seqid = ( `/usr/local/bin/jq '.seqid' "$IMAGES"` )
 	if ($status == 0 && $#seqid > 0) then
-	    echo `date` "$0 $$ -- success with seqid ($seqid)" >>! $TMP/LOG
+	    if ($?DEBUG) echo `date` "$0 $$ -- success with seqid ($seqid)" >>! $TMP/LOG
 	else
-	    echo `date` "$0 $$ -- failure bad seqid ($seqid)" >>! $TMP/LOG
+	    if ($?DEBUG) echo `date` "$0 $$ -- failure bad seqid ($seqid)" >>! $TMP/LOG
 	    set seqid = ()
 	endif
 	set date = ( `/usr/local/bin/jq '.date' "$IMAGES" | sed 's/"//g'` )
 	if ($status == 0 && $#date > 0) then
-	    echo `date` "$0 $$ -- success with date ($date)" >>! $TMP/LOG
+	    if ($?DEBUG) echo `date` "$0 $$ -- success with date ($date)" >>! $TMP/LOG
 	else
-	    echo `date` "$0 $$ -- failure with date ($date)" >>! $TMP/LOG
+	    if ($?DEBUG) echo `date` "$0 $$ -- failure with date ($date)" >>! $TMP/LOG
 	    set date = () 
 	endif
     else
-	echo `date` "$0 $$ -- failure no images" >>! $TMP/LOG
+	if ($?DEBUG) echo `date` "$0 $$ -- failure no images" >>! $TMP/LOG
 	goto done
     endif
 
@@ -78,14 +78,15 @@ else
     set MIXPANELJS = "http://$WWW/CGI/script/mixpanel-aah.js"
 
     echo '<HTML>' >! "$NEW"
-    echo "<HEAD><TITLE>Label Images ($DB/$class/$match/$limit)</TITLE></HEAD>" >> "$NEW"
+    echo "<HEAD><TITLE>$APP-$API" >> "$NEW"
+    echo '{ "device":"'$DB'","id":"'$class'","match":"'$match'","limit":"'$limit'" }' >> "$NEW"
+    echo "</TITLE></HEAD>" >> "$NEW"
     echo '<script type="text/javascript" src="'$MIXPANELJS'"></script><script>mixpanel.track('"'"$APP-$API"');</script>" >> "$NEW"
     echo '<BODY>' >> "$NEW"
 
     echo "<H1>" >> "$NEW"
     echo "LABEL IMAGES" >> "$NEW"
     echo "</H1>" >> "$NEW"
-    # echo '{ "device":"'$DB'","id":"'$class'","match":"'$match'","limit":"'$limit'" }' >> "$NEW"
     if ($#date > 0) echo "<h3>Last updated: <i>" `date -r $date` "</i></h3>" >> "$NEW"
     # if ($#seqid > 0) echo "<h4>$seqid</h4>" >> "$NEW"
     echo '<p><b>Instructions:</b> Click on an image to label as "person" or choose class from menu and click "OK"</p>' >> "$NEW"
@@ -125,8 +126,9 @@ else
 	echo '<input type="hidden" name="image" value="'"$jpg"'">' >> "$NEW"
 	# create selection list
 	echo '<select name="class">' >> "$NEW"
+	echo '<option value="'"$dir"'"">'"$dir"'</option>' >> "$NEW"
 	foreach c ( $allclasses )
-	    if ($c != "NO_TAGS") echo '<option value="'"$c"'"">'"$c"'</option>' >> "$NEW"
+	    if ($c != "NO_TAGS" && $c != $dir) echo '<option value="'"$c"'"">'"$c"'</option>' >> "$NEW"
 	end
 	echo '</select>' >> "$NEW"
 	echo '<input type="submit" value="OK">' >> "$NEW"
@@ -150,7 +152,7 @@ else
     # remove old 
     set old = ( `ls -1 "$TMP/$APP-$API-$QUERY_STRING".*.json` )
     if ($#old > 0) then
-	echo `date` "$0 $$ -- removing old ($old)" >>! $TMP/LOG
+	if ($?DEBUG) echo `date` "$0 $$ -- removing old ($old)" >>! $TMP/LOG
 	rm -f $old
     endif
 

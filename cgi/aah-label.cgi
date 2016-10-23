@@ -12,19 +12,43 @@ set DATE = `echo $SECONDS \/ $TTL \* $TTL | bc`
 
 echo `date` "$0 $$ -- START ($QUERY_STRING) from $HTTP_REFERER" >>! $TMP/LOG
 
-# output set
-set OUTPUT = "$TMP/$APP-$API-$QUERY_STRING.$DATE.json"
+if ($?QUERY_STRING) then
+    set DB = `echo "$QUERY_STRING" | sed 's/.*db=\([^&]*\).*/\1/'`
+    if ($DB == "$QUERY_STRING") unset DB
+    set id = `echo "$QUERY_STRING" | sed 's/.*id=\([^&]*\).*/\1/'`
+    if ($id == "$QUERY_STRING") unset id
+    set image = `echo "$QUERY_STRING" | sed 's/.*image=\([^&]*\).*/\1/'`
+    if ($image == "$QUERY_STRING") unset image
+    set class = `echo "$QUERY_STRING" | sed 's/.*class=\([^&]*\).*/\1/'`
+    if ($class == "$QUERY_STRING") unset class
+endif
 
-# check OUTPUT exists
-if (-e "$OUTPUT") then
-    echo `date` "$0 $$ -- returning existing ($OUTPUT)" >>! $TMP/LOG
-    goto output
-else
-    set old = ( `find "$TMP/" -name "$APP-$API-$QUERY_STRING.*.json" -print | sort -t . -k 2,2 -n -r` )
-    if ($#old > 0) then
-        rm -f $old
+if ($?DB && $?id && $?class && $?image) then
+    set jpg = "$TMP/$DB/$id/$image"
+    set link = "$TMP/$DB/$class/$image"
+
+    if (-s "$jpg") then
+	if (-e "$link") then
+	    echo `date` "$0 $$ -- link exists ($link)" `ls -al "$link"` >>! $TMP/LOG
+	    set OUTPUT = '{"result":"fail-exists","image":"'"$id/$image"'","link":"'"$class/$image"'"}'
+	else
+	    echo `date` "$0 $$ -- linking $jpg -> $link" >>! $TMP/LOG
+	    ln -s $jpg $link >>&! $TMP/LOG
+	    if (-e "$link") then
+		echo `date` "$0 $$ -- link succeeded ($link)" `ls -al "$link"` >>! $TMP/LOG
+		set OUTPUT = '{"result":"success","image":"'"$id/$image"'","link":"'"$class/$image"'"}'
+	    else
+		echo `date` "$0 $$ -- link failed ($link)" >>! $TMP/LOG
+		set OUTPUT = '{"result":"fail-link","image":"'"$id/$image"'","link":"'"$class/$image"'"}'
+	    endif
+	endif
+    else
+	echo `date` "$0 $$ -- image file invalid ($jpg)" >>! $TMP/LOG
+	set OUTPUT = '{"result":"fail-invalid","image":"'"$id/$image"'","link":"'"$class/$image"'"}'
     endif
-    echo "<HTML><HEAD></HEAD><BODY>$0 $QUERY_STRING ($$)</BODY></HTML>" >>! "$OUTPUT"
+else
+    echo `date` "$0 $$ -- insufficient arguments" >>! $TMP/LOG
+    set OUTPUT = '{"result":"badargs"}'
 endif
 
 output:
@@ -32,7 +56,7 @@ output:
 #
 # prepare for output
 #
-echo "Content-Type: text/html; charset=utf-8"
+echo "Content-Type: application/json; charset=utf-8"
 set age = `echo "$SECONDS - $DATE" | bc`
 set refresh = `echo "$TTL - $age" | bc`
 echo "Age: $age"
@@ -40,8 +64,8 @@ echo "Cache-Control: max-age=$TTL"
 echo "Last-Modified:" `date -r $DATE '+%a, %d %b %Y %H:%M:%S %Z'`
 echo "Location: $HTTP_REFERER"
 echo ""
-cat "$OUTPUT"
+echo "$OUTPUT"
 
 done:
 
-echo `date` "$0 $$ -- FINISH ($QUERY_STRING)" >>! $TMP/LOG
+echo `date` "$0 $$ -- FINISH" >>! $TMP/LOG

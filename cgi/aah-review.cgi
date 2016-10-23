@@ -12,12 +12,8 @@ setenv DATE `echo $SECONDS \/ $TTL \* $TTL | bc`
 if ($?QUERY_STRING) then
     set DB = `echo "$QUERY_STRING" | sed 's/.*db=\([^&]*\).*/\1/'`
     if ($DB == "$QUERY_STRING") unset DB
-    # set class = `echo "$QUERY_STRING" | sed 's/.*id=\([^&]*\).*/\1/'`
-    # if ($class == "$QUERY_STRING") unset class
-    # set day = `echo "$QUERY_STRING" | sed 's/.*day=\([^&]*\).*/\1/'`
-    # if ($day == "$QUERY_STRING") unset day
-    # set interval = `echo "$QUERY_STRING" | sed 's/.*interval=\([^&]*\).*/\1/'`
-    # if ($interval == "$QUERY_STRING") unset interval
+    set class = `echo "$QUERY_STRING" | sed 's/.*id=\([^&]*\).*/\1/'`
+    if ($class == "$QUERY_STRING") unset class
 endif
 
 if ($?DB == 0) set DB = rough-fog
@@ -37,7 +33,7 @@ if ($?CLOUDANT_URL) then
 else if ($?CN) then
     set CU = "$CN"@"$CN.cloudant.com"
 else
-    echo `date` "$0 $$ -- no Cloudant URL" >>! $TMP/LOG
+    if ($?DEBUG) echo `date` "$0 $$ -- no Cloudant URL" >>! $TMP/LOG
     goto done
 endif
 
@@ -46,25 +42,25 @@ set OUTPUT = "$TMP/$APP-$API-$QUERY_STRING.$DATE.json"
 
 # check OUTPUT exists
 if (-s "$OUTPUT") then
-    echo `date` "$0 $$ -- existing ($OUTPUT)" >>! $TMP/LOG
+    if ($?DEBUG) echo `date` "$0 $$ -- existing ($OUTPUT)" >>! $TMP/LOG
     goto output
 else
-    echo `date` "$0 $$ ++ requesting ($OUTPUT)" >>! $TMP/LOG
+    if ($?DEBUG) echo `date` "$0 $$ ++ requesting ($OUTPUT)" >>! $TMP/LOG
     ./$APP-make-$API.bash
     set old = ( `find "$TMP/" -name "$APP-$API-$QUERY_STRING.*.json" -print | sort -t . -k 2,2 -n -r` )
     if ($#old > 0) then
         set OUTPUT = $old[1]
-        echo `date` "$0 $$ -- using old output ($OUTPUT)" >>! $TMP/LOG
+        if ($?DEBUG) echo `date` "$0 $$ -- using old output ($OUTPUT)" >>! $TMP/LOG
         setenv DATE `echo "$OUTPUT" | awk -F. '{ print $2 }'`
 	if ($#old > 1) then
-	    echo `date` "$0 $$ -- removing old output ($old[2-])" >>! $TMP/LOG
+	    if ($?DEBUG) echo `date` "$0 $$ -- removing old output ($old[2-])" >>! $TMP/LOG
 	    rm -f $old[2-]
 	endif
         goto output
     endif
     # return redirect
     set URL = "https://$CU/$DB-$API/$class"
-    echo `date` "$0 $$ -- returning redirect ($URL)" >>! $TMP/LOG
+    if ($?DEBUG) echo `date` "$0 $$ -- returning redirect ($URL)" >>! $TMP/LOG
     set age = `echo "$SECONDS - $DATE" | bc`
     echo "Age: $age"
     set refresh = `echo "$TTL - $age | bc`
