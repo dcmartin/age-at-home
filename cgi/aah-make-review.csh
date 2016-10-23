@@ -4,7 +4,7 @@ setenv API "review"
 setenv LAN "192.168.1"
 if ($?TMP == 0) setenv TMP "/var/lib/age-at-home"
 
-if ($?TTL == 0) set TTL = 300
+if ($?TTL == 0) set TTL = 900
 if ($?SECONDS == 0) set SECONDS = `date "+%s"`
 if ($?DATE == 0) set DATE = `echo $SECONDS \/ $TTL \* $TTL | bc`
 

@@ -5,7 +5,7 @@ setenv LAN "192.168.1"
 if ($?TMP == 0) setenv TMP "/var/lib/age-at-home"
 
 # don't update statistics more than once per (in seconds)
-setenv TTL 300
+setenv TTL 900
 setenv SECONDS `date "+%s"`
 setenv DATE `echo $SECONDS \/ $TTL \* $TTL | bc`
 
