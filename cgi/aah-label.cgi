@@ -19,32 +19,45 @@ if ($?QUERY_STRING) then
     if ($id == "$QUERY_STRING") unset id
     set image = `echo "$QUERY_STRING" | sed 's/.*image=\([^&]*\).*/\1/'`
     if ($image == "$QUERY_STRING") unset image
-    set class = `echo "$QUERY_STRING" | sed 's/.*class=\([^&]*\).*/\1/'`
-    if ($class == "$QUERY_STRING") unset class
+    set old = `echo "$QUERY_STRING" | sed 's/.*old=\([^&]*\).*/\1/'`
+    if ($old == "$QUERY_STRING") unset old
+    set new = `echo "$QUERY_STRING" | sed 's/.*new=\([^&]*\).*/\1/'`
+    if ($new == "$QUERY_STRING") unset new
+    set limit = `echo "$QUERY_STRING" | sed 's/.*limit=\([^&]*\).*/\1/'`
+    if ($limit == "$QUERY_STRING") unset limit
+    set match = `echo "$QUERY_STRING" | sed 's/.*match=\([^&]*\).*/\1/'`
+    if ($match == "$QUERY_STRING") unset match
 endif
 
-if ($?DB && $?id && $?class && $?image) then
-    set jpg = "$TMP/$DB/$id/$image"
-    set link = "$TMP/$DB/$class/$image"
+echo `date` "$0 $$ -- $?DB $?id $?image $?old $?new" >>! $TMP/LOG
+
+if ($?DB && $?id && $?image && $?old && $?new) then
+    set jpg = "$TMP/$DB/$old/$image"
+    set link = "$TMP/$API/$new/$image"
+    if (! -d "$TMP/$API/$new") then
+        echo `date` "$0 $$ -- making directory $TMP/$API/$new" >>! $TMP/LOG
+	mkdir -p "$TMP/$API/$new"
+    endif
 
     if (-s "$jpg") then
 	if (-e "$link") then
-	    echo `date` "$0 $$ -- link exists ($link)" `ls -al "$link"` >>! $TMP/LOG
-	    set OUTPUT = '{"result":"fail-exists","image":"'"$id/$image"'","link":"'"$class/$image"'"}'
+	    echo `date` "$0 $$ -- labeled image exists ($link)" `ls -al "$link"` >>! $TMP/LOG
+	    set OUTPUT = '{"result":"fail-exists","image":"'"$old/$image"'","link":"'"$new/$image"'"}'
 	else
-	    echo `date` "$0 $$ -- linking $jpg -> $link" >>! $TMP/LOG
-	    ln -s $jpg $link >>&! $TMP/LOG
-	    if (-e "$link") then
+	    echo `date` "$0 $$ -- moving and linking $jpg -> $link" >>! $TMP/LOG
+	    mv $jpg $link
+	    ln -s $link $jpg
+	    if (-e "$jpg") then
 		echo `date` "$0 $$ -- link succeeded ($link)" `ls -al "$link"` >>! $TMP/LOG
-		set OUTPUT = '{"result":"success","image":"'"$id/$image"'","link":"'"$class/$image"'"}'
+		set OUTPUT = '{"result":"success","image":"'"$old/$image"'","link":"'"$new/$image"'"}'
 	    else
 		echo `date` "$0 $$ -- link failed ($link)" >>! $TMP/LOG
-		set OUTPUT = '{"result":"fail-link","image":"'"$id/$image"'","link":"'"$class/$image"'"}'
+		set OUTPUT = '{"result":"fail-link","image":"'"$old/$image"'","link":"'"$new/$image"'"}'
 	    endif
 	endif
     else
-	echo `date` "$0 $$ -- image file invalid ($jpg)" >>! $TMP/LOG
-	set OUTPUT = '{"result":"fail-invalid","image":"'"$id/$image"'","link":"'"$class/$image"'"}'
+	echo `date` "$0 $$ -- DNE or zero ($jpg)" >>! $TMP/LOG
+	set OUTPUT = '{"result":"fail-invalid","image":"'"$old/$image"'","link":"'"$new/$image"'"}'
     endif
 else
     echo `date` "$0 $$ -- insufficient arguments" >>! $TMP/LOG
@@ -57,14 +70,33 @@ output:
 # prepare for output
 #
 echo "Content-Type: application/json; charset=utf-8"
-set age = `echo "$SECONDS - $DATE" | bc`
-set refresh = `echo "$TTL - $age" | bc`
-echo "Age: $age"
-echo "Cache-Control: max-age=$TTL"
+echo "Cache-Control: no-cache"
 echo "Last-Modified:" `date -r $DATE '+%a, %d %b %Y %H:%M:%S %Z'`
-echo "Location: $HTTP_REFERER"
+
+# test parameters
+if ($?HTTP_REFERER && $?DB && $?id) then
+    # get base
+    set baseurl = `echo "$HTTP_REFERER" | sed 's/\([^?]*\).*/\1/'`
+    echo `date` "$0 $$ -- baseurl ($baseurl)" >>! $TMP/LOG
+    set referer = "$baseurl?db=$DB&id=$id"
+    echo `date` "$0 $$ -- referer ($referer)" >>! $TMP/LOG
+    if ($?match) then
+	set referer = "$referer&match=$match"
+    endif
+    echo `date` "$0 $$ -- referer ($referer)" >>! $TMP/LOG
+    if ($?limit) then
+	set referer = "$referer&limit=$limit"
+    endif
+    echo `date` "$0 $$ -- referer ($referer)" >>! $TMP/LOG
+    set referer = "$referer&assign=$old/$image"
+    echo `date` "$0 $$ -- referer ($referer)" >>! $TMP/LOG
+    echo "Location: $referer"
+    unset noglob
+endif
+
 echo ""
 echo "$OUTPUT"
+
 
 done:
 
