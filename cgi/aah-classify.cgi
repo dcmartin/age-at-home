@@ -11,7 +11,7 @@ set SECONDS = `date "+%s"`
 set DATE = `echo $SECONDS \/ $TTL \* $TTL | bc`
 
 # default image limit
-if ($?IMAGE_LIMIT == 0) setenv IMAGE_LIMIT 100
+if ($?IMAGE_LIMIT == 0) setenv IMAGE_LIMIT 20
 
 if ($?QUERY_STRING) then
     set DB = `echo "$QUERY_STRING" | sed 's/.*db=\([^&]*\).*/\1/'`
@@ -46,7 +46,7 @@ set OUTPUT = "$TMP/$APP-$API-$QUERY_STRING.$DATE.json"
 if (-s "$OUTPUT") then
     if ($?DEBUG) echo `date` "$0 $$ -- using current ($OUTPUT)" >>! $TMP/LOG
 else
-    set old = ( `find "$TMP" -name "$APP-$API*" -print` )
+    set old = ( `ls -1 "$TMP/$APP-$API-db=$DB"*.json` )
     if ($#old > 0) then
 	if ($?DEBUG) echo `date` "$0 $$ -- removing $old" >>! $TMP/LOG
 	rm -f $old
@@ -74,9 +74,8 @@ if (-s "$OUTPUT") then
     echo "</TITLE></HEAD>" >> "$HTML"
     echo '<script type="text/javascript" src="'$MIXPANELJS'"></script><script>mixpanel.track('"'"$APP-$API"');</script>" >> "$HTML"
     echo '<BODY><H1>LABEL IMAGES</H1>' >> "$HTML"
-
-    if ($#date > 0) echo "<h3>Last updated: <i>" `date -r $date` "</i></h3>" >> "$HTML"
-    if ($#seqid > 0) echo "<h4>$seqid</h4>" >> "$HTML"
+    if ($#date > 0) echo "<p>Last updated: <i>" `date -r $date` "</i></p>" >> "$HTML"
+    # if ($#seqid > 0) echo "<i>$seqid</i>" >> "$HTML"
 
     echo '<form action="http://'"$WWW/CGI/$APP-$API"'.cgi">' >> "$HTML"
     echo '<input type="hidden" name="db" value="'"$DB"'">' >> "$HTML"
@@ -94,7 +93,7 @@ if (-s "$OUTPUT") then
     echo '<p><b>Instructions:</b> Click on an image to label as "person" or choose class from menu and click "OK"</p>' >> "$HTML"
 
     if (-d "$CDIR") then
-	set IMAGES = "$TMP/$APP-$API-$QUERY_STRING.$DATE.txt"
+	set IMAGES = "$TMP/$APP-$API-db=$DB&id=$id&match=$match.$DATE.txt"
 	if (-e "$IMAGES") then
 	    if ($?assign) then
 		if ($?DEBUG) echo `date` "$0 $$ -- removing $assign from old images for ($CDIR) matching ($match)" >>! $TMP/LOG
@@ -102,7 +101,7 @@ if (-s "$OUTPUT") then
 		mv -f "$IMAGES.$$" "$IMAGES"
 	    endif
 	else
-	    set old = ( `ls -1 "$TMP/$APP-$API-$QUERY_STRING".*.txt` )
+	    set old = ( `ls -1 "$TMP/$APP-$API-db=$DB&id=$id&match=$match".*.txt` )
 	    if ($#old > 1) then
 		if ($?DEBUG) echo `date` "$0 $$ -- removing old find results ($old)" >>! $TMP/LOG
 	    endif
