@@ -1,4 +1,5 @@
 #!/bin/csh -fb
+set DEBUG = 1
 setenv APP "aah"
 setenv API "label"
 setenv WWW "www.dcmartin.com"
@@ -33,10 +34,10 @@ if ($?DEBUG) echo `date` "$0 $$ -- $?DB $?id $?image $?old $?new" >>! $TMP/LOG
 
 if ($?DB && $?id && $?image && $?old && $?new) then
     set jpg = "$TMP/$DB/$old/$image"
-    set link = "$TMP/$API/$new/$image"
+    set link = "$TMP/$API/$DB/$new/$image"
     if (! -d "$TMP/$API/$new") then
-        if ($?DEBUG) echo `date` "$0 $$ -- making directory $TMP/$API/$new" >>! $TMP/LOG
-	mkdir -p "$TMP/$API/$new"
+        if ($?DEBUG) echo `date` "$0 $$ -- making directory $TMP/$API/$DB/$new" >>! $TMP/LOG
+	mkdir -p "$TMP/$API/$DB/$new"
     endif
 
     if (-s "$jpg") then
