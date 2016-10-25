@@ -13,8 +13,8 @@ if ($#argv > 0) then
     @ i = 0
     set t = "$argv[1]"
     if (($#t == 1) && ($#argv > 1)) then
-	if ($t == "-v") then
-	    set voice = $argv[2]
+	if ($t == "-n") then
+	    set model = $argv[2]
 	    @ i = 2
 	endif
     endif
@@ -40,23 +40,51 @@ else if ($?TU == 0) then
 endif
 unset noglob
 
-echo -n "+++ CLASSIFIERS: " 
-curl -L -H "Accept-Language: en" "$TU/v3/classifiers?api_key=$api_key&version=2016-05-20" | jq .
-echo
+if ($?verid == 0) set verid = "v3"
+if ($?vdate == 0) set vdate = "2016-05-20"
 
-if ($#IMAGE_FILE == 1 && -s "$IMAGE_FILE") then
-    echo "+++ CLASSIFIERS +++"
-    curl -L -o /tmp/$0:t.$$.json -X POST -F "images_file=@$IMAGE_FILE" -H "Accept-Language: en" "$TU/v3/classify?api_key=$api_key&classifier_ids=default&owners=IBM&threshold=0.000001&version=2016-05-20"
-    jq '.' /tmp/$0:t.$$.json
-    echo "+++ FACES +++"
-    curl -L -o /tmp/$0:t.$$.json -X POST -F "images_file=@$IMAGE_FILE" -H "Accept-Language: en" "$TU/v3/detect_faces?api_key=$api_key&version=2016-05-20"
-    jq '.' /tmp/$0:t.$$.json
-    echo "+++ TEXT +++"
-    curl -L -o /tmp/$0:t.$$.json -X POST -F "images_file=@$IMAGE_FILE" -H "Accept-Language: en" "$TU/v3/recognize_text?api_key=$api_key&version=2016-05-20"
-    jq '.' /tmp/$0:t.$$.json
+if ($?model) then
+    set classifiers = ( `curl -q -s -L -H "Accept-Language: en" "$TU/$verid/classifiers?api_key=$api_key&version=$vdate" | jq '.classifiers[]|select(.name=="'"$model"'")'` )
+    if ($#classifiers > 0) then
+        set classifier = `echo "$classifiers" | jq '.classifier_id' | sed 's/"//g'`
+	if ($#classifier > 0) then
+	    echo "+++ using classifier ($classifier) +++" 
+	    echo '{ "classifier_ids": ["'$classifier'"] }' >! /tmp/$0:t-params.$$.json
+        endif
+    else
+	echo "+++ no classifier with name $model +++" 
+    endif
 else
-    echo "*** PLEASE SPECIFY ONE IMAGE FILE" >& /dev/stderr
+    set classifiers = ( `curl -q -s -L -H "Accept-Language: en" "$TU/$verid/classifiers?api_key=$api_key&version=$vdate" | jq '.classifiers' | sed 's/"//g'` )
+    echo "+++ VISUAL_RECOGNITION ($classifiers) +++" 
 endif
 
+foreach ifile ( $IMAGE_FILE )
+    if (-s "$ifile") then
+	echo "+++ CLASSIFIERS +++"
+        if ($?classifier) then
+	    curl -s -q -L -o /tmp/$0:t.$$.json "$TU/$verid/classify?api_key=$api_key&classifier_ids=default&owners=IBM&threshold=0.000001&version=$vdate" \
+	    	-X POST \
+	    	-F "parameters=@/tmp/$0:t-params.$$.json" \
+		-F "images_file=@$ifile" \
+		-H "Accept-Language: en" 
+	else
+	    curl -s -q -L -o /tmp/$0:t.$$.json "$TU/$verid/classify?api_key=$api_key&classifier_ids=default&owners=IBM&threshold=0.000001&version=$vdate" \
+	        -X POST \
+		-F "images_file=@$ifile" \
+		-H "Accept-Language: en"
+	endif
+	jq '.' /tmp/$0:t.$$.json
+	echo "+++ FACES +++"
+	curl -s -q -L -o /tmp/$0:t.$$.json -X POST -F "images_file=@$ifile" -H "Accept-Language: en" "$TU/$verid/detect_faces?api_key=$api_key&version=$vdate"
+	jq '.' /tmp/$0:t.$$.json
+	echo "+++ TEXT +++"
+	curl -s -q -L -o /tmp/$0:t.$$.json -X POST -F "images_file=@$ifile" -H "Accept-Language: en" "$TU/$verid/recognize_text?api_key=$api_key&version=$vdate"
+	jq '.' /tmp/$0:t.$$.json
+    else
+	echo "*** bad image ($ifile)" >& /dev/stderr
+    endif
+end
+
 cleanup:
-rm /tmp/$0:t.$$.json
+rm -f /tmp/$0:t.$$.json /tmp/$0:t-params.$$.json
