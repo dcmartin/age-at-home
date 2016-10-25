@@ -1,0 +1,123 @@
+#!/bin/csh -fb
+
+if (! -e /usr/local/bin/brew) then
+   echo "*** NO HOME BREW?  Install from http://brew.sh"
+   exit
+endif
+if (! -e /usr/local/bin/jq) then
+   echo "*** BREWING 'jq' ..." >& /dev/stderr
+   brew install jq >& /dev/stderr
+endif
+
+if ($#argv > 0) then
+    @ i = 0
+    set t = "$argv[1]"
+    if (($#t == 1) && ($#argv > 1)) then
+	if ($t == "-n") then
+	    set maxfiles = $argv[2]
+	    @ i = 2
+	endif
+    endif
+    if ($#argv > $i) then
+	@ i++
+        set EXDIRS = "$argv[$i-]"
+    endif
+endif
+if ($?EXDIRS == 0) set EXDIRS = ""
+
+set creds = ~$USER/.watson.visual-recognition.json
+set noglob
+if (-e $creds) then
+    set api_key = ( `jq '.credentials.api_key' $creds | sed 's/"//g'` )
+    echo "--- USING APIKEY $api_key" >& /dev/stderr
+    set url = ( `jq '.credentials.url' $creds | sed 's/"//g'` )
+    echo "--- USING URL $url" >& /dev/stderr
+    # set base
+    set TU = $url
+else if ($?TU == 0) then
+    echo "*** NO CREDENTIALS ($creds); create file and copy credentials from visual-recognition service on bluemix.net"
+    exit
+endif
+unset noglob
+
+if ($?verid == 0) set verid = "v3"
+if ($?vdate == 0) set vdate = "2016-05-20"
+
+echo "+++ VISUAL TRAINING +++" 
+
+set classifiers = ( `curl -q -s -L -H "Accept-Language: en" "$TU/$verid/classifiers?api_key=$api_key&version=$vdate" | jq '.classifiers[].classifier_id' | sed 's/"//g'` )
+if ($#classifiers > 0) then
+    set classifier = $classifiers[1]
+    echo "+++ deleting classifier ($classifier) +++"
+    curl -X DELETE "https://gateway-a.watsonplatform.net/visual-recognition/api/$verid/classifiers/$classifier?api_key=$api_key&version=$vdate"
+    endif
+endif
+
+set positive = ()
+set negative = ()
+foreach xdir ( $EXDIRS )
+    if (-d "$xdir" ) then
+	echo "$xdir"
+	set nxf = `ls -1 "$xdir" | wc -l | awk '{ print $1 }'`
+	if ($nxf < 10) then
+	    echo "$xdir:t - $nxf images; skipping (min 10)" >& /dev/stderr
+	else
+	    set xzip = "$xdir:t".zip
+	    if (-e "$xzip") rm "$xzip"
+	    if ($?maxfiles) then
+		if ($maxfiles < $nxf) then
+		    echo "$xzip - using $maxfiles of $nxf images"
+		else
+		    echo "$xzip - using $nxf images"
+		endif
+	        find "$xdir" -type f -name "*.jpg" -print | head -"$maxfiles" | xargs -I % zip -q -j -r -u "$xzip" %
+	    else
+		echo "$xzip - using $nxf images"
+		zip -q -j -r -u "$xzip" "$xdir"
+	    endif
+	    if ($xdir:t != "NO_TAGS") then
+		set t = ( `echo '-F "'"$xdir:t"'_positive_examples=@'"$xzip"'"'` )
+		set positive = ( "$positive" "$t" )
+	    else
+		set t = ( `echo '-F "negative_examples=@'"$xzip"'"'` )
+		set negative = ( "$negative" "$t" )
+	    endif
+	endif
+    else
+	echo "Not a directory: $xdir" >& /dev/stderr
+    endif
+end
+
+if ($#positive == 0 || $#negative == 0) then
+    echo "Insufficient positive or negative (NO_TAGS) examples"
+else
+    echo "+++ TRAIN $negative $positive +++"
+    # curl -L -v "$TU/$verid/classifiers?api_key=$api_key&version=$vdate" -o /tmp/$0:t.$$.json -X POST $positive $negative
+    echo 'curl -L -q -s "'"$TU/$verid/classifiers?api_key=$api_key&version=$vdate"'" -o /tmp/'$0:t.$$'.json -F "name='"$xdir:h:t"'"' "$positive" "$negative" >! /tmp/$0:t.$$.sh
+    cat /tmp/$0:t.$$.sh
+    sh /tmp/$0:t.$$.sh
+    rm -f /tmp/$0:t.$$.sh
+    set code = `jq -c '.code' /tmp/$0:t.$$.json | sed 's/"//g'` 
+    if ($code == 400) then
+    	jq '.error' /tmp/$0:t.$$.json
+	goto cleanup
+    endif
+    jq '.' /tmp/$0:t.$$.json
+    set cid = `jq '.classifier_id' /tmp/$0:t.$$.json | sed 's/"//g'`
+    # wait until done
+    while (1)
+	onintr cleanup
+	# {"classifier_id":"label_1145276169","name":"label","owner":"6d283517-32f1-4fd4-bcf7-df0da07f4f0f","status":"ready","created":"2016-10-25T00:57:11.396Z","classes":[{"class":"person"},{"class":"dog"}]}
+	curl -o /tmp/$0:t.$$.json "$TU/$verid/classifiers/$cid?api_key=$api_key&version=$vdate"
+	echo "+++ STATUS +++" 
+	set s = `jq -c '.status' /tmp/$0:t.$$.json | sed 's/"//g'`
+	if ($s == "ready") then
+	    jq -c '.' /tmp/$0:t.$$.json
+	    break
+	endif
+	sleep 30
+    end
+endif
+
+cleanup:
+rm /tmp/$0:t.$$.json
