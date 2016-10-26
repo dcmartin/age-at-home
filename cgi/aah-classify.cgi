@@ -83,7 +83,7 @@ if (-s "$OUTPUT") then
     echo '<input type="range" name="limit" value="'"$limit"'" max="'$IMAGE_LIMIT'" min="1">' >> "$HTML"
     echo '<select name="id">' >> "$HTML"
     echo '<option value="'"$id"'">'"$id"'</option>' >> "$HTML" # current class (dir) is first option
-    echo '<option value="all">all</option>' >> "$HTML" # current class (dir) is first option
+    if ($id != "all") echo '<option value="all">all</option>' >> "$HTML" # all classes is second option
     foreach c ( $allclasses )
 	if ($c != $id) echo '<option value="'"$c"'"">'"$c"'</option>' >> "$HTML" # don't include current class
     end
@@ -111,7 +111,7 @@ if (-s "$OUTPUT") then
 
 	set nimage = `wc -l "$IMAGES" | awk '{ print $1 }'`
 
-	@ ncolumns = 5
+	@ ncolumns = 4
 	if ($nimage < $ncolumns) @ ncolumns = $nimage
 	@ width = 100
 
@@ -150,10 +150,12 @@ if (-s "$OUTPUT") then
 		echo '<input type="hidden" name="limit" value="'"$limit"'">' >> "$HTML"
 		echo '<input type="hidden" name="old" value="'"$dir"'">' >> "$HTML"
 		echo '<input type="hidden" name="image" value="'"$jpg"'">' >> "$HTML"
+		# current classification
+		echo "<i>$dir</i>" >> "$HTML" 
 		echo '<select name="new">' >> "$HTML"
-		echo '<option value="'"$dir"'"">'"$dir"'</option>' >> "$HTML" # current class (dir) is first option
+		if ($dir != "NO_TAGS") echo '<option value="'"$dir"'"">'"$dir"'</option>' >> "$HTML" # current class (dir) is first option
 		foreach c ( $allclasses )
-		    if ($c != $dir) echo '<option value="'"$c"'"">'"$c"'</option>' >> "$HTML" # don't include current class
+		    if ($c != $dir && $c != "NO_TAGS") echo '<option value="'"$c"'"">'"$c"'</option>' >> "$HTML" # don't include current class or NO_TAGS
 		end
 		echo '</select>' >> "$HTML"
 		echo '<input type="submit" value="OK">' >> "$HTML"

@@ -1,5 +1,4 @@
 #!/bin/csh -fb
-set DEBUG = 1
 setenv APP "aah"
 setenv API "label"
 setenv WWW "www.dcmartin.com"
@@ -35,21 +34,26 @@ if ($?DEBUG) echo `date` "$0 $$ -- $?DB $?id $?image $?old $?new" >>! $TMP/LOG
 if ($?DB && $?id && $?image && $?old && $?new) then
     set jpg = "$TMP/$DB/$old/$image"
     set link = "$TMP/$API/$DB/$new/$image"
-    if (! -d "$TMP/$API/$new") then
+
+    if (! -d "$TMP/$API/$DB/$new") then
         if ($?DEBUG) echo `date` "$0 $$ -- making directory $TMP/$API/$DB/$new" >>! $TMP/LOG
 	mkdir -p "$TMP/$API/$DB/$new"
     endif
 
     if (-s "$jpg") then
+	if ($?DEBUG) echo `date` "$0 $$ -- old image exists ($jpg)" `ls -l "$jpg"` >>! $TMP/LOG
 	if (-e "$link") then
-	    if ($?DEBUG) echo `date` "$0 $$ -- labeled image exists ($link)" `ls -al "$link"` >>! $TMP/LOG
+	    if ($?DEBUG) echo `date` "$0 $$ -- labeled image exists ($link)" `ls -l "$link"` >>! $TMP/LOG
 	    set OUTPUT = '{"result":"fail-exists","image":"'"$old/$image"'","link":"'"$new/$image"'"}'
-	else
+	else 
 	    if ($?DEBUG) echo `date` "$0 $$ -- moving and linking $jpg -> $link" >>! $TMP/LOG
-	    mv $jpg $link
-	    ln -s $link $jpg
+	    mv -n "$jpg" "$link" >>& $TMP/LOG
+	    if (-s "$link") then
+		if ($?DEBUG) echo `date` "$0 $$ -- move succeeded" `ls -l "$link"` >>! $TMP/LOG
+		ln -s "$link" "$jpg" >>& $TMP/LOG
+	    endif
 	    if (-e "$jpg") then
-		if ($?DEBUG) echo `date` "$0 $$ -- link succeeded ($link)" `ls -al "$link"` >>! $TMP/LOG
+		if ($?DEBUG) echo `date` "$0 $$ -- link succeeded" `ls -al "$jpg"` >>! $TMP/LOG
 		set OUTPUT = '{"result":"success","image":"'"$old/$image"'","link":"'"$new/$image"'"}'
 	    else
 		if ($?DEBUG) echo `date` "$0 $$ -- link failed ($link)" >>! $TMP/LOG
