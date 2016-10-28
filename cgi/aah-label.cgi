@@ -1,4 +1,5 @@
 #!/bin/csh -fb
+setenv DEBUG true
 setenv APP "aah"
 setenv API "label"
 setenv WWW "www.dcmartin.com"
@@ -23,15 +24,21 @@ if ($?QUERY_STRING) then
     if ($old == "$QUERY_STRING") unset old
     set new = `echo "$QUERY_STRING" | sed 's/.*new=\([^&]*\).*/\1/'`
     if ($new == "$QUERY_STRING") unset new
+    set add = `echo "$QUERY_STRING" | sed 's/.*add=\([^&]*\).*/\1/'`
+    if ($add == "$QUERY_STRING" || $add == "") unset add
     set limit = `echo "$QUERY_STRING" | sed 's/.*limit=\([^&]*\).*/\1/'`
     if ($limit == "$QUERY_STRING") unset limit
     set match = `echo "$QUERY_STRING" | sed 's/.*match=\([^&]*\).*/\1/'`
     if ($match == "$QUERY_STRING") unset match
 endif
 
-if ($?DEBUG) echo `date` "$0 $$ -- $?DB $?id $?image $?old $?new" >>! $TMP/LOG
+if ($?DEBUG) echo `date` "$0 $$ -- $?DB $?id $?image $?old $?new $?add" >>! $TMP/LOG
 
 if ($?DB && $?id && $?image && $?old && $?new) then
+    if ($?add) then
+	set new = "$add"
+    endif
+
     set jpg = "$TMP/$DB/$old/$image"
     set link = "$TMP/$API/$DB/$new/$image"
 
@@ -82,19 +89,17 @@ echo "Last-Modified:" `date -r $DATE '+%a, %d %b %Y %H:%M:%S %Z'`
 if ($?HTTP_REFERER && $?DB && $?id) then
     # get base
     set baseurl = `echo "$HTTP_REFERER" | sed 's/\([^?]*\).*/\1/'`
-    if ($?DEBUG) echo `date` "$0 $$ -- baseurl ($baseurl)" >>! $TMP/LOG
     set referer = "$baseurl?db=$DB&id=$id"
-    if ($?DEBUG) echo `date` "$0 $$ -- referer ($referer)" >>! $TMP/LOG
     if ($?match) then
 	set referer = "$referer&match=$match"
     endif
-    if ($?DEBUG) echo `date` "$0 $$ -- referer ($referer)" >>! $TMP/LOG
     if ($?limit) then
 	set referer = "$referer&limit=$limit"
     endif
-    if ($?DEBUG) echo `date` "$0 $$ -- referer ($referer)" >>! $TMP/LOG
+    if ($?add) then
+	set referer = "$referer&add=$add"
+    endif
     set referer = "$referer&assign=$old/$image"
-    if ($?DEBUG) echo `date` "$0 $$ -- referer ($referer)" >>! $TMP/LOG
     echo "Location: $referer"
     unset noglob
 endif

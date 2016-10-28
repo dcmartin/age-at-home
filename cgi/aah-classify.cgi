@@ -24,6 +24,8 @@ if ($?QUERY_STRING) then
     if ($limit == "$QUERY_STRING") unset limit
     set assign = `echo "$QUERY_STRING" | sed 's/.*assign=\([^&]*\).*/\1/'`
     if ($assign == "$QUERY_STRING") unset assign
+    set add = `echo "$QUERY_STRING" | sed 's/.*add=\([^&]*\).*/\1/'`
+    if ($add == "$QUERY_STRING") set add = ""
 endif
 
 #
@@ -135,7 +137,6 @@ if (-s "$OUTPUT") then
 		endif
 
 		set img = "http://$WWW/$APP/$DB/$dir/$jpg"
-		set ref = "http://$WWW/CGI/$APP-classify.cgi?db=$DB&match=$match&limit=$limit&id=$id&old=$dir"
 		set act = "http://$WWW/CGI/$APP-label.cgi"
 		set cgi = "$act?db=$DB&id=$id&match=$match&limit=$limit&image=$jpg&old=$dir&new=person"
 		set time = `echo $jpg | sed "s/\(....\)\(..\)\(..\)\(..\)\(..\).*-.*/\1\/\2\/\3 \4:\5/"`
@@ -151,7 +152,7 @@ if (-s "$OUTPUT") then
 		echo '<input type="hidden" name="old" value="'"$dir"'">' >> "$HTML"
 		echo '<input type="hidden" name="image" value="'"$jpg"'">' >> "$HTML"
 		# current classification
-		echo "<i>$dir</i>" >> "$HTML" 
+		echo '<input type="text" size="5" name="add" value="'"$add"'">' >> "$HTML"
 		echo '<select name="new">' >> "$HTML"
 		if ($dir != "NO_TAGS") echo '<option value="'"$dir"'"">'"$dir"'</option>' >> "$HTML" # current class (dir) is first option
 		foreach c ( $allclasses )
@@ -161,8 +162,7 @@ if (-s "$OUTPUT") then
 		echo '<input type="submit" value="OK">' >> "$HTML"
 		echo '</form>' >> "$HTML"
 		echo '<a href="'"$cgi"'"><img width="'$width'%" alt="'$id/$image'" src="'"$img"'"></a>' >> "$HTML"
-		# if ($id == all) echo '<figcaption><a href="'"$ref"'">'"$txt"'</a> '"$time"'</figcaption>' >> "$HTML" 
-		echo '<figcaption>'"$time"'</figcaption>' >> "$HTML" 
+		echo '<figcaption><i>'"$dir"'</i>  '"$time"'</figcaption>' >> "$HTML" 
 		echo '</figure></td>' >> "$HTML"
 	    else
 	    	break
