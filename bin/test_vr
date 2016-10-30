@@ -28,9 +28,9 @@ if ($?IMAGE_FILE == 0) set IMAGE_FILE = ""
 set creds = ~$USER/.watson.visual-recognition.json
 set noglob
 if (-e $creds) then
-    set api_key = ( `jq '.credentials.api_key' $creds | sed 's/"//g'` )
+    set api_key = ( `jq '.[0]|.credentials.api_key' $creds | sed 's/"//g'` )
     echo "--- USING APIKEY $api_key" >& /dev/stderr
-    set url = ( `jq '.credentials.url' $creds | sed 's/"//g'` )
+    set url = ( `jq '.[0]|.credentials.url' $creds | sed 's/"//g'` )
     echo "--- USING URL $url" >& /dev/stderr
     # set base
     set TU = $url
@@ -45,18 +45,19 @@ if ($?vdate == 0) set vdate = "2016-05-20"
 
 if ($?model) then
     set classifiers = ( `curl -q -s -L -H "Accept-Language: en" "$TU/$verid/classifiers?api_key=$api_key&version=$vdate" | jq '.classifiers[]|select(.name=="'"$model"'")'` )
-    if ($#classifiers > 0) then
-        set classifier = `echo "$classifiers" | jq '.classifier_id' | sed 's/"//g'`
-	if ($#classifier > 0) then
-	    echo "+++ using classifier ($classifier) +++" 
-	    echo '{ "classifier_ids": ["'$classifier'"] }' >! /tmp/$0:t-params.$$.json
-        endif
+else
+    set classifiers = ( `curl -q -s -L -H "Accept-Language: en" "$TU/$verid/classifiers?api_key=$api_key&version=$vdate" | jq '.classifiers[]'` )
+endif
+if ($#classifiers > 0) then
+    set classifier = `echo "$classifiers" | jq '.classifier_id' | sed 's/"//g'`
+    if ($#classifier > 0) then
+	echo "+++ using classifier ($classifier) +++" 
+	echo '{ "classifier_ids": ["'$classifier'"] }' >! /tmp/$0:t-params.$$.json
     else
-	echo "+++ no classifier with name $model +++" 
+	unset classifier
     endif
 else
-    set classifiers = ( `curl -q -s -L -H "Accept-Language: en" "$TU/$verid/classifiers?api_key=$api_key&version=$vdate" | jq '.classifiers' | sed 's/"//g'` )
-    echo "+++ VISUAL_RECOGNITION ($classifiers) +++" 
+    echo "+++ no custom classifier +++" 
 endif
 
 foreach ifile ( $IMAGE_FILE )

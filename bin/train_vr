@@ -1,84 +1,151 @@
 #!/bin/csh -fb
 
+if ($?TMP == 0) set TMP = "/var/lib/age-at-home/label"
+
 if (! -e /usr/local/bin/brew) then
    echo "*** NO HOME BREW?  Install from http://brew.sh"
-   exit
+   goto done
 endif
 if (! -e /usr/local/bin/jq) then
    echo "*** BREWING 'jq' ..." >& /dev/stderr
    brew install jq >& /dev/stderr
 endif
 
-if ($#argv > 0) then
-    @ i = 0
-    set t = "$argv[1]"
-    if (($#t == 1) && ($#argv > 1)) then
-	if ($t == "-n") then
-	    set maxfiles = $argv[2]
-	    @ i = 2
-	endif
+@ i = 1
+while ($i <= $#argv)
+    set t = "$argv[$i]"
+    if (($#t == 1) && ($#argv >= $i)) then
+	if ("$t" == "-n") then
+	    @ i++
+	    set maxfiles = $argv[$i]
+	else if ("$t" == "-D") then
+	    set delete = true
+	else if ("$t" == "-m") then
+	    @ i++
+	    set model = $argv[$i]
+	else if ("$t" == "-N") then
+	    @ i++
+	    set notags  = $argv[$i]
+	else if ("$t" == "-d") then
+	    @ i++
+	    set TMP = $argv[$i]
+       else if ($#argv >= $i) then
+	   set device = "$argv[$i]"
+       endif
     endif
-    if ($#argv > $i) then
-	@ i++
-        set EXDIRS = "$argv[$i-]"
-    endif
+    @ i++
+end
+
+if ($?device && $?model && $?maxfiles && $?notags) then
+    # SUCCESS
+else
+    if ($?device == 0) set device="rough-fog"
+    if ($?maxfiles == 0) set maxfiles = 100
+    if ($device == "rough-fog" && $?notags == 0) set notags = "kitchen"
+    if ($device == "damp-cloud" && $?notags == 0) set notags = "bathroom"
 endif
-if ($?EXDIRS == 0) set EXDIRS = ""
 
 set creds = ~$USER/.watson.visual-recognition.json
-set noglob
 if (-e $creds) then
-    set api_key = ( `jq '.credentials.api_key' $creds | sed 's/"//g'` )
-    echo "--- USING APIKEY $api_key" >& /dev/stderr
-    set url = ( `jq '.credentials.url' $creds | sed 's/"//g'` )
-    echo "--- USING URL $url" >& /dev/stderr
-    # set base
-    set TU = $url
-else if ($?TU == 0) then
-    echo "*** NO CREDENTIALS ($creds); create file and copy credentials from visual-recognition service on bluemix.net"
-    exit
+    set keys = ( `jq '.[]|.credentials.api_key' $creds` )
+    if ($#keys > 0) set api_key = `echo "$keys[1]" | sed 's/"//g'`
+    set urls = ( `jq '.[]|.credentials.url' $creds` )
+    if ($#urls > 0) set TU = `echo "$urls[1]" | sed 's/"//g'`
+else 
+    echo "*** NO CREDENTIALS ($creds); create file and copy credentials from visual-recognition service on bluemix.net" >& /dev/stderr
+    goto done
 endif
-unset noglob
 
 if ($?verid == 0) set verid = "v3"
 if ($?vdate == 0) set vdate = "2016-05-20"
 
-echo "+++ VISUAL TRAINING +++" 
+echo "+++ AVAILABLE CLASSIFIERS for version ($verid) - date ($vdate) +++"
+set classifiers = ( `curl -q -s -L "$TU/$verid/classifiers?api_key=$api_key&version=$vdate" | jq '.classifiers'` )
+echo "$classifiers" | jq '.'
 
-set classifiers = ( `curl -q -s -L -H "Accept-Language: en" "$TU/$verid/classifiers?api_key=$api_key&version=$vdate" | jq '.classifiers[].classifier_id' | sed 's/"//g'` )
 if ($#classifiers > 0) then
-    set classifier = $classifiers[1]
-    echo "+++ deleting classifier ($classifier) +++"
-    curl -X DELETE "https://gateway-a.watsonplatform.net/visual-recognition/api/$verid/classifiers/$classifier?api_key=$api_key&version=$vdate"
+    set ready = ( `echo "$classifiers" | jq '[.[]|select(.status=="ready")]'` )
+    set cids = ( `echo $ready | jq '.[]|select(.name=="'"$device"'").classifier_id' | sed 's/"//g'` )
+    if ($#cids > 0) then
+	echo "+++ existing classifiers for device ($device) +++"
+	echo "$cids"
+	if ($?model) then
+	    foreach cid ( $cids )
+		if ($cid == "$model") then
+		    echo "+++ existing classifier ($model) +++"
+		    if ($?delete) then
+			echo "+++ deleting classifier id ($cid) +++"
+			curl -s -q -X DELETE "$TU/$verid/classifiers/$cid?api_key=$api_key&version=$vdate"
+		    else
+			echo "+++ get detail for classifier id ($cid) +++"
+			set detail = ( `curl -s -q "$TU/$verid/classifiers/$cid?api_key=$api_key&version=$vdate" | jq '.'` )
+		    endif
+		    break
+		endif
+	    end
+	    if ($cid != "$model") then
+		echo "+++ no classifier ($model) for device ($device) +++"
+		goto done
+	    endif
+        endif
+    else 
+	set training = ( `echo "$classifiers" | jq '[.[]|select(.status=="training")]'` )
+	set cids = ( `echo $training | jq '.[]|select(.name=="'"$device"'").classifier_id' | sed 's/"//g'` )
+	if ($#cids > 0) then
+	    echo "+++ classifier ($cids) is in training +++"
+	    if ($?model) then
+		foreach cid ( $cids )
+		    if ($cid == "$model") then
+			echo "+++ classifier id ($cid) in training +++"
+			goto done
+		    endif
+		end
+	    endif
+	endif
     endif
 endif
 
+if ($?detail) then
+    set existing = ( `echo "$detail" | jq '.classes[]|.class' | sed 's/"//g'` )
+    echo "+++ existing classes ($existing) +++"
+endif
+
+set classes = ( "$TMP/$device/"* )
+
+echo $classes
+
+exit
+
+echo "+++ TRAINING SET - device $device for model $model with negatives ($notags); $maxfiles per class"
+
 set positive = ()
 set negative = ()
-foreach xdir ( $EXDIRS )
+foreach xdir ( $TMP/$device/* )
     if (-d "$xdir" ) then
-	echo "$xdir"
+	echo -n "$xdir"
 	set nxf = `ls -1 "$xdir" | wc -l | awk '{ print $1 }'`
 	if ($nxf < 10) then
-	    echo "$xdir:t - $nxf images; skipping (min 10)" >& /dev/stderr
+	    echo -n " - $nxf images; skipping (min 10)" >& /dev/stderr
 	else
 	    set xzip = "$xdir:t".zip
 	    if (-e "$xzip") rm "$xzip"
 	    if ($?maxfiles) then
 		if ($maxfiles < $nxf) then
-		    echo "$xzip - using $maxfiles of $nxf images"
+		    echo -n " - using $maxfiles of $nxf images"
 		else
-		    echo "$xzip - using $nxf images"
+		    echo -n " - using $nxf images"
 		endif
 	        find "$xdir" -type f -name "*.jpg" -print | head -"$maxfiles" | xargs -I % zip -q -j -r -u "$xzip" %
 	    else
-		echo "$xzip - using $nxf images"
+		echo " - using $nxf images"
 		zip -q -j -r -u "$xzip" "$xdir"
 	    endif
-	    if ($xdir:t != "NO_TAGS") then
+	    if ($xdir:t != "$notags") then
+		echo " - as positive"
 		set t = ( `echo '-F "'"$xdir:t"'_positive_examples=@'"$xzip"'"'` )
 		set positive = ( "$positive" "$t" )
 	    else
+		echo " - as negative"
 		set t = ( `echo '-F "negative_examples=@'"$xzip"'"'` )
 		set negative = ( "$negative" "$t" )
 	    endif
@@ -89,35 +156,110 @@ foreach xdir ( $EXDIRS )
 end
 
 if ($#positive == 0 || $#negative == 0) then
-    echo "Insufficient positive or negative (NO_TAGS) examples"
-else
-    echo "+++ TRAIN $negative $positive +++"
-    # curl -L -v "$TU/$verid/classifiers?api_key=$api_key&version=$vdate" -o /tmp/$0:t.$$.json -X POST $positive $negative
-    echo 'curl -L -q -s "'"$TU/$verid/classifiers?api_key=$api_key&version=$vdate"'" -o /tmp/'$0:t.$$'.json -F "name='"$xdir:h:t"'"' "$positive" "$negative" >! /tmp/$0:t.$$.sh
-    cat /tmp/$0:t.$$.sh
-    sh /tmp/$0:t.$$.sh
-    rm -f /tmp/$0:t.$$.sh
-    set code = `jq -c '.code' /tmp/$0:t.$$.json | sed 's/"//g'` 
-    if ($code == 400) then
-    	jq '.error' /tmp/$0:t.$$.json
-	goto cleanup
-    endif
-    jq '.' /tmp/$0:t.$$.json
-    set cid = `jq '.classifier_id' /tmp/$0:t.$$.json | sed 's/"//g'`
-    # wait until done
-    while (1)
-	onintr cleanup
-	# {"classifier_id":"label_1145276169","name":"label","owner":"6d283517-32f1-4fd4-bcf7-df0da07f4f0f","status":"ready","created":"2016-10-25T00:57:11.396Z","classes":[{"class":"person"},{"class":"dog"}]}
-	curl -o /tmp/$0:t.$$.json "$TU/$verid/classifiers/$cid?api_key=$api_key&version=$vdate"
-	echo "+++ STATUS +++" 
-	set s = `jq -c '.status' /tmp/$0:t.$$.json | sed 's/"//g'`
-	if ($s == "ready") then
-	    jq -c '.' /tmp/$0:t.$$.json
-	    break
-	endif
-	sleep 30
-    end
+    echo "Insufficient positive or negative ($notags) examples"
+    goto done
 endif
 
-cleanup:
-rm /tmp/$0:t.$$.json
+echo "+++ TRAIN $negative $positive +++"
+echo 'curl -L -q -s "'"$TU/$verid/classifiers?api_key=$api_key&version=$vdate"'" -o /tmp/'$0:t.$$'.json -F "name='"$xdir:h:t"'"' "$positive" "$negative" >! /tmp/$0:t.$$.sh
+echo "++++ RUNNING: " `cat /tmp/$0:t.$$.sh`
+sh /tmp/$0:t.$$.sh
+rm -f /tmp/$0:t.$$.sh
+
+# check result code
+set code = `jq -c '.code' /tmp/$0:t.$$.json | sed 's/"//g'` 
+if ($code == 400) then
+    jq '.error' /tmp/$0:t.$$.json
+    goto done
+else
+    # get classifier id to check on progress
+    set cid = `jq '.classifier_id' /tmp/$0:t.$$.json | sed 's/"//g'`
+    set sts = `jq '.status' /tmp/$0:t.$$.json | sed 's/"//g'`
+endif
+
+# wait until done
+onintr done
+echo -n "+++ LEARNING ."
+while ($sts != "ready") 
+    sleep 30
+    set sts = `curl -s -q -L "$TU/$verid/classifiers/$cid?api_key=$api_key&version=$vdate" | jq -c '.status' | sed 's/"//g'`
+    echo -n "."
+end
+echo " +++"
+
+goto done
+
+#
+# top-level
+#
+set APP = "aah"
+set API = "model"
+set DB = "$device"
+set id = "$model"
+
+#
+# update Cloudant
+#
+
+if (-e ~$USER/.cloudant_url) then
+    set cc = ( `cat ~$USER/.cloudant_url` )
+    if ($#cc > 0) set CU = $cc[1]
+    if ($#cc > 1) set CN = $cc[2]
+    if ($#cc > 2) set CP = $cc[3]
+endif
+
+if ($?CLOUDANT_URL) then
+    set CU = $CLOUDANT_URL
+else if ($?CN && $?CP) then
+    set CU = "$CN":"$CP"@"$CN.cloudant.com"
+else
+    if ($?DEBUG) echo `date` "$0 $$ -- no Cloudant URL" >>! $TMP/LOG
+    goto done
+endif
+
+if ($?CLOUDANT_OFF == 0 && $?CU && $?DB) then
+    if ($?DEBUG) echo `date` "$0 $$ -- test if DB exists ($CU/$DB-$API)" >>! $TMP/LOG
+    set DEVICE_DB = `curl -s -q -X GET "$CU/$DB-$API" | jq '.db_name'`
+    if ( "$DEVICE_DB" == "null" ) then
+        if ($?DEBUG) echo `date` "$0 $$ -- creating DB $CU/$DB-$API" >>! $TMP/LOG
+        # create DB
+        set DEVICE_DB = `curl -s -q -X PUT "$CU/$DB-$API" | jq '.ok'`
+        # test for success
+        if ( "$DEVICE_DB" != "true" ) then
+            # failure
+            if ($?DEBUG) echo `date` "$0 $$ -- failure creating Cloudant database ($DB-$API)" >>! $TMP/LOG
+            setenv CLOUDANT_OFF TRUE
+        else
+            if ($?DEBUG) echo `date` "$0 $$ -- success creating DB $CU/$DB-$API" >>! $TMP/LOG
+        endif
+    endif
+    if ( $?CLOUDANT_OFF == 0 ) then
+        curl -s -q -o "$OLD" "$CU/$DB-$API/$class" >>&! $TMP/LOG
+        if (-s "$OLD") then
+            set doc = ( `cat "$OLD" | jq ._id,._rev | sed 's/"//g'` )
+            if ($#doc == 2 && $doc[1] == $class && $doc[2] != "") then
+                set rev = $doc[2]
+                if ($?DEBUG) echo `date` "$0 $$ -- deleting old output ($rev)" >>! $TMP/LOG
+                curl -s -q -X DELETE "$CU/$DB-$API/$class?rev=$rev" >>&! $TMP/LOG
+            endif
+        else
+            if ($?DEBUG) echo `date` "$0 $$ -- no old output to delete" >>! $TMP/LOG
+        endif
+        if ($?DEBUG) echo `date` "$0 $$ -- storing new output" >>! $TMP/LOG
+        curl -s -q -H "Content-type: application/json" -X PUT "$CU/$DB-$API/$class" -d "@$OUTPUT" >>&! $TMP/LOG
+        if ($status == 0) then
+            if ($?DEBUG) echo `date` "$0 $$ -- success storing new output" >>! $TMP/LOG
+        else
+            if ($?DEBUG) echo `date` "$0 $$ -- failure storing new output" >>! $TMP/LOG
+        endif
+    else
+        if ($?DEBUG) echo `date` "$0 $$ -- Cloudant OFF ($DB-$API)" >>! $TMP/LOG
+    endif
+else
+    if ($?DEBUG) echo `date` "$0 $$ -- no Cloudant update" >>! $TMP/LOG
+endif
+
+
+done:
+rm -f /tmp/$0:t.$$.json
+echo `date` "$0 $$ -- FINISH ($*)"
