@@ -124,6 +124,7 @@ mixpanel.track("home");
   }
 </script>
 <!-- END FACEBOOK -->
+
 <a href="https://cognitivebuild.bluefundit.com/project/56ee0073f6ec6de43b0d6344">
 <img width="10%" src="images/age-at-home.jpg">
 </a>
@@ -155,13 +156,14 @@ Rather than depending on sensors worn on the body (and needing to be not forgott
 <p>
 <img width="75%" src="images/basic-scenario.png">
 <table>
-<tr valigh="top"><td width="70%">
+<tr valigh="top">
+<td>
+<figure> <img width="90%" src="images/camera.png"> <figcaption>Installation on kitchen shelf</figcaption></figure>
+</td>
+<td width="70%">
 Initially we intend to monitor the kitchen and recognizes the presence of a person (not an individual) in the room. From this simple event detection we will build a normative baseline of daily activity and detect when that daily activity exhibits aberrations (e.g. no activity in kitchen after +2 std. dev. past median time).
 The visual recognition algorithm will run on the local device (e.g. RaspberryPi with camera), the issues of round-trip latency to the cloud, or bandwidth required, or security or privacy concerns, will be eliminated.  Only events generated from this recognition will be sent to the cloud to build (and update) the normative behavior model.
 This initial scenario may be easily extended to other passive monitoring capabilities, e.g. audio, motion (sonar), electrical circuit, , ... as well as deployment in other area, e.g. entry way, bathroom, hallway, etc.. to provide support for additional scenarios, e.g. medication adherence, diet, exercise, ... 
-</td>
-<td>
-<img width="75%" src="images/bellcurve.png">
 </td>
 </tr>
 </table>
@@ -252,6 +254,53 @@ General purpose conditionals can be applied for integration with email, <a href=
 In addition, this site utilizes Mixpanel (www.mixpanel.com) and Intercom.io (www.intercom.io) to provide user tracking and near-line chat
 (n.b. look in lower right corner for chat icon).
 <h2>
+Training
+</h2>
+<p>
+This project started utilizing the AlchemyAPI (http://www.alchemyapi.com/) recognition algorithm and then was extended to include the VisualInsights recognition algorithm.
+The AlchemyAPI demonstrated a low signal to noise ratio, with most images being classified as "NO_TAG," indicating that none of the known objects were identified; 
+in addition, the algorithm only returned a single result.
+<p>
+The VisualInsights algorithm was made available as beta in December 2005, and I added its analysis capabilities to augment the signal; the VisualInsghts algorithm returns up to twenty-five (25)
+objects per call; the additional objects the VI algorithm could identify was a great benefit, but the signal, while improved, still included signifcant noise; specifically in the 
+identification of "humans" being split across various classifications and without any hierarchical organization into groups.
+<p>
+Sadly, first the VisualInsights algorithm was deprecated in June 2016 and in 2017 the AlchemyAPI will also cease to operate.  The new algorithm, Watson VisualRecognition, 
+is the child of AlchemyAPI and VisualInsights with support for multiple entities per image, as well as a default classifier generating poor signal and still significant noise (n.b. there is now
+a hierarchy, but neither the classes nor the hierarchy is published and must be discovered from results).
+<p>
+Therefore, I embarked on building a training loop for whatever recognition algorithm I might utilize.  This loop would capture the images from the camera's local storage (n.b. uSD card) and
+present those images to the application user community (e.g. elderly individual/couple) and enable manual classification for subsequent training, testing, and deploying of a model specific to both this application context (i.e. people detection) as well as the local environs (e.g. room location, dogs, cats, residents, ...)
+<h3>
+Labeling the images
+</h3>
+<p>
+Below is the user-interface for labeling images.  Options are available as buttons (e.g. person, kitchen, dog, ..) based on previous labels assigned; new labels can be added in the text entry box and the 
+image's initial (AlchemyAPI) classification and capture date are shown.
+<figure>
+<img src="images/label-web-app.png" width="90%">
+<figcaption>Simple Web application to label images</figcaption>
+</figure>
+<p>
+Ideally, images are labeled if and only if the image contains the entity in question, e.g. a person, and does not contain any of the other entities of interest (e.g. dog or cat).
+The training set also requires negative examples which do not include <i>any</i> entity (i.e. person, dog or cat).
+To achieve this distinction, each camera installation has been pre-defined to a corresponding label (e.g. "kitchen") that is used to identify the negative examples.
+Similarly, other locations may also be suitably classified (e.g. bathroom, dining room, living room, ...)
+<h3>
+Learning the classifiers
+</h3>
+<p>
+The Watson VisualRecognition image classifier provides both for initial learning as well as updates with new images.  The API does not provide details on images utilized in training for
+either positive or negative examples so an independent record of images utilized must be maintained.  In addition, no standard of practice is defined for validating or measuring the quality
+of the learned model, so independent testing and quality measurement must be constructed.  Finally, as the training process appears to be a required constiuent component, 
+other entities (e.g. myself, my wife, my kids, ..) could also be identified and used to train Watson VR.
+<p>
+The training set is limited to 100 megabytes (MB) of data for each class with a total maximum of 430 MB; minimum number of labeled images is ten (10). Updates can be made against a single
+labeled set at a time, also including negative examples (i.e. not including any previously labeled entities).
+<p>
+Each learned model is referred to by both a name as well as a specific identifier.  The name is being utilized for the device (e.g. rough-fog) and the identifier determines the model and serves
+as an index to keep track of which images have been used for training purposes -- both positive and negative examples.  The script is still in process <a href="https://github.com/dcmartin/age-at-home/blob/master/bin/train_vr"><code>train_vr</code></a>.
+<h2>
 Analysis
 </h2>
 <p>
@@ -299,40 +348,28 @@ Step 2: Looker
 </h3>
 <p>
 Analysis of the underlying events which generated the classifications lead to analysis using Looker.  Looker generates SQL for the dashDB replicant of the Cloudant JSON event history 
-and then makes that output available for visualization and download as JSON.  The following two graphics are "live" views of the rough-fog and damp-cloud events.
-<!-- rough-fog counts (all classifiers; all intervals)
-<iframe src='https://ibmcds.looker.com/embed/public/vQFVvQSgTFKHpgfmrPXKc8bsspQ2pF2Z' width='1000' height='350' frameborder='0'></iframe>
--->
-<!-- damp-cloud counts (all classifiers; all intervals)
-<iframe src='https://ibmcds.looker.com/embed/public/vmFgFKSvCpN6qY2JjyZWnCjzrh3qSHK7' width='1000' height='350' frameborder='0'></iframe>
--->
+and then makes that output available for visualization and download as JSON.  The following graphics are "live" views of the rough-fog and damp-cloud events.
 <p>
-<!-- rough-fog countHumans -->
+<figure>
+<figcaption>Count of VisualInsights Human Classifiers for "rough-fog" device</figcaption>
 <iframe src='https://ibmcds.looker.com/embed/public/M9B2vPX7RD9Sf4PwDyNWQ6dR46pCS5qd' width='1000' height='350' frameborder='0'></iframe>
-<br>
-<iframe src='https://ibmcds.looker.com/embed/public/Yh9rxzkxzwMBKZdnWSBW7MrpyqYJCSyY' width='1000' height='350' frameborder='0'></iframe>
-<br>
-<iframe src='https://ibmcds.looker.com/embed/public/4qFmv5338FTCnbRWG47K6fG5vggfNxwN' width='1000' height='350' frameborder='0'></iframe>
-<p>
-<!-- rough-fog averageScoreHumans
-<iframe src='https://ibmcds.looker.com/embed/public/ZMdS9gbqv7mvmGqnvZHTbmGY4n53TBXV' width='1000' height='350' frameborder='0'></iframe>
-<p> -->
-<!-- rough-fog weightHumans
-<iframe src='https://ibmcds.looker.com/embed/public/J8Y8FBCQCTXHtC3KGN2bW96bksMczNbX' width='1000' height='350' frameborder='0'></iframe>
-<p> -->
-<!-- damp-cloud countHumans -->
+</figure>
+<figure>
+<figcaption>Count of VisualInsights Human Classifiers for "damp-cloud" device</figcaption>
 <iframe src='https://ibmcds.looker.com/embed/public/gXpvq8ykFPkMv2xFF3Tzg3mrG3jVt4HJ' width='1000' height='350' frameborder='0'></iframe>
-<br>
-<iframe src='https://ibmcds.looker.com/embed/public/wjvJ7vQrpyhm5RxMr9vvjfFTKCsFkwKW' width='1000' height='350' frameborder='0'></iframe>
-<br>
-<iframe src='https://ibmcds.looker.com/embed/public/NGrbjz6SFfWspMzQ8pb7VN92Cr9qZNtr' width='1000' height='350' frameborder='0'></iframe>
+</figure>
 <p>
-<!-- damp-cloud averageScoreHumans
-<iframe src='https://ibmcds.looker.com/embed/public/bhRrfdbXN6vwd5SpFWvGgbRXDW6mxhTD' width='1000' height='350' frameborder='0'></iframe>
-<p> -->
-<!-- damp-cloud weightHumans
-<iframe src='https://ibmcds.looker.com/embed/public/MVDPdzgN9mckKZvnScxGHhGTTcKczjC3' width='1000' height='350' frameborder='0'></iframe>
-<p> -->
+As can be seen in the graphs below, the default classifier for the AlchemyAPI produces very little signal with the majority of events being classifed as "NO_TAGS" indicating nothing was recognized.
+<figure>
+<figcaption>Count of AlchemyAPI Human Classifiers for "rough-fog" device</figcaption>
+<iframe src='https://ibmcds.looker.com/embed/public/4qFmv5338FTCnbRWG47K6fG5vggfNxwN' width='1000' height='350' frameborder='0'></iframe>
+</figure>
+<p>
+<figure>
+<figcaption>Count of AlchemyAPI Human Classifiers for "damp-cloud" device</figcaption>
+<iframe src='https://ibmcds.looker.com/embed/public/NGrbjz6SFfWspMzQ8pb7VN92Cr9qZNtr' width='1000' height='350' frameborder='0'></iframe>
+</figure>
+<p>
 <h3>
 Step 3: Excel
 </h3>
@@ -397,10 +434,6 @@ Image captured using motion detection algorithm based on changes in pixel count 
 <h2>Equipment</h2>
 The necessary equipment for this project is relatively inexpensive:
 A RaspberryPi3 with 32 GB uSD card and Playstation3 Eye USB camera
-<p>
-<img width="50%" src="images/camera.png">
-<br>
-<i>Installation on kitchen shelf</i>
 <p>
 <ul>
 <li>RaspberryPi3 ~ US$45.00

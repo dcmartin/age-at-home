@@ -110,7 +110,11 @@ if ($?detail) then
     echo "+++ existing classes ($existing) +++"
 endif
 
-set classes = ( "$TMP/$device/"* )
+set classdirs = ( "$TMP/$device/"* )
+set classes = ()
+foreach cd ( $classdirs )
+    set classes = ( $classes $cd:t )
+end 
 
 echo $classes
 
@@ -118,6 +122,7 @@ exit
 
 echo "+++ TRAINING SET - device $device for model $model with negatives ($notags); $maxfiles per class"
 
+set xzips = ()
 set positive = ()
 set negative = ()
 foreach xdir ( $TMP/$device/* )
@@ -127,7 +132,7 @@ foreach xdir ( $TMP/$device/* )
 	if ($nxf < 10) then
 	    echo -n " - $nxf images; skipping (min 10)" >& /dev/stderr
 	else
-	    set xzip = "$xdir:t".zip
+	    set xzip = "/tmp/$xdir:t.$$".zip
 	    if (-e "$xzip") rm "$xzip"
 	    if ($?maxfiles) then
 		if ($maxfiles < $nxf) then
@@ -149,6 +154,7 @@ foreach xdir ( $TMP/$device/* )
 		set t = ( `echo '-F "negative_examples=@'"$xzip"'"'` )
 		set negative = ( "$negative" "$t" )
 	    endif
+	    set xzips = ( $xzips $xzip )
 	endif
     else
 	echo "Not a directory: $xdir" >& /dev/stderr
@@ -157,6 +163,7 @@ end
 
 if ($#positive == 0 || $#negative == 0) then
     echo "Insufficient positive or negative ($notags) examples"
+    rm -f $xzips
     goto done
 endif
 
@@ -165,17 +172,18 @@ echo 'curl -L -q -s "'"$TU/$verid/classifiers?api_key=$api_key&version=$vdate"'"
 echo "++++ RUNNING: " `cat /tmp/$0:t.$$.sh`
 sh /tmp/$0:t.$$.sh
 rm -f /tmp/$0:t.$$.sh
+rm -f $xzips
 
 # check result code
 set code = `jq -c '.code' /tmp/$0:t.$$.json | sed 's/"//g'` 
 if ($code == 400) then
     jq '.error' /tmp/$0:t.$$.json
     goto done
-else
-    # get classifier id to check on progress
-    set cid = `jq '.classifier_id' /tmp/$0:t.$$.json | sed 's/"//g'`
-    set sts = `jq '.status' /tmp/$0:t.$$.json | sed 's/"//g'`
 endif
+
+# get classifier id to check on progress
+set cid = `jq '.classifier_id' /tmp/$0:t.$$.json | sed 's/"//g'`
+set sts = `jq '.status' /tmp/$0:t.$$.json | sed 's/"//g'`
 
 # wait until done
 onintr done

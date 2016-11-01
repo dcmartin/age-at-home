@@ -57,31 +57,31 @@ if ($#classifiers > 0) then
 	unset classifier
     endif
 else
-    echo "+++ no custom classifier +++" 
+    echo "+++ no custom classifier (using default) +++" 
 endif
 
 foreach ifile ( $IMAGE_FILE )
     if (-s "$ifile") then
 	echo "+++ CLASSIFIERS +++"
         if ($?classifier) then
-	    curl -s -q -L -o /tmp/$0:t.$$.json "$TU/$verid/classify?api_key=$api_key&classifier_ids=default&owners=IBM&threshold=0.000001&version=$vdate" \
-	    	-X POST \
-	    	-F "parameters=@/tmp/$0:t-params.$$.json" \
-		-F "images_file=@$ifile" \
-		-H "Accept-Language: en" 
+	    set c = `echo "$classifier" | sed "s/ /,/g"`
+	    curl -v -L -o /tmp/$0:t.$$.json "$TU/$verid/classify?api_key=$api_key&classifier_ids=default,$c&threshold=0.000001&version=$vdate" \
+		-F "images_file=@$ifile"
 	else
-	    curl -s -q -L -o /tmp/$0:t.$$.json "$TU/$verid/classify?api_key=$api_key&classifier_ids=default&owners=IBM&threshold=0.000001&version=$vdate" \
-	        -X POST \
-		-F "images_file=@$ifile" \
-		-H "Accept-Language: en"
+	    curl -v -L -o /tmp/$0:t.$$.json "$TU/$verid/classify?api_key=$api_key&classifier_ids=default&threshold=0.000001&version=$vdate" \
+		-F "images_file=@$ifile"
 	endif
 	jq '.' /tmp/$0:t.$$.json
-	echo "+++ FACES +++"
-	curl -s -q -L -o /tmp/$0:t.$$.json -X POST -F "images_file=@$ifile" -H "Accept-Language: en" "$TU/$verid/detect_faces?api_key=$api_key&version=$vdate"
-	jq '.' /tmp/$0:t.$$.json
-	echo "+++ TEXT +++"
-	curl -s -q -L -o /tmp/$0:t.$$.json -X POST -F "images_file=@$ifile" -H "Accept-Language: en" "$TU/$verid/recognize_text?api_key=$api_key&version=$vdate"
-	jq '.' /tmp/$0:t.$$.json
+	if ($?FACES) then
+	    echo "+++ FACES +++"
+	    curl -s -q -L -o /tmp/$0:t.$$.json -X POST -F "images_file=@$ifile" -H "Accept-Language: en" "$TU/$verid/detect_faces?api_key=$api_key&version=$vdate"
+	    jq '.' /tmp/$0:t.$$.json
+	endif
+	if ($?TEXT) then
+	    echo "+++ TEXT +++"
+	    curl -s -q -L -o /tmp/$0:t.$$.json -X POST -F "images_file=@$ifile" -H "Accept-Language: en" "$TU/$verid/recognize_text?api_key=$api_key&version=$vdate"
+	    jq '.' /tmp/$0:t.$$.json
+	endif
     else
 	echo "*** bad image ($ifile)" >& /dev/stderr
     endif

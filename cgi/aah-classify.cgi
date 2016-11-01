@@ -157,7 +157,15 @@ if (-d "$CDIR") then
 	    echo '<input type="hidden" name="limit" value="'"$limit"'">' >> "$HTML"
 	    echo '<button type="submit" name="new" value="'"$location"'">'"$location"'</button>' >> "$HTML"
 	    echo '<button type="submit" name="new" value="person">person</button>' >> "$HTML"
+	    foreach i ( $TMP/label/$DB/* )
+	        set j = "$i:t"
+		if ($j != "$location" && $j != "person") then
+		    echo '<button type="submit" name="new" value="'"$j"'">'"$j"'</button>' >> "$HTML"
+		endif
+	    end
 	    echo '</form>' >> "$HTML"
+	    echo '<a href="'"$cgi"'"><img width="'$width'%" alt="'$id/$image'" src="'"$img"'"></a>' >> "$HTML"
+	    echo '<figcaption><i>'"$dir"'</i>  '"$time"'</figcaption>' >> "$HTML" 
 	    echo '<form action="'"$act"'" method="get">' >> "$HTML"
 	    echo '<input type="hidden" name="db" value="'"$DB"'">' >> "$HTML"
 	    echo '<input type="hidden" name="id" value="'"$id"'">' >> "$HTML"
@@ -167,16 +175,14 @@ if (-d "$CDIR") then
 	    echo '<input type="hidden" name="limit" value="'"$limit"'">' >> "$HTML"
 	    # current classification
 	    echo '<input type="text" size="5" name="add" value="'"$add"'">' >> "$HTML"
-	    echo '<select name="new">' >> "$HTML"
-	    if ($dir != "NO_TAGS") echo '<option value="'"$dir"'"">'"$dir"'</option>' >> "$HTML" # current class (dir) is first option
-	    foreach c ( $allclasses )
-		if ($c != $dir && $c != "NO_TAGS") echo '<option value="'"$c"'"">'"$c"'</option>' >> "$HTML" # don't include current class or NO_TAGS
-	    end
-	    echo '</select>' >> "$HTML"
+	    # echo '<select name="new">' >> "$HTML"
+	    # if ($dir != "NO_TAGS") echo '<option value="'"$dir"'"">'"$dir"'</option>' >> "$HTML" # current class (dir) is first option
+	    # foreach c ( $allclasses )
+		# if ($c != $dir && $c != "NO_TAGS") echo '<option value="'"$c"'"">'"$c"'</option>' >> "$HTML" # don't include current class or NO_TAGS
+	    # end
+	    # echo '</select>' >> "$HTML"
 	    echo '<input type="submit" value="OK">' >> "$HTML"
 	    echo '</form>' >> "$HTML"
-	    echo '<a href="'"$cgi"'"><img width="'$width'%" alt="'$id/$image'" src="'"$img"'"></a>' >> "$HTML"
-	    echo '<figcaption><i>'"$dir"'</i>  '"$time"'</figcaption>' >> "$HTML" 
 	    echo '</figure></td>' >> "$HTML"
 	else
 	    break
