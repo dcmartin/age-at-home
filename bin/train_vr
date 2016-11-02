@@ -118,9 +118,7 @@ end
 
 echo $classes
 
-exit
-
-echo "+++ TRAINING SET - device $device for model $model with negatives ($notags); $maxfiles per class"
+echo "+++ TRAINING SET - device $device for with negatives ($notags); $maxfiles per class"
 
 set xzips = ()
 set positive = ()
@@ -187,13 +185,16 @@ set sts = `jq '.status' /tmp/$0:t.$$.json | sed 's/"//g'`
 
 # wait until done
 onintr done
+set start = `date +%s`
 echo -n "+++ LEARNING ."
 while ($sts != "ready") 
     sleep 30
     set sts = `curl -s -q -L "$TU/$verid/classifiers/$cid?api_key=$api_key&version=$vdate" | jq -c '.status' | sed 's/"//g'`
     echo -n "."
 end
-echo " +++"
+set end = `date +%s`
+set elapsed = `echo $end - $start | bc`
+echo " ($elapsed seconds) +++"
 
 goto done
 

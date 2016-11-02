@@ -72,6 +72,7 @@ foreach ifile ( $IMAGE_FILE )
 		-F "images_file=@$ifile"
 	endif
 	jq '.' /tmp/$0:t.$$.json
+	jq '.images[]|.classifiers[]|{"name":.name,"id":.classifier_id,"classes":.classes|sort_by(.score)[-1]}' /tmp/$0:t.$$.json
 	if ($?FACES) then
 	    echo "+++ FACES +++"
 	    curl -s -q -L -o /tmp/$0:t.$$.json -X POST -F "images_file=@$ifile" -H "Accept-Language: en" "$TU/$verid/detect_faces?api_key=$api_key&version=$vdate"
