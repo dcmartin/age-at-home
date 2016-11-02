@@ -20,13 +20,12 @@ if ($#argv > 0) then
     endif
     if ($#argv > $i) then
 	@ i++
-        set IMAGE_FILE = "$argv[$i-]"
+        set jpegfiles = ( $argv[$i-] ) 
     endif
 endif
-if ($?IMAGE_FILE == 0) set IMAGE_FILE = ""
+if ($?jpegfiles == 0) set jpegfiles = ""
 
 set creds = ~$USER/.watson.visual-recognition.json
-set noglob
 if (-e $creds) then
     set api_key = ( `jq '.[0]|.credentials.api_key' $creds | sed 's/"//g'` )
     echo "--- USING APIKEY $api_key" >& /dev/stderr
@@ -38,21 +37,19 @@ else if ($?TU == 0) then
     echo "*** NO CREDENTIALS ($creds); create file and copy credentials from visual-recognition service on bluemix.net" >& /dev/stderr
     exit
 endif
-unset noglob
 
 if ($?verid == 0) set verid = "v3"
 if ($?vdate == 0) set vdate = "2016-05-20"
 
 if ($?model) then
-    set classifiers = ( `curl -q -s -L -H "Accept-Language: en" "$TU/$verid/classifiers?api_key=$api_key&version=$vdate" | jq '.classifiers[]|select(.name=="'"$model"'")'` )
+    set classifiers = ( `curl -q -s -L "$TU/$verid/classifiers?api_key=$api_key&version=$vdate" | jq '.classifiers[]|select(.name=="'"$model"'")'` )
 else
-    set classifiers = ( `curl -q -s -L -H "Accept-Language: en" "$TU/$verid/classifiers?api_key=$api_key&version=$vdate" | jq '.classifiers[]'` )
+    set classifiers = ( `curl -q -s -L "$TU/$verid/classifiers?api_key=$api_key&version=$vdate" | jq '.classifiers[]'` )
 endif
 if ($#classifiers > 0) then
     set classifier = `echo "$classifiers" | jq '.classifier_id' | sed 's/"//g'`
     if ($#classifier > 0) then
 	echo "+++ using classifier ($classifier) +++" 
-	echo '{ "classifier_ids": ["'$classifier'"] }' >! /tmp/$0:t-params.$$.json
     else
 	unset classifier
     endif
@@ -60,33 +57,71 @@ else
     echo "+++ no custom classifier (using default) +++" 
 endif
 
-foreach ifile ( $IMAGE_FILE )
-    if (-s "$ifile") then
-	echo "+++ CLASSIFIERS +++"
-        if ($?classifier) then
-	    set c = `echo "$classifier" | sed "s/ /,/g"`
-	    curl -v -L -o /tmp/$0:t.$$.json "$TU/$verid/classify?api_key=$api_key&classifier_ids=default,$c&threshold=0.000001&version=$vdate" \
-		-F "images_file=@$ifile"
+
+if ($?classifier) then
+    set classifier = `echo "$classifier" | sed "s/ /,/g"`
+endif
+
+@ i = 1
+@ z = 10
+@ t = 0
+@ n = $#jpegfiles
+
+while ($i <= $n) 
+    @ t = $t + $z
+
+    if ($t >= $n) @ t = $n
+    set ifiles = ()
+    while ($i <= $t)
+	set ifile = ( $jpegfiles[$i] )
+	if (-s $ifile) then
+	    echo "*** ADDING $i $ifile ***"
+	    set ifiles = ( $ifiles $ifile )
 	else
-	    curl -v -L -o /tmp/$0:t.$$.json "$TU/$verid/classify?api_key=$api_key&classifier_ids=default&threshold=0.000001&version=$vdate" \
-		-F "images_file=@$ifile"
+	    echo "*** FILE ($ifile) does not exist? ***"
 	endif
-	jq '.' /tmp/$0:t.$$.json
-	jq '.images[]|.classifiers[]|{"name":.name,"id":.classifier_id,"classes":.classes|sort_by(.score)[-1]}' /tmp/$0:t.$$.json
-	if ($?FACES) then
-	    echo "+++ FACES +++"
-	    curl -s -q -L -o /tmp/$0:t.$$.json -X POST -F "images_file=@$ifile" -H "Accept-Language: en" "$TU/$verid/detect_faces?api_key=$api_key&version=$vdate"
-	    jq '.' /tmp/$0:t.$$.json
-	endif
-	if ($?TEXT) then
-	    echo "+++ TEXT +++"
-	    curl -s -q -L -o /tmp/$0:t.$$.json -X POST -F "images_file=@$ifile" -H "Accept-Language: en" "$TU/$verid/recognize_text?api_key=$api_key&version=$vdate"
-	    jq '.' /tmp/$0:t.$$.json
-	endif
+	@ i++
+    end
+    set nfiles = $#ifiles
+    if ($nfiles > 1) then
+	zip -q -j -r -u /tmp/$0:t.$$.zip $ifiles
+	set ifiles = /tmp/$0:t.$$.zip
+    endif
+
+    echo -n "+++ CLASSIFY $nfiles IMAGES "
+    set start = `date +%s`
+    if ($?classifier) then
+	curl -s -q -L -F "images_file=@$ifiles" \
+	    "$TU/$verid/classify?api_key=$api_key&classifier_ids=default,$classifier&threshold=0.000001&version=$vdate" >! /tmp/$0:t.$$.json.$$
     else
-	echo "*** bad image ($ifile)" >& /dev/stderr
+	curl -s -q -L -F "images_file=@$ifiles" \
+	    "$TU/$verid/classify?api_key=$api_key&classifier_ids=default&threshold=0.000001&version=$vdate" >! /tmp/$0:r.$$.json.$$
+    endif
+    if ($nfiles > 1) then
+	rm -f /tmp/$0:t.$$.zip
+	cat /tmp/$0:t.$$.json.$$ | sed "s@$ifiles:t@@g" >>! /tmp/$0:t.$$.json
+    else
+	cat /tmp/$0:t.$$.json.$$ >>! /tmp/$0:t.$$.json
+    endif
+    set end = `date +%s`
+    @ elapsed = $end - $start
+    echo "($elapsed seconds) +++"
+
+    if ($?FACES) then
+	echo "+++ FACES +++"
+	curl -s -q -L -o /tmp/$0:t.$$.json -X POST -F "images_file=@$ifile" "$TU/$verid/detect_faces?api_key=$api_key&version=$vdate"
+	jq '.' /tmp/$0:t.$$.json
+    endif
+    if ($?TEXT) then
+	echo "+++ TEXT +++"
+	curl -s -q -L -o /tmp/$0:t.$$.json -X POST -F "images_file=@$ifile" "$TU/$verid/recognize_text?api_key=$api_key&version=$vdate"
+	jq '.' /tmp/$0:t.$$.json
     endif
 end
 
-cleanup:
-rm -f /tmp/$0:t.$$.json /tmp/$0:t-params.$$.json
+# '.images[]|[{"image":.image,"classes":[.classifiers[]|{"name":.name,"id":.classifier_id,"classes":.classes|sort_by(.score)[]}]}]'
+jq -c '.images[]|[{"image":.image,"classes":[.classifiers[]|{"id":.classifier_id,"class":.classes|sort_by(.score)[-1]|.class}]}]' /tmp/$0:t.$$.json
+
+done:
+
+# rm -f /tmp/$0:t.$$.json

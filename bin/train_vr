@@ -169,6 +169,7 @@ echo "+++ TRAIN $negative $positive +++"
 echo 'curl -L -q -s "'"$TU/$verid/classifiers?api_key=$api_key&version=$vdate"'" -o /tmp/'$0:t.$$'.json -F "name='"$xdir:h:t"'"' "$positive" "$negative" >! /tmp/$0:t.$$.sh
 echo "++++ RUNNING: " `cat /tmp/$0:t.$$.sh`
 sh /tmp/$0:t.$$.sh
+# cleanup
 rm -f /tmp/$0:t.$$.sh
 rm -f $xzips
 
