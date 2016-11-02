@@ -13,7 +13,7 @@ if ($#argv > 0) then
     @ i = 0
     set t = "$argv[1]"
     if (($#t == 1) && ($#argv > 1)) then
-	if ($t == "-n") then
+	if ("$t" == "-m") then
 	    set model = $argv[2]
 	    @ i = 2
 	endif
@@ -23,7 +23,10 @@ if ($#argv > 0) then
         set jpegfiles = ( $argv[$i-] ) 
     endif
 endif
-if ($?jpegfiles == 0) set jpegfiles = ""
+if ($?jpegfiles == 0) then
+    echo "*** PLEASE SPECIFY FILES TO BE CLASSIFIED ***"
+    goto done
+endif
 
 set creds = ~$USER/.watson.visual-recognition.json
 if (-e $creds) then
@@ -35,14 +38,14 @@ if (-e $creds) then
     set TU = $url
 else if ($?TU == 0) then
     echo "*** NO CREDENTIALS ($creds); create file and copy credentials from visual-recognition service on bluemix.net" >& /dev/stderr
-    exit
+    goto done
 endif
 
 if ($?verid == 0) set verid = "v3"
 if ($?vdate == 0) set vdate = "2016-05-20"
 
 if ($?model) then
-    set classifiers = ( `curl -q -s -L "$TU/$verid/classifiers?api_key=$api_key&version=$vdate" | jq '.classifiers[]|select(.name=="'"$model"'")'` )
+    set classifiers = ( `curl -q -s -L "$TU/$verid/classifiers?api_key=$api_key&version=$vdate" | jq '.classifiers[]|select(.classifier_id=="'"$model"'")'` )
 else
     set classifiers = ( `curl -q -s -L "$TU/$verid/classifiers?api_key=$api_key&version=$vdate" | jq '.classifiers[]'` )
 endif
@@ -56,7 +59,6 @@ if ($#classifiers > 0) then
 else
     echo "+++ no custom classifier (using default) +++" 
 endif
-
 
 if ($?classifier) then
     set classifier = `echo "$classifier" | sed "s/ /,/g"`
@@ -91,15 +93,20 @@ while ($i <= $n)
     echo -n "+++ CLASSIFY $nfiles IMAGES "
     set start = `date +%s`
     if ($?classifier) then
-	curl -s -q -L -F "images_file=@$ifiles" \
-	    "$TU/$verid/classify?api_key=$api_key&classifier_ids=default,$classifier&threshold=0.000001&version=$vdate" >! /tmp/$0:t.$$.json.$$
+    	if ($?USE_DEFAULT) then
+	    curl -s -q -L -F "images_file=@$ifiles" \
+		"$TU/$verid/classify?api_key=$api_key&classifier_ids=default,$classifier&threshold=0.000001&version=$vdate" >! /tmp/$0:t.$$.json.$$
+	else
+	    curl -s -q -L -F "images_file=@$ifiles" \
+		"$TU/$verid/classify?api_key=$api_key&classifier_ids=$classifier&threshold=0.000001&version=$vdate" >! /tmp/$0:t.$$.json.$$
+	endif
     else
 	curl -s -q -L -F "images_file=@$ifiles" \
 	    "$TU/$verid/classify?api_key=$api_key&classifier_ids=default&threshold=0.000001&version=$vdate" >! /tmp/$0:r.$$.json.$$
     endif
     if ($nfiles > 1) then
 	rm -f /tmp/$0:t.$$.zip
-	cat /tmp/$0:t.$$.json.$$ | sed "s@$ifiles:t@@g" >>! /tmp/$0:t.$$.json
+	cat /tmp/$0:t.$$.json.$$ | sed "s@$ifiles:t/@@g" >>! /tmp/$0:t.$$.json
     else
 	cat /tmp/$0:t.$$.json.$$ >>! /tmp/$0:t.$$.json
     endif
@@ -107,6 +114,7 @@ while ($i <= $n)
     @ elapsed = $end - $start
     echo "($elapsed seconds) +++"
 
+    # should pick only those classified as "person"
     if ($?FACES) then
 	echo "+++ FACES +++"
 	curl -s -q -L -o /tmp/$0:t.$$.json -X POST -F "images_file=@$ifile" "$TU/$verid/detect_faces?api_key=$api_key&version=$vdate"
@@ -119,8 +127,21 @@ while ($i <= $n)
     endif
 end
 
-# '.images[]|[{"image":.image,"classes":[.classifiers[]|{"name":.name,"id":.classifier_id,"classes":.classes|sort_by(.score)[]}]}]'
-jq -c '.images[]|[{"image":.image,"classes":[.classifiers[]|{"id":.classifier_id,"class":.classes|sort_by(.score)[-1]|.class}]}]' /tmp/$0:t.$$.json
+output:
+
+# top class (by score) per image for each classifier applied
+# {"image":"20160428095504-749-00.jpg","classes":[{"name":"default","id":"default","classes":null},{"name":"damp-cloud","id":"dampcloud_231362639","classes":{"class":"person","score":0.309657}},{"name":"damp-cloud","id":"dampcloud_257127137","classes":{"class":"person","score":0.310192}},{"name":"rough-fog","id":"roughfog_1514965218","classes":{"class":"dog","score":0.480892}},{"name":"rough-fog","id":"roughfog_228618634","classes":{"class":"dog","score":0.478403}},{"name":"rough-fog","id":"roughfog_653635843","classes":{"class":"dog","score":0.479636}},{"name":"rough-fog","id":"roughfog_80528242","classes":{"class":"dog","score":0.512194}}]}
+# jq -c '.images[]|{"image":.image,"classes":[.classifiers[]|{"name":.name,"id":.classifier_id,"classes":.classes|sort_by(.score)[-1]}]}'
+
+# all classes per image for all classifiers applied
+# {"image":"20160428095504-749-00.jpg","classes":[{"class":"person","score":0.309657},{"class":"person","score":0.310192},{"class":"cat","score":0.0383389},{"class":"dog","score":0.480892},{"class":"person","score":0.186817},{"class":"cat","score":0.0383551},{"class":"dog","score":0.478403},{"class":"person","score":0.186166},{"class":"cat","score":0.0383465},{"class":"dog","score":0.479636},{"class":"person","score":0.186099},{"class":"cat","score":0.0321449},{"class":"dog","score":0.512194},{"class":"person","score":0.142043}]}
+# jq -c '.images[]|{"image":.image,"classes":[.classifiers[].classes[]]}' 
+
+# top class (by score) per image for all classifiers applied
+# {"image":"20160428095504-749-00.jpg","classes":{"class":"dog","score":0.512194}}
+
+jq -c '.images[]|{"image":.image,"classes":[.classifiers[].classes[]]|sort_by(.score)[-1]}' /tmp/$0:t.$$.json
+
 
 done:
 
