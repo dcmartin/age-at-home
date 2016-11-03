@@ -85,9 +85,11 @@ foreach c ( $allclasses )
     if ($c != $id) echo '<option value="'"$c"'"">'"$c"'</option>' >> "$HTML" # don't include current class
 end
 echo '</select>' >> "$HTML"
-echo '<input type="submit" value="OK"></form>' >> "$HTML"
+echo '<input type="submit" style="background-color:#ff9933" value="CHANGE"></form>' >> "$HTML"
 
-echo '<p><b>Instructions:</b> Click on an image to label as "person" or choose class from menu and click "OK"</p>' >> "$HTML"
+echo '<p><b>Instructions:</b>  Click the button (e.g. <b>person</b>) when the image contains ONLY that entity.' >> "$HTML"
+echo '<p>If the scene is empty, click the red button.  If the image contains multiple entities, click the SKIP button.' >> "$HTML"
+echo '<p>To create a new entity, type the label and click the CREATE button.  You may also click on the image to label as <b>person</b>' >> "$HTML"
 
 # find in one or all directories
 if ($id == all) then
@@ -155,12 +157,13 @@ if (-d "$CDIR") then
 	    echo '<input type="hidden" name="old" value="'"$dir"'">' >> "$HTML"
 	    echo '<input type="hidden" name="match" value="'"$match"'">' >> "$HTML"
 	    echo '<input type="hidden" name="limit" value="'"$limit"'">' >> "$HTML"
-	    echo '<button type="submit" name="new" value="'"$location"'">'"$location"'</button>' >> "$HTML"
-	    echo '<button type="submit" name="new" value="person">person</button>' >> "$HTML"
+	    echo '<button style="background-color:#999999" type="submit" name="skip" value="'"$jpg"'"">SKIP</button>' >> "$HTML"
+	    echo '<button style="background-color:#ff0033" type="submit" name="new" value="'"$location"'">'"$location"'</button>' >> "$HTML"
+	    echo '<button style="background-color:#33cc00" type="submit" name="new" value="person">person</button>' >> "$HTML"
 	    foreach i ( $TMP/label/$DB/* )
 	        set j = "$i:t"
 		if ($j != "$location" && $j != "person") then
-		    echo '<button type="submit" name="new" value="'"$j"'">'"$j"'</button>' >> "$HTML"
+		    echo '<button style="background-color:#6699ff" type="submit" name="new" value="'"$j"'">'"$j"'</button>' >> "$HTML"
 		endif
 	    end
 	    echo '</form>' >> "$HTML"
@@ -181,7 +184,7 @@ if (-d "$CDIR") then
 		# if ($c != $dir && $c != "NO_TAGS") echo '<option value="'"$c"'"">'"$c"'</option>' >> "$HTML" # don't include current class or NO_TAGS
 	    # end
 	    # echo '</select>' >> "$HTML"
-	    echo '<input type="submit" value="OK">' >> "$HTML"
+	    echo '<input style="background-color:#6699ff" type="submit" value="CREATE">' >> "$HTML"
 	    echo '</form>' >> "$HTML"
 	    echo '</figure></td>' >> "$HTML"
 	else

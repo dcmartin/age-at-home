@@ -26,15 +26,29 @@ if ($?QUERY_STRING) then
     if ($new == "$QUERY_STRING") unset new
     set add = `echo "$QUERY_STRING" | sed 's/.*add=\([^&]*\).*/\1/'`
     if ($add == "$QUERY_STRING" || $add == "") unset add
+    set skip = `echo "$QUERY_STRING" | sed 's/.*skip=\([^&]*\).*/\1/'`
+    if ($skip == "$QUERY_STRING") unset skip
     set limit = `echo "$QUERY_STRING" | sed 's/.*limit=\([^&]*\).*/\1/'`
     if ($limit == "$QUERY_STRING") unset limit
     set match = `echo "$QUERY_STRING" | sed 's/.*match=\([^&]*\).*/\1/'`
     if ($match == "$QUERY_STRING") unset match
 endif
 
-if ($?DEBUG) echo `date` "$0 $$ -- $?DB $?id $?image $?old $?new $?add" >>! $TMP/LOG
+if ($?DEBUG) echo `date` "$0 $$ -- $?DB $?id $?image $?old $?new $?add $?skip" >>! $TMP/LOG
 
-if ($?DB && $?id && $?image && $?old && $?new) then
+if ($?DB && $?id && $?old && $?skip) then
+    set image = "$skip"
+    set jpg = "$TMP/$DB/$old/$image"
+    set dest = "$TMP/$API/$DB/.skipped"
+
+    mkdir -p "$dest"
+    if (-s "$jpg") then
+	if ($?DEBUG) echo `date` "$0 $$ -- skipping $jpg -> $dest" >>! $TMP/LOG
+	mv -n "$jpg" "$dest" >>& $TMP/LOG
+    endif
+    # all done
+    goto output
+else if ($?DB && $?id && $?image && $?old && $?new) then
     if ($?add) then
 	set new = "$add"
     endif
