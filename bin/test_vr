@@ -1,11 +1,13 @@
 #!/bin/csh -fb
 
+set DEBUG = true
+
 if (! -e /usr/local/bin/brew) then
-   echo "*** NO HOME BREW?  Install from http://brew.sh" >& /dev/stderr
+   if ($?DEBUG) echo `date` "$0 $$ -- NO HOME BREW?  Install from http://brew.sh" >& /dev/stderr
    exit
 endif
 if (! -e /usr/local/bin/jq) then
-   echo "*** BREWING 'jq' ..." >& /dev/stderr
+   if ($?DEBUG) echo `date` "$0 $$ -- BREWING 'jq' ..." >& /dev/stderr
    brew install jq >& /dev/stderr
 endif
 
@@ -24,20 +26,20 @@ if ($#argv > 0) then
     endif
 endif
 if ($?jpegfiles == 0) then
-    echo "*** PLEASE SPECIFY FILES TO BE CLASSIFIED ***"
+    if ($?DEBUG) echo `date` "$0 $$ -- PLEASE SPECIFY FILES TO BE CLASSIFIED ***" >& /dev/stderr
     goto done
 endif
 
 set creds = ~$USER/.watson.visual-recognition.json
 if (-e $creds) then
     set api_key = ( `jq '.[0]|.credentials.api_key' $creds | sed 's/"//g'` )
-    echo "--- USING APIKEY $api_key" >& /dev/stderr
+    if ($?DEBUG) echo `date` "$0 $$ -- USING APIKEY $api_key" >& /dev/stderr
     set url = ( `jq '.[0]|.credentials.url' $creds | sed 's/"//g'` )
-    echo "--- USING URL $url" >& /dev/stderr
+    if ($?DEBUG) echo `date` "$0 $$ -- USING URL $url" >& /dev/stderr
     # set base
     set TU = $url
 else if ($?TU == 0) then
-    echo "*** NO CREDENTIALS ($creds); create file and copy credentials from visual-recognition service on bluemix.net" >& /dev/stderr
+    echo `date` "$0 $$ -- NO CREDENTIALS ($creds); create file and copy credentials from visual-recognition service on bluemix.net" >& /dev/stderr
     goto done
 endif
 
@@ -52,70 +54,99 @@ endif
 if ($#classifiers > 0) then
     set classifier = `echo "$classifiers" | jq '.classifier_id' | sed 's/"//g'`
     if ($#classifier > 0) then
-	echo "+++ using classifier ($classifier) +++" 
+	if ($?DEBUG) echo `date` "$0 $$ -- Using classifiers ($classifier) +++" >& /dev/stderr
     else
 	unset classifier
     endif
 else
-    echo "+++ no custom classifier (using default) +++" 
+    if ($?DEBUG) echo `date` "$0 $$ -- no custom classifier (using default) +++" >& /dev/stderr
 endif
 
 if ($?classifier) then
+    # prepare for URL
     set classifier = `echo "$classifier" | sed "s/ /,/g"`
 endif
 
+# The max number of images in a .zip file is limited to 20, and limited to 5 MB.
+@ maxfiles = ( `ls -l $jpegfiles | awk '{ n += 1; sum += $5 } END { max = (5000*1024) / (sum / n); if (max > 20) max = 20; printf("%d\n", max) }'` )
+
 @ i = 1
-@ z = 10
+@ z = $maxfiles
 @ t = 0
 @ n = $#jpegfiles
+set zip = /tmp/$0:t.$$.zip
 
 while ($i <= $n) 
     @ t = $t + $z
 
+again:
+    set partial = /tmp/$0:t.$i.$t.json
+    
+    if (-e "$partial") continue
+
     if ($t >= $n) @ t = $n
-    set ifiles = ()
-    while ($i <= $t)
-	set ifile = ( $jpegfiles[$i] )
-	if (-s $ifile) then
-	    echo "*** ADDING $i $ifile ***"
-	    set ifiles = ( $ifiles $ifile )
-	else
-	    echo "*** FILE ($ifile) does not exist? ***"
-	endif
-	@ i++
-    end
+    set ifiles = ( $jpegfiles[$i-$t] )
     set nfiles = $#ifiles
     if ($nfiles > 1) then
-	zip -q -j -r -u /tmp/$0:t.$$.zip $ifiles
-	set ifiles = /tmp/$0:t.$$.zip
+	zip -q -j -r -u $zip $ifiles >& /dev/stderr
+	if (-s $zip) then
+	    if ($?DEBUG) echo `date` "$0 $$ -- " `ls -al $zip` >& /dev/stderr
+	    set ifiles = $zip
+	else
+	    exit
+	endif
     endif
 
-    echo -n "+++ CLASSIFY $nfiles IMAGES "
+    if ($?DEBUG) echo -n `date` "$0 $$ -- classify ($i - $t) $nfiles images " >& /dev/stderr
     set start = `date +%s`
     if ($?classifier) then
     	if ($?USE_DEFAULT) then
-	    curl -s -q -L -F "images_file=@$ifiles" \
-		"$TU/$verid/classify?api_key=$api_key&classifier_ids=default,$classifier&threshold=0.000001&version=$vdate" >! /tmp/$0:t.$$.json.$$
+	    if ($?DEBUG) echo `date` "$0 $$ -- CLASSIFY $ifiles using (default,$classifier)"
+	    curl -f -s -q -L -F "images_file=@$ifiles" -o $partial \
+		"$TU/$verid/classify?api_key=$api_key&classifier_ids=default,$classifier&threshold=0.000001&version=$vdate" >& /dev/stderr
 	else
-	    curl -s -q -L -F "images_file=@$ifiles" \
-		"$TU/$verid/classify?api_key=$api_key&classifier_ids=$classifier&threshold=0.000001&version=$vdate" >! /tmp/$0:t.$$.json.$$
+	    if ($?DEBUG) echo `date` "$0 $$ -- CLASSIFY $ifiles using ($classifier)"
+	    curl -f -s -q -L -F "images_file=@$ifiles" -o $partial \
+		"$TU/$verid/classify?api_key=$api_key&classifier_ids=$classifier&threshold=0.000001&version=$vdate" >& /dev/stderr
 	endif
     else
-	curl -s -q -L -F "images_file=@$ifiles" \
-	    "$TU/$verid/classify?api_key=$api_key&classifier_ids=default&threshold=0.000001&version=$vdate" >! /tmp/$0:r.$$.json.$$
+	if ($?DEBUG) echo `date` "$0 $$ -- CLASSIFY $ifiles using default"
+	curl -f -s -q -L -F "images_file=@$ifiles" -o $partial \
+	    "$TU/$verid/classify?api_key=$api_key&classifier_ids=default&threshold=0.000001&version=$vdate" >& /dev/stderr
     endif
-    if ($nfiles > 1) then
-	rm -f /tmp/$0:t.$$.zip
-	cat /tmp/$0:t.$$.json.$$ | sed "s@$ifiles:t/@@g" >>! /tmp/$0:t.$$.json
-    else
-	cat /tmp/$0:t.$$.json.$$ >>! /tmp/$0:t.$$.json
+    if ($status == 22 || ! -s $partial) then
+        # call failed -- retry
+	if ($?DEBUG) echo "FAILED ($t $z) ($ifiles)" >& /dev/stderr
+	# try smaller set size
+	@ t--
+	@ z--
+	# remove old
+	rm -f $zip $partial
+	goto again
+    else if (-s $zip) then
+	# we sent a ZIP file; remove it and elide the ZIP file pre-pended to image name
+	rm -f $zip
+	cat $partial | sed 's@.*/@"@' >>! /tmp/$0:t.$$.json
+    else if ($nfiles > 0) then
+        # simply append partial to complete
+	cat $partial >>! /tmp/$0:t.$$.json
     endif
     set end = `date +%s`
     @ elapsed = $end - $start
-    echo "($elapsed seconds) +++"
+    if ($?DEBUG) echo "($elapsed seconds)" >& /dev/stderr
+    # output partial results
+    if ($?DEBUG) then
+	jq -c '.images[]|{"image":.image,"classes":[.classifiers[].classes[]]|sort_by(.score)[-1]}' $partial >& /dev/stderr
+	# { "status": "ERROR", "statusInfo": "daily-transaction-limit-exceeded" }
+	if ($status != 0) jq '.' $partial >& /dev/stderr
+	exit
+    endif
 
-    # should pick only those classified as "person"
+    # increment to next set of images
+    @ i = $t + 1
+
     if ($?FACES) then
+	# should pick only those classified as "person"
 	echo "+++ FACES +++"
 	curl -s -q -L -o /tmp/$0:t.$$.json -X POST -F "images_file=@$ifile" "$TU/$verid/detect_faces?api_key=$api_key&version=$vdate"
 	jq '.' /tmp/$0:t.$$.json
@@ -139,10 +170,12 @@ output:
 
 # top class (by score) per image for all classifiers applied
 # {"image":"20160428095504-749-00.jpg","classes":{"class":"dog","score":0.512194}}
+# jq -c '.images[]|{"image":.image,"classes":[.classifiers[].classes[]]|sort_by(.score)[-1]}' /tmp/$0:t.$$.json
 
-jq -c '.images[]|{"image":.image,"classes":[.classifiers[].classes[]]|sort_by(.score)[-1]}' /tmp/$0:t.$$.json
+output:
 
+cat /tmp/$0.$$.json
 
 done:
 
-# rm -f /tmp/$0:t.$$.json
+rm -f /tmp/$0:t.$$.json
