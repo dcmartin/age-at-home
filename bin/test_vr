@@ -80,7 +80,7 @@ while ($i <= $n)
     @ t = $t + $z
 
 again:
-    set partial = /tmp/$0:t.$i.$t.json
+    set partial = /tmp/$0:t.$$.$i.$t.json
     
     if (-e "$partial") continue
 
@@ -101,7 +101,7 @@ again:
     set start = `date +%s`
     if ($?classifier) then
     	if ($?USE_DEFAULT) then
-	    if ($?DEBUG) echo `date` "$0 $$ -- CLASSIFY $ifiles using (default,$classifier)"
+	    if ($?DEBUG) echo `date` "$0 $$ -- CLASSIFY $ifiles using (default,$classifier)" >& /dev/stderr
 	    curl -f -s -q -L -F "images_file=@$ifiles" -o $partial \
 		"$TU/$verid/classify?api_key=$api_key&classifier_ids=default,$classifier&threshold=0.000001&version=$vdate" >& /dev/stderr
 	else
@@ -123,10 +123,18 @@ again:
 	# remove old
 	rm -f $zip $partial
 	goto again
+    endif
+    # { "status": "ERROR", "statusInfo": "daily-transaction-limit-exceeded" }
+    set error = `jq '.status' $partial`
+    if ($status == 0 && $error == "ERROR") then
+	if ($?DEBUG) echo `date` "$0 $$ -- $error - " `jq '.statusInfo' $partial`
+        rm -f $partial
+	rm -f $zip
+	goto done
     else if (-s $zip) then
 	# we sent a ZIP file; remove it and elide the ZIP file pre-pended to image name
 	rm -f $zip
-	cat $partial | sed 's@.*/@"@' >>! /tmp/$0:t.$$.json
+	cat $partial | sed "s@$zip/@@" >>! /tmp/$0:t.$$.json
     else if ($nfiles > 0) then
         # simply append partial to complete
 	cat $partial >>! /tmp/$0:t.$$.json
@@ -135,12 +143,10 @@ again:
     @ elapsed = $end - $start
     if ($?DEBUG) echo "($elapsed seconds)" >& /dev/stderr
     # output partial results
-    if ($?DEBUG) then
-	jq -c '.images[]|{"image":.image,"classes":[.classifiers[].classes[]]|sort_by(.score)[-1]}' $partial >& /dev/stderr
-	# { "status": "ERROR", "statusInfo": "daily-transaction-limit-exceeded" }
-	if ($status != 0) jq '.' $partial >& /dev/stderr
-	exit
-    endif
+    if ($?DEBUG) jq -c '.images[]|{"image":.image,"classes":[.classifiers[].classes[]]|sort_by(.score)[-1]}' $partial >& /dev/stderr
+
+    # remove partial
+    rm -f $partial
 
     # increment to next set of images
     @ i = $t + 1
