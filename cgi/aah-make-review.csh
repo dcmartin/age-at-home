@@ -258,7 +258,7 @@ foreach i ( $classes )
 end
 echo -n ']}' >> "$NEW"
 
-/usr/local/bin/jq -c '.' "$NEW" >>! $TMP/LOG
+/usr/local/bin/jq -c '.' "$NEW" >& /dev/null
 if ($status != 0) then
     if ($?DEBUG) echo `date` "$0 $$ -- malformed JSON: `cat "$NEW"` >>! $TMP/LOG
     rm -f "$NEW"

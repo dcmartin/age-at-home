@@ -43,8 +43,25 @@ if ($?DB && $?id && $?old && $?skip) then
 
     mkdir -p "$dest"
     if (-s "$jpg") then
-	if ($?DEBUG) echo `date` "$0 $$ -- skipping $jpg -> $dest" >>! $TMP/LOG
+	set dest = "$dest/$jpg:t"
 	mv -n "$jpg" "$dest" >>& $TMP/LOG
+	if (-s "$dest" && ! -e "$jpg") then
+	    if ($?DEBUG) echo `date` "$0 $$ -- moved $jpg -> $dest" >>! $TMP/LOG
+	    ln -s "$dest" "$jpg"
+	    set OUTPUT = '{"result":"success","image":"'"$jpg"'","skip":"'"$skip"'"}'
+	else if (-e "$jpg") then
+	    ls -al "$jpg" >>! $TMP/LOG
+	    rm -f "$jpg"
+	    if (! -e "$jpg") then
+		ln -s "$dest" "$jpg"
+	    endif
+	    if (-e "$jpg" && -e "$dest") then
+		set OUTPUT = '{"result":"success","image":"'"$jpg"'","skip":"'"$skip"'"}'
+	    else
+		if ($?DEBUG) echo `date` "$0 $$ -- FAIL to move $jpg -> $dest" >>! $TMP/LOG
+		set OUTPUT = '{"result":"fail-move","image":"'"$jpg"'","skip":"'"$skip"'"}'
+	    endif
+	endif
     endif
     # all done
     goto output

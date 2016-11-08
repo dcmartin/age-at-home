@@ -6,7 +6,7 @@ setenv LAN "192.168.1"
 if ($?TMP == 0) setenv TMP "/var/lib/age-at-home"
 
 # don't update file information more than once per (in seconds)
-set TTL = 30
+set TTL = 120
 set SECONDS = `date "+%s"`
 set DATE = `echo $SECONDS \/ $TTL \* $TTL | bc`
 
@@ -71,7 +71,7 @@ echo '{ "device":"'$DB'","id":"'$id'","match":"'$match'","limit":"'$limit'" }' >
 echo "</TITLE></HEAD>" >> "$HTML"
 echo '<script type="text/javascript" src="'$MIXPANELJS'"></script><script>mixpanel.track('"'"$APP-$API"');</script>" >> "$HTML"
 echo '<BODY><H1>LABEL IMAGES</H1>' >> "$HTML"
-if ($#date > 0) echo "<p>Last updated: <i>" `date -r $date` "</i></p>" >> "$HTML"
+if ($#date > 0) echo '<p style="font-size:50%;">Last updated: <i>' `date -r $date` "</i></p>" >> "$HTML"
 # if ($#seqid > 0) echo "<i>$seqid</i>" >> "$HTML"
 
 echo '<form action="http://'"$WWW/CGI/$APP-$API"'.cgi">' >> "$HTML"
@@ -89,7 +89,7 @@ echo '<input type="submit" style="background-color:#ff9933" value="CHANGE"></for
 
 echo '<p><b>Instructions:</b>  Click the button (e.g. <b>person</b>) when the image contains ONLY that entity.' >> "$HTML"
 echo '<p>If the scene is empty, click the red button.  If the image contains multiple entities, click the SKIP button.' >> "$HTML"
-echo '<p>To create a new entity, type the label and click the CREATE button.  You may also click on the image to label as <b>person</b>' >> "$HTML"
+echo '<p>To create a new entity, type the label and click the CREATE button.  You may also click on the image to label as <b>person</b><p>' >> "$HTML"
 
 # find in one or all directories
 if ($id == all) then
@@ -100,16 +100,17 @@ endif
 
 if (-d "$CDIR") then
     set IMAGES = "$TMP/$APP-$API-db=$DB&id=$id&match=$match.$DATE.txt"
-    if (-e "$IMAGES") then
+    if (-s "$IMAGES") then
 	if ($?assign) then
 	    if ($?DEBUG) echo `date` "$0 $$ -- removing $assign from old images for ($CDIR) matching ($match)" >>! $TMP/LOG
 	    cat "$IMAGES" | egrep -v "$assign" >! "$IMAGES.$$"
 	    mv -f "$IMAGES.$$" "$IMAGES"
 	endif
     else
-	set old = ( `ls -1 "$TMP/$APP-$API-db=$DB&id=$id&match=$match".*.txt` )
+	set old = ( `echo "$TMP/$APP-$API-db=$DB&id=$id&match=$match".*.txt` )
 	if ($#old > 1) then
 	    if ($?DEBUG) echo `date` "$0 $$ -- removing old find results ($old)" >>! $TMP/LOG
+	    rm -f $old
 	endif
 	if ($?DEBUG) echo `date` "$0 $$ -- finding images for ($CDIR) matching ($match)" >>! $TMP/LOG
 	find "$CDIR" -type f -name "$match*.jpg" -print | sort -t / -k 7,7 -n -r >! $IMAGES
