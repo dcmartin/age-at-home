@@ -41,6 +41,10 @@ while ($i <= $#argv)
 	    @ i++
 	    # model by <classifier_id>
 	    set model = $argv[$i]
+	else if ("$t" == "-j") then
+	    @ i++
+	    # find by job_id (PID)
+	    set job_id = $argv[$i]
 	else if ("$t" == "-N") then
 	    @ i++
 	    # negative example class
@@ -104,19 +108,24 @@ endif
 #
 
 set OUTPUT = "$TMP/$APP-$API-$QUERY_STRING.$DATE.json"
-if (-e "$OUTPUT") then
-    if ($?DEBUG) echo `date` "$0 $$ -- existing ($OUTPUT)" >& /dev/stderr
-    goto output
+set INPROGRESS = ( `echo "$OUTPUT".*` )
+if ($#INPROGRESS) then
+    if ($?DEBUG) echo `date` "$0 $$ -- inventory in-progress ($INPROGRESS)" >& /dev/stderr
+    goto done
+else if (-s "$OUTPUT") then
+    if ($?DEBUG) echo `date` "$0 $$ -- found $OUTPUT" >& /dev/stderr
+    goto batch
 endif
-
 if ($?DEBUG) echo `date` "$0 $$ -- finding old ($APP-$API-$QUERY_STRING.*.json)" >& /dev/stderr
 set old = ( `echo "$TMP/$APP-$API-$QUERY_STRING".*.json` )
 if ($#old > 0) then
     if ($?DEBUG) echo `date` "$0 $$ -- removing old ($old)" >& /dev/stderr
     rm -f $old
 endif
+# indicate in-progress
+if ($?DEBUG) echo `date` "$0 $$ -- creating inventory $OUTPUT" >& /dev/stderr
+touch "$OUTPUT.$$"
 
-if ($?DEBUG) echo `date` "$0 $$ -- building $OUTPUT" >& /dev/stderr
 echo '{"name":"'$device'","negative":"'$notags'","model":' >! "$OUTPUT.$$"
 if ($?model) then
   echo '"'$model'","detail": null',' >> "$OUTPUT.$$"
@@ -148,10 +157,198 @@ jq -c '.' "$OUTPUT.$$" >! "$OUTPUT"
 rm -f "$OUTPUT.$$"
 
 ##
-## STEP 2
+## STEP 2 - CALCULATE BATCH JOBS
 ##
 
-output:
+batch:
+
+set JOB = "$TMP/$APP-$API-$QUERY_STRING.$DATE.job"
+set INPROGRESS = ( `echo "$JOB".*` )
+if ($#INPROGRESS) then
+    if ($?DEBUG) echo `date` "$0 $$ -- batching in-progress ($INPROGRESS)" >& /dev/stderr
+    goto done
+else if (-d "$JOB") then
+    if ($?DEBUG) echo `date` "$0 $$ -- existing batches ($JOB)" >& /dev/stderr
+    goto train
+endif
+set old = ( `echo "$TMP/$APP-$API-$QUERY_STRING".*.job` )
+if ($#old > 0) then
+    if ($?DEBUG) echo `date` "$0 $$ -- NOT removing old ($old)" >& /dev/stderr
+    # rm -fr $old
+endif
+# indicate JOB in-progress
+if ($?DEBUG) echo `date` "$0 $$ -- batching jobs $JOB" >& /dev/stderr
+touch "$JOB.$$"
+mkdir -p "$JOB"
+
+#
+# WATSON VISUAL RECOGNITION - INSTRUCTIONS
+#
+# SIZE LIMITATIONS (enforced by API)
+# 
+# The service accepts a maximum of 10,000 images or 100 MB per .zip file
+# The service requires a minimum of 10 images per .zip file.
+# The service accepts a maximum of 256 MB per training call.
+#
+# GUIDELINES (not enforced)
+#
+# Include approximately the same number of images in each examples file.
+# Including an unequal number of images can cause the quality of the trained classifier to decline. 
+#
+# 1) A minimum of 50 images is recommended in each .zip file, as fewer than 50 images can decrease the quality of the trained classifier.
+# 2) If the quality and content of training data is the same, then classifiers that are trained on more images will generally be more accurate 
+#    than classifiers that are trained on fewer images. The benefits of training a classifier on more images plateaus at around 5000 images, 
+#    and this can take a while to process. You can train a classifier on more than 5000 images, but it may not significantly increase that classifier's accuracy.
+# 3) Uploading a total of 150-200 images per .zip file gives you the best balance between the time it takes to train and the improvement to classifier accuracy. 
+#    More than 200 images increases the time, and it does increace the accuracy, but with diminishing returns for the amount of time it takes.
+#
+# ADDITIONAL TRAINING AND TESTING INSTRUCTIONS
+#
+# Split into three (3) sets: training, validation and testing (http://sebastianraschka.com/blog/2016/model-evaluation-selection-part3.html)
+#
+@ MAXIMAGES = 10000
+@ MAXZIPBYTES = 100 * 1000 * 1000
+@ MINIMAGES = 10
+@ MAXSETBYTES = 256 * 1000 * 1000
+@ MINSETSIZE = 50
+@ MAXSETSIZE = 5000
+@ MAXZIPSET = 200
+@ SPLITSETS = 3
+
+# get all classes as pairs of class name and count (including negative)
+set allclass = ( `jq '[.classes|sort_by(.count)[]|{"class":.class,"count":.count,"bytes":.bytes}]' "$OUTPUT"`)
+if ($?DEBUG) echo `date` "$0 $$ -- batching classes by counts ($allclass)" >& /dev/stderr
+
+# process all samples into training, validation and test sets
+set pairs = ( `echo "$allclass" | jq '.[]|.class,.count' | sed 's/"//g'` )
+if ($#pairs > 0) then
+  @ p = 1
+  echo 
+  set job = '{"device":"'"$device"'","job":'"$DATE"',"classes":['
+  while ($p < $#pairs) 
+    set class = $pairs[$p]
+    @ p++
+    set count = $pairs[$p]
+    @ p++
+    if ($?DEBUG) echo `date` "$0 $$ -- CLASS ($class) COUNT ($count)" >& /dev/stderr
+    # calculate split size to create only SPLITSETS number of sets
+    @ split = ( $count / $SPLITSETS ) + ( $count % $SPLITSETS )
+    # test is split size is sufficient
+    if ($split > $MINIMAGES) then
+      # test if too many samples
+      if ($split > $MAXSETSIZE) then
+	if ($?DEBUG) echo `date` "$0 $$ -- split size ($MAXSETSIZE); actual ($split)" >& /dev/stderr
+	set split = MAXSETSIZE
+      else
+	if ($?DEBUG) echo `date` "$0 $$ -- split size ($split)" >& /dev/stderr
+      endif
+      set base = "$JOB/$class." 
+      jq '.classes[]|select(.class=="'$class'").ids[]' "$OUTPUT" | sed 's/"//g' | split -l $split - $base 
+      set split = ( `echo $base*` )
+      if ($?sets) then
+	set sets = "$sets"'},{"class":"'"$class"'","sets":'
+      else
+	set sets = '{"class":"'"$class"'","sets":'
+      endif
+    else
+      if ($?DEBUG) echo `date` "$0 $$ -- insufficient samples ($split)" >& /dev/stderr
+      unset split
+    endif
+    if ($?split) then
+      if ($?DEBUG) echo `date` "$0 $$ -- processing ($split)" >& /dev/stderr
+      foreach s ( $split )
+        if ($?splits) then
+	  set splits = "$splits"','
+	else
+	  set splits = '['
+	endif
+	set ext = $s:e
+	# create ZIP file name 
+	set zip = "$JOB/$class.zip"
+	if ($?DEBUG) echo `date` "$0 $$ -- creating ($zip) from split ($s)" >& /dev/stderr
+	foreach id ( `cat "$s"` )
+	  find $TMP/label/$DB -name "$id".jpg -print | xargs -I % zip -q -j -r -u "$zip" % >& /dev/stderr
+	end
+	if (-s "$zip") then
+	  # put all results into temporary directory
+	  set tmpdir = "$JOB/$class"
+	  mkdir -p "$tmpdir"
+	  if ($?DEBUG) echo `date` "$0 $$ -- splitting ($zip) into ($tmpdir)" >& /dev/stderr
+	  zipsplit -b "$JOB/$class/" -n $MAXZIPBYTES "$zip" >& /dev/null
+	  # success?
+	  if ($status == 0) then
+	    # get all the zips created
+	    set zips = ( `echo "$JOB/$class/"*.zip` )
+	    if ($#zips > 0) then
+	      if ($?DEBUG) echo `date` "$0 $$ -- split into $#zips ZIP files ($zips)" >& /dev/stderr
+	      @ i = 1
+	      foreach z ( $zips )
+	        set b = "$JOB/$device.$class.$ext.$i.zip"
+		if ($?DEBUG) echo `date` "$0 $$ -- creating batch entry ($b)" >& /dev/stderr
+	        mv "$z" "$b"
+		if ($?batch) then
+		    set batch = "$batch"',"'"$b"'"'
+		else
+		    set batch = '["'"$b"'"'
+		endif
+		@ i++
+	      end
+	      set batch = "$batch"']'
+	      echo "BATCH: $batch" >& /dev/stderr
+	    else
+	      if ($?DEBUG) echo `date` "$0 $$ -- NO ZIPS" >& /dev/stderr
+	      unset zips
+	      exit
+	    endif
+	  else
+	    if ($?DEBUG) echo `date` "$0 $$ -- ZIPSPLIT failure" >& /dev/stderr
+	    exit
+	  endif
+	else
+	  if ($?DEBUG) echo `date` "$0 $$ -- ZIP failure" >& /dev/stderr
+	  exit
+	endif
+	if ($?zips) then
+	  unset zips
+	endif
+	rm -f "$zip"
+	set splits = "$splits""$batch"
+	unset batch
+      end
+    else
+      if ($?DEBUG) echo `date` "$0 $$ -- NO SPLIT ($split)" >& /dev/stderr
+      exit
+    endif
+    set sets = "$sets""$splits"']'
+  end
+  unset splits
+  set job = "$job""$sets"'}]}'
+else
+  if ($?DEBUG) echo `date` "$0 $$ -- NO PAIRS" >& /dev/stderr
+  exit
+endif
+
+# store result
+echo "$job" >! "$JOB/job.json"
+
+# all done
+rm -f "$JOB.$$"
+
+exit
+
+##
+## STEP 3 - EXECUTING TRAINING JOBS
+##
+
+train:
+
+if ($?job) then
+else
+endif
+
+set positive = ( `jq '[.classes|sort_by(.count)[]|select(.class!="'$notags'")|{"class":.class,"count":.count,"bytes":.bytes}]' "$OUTPUT"` )
+set negative = ( `jq '[.classes|sort_by(.count)[]|select(.class=="'$notags'")|{"class":.class,"count":.count,"bytes":.bytes}]' "$OUTPUT"`)
+if ($?DEBUG) echo `date` "$0 $$ -- " `echo "$positive" "$negative"` >& /dev/stderr
 
 #
 # SETUP WATSON VISUAL_RECOGNITION
@@ -266,168 +463,6 @@ end
 
 if ($?DEBUG) echo `date` "$0 $$ -- OLD ($?oldclasses) NEW ($net) NEGATIVE ($notags) +++" >& /dev/stderr
 
-#
-# CALCULATE BATCH JOBS
-#
-# Size limitations
-# 
-# There are size limitations for training calls and data:
-# 
-# The service accepts a maximum of 10,000 images or 100 MB per .zip file
-@ MAXIMAGES = 10000
-@ MAXZIPBYTES = 100 * 1000 * 1000
-# 
-# The service requires a minimum of 10 images per .zip file.
-@ MINIMAGES = 10
-# 
-# The service accepts a maximum of 256 MB per training call.
-@ MAXSETBYTES = 256 * 1000 * 1000
-#
-# The following guidelines are not enforced by the API. However, the service tends to perform better when the training data adheres to them:
-#
-# 1) A minimum of 50 images is recommended in each .zip file, as fewer than 50 images can decrease the quality of the trained classifier.
-@ MINSETSIZE = 50
-#
-# 2) If the quality and content of training data is the same, then classifiers that are trained on more images will generally be more accurate 
-#    than classifiers that are trained on fewer images. The benefits of training a classifier on more images plateaus at around 5000 images, 
-#    and this can take a while to process. You can train a classifier on more than 5000 images, but it may not significantly increase that classifier's accuracy.
-@ MAXSETSIZE = 5000
-#
-# 3) Uploading a total of 150-200 images per .zip file gives you the best balance between the time it takes to train and the improvement to classifier accuracy. 
-#    More than 200 images increases the time, and it does increace the accuracy, but with diminishing returns for the amount of time it takes.
-@ MAXZIPSET = 200
-#
-# 4) Include approximately the same number of images in each examples file. Including an unequal number of images can cause the quality of the trained classifier to decline. 
-#
-
-##
-## ADDITIONAL TRAINING AND TESTING INSTRUCTIONS
-##
-## http://sebastianraschka.com/blog/2016/model-evaluation-selection-part3.html
-##
-## Split into three (3) sets: training, validation and testing (percents)
-##
-set SETS = ( 40 40 20 )
-
-set positive = ( `jq '[.classes|sort_by(.count)[]|select(.class!="'$notags'")|{"class":.class,"count":.count,"bytes":.bytes}]' "$OUTPUT"` )
-set negative = ( `jq '[.classes|sort_by(.count)[]|select(.class=="'$notags'")|{"class":.class,"count":.count,"bytes":.bytes}]' "$OUTPUT"`)
-set allclass = ( `jq '[.classes|sort_by(.count)[]|{"class":.class,"count":.count,"bytes":.bytes}]' "$OUTPUT"`)
-
-if ($?DEBUG) echo `date` "$0 $$ -- " `echo "$positive" "$negative"` >& /dev/stderr
-
-##
-## process all positive examples into training, validation and test sets
-##
-set pairs = ( `echo "$allclass" | jq '.[]|.class,.count' | sed 's/"//g'` )
-if ($#pairs > 0) then
-  @ p = 1
-  echo 
-  set job = '{"device":"'"$device"'","job":'"$$"',"classes":['
-  while ($p < $#pairs) 
-    set class = $pairs[$p]
-    @ p++
-    set count = $pairs[$p]
-    @ p++
-    if ($?DEBUG) echo `date` "$0 $$ -- CLASS ($class) COUNT ($count)" >& /dev/stderr
-    # calculate split size to force only three (3) sets
-    @ split = ( $count / 3 ) + ( $count % 3 )
-    # test is split size is sufficient
-    if ($split > $MINIMAGES) then
-      # test if too many samples
-      if ($split > $MAXSETSIZE) then
-	if ($?DEBUG) echo `date` "$0 $$ -- split size ($MAXSETSIZE); actual ($split)" >& /dev/stderr
-	set split = MAXSETSIZE
-      else
-	if ($?DEBUG) echo `date` "$0 $$ -- split size ($split)" >& /dev/stderr
-      endif
-      set base = "/tmp/$0:t.$$.$class." 
-      jq '.classes[]|select(.class=="'$class'").ids[]' "$OUTPUT" | sed 's/"//g' | split -l $split - $base 
-      set split = ( `echo $base*` )
-      if ($?sets) then
-	set sets = "$sets"'},{"class":"'"$class"'","sets":'
-      else
-	set sets = '{"class":"'"$class"'","sets":'
-      endif
-    else
-      if ($?DEBUG) echo `date` "$0 $$ -- insufficient samples ($split)" >& /dev/stderr
-      unset split
-    endif
-    if ($?split) then
-      if ($?DEBUG) echo `date` "$0 $$ -- processing ($split)" >& /dev/stderr
-      foreach s ( $split )
-        if ($?splits) then
-	  set splits = "$splits"','
-	else
-	  set splits = '['
-	endif
-	set ext = $s:e
-	# create ZIP file name 
-	set zip = "/tmp/$0:t.$$.$class.zip"
-	if ($?DEBUG) echo `date` "$0 $$ -- creating ($zip) from split ($s)" >& /dev/stderr
-	foreach id ( `cat "$s"` )
-	  find $TMP/label/$DB -name "$id".jpg -print | xargs -I % zip -q -j -r -u "$zip" % >& /dev/stderr
-	end
-	if (-s "$zip") then
-	  # put all results into temporary directory
-	  set tmpdir = "/tmp/$$/$class"
-	  mkdir -p "$tmpdir"
-	  if ($?DEBUG) echo `date` "$0 $$ -- splitting ($zip) into ($tmpdir)" >& /dev/stderr
-	  zipsplit -b "/tmp/$$/$class/" -n $MAXZIPBYTES "$zip" >& /dev/null
-	  # success?
-	  if ($status == 0) then
-	    # get all the zips created
-	    set zips = ( `echo "/tmp/$$/$class/"*.zip` )
-	    if ($#zips > 0) then
-	      if ($?DEBUG) echo `date` "$0 $$ -- split into $#zips ZIP files ($zips)" >& /dev/stderr
-	      @ i = 1
-	      foreach z ( $zips )
-	        set b = "/tmp/$0:t.$$.$device.$class.$ext.$i.zip"
-		if ($?DEBUG) echo `date` "$0 $$ -- creating batch entry ($b)" >& /dev/stderr
-	        mv "$z" "$b"
-		if ($?batch) then
-		    set batch = "$batch"',"'"$b"'"'
-		else
-		    set batch = '["'"$b"'"'
-		endif
-		@ i++
-	      end
-	      set batch = "$batch"']'
-	      echo "BATCH: $batch" >& /dev/stderr
-	    else
-	      if ($?DEBUG) echo `date` "$0 $$ -- NO ZIPS" >& /dev/stderr
-	      unset zips
-	      exit
-	    endif
-	  else
-	    if ($?DEBUG) echo `date` "$0 $$ -- ZIPSPLIT failure" >& /dev/stderr
-	    exit
-	  endif
-	else
-	  if ($?DEBUG) echo `date` "$0 $$ -- ZIP failure" >& /dev/stderr
-	  exit
-	endif
-	if ($?zips) then
-	  unset zips
-	endif
-	rm -f "$zip"
-	set splits = "$splits""$batch"
-	unset batch
-      end
-    else
-      if ($?DEBUG) echo `date` "$0 $$ -- NO SPLIT ($split)" >& /dev/stderr
-      exit
-    endif
-    set sets = "$sets""$splits"']'
-    unset splits
-  end
-  set job = "$job""$sets"'}]}'
-else
-  if ($?DEBUG) echo `date` "$0 $$ -- NO PAIRS" >& /dev/stderr
-  exit
-endif
-
-echo "$job"
-
 exit
 
 #
@@ -531,7 +566,7 @@ else
     if ($?DEBUG) echo `date` "$0 $$ -- no Cloudant update" >>! /tmp/LOG
 endif
 
-
 done:
+
 rm -f /tmp/$0:t.$$.json
 echo `date` "$0 $$ -- FINISH ($*)"
