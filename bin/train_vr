@@ -1,51 +1,31 @@
 #!/bin/csh -fb
-#
-# top-level
-#
-set APP = "aah"
-set API = "train"
-if ($?TMP == 0) set TMP = "/var/lib/age-at-home/label"
+setenv APP "aah"
+setenv API "train"
+if ($?TMP == 0) setenv TMP "/var/lib/age-at-home/"
+
+# don't update file information more than once per (in seconds)
+setenv TTL 7200
+setenv SECONDS `date "+%s"`
+setenv DATE `echo $SECONDS \/ $TTL \* $TTL | bc`
+
+set DEBUG = true 
 
 #
-# GET CLOUDANT SETUP
+# PROCESS CGI QUERY_STRING
 #
 
-if (-e ~$USER/.cloudant_url) then
-    set cc = ( `cat ~$USER/.cloudant_url` )
-    if ($#cc > 0) set CU = $cc[1]
-    if ($#cc > 1) set CN = $cc[2]
-    if ($#cc > 2) set CP = $cc[3]
-endif
-
-if ($?CLOUDANT_URL) then
-    set CU = $CLOUDANT_URL
-else if ($?CN && $?CP) then
-    set CU = "$CN":"$CP"@"$CN.cloudant.com"
-else
-    if ($?DEBUG) echo `date` "$0 $$ -- no Cloudant URL" >>! $TMP/LOG
-    goto done
-endif
-
-#
-# HACK FOR BREWING JQ
-#
-
-if (! -e /usr/local/bin/brew) then
-   echo "*** NO HOME BREW?  Install from http://brew.sh"
-   goto done
-endif
-if (! -e /usr/local/bin/jq) then
-   echo "*** BREWING 'jq' ..." >& /dev/stderr
-   brew install jq >& /dev/stderr
+if ($?QUERY_STRING) then
+    set DB = `echo "$QUERY_STRING" | sed 's/.*db=\([^&]*\).*/\1/'`
+    if ($DB == "$QUERY_STRING") unset DB
+    set model = `echo "$QUERY_STRING" | sed 's/.*model=\([^&]*\).*/\1/'`
+    if ($model == "$QUERY_STRING") set model = ""
+    set notags = `echo "$QUERY_STRING" | sed 's/.*notags=\([^&]*\).*/\1/'`
+    if ($notags == "$QUERY_STRING") set notags = ""
 endif
 
 #
 # PROCESS COMMAND LINE ARGUMENTS
 #
-
-if ($#* == 0) then
-    echo "USAGE: train_vr -n <maxfiles:100> [-D] -m <classifier_id|device> -n <negative> -d <directory> <IMAGES>" >& /dev/stderr
-endif
 
 @ i = 1
 while ($i <= $#argv)
@@ -78,17 +58,100 @@ while ($i <= $#argv)
 end
 
 #
+# defaults (rough-fog; NO_TAGS; <this-month>*)
+#
+if ($?DB == 0) set DB = rough-fog
+
+# standardize QUERY_STRING to cache results
+setenv QUERY_STRING "db=$DB&model=null"
+
+echo `date` "$0 $$ -- START ($QUERY_STRING)" >& /dev/stderr
+
+#
+# GET CLOUDANT SETUP
+#
+
+if (-e ~$USER/.cloudant_url) then
+    set cc = ( `cat ~$USER/.cloudant_url` )
+    if ($#cc > 0) set CU = $cc[1]
+    if ($#cc > 1) set CN = $cc[2]
+    if ($#cc > 2) set CP = $cc[3]
+endif
+
+if ($?CLOUDANT_URL) then
+    set CU = $CLOUDANT_URL
+else if ($?CN && $?CP) then
+    set CU = "$CN":"$CP"@"$CN.cloudant.com"
+else
+    echo `date` "$0 $$ -- no Cloudant URL" >& /dev/stderr
+    goto done
+endif
+
+#
 # ESTABLISH DEFAULT PARAMETERS
 #
 
-if ($?device && $?model && $?maxfiles && $?notags) then
+if ($?device && $?model && $?notags) then
     # SUCCESS
 else
     if ($?device == 0) set device="rough-fog"
-    if ($?maxfiles == 0) set maxfiles = 100
     if ($device == "rough-fog" && $?notags == 0) set notags = "kitchen"
     if ($device == "damp-cloud" && $?notags == 0) set notags = "bathroom"
 endif
+
+#
+# BUILD FILE LISTS
+#
+
+set OUTPUT = "$TMP/$APP-$API-$QUERY_STRING.$DATE.json"
+if (-e "$OUTPUT") then
+    if ($?DEBUG) echo `date` "$0 $$ -- existing ($OUTPUT)" >& /dev/stderr
+    goto output
+endif
+
+if ($?DEBUG) echo `date` "$0 $$ -- finding old ($APP-$API-$QUERY_STRING.*.json)" >& /dev/stderr
+set old = ( `echo "$TMP/$APP-$API-$QUERY_STRING".*.json` )
+if ($#old > 0) then
+    if ($?DEBUG) echo `date` "$0 $$ -- removing old ($old)" >& /dev/stderr
+    rm -f $old
+endif
+
+if ($?DEBUG) echo `date` "$0 $$ -- building $OUTPUT" >& /dev/stderr
+echo '{"name":"'$device'","negative":"'$notags'","model":' >! "$OUTPUT.$$"
+if ($?model) then
+  echo '"'$model'","detail": null',' >> "$OUTPUT.$$"
+else
+  echo 'null,' >> "$OUTPUT.$$"
+endif
+
+echo '"classes":[' >> "$OUTPUT.$$"
+# note specification of "label" subdirectory
+foreach xdir ( "$TMP/label/$device/"* )
+    if ($?DEBUG) echo `date` "$0 $$ -- processing $xdir" >& /dev/stderr
+    if ($?set) echo ',' >> "$OUTPUT.$$"
+    set set = "$xdir:t"
+    echo '{"class":"'$set'","ids":[' >> "$OUTPUT.$$"
+    @ count = 0
+    @ bytes = 0
+    foreach file ( `find "$xdir" -name "*.jpg" -type f -print` )
+      if ($count > 0) echo ',' >> "$OUTPUT.$$"
+      @ bytes += `ls -l $file | awk '{ print $5 }'`
+      echo '"'"$file:t:r"'"' >> "$OUTPUT.$$"
+      @ count++
+    end
+    echo '],"bytes":'$bytes',"count":'$count'}' >> "$OUTPUT.$$"
+end
+echo ']}' >> "$OUTPUT.$$"
+ 
+jq -c '.' "$OUTPUT.$$" >! "$OUTPUT"
+
+rm -f "$OUTPUT.$$"
+
+##
+## STEP 2
+##
+
+output:
 
 #
 # SETUP WATSON VISUAL_RECOGNITION
@@ -101,35 +164,31 @@ if (-e $creds) then
     set urls = ( `jq '.[]|.credentials.url' $creds` )
     if ($#urls > 0) set TU = `echo "$urls[1]" | sed 's/"//g'`
 else 
-    echo "*** NO CREDENTIALS ($creds); create file and copy credentials from visual-recognition service on bluemix.net" >& /dev/stderr
+    echo `date` "$0 $$ -- NO CREDENTIALS ($creds); create file and copy credentials from visual-recognition service on bluemix.net" >& /dev/stderr
     goto done
 endif
 # these should be query'able from the API
 if ($?verid == 0) set verid = "v3"
 if ($?vdate == 0) set vdate = "2016-05-20"
 
-echo "+++ Watson VisualRecognition for version ($verid) - date ($vdate) @ ($TU) +++"
+if ($?DEBUG) echo `date` "$0 $$ -- Watson VisualRecognition for version ($verid) - date ($vdate) @ ($TU)" >& /dev/stderr
 
 #
 # GET EXISTING CLASSIFIERS FROM WATSON_VR
 #
 
 if ($?model) then
-    if ($model == "$device") then
-	# search for model by <name>
-	set classifiers = ( `curl -q -s -L "$TU/$verid/classifiers?api_key=$api_key&version=$vdate" | jq '[.classifiers[]|select(.name=="'"$model"'")]'` )
-    else
-	# search for model by <classifier_id>
-	set classifiers = ( `curl -q -s -L "$TU/$verid/classifiers?api_key=$api_key&version=$vdate" | jq '[.classifiers[]|select(.classifier_id=="'"$model"'")]'` )
-    endif
-else
-    # return all models
-    set classifiers = ( `curl -q -s -L "$TU/$verid/classifiers?api_key=$api_key&version=$vdate" | jq '.classifiers'` )
+    if ($?DEBUG) echo `date` "$0 $$ -- searching for classifier by ID" >& /dev/stderr
+    set classifiers = ( `curl -q -s -L "$TU/$verid/classifiers?api_key=$api_key&version=$vdate" | jq '[.classifiers[]|select(.classifier_id=="'"$model"'")]'` )
+else if ($?device) then
+    if ($?DEBUG) echo `date` "$0 $$ -- searching for classifier by device" >& /dev/stderr
+    set classifiers = ( `curl -q -s -L "$TU/$verid/classifiers?api_key=$api_key&version=$vdate" | jq '[.classifiers[]|select(.name=="'"$device"'")]'` )
 endif
+
 if ($?classifiers) then
-    if ($?DEBUG) echo `date` "+++ CLASSIFIERS (" `echo "$classifiers" | jq -c '.'` ") +++" >& /dev/stderr
+    if ($?DEBUG) echo `date` "$0 $$ -- CLASSIFIERS (" `echo "$classifiers" | jq -c '.'` ")" >& /dev/stderr
 else
-    # no custom classifiers
+    if ($?DEBUG) echo `date` "$0 $$ -- NO EXISTING CLASSIFIERS" >& /dev/stderr
     set classifiers = ()
 endif
 
@@ -137,138 +196,239 @@ endif
 # TEST CLASSIFIER STATUS (ready or training)
 #
 
-if ($#classifiers > 0) then
+if ($#classifiers > 0 && $?model) then
     set ready = ( `echo "$classifiers" | jq '[.[]|select(.status=="ready")]'` )
-    if ($?model == 0) then
-	set cids = ( `echo $ready | jq '.[]|select(.name=="'"$device"'").classifier_id' | sed 's/"//g'` )
-    else
-        set cids = `echo "$classifiers" | jq '.[]|.classifier_id' | sed 's/"//g'`
-    endif
-    if ($#cids > 0) then
-	echo "+++ existing classifiers for device ($device) +++"
-	echo "$cids"
-	if ($?model) then
-	    foreach cid ( $cids )
-		if ($cid == "$model") then
-		    echo "+++ existing classifier ($model) +++"
-		    if ($?delete) then
-			echo "+++ deleting classifier id ($cid) +++"
-			curl -s -q -X DELETE "$TU/$verid/classifiers/$cid?api_key=$api_key&version=$vdate"
-		    else
-			echo "+++ get detail for classifier id ($cid) +++"
-			set detail = ( `curl -s -q "$TU/$verid/classifiers/$cid?api_key=$api_key&version=$vdate" | jq '.'` )
-		    endif
-		    break
-		endif
-	    end
-	    if ($cid != "$model") then
-		echo "+++ no classifier ($model) for device ($device) +++"
+    set cids = `echo "$classifiers" | jq '.[]|select(.classidier_id=="'"$model"'").classifier_id' | sed 's/"//g'`
+    foreach cid ( $cids )
+	if ($cid == "$model") then
+	    if ($?DEBUG) echo `date` "$0 $$ -- matched specified classifier ($model)" >& /dev/stderr
+	    if ($?delete) then
+		if ($?DEBUG) echo `date` "$0 $$ -- deleting classifier id ($cid)" >& /dev/stderr
+		curl -s -q -X DELETE "$TU/$verid/classifiers/$cid?api_key=$api_key&version=$vdate"
+	    else
+		if ($?DEBUG) echo `date` "$0 $$ -- getting details for classifier id ($cid)" >& /dev/stderr
+		set detail = ( `curl -s -q "$TU/$verid/classifiers/$cid?api_key=$api_key&version=$vdate" | jq '.'` )
+	    endif
+	    break
+	endif
+    end
+    # test if model matched
+    if ($cid != "$model") then
+	if ($?DEBUG) echo `date` "$0 $$ -- no classifier ($model) for device ($device) is ready" >& /dev/stderr
+	set training = ( `echo "$classifiers" | jq '[.[]|select(.status=="training")]'` )
+	set cids = ( `echo $training | jq '.[]|select(.name=="'"$model"'").classifier_id' | sed 's/"//g'` )
+	if ($?DEBUG) echo `date` "$0 $$ -- classifiers ($cids) are in training" >& /dev/stderr
+	foreach cid ( $cids )
+	    if ($cid == "$model") then
+		if ($?DEBUG) echo `date` "$0 $$ -- classifier id ($cid) in training" >& /dev/stderr
 		goto done
 	    endif
-        endif
-    else 
-	set training = ( `echo "$classifiers" | jq '[.[]|select(.status=="training")]'` )
-	set cids = ( `echo $training | jq '.[]|select(.name=="'"$device"'").classifier_id' | sed 's/"//g'` )
-	if ($#cids > 0) then
-	    echo "+++ classifier ($cids) is in training +++"
-	    if ($?model) then
-		foreach cid ( $cids )
-		    if ($cid == "$model") then
-			echo "+++ classifier id ($cid) in training +++"
-			goto done
-		    endif
-		end
-	    endif
-	endif
-    endif
-endif
-
-#
-# GET CLASSES (EXISTING, NEW, ALL)
-#
-
-set existing = ()
-if ($?detail) then
-    set model_status = `curl -s -q -L "$CU/$device-$API/$model" | jq '.'`
-    set doc = ( `echo "$model_status" | jq '._id,._rev' | sed 's/"//g'` )
-    if ($#doc == 2 && $doc[1] == $model && $doc[2] != "") then
-	set existing = ( `echo "$detail" | jq '.classes[]|.class' | sed 's/"//g'` )
-    else
-        echo "+++ No existing model status ($model_status) +++"
-    endif
-endif
-
-set classdirs = ( "$TMP/$device/"* )
-set classes = ()
-set new = ()
-foreach cd ( $classdirs )
-    set cn = "$cd:t"
-    set classes = ( $classes $cn )
-    if ($#existing > 0) then
-	foreach e ( $existing )
-	    if ($cn == "$e") break
 	end
-	if ($cn != "$e") then
-	    set new = ( $new $cn )
-	endif
+	# no matching model
+	unset model
+    endif
+endif
+
+#
+# GET CLASSES (OLD, NET, NEGATIVE)
+#
+
+if ($?model) then
+    set oldmodel = `curl -s -q -L "$CU/$API-$device/$model" | jq '.'`
+    set doc = ( `echo "$oldmodel" | jq '._id,._rev' | sed 's/"//g'` )
+    if ($#doc == 2 && $doc[1] == $model && $doc[2] != "") then
+	set known = ( `echo "$oldmodel" | jq '.classes[].class' | sed 's/"//g'` )
     else
-	set new = ( $new $cn )
+        if ($?DEBUG) echo `date` "$0 $$ -- no stored model ($oldmodel)" >& /dev/stderr
+    endif
+endif
+
+if ($?detail) then
+    set oldclasses = ( `jq '.classes[]|.class' "$OUTPUT" | sed 's/"//g'` )
+endif
+
+set newclasses = ( `jq '.classes[].class' "$OUTPUT" | sed 's/"//g'` )
+set notags = ( `jq '.negative' "$OUTPUT" | sed 's/"//g'` )
+
+set net = ()
+foreach nc ( $newclasses )
+    if ($?oldclasses && $nc != "$notags") then
+	foreach od ( $oldclasses )
+	    if ($nc == "$oc") break
+	end
+	if ($nc != "$oc") then
+	    set net = ( $net $nc )
+	endif
+    else if ($nc != "$notags") then
+	set net = ( $net $nc )
     endif
 end 
 
-echo "+++ EXISTING ($existing) NEW ($new) ALL ($classes) +++"
-
-echo "+++ TRAINING SET - device $device for with negatives ($notags); $maxfiles per class" >& /dev/stderr
+if ($?DEBUG) echo `date` "$0 $$ -- OLD ($?oldclasses) NEW ($net) NEGATIVE ($notags) +++" >& /dev/stderr
 
 #
-# BUILD ZIP FILES
+# CALCULATE BATCH JOBS
+#
+# Size limitations
+# 
+# There are size limitations for training calls and data:
+# 
+# The service accepts a maximum of 10,000 images or 100 MB per .zip file
+@ MAXIMAGES = 10000
+@ MAXZIPBYTES = 100 * 1000 * 1000
+# 
+# The service requires a minimum of 10 images per .zip file.
+@ MINIMAGES = 10
+# 
+# The service accepts a maximum of 256 MB per training call.
+@ MAXSETBYTES = 256 * 1000 * 1000
+#
+# The following guidelines are not enforced by the API. However, the service tends to perform better when the training data adheres to them:
+#
+# 1) A minimum of 50 images is recommended in each .zip file, as fewer than 50 images can decrease the quality of the trained classifier.
+@ MINSETSIZE = 50
+#
+# 2) If the quality and content of training data is the same, then classifiers that are trained on more images will generally be more accurate 
+#    than classifiers that are trained on fewer images. The benefits of training a classifier on more images plateaus at around 5000 images, 
+#    and this can take a while to process. You can train a classifier on more than 5000 images, but it may not significantly increase that classifier's accuracy.
+@ MAXSETSIZE = 5000
+#
+# 3) Uploading a total of 150-200 images per .zip file gives you the best balance between the time it takes to train and the improvement to classifier accuracy. 
+#    More than 200 images increases the time, and it does increace the accuracy, but with diminishing returns for the amount of time it takes.
+@ MAXZIPSET = 200
+#
+# 4) Include approximately the same number of images in each examples file. Including an unequal number of images can cause the quality of the trained classifier to decline. 
 #
 
-set xzips = ()
-set positive = ()
-set negative = ()
-foreach xdir ( $classdirs )
-    if (-d "$xdir" ) then
-	set jpegs = ( `echo "$xdir"/*.jpg` ) 
-	echo -n "$xdir : $#jpegs" >& /dev/stderr
-	if ($#jpegs < 10) then
-	    echo -n " - $#jpegs images; skipping (min 10)" >& /dev/stderr
-	else
-	    set xzip = "/tmp/$xdir:t.$$".zip
-	    if (-e "$xzip") rm "$xzip"
-	    if ($?maxfiles) then
-		if ($maxfiles < $#jpegs) then
-		    echo -n " - using $maxfiles of $#jpegs images"
-		    zip -q -j -r -u "$xzip" $jpegs[1-$maxfiles]
-		else
-		    echo -n " - using $#jpegs images"
-		    zip -q -j -r -u "$xzip" $jpegs
-		endif
-	    else
-		echo " - using $#jpegs images"
-		zip -q -j -r -u "$xzip" "$jpegs"
-	    endif
-	    if ($xdir:t != "$notags") then
-		echo " - as positive"
-		set t = ( `echo '-F "'"$xdir:t"'_positive_examples=@'"$xzip"'"'` )
-		set positive = ( "$positive" "$t" )
-	    else
-		echo " - as negative"
-		set t = ( `echo '-F "negative_examples=@'"$xzip"'"'` )
-		set negative = ( "$negative" "$t" )
-	    endif
-	    set xzips = ( $xzips $xzip )
-	endif
+##
+## ADDITIONAL TRAINING AND TESTING INSTRUCTIONS
+##
+## http://sebastianraschka.com/blog/2016/model-evaluation-selection-part3.html
+##
+## Split into three (3) sets: training, validation and testing (percents)
+##
+set SETS = ( 40 40 20 )
+
+set positive = ( `jq '[.classes|sort_by(.count)[]|select(.class!="'$notags'")|{"class":.class,"count":.count,"bytes":.bytes}]' "$OUTPUT"` )
+set negative = ( `jq '[.classes|sort_by(.count)[]|select(.class=="'$notags'")|{"class":.class,"count":.count,"bytes":.bytes}]' "$OUTPUT"`)
+set allclass = ( `jq '[.classes|sort_by(.count)[]|{"class":.class,"count":.count,"bytes":.bytes}]' "$OUTPUT"`)
+
+if ($?DEBUG) echo `date` "$0 $$ -- " `echo "$positive" "$negative"` >& /dev/stderr
+
+##
+## process all positive examples into training, validation and test sets
+##
+set pairs = ( `echo "$allclass" | jq '.[]|.class,.count' | sed 's/"//g'` )
+if ($#pairs > 0) then
+  @ p = 1
+  echo 
+  set job = '{"device":"'"$device"'","job":'"$$"',"classes":['
+  while ($p < $#pairs) 
+    set class = $pairs[$p]
+    @ p++
+    set count = $pairs[$p]
+    @ p++
+    if ($?DEBUG) echo `date` "$0 $$ -- CLASS ($class) COUNT ($count)" >& /dev/stderr
+    # calculate split size to force only three (3) sets
+    @ split = ( $count / 3 ) + ( $count % 3 )
+    # test is split size is sufficient
+    if ($split > $MINIMAGES) then
+      # test if too many samples
+      if ($split > $MAXSETSIZE) then
+	if ($?DEBUG) echo `date` "$0 $$ -- split size ($MAXSETSIZE); actual ($split)" >& /dev/stderr
+	set split = MAXSETSIZE
+      else
+	if ($?DEBUG) echo `date` "$0 $$ -- split size ($split)" >& /dev/stderr
+      endif
+      set base = "/tmp/$0:t.$$.$class." 
+      jq '.classes[]|select(.class=="'$class'").ids[]' "$OUTPUT" | sed 's/"//g' | split -l $split - $base 
+      set split = ( `echo $base*` )
+      if ($?sets) then
+	set sets = "$sets"'},{"class":"'"$class"'","sets":'
+      else
+	set sets = '{"class":"'"$class"'","sets":'
+      endif
     else
-	echo "Not a directory: $xdir" >& /dev/stderr
+      if ($?DEBUG) echo `date` "$0 $$ -- insufficient samples ($split)" >& /dev/stderr
+      unset split
     endif
-end
-
-if ($#positive == 0 || $#negative == 0) then
-    echo "Insufficient positive or negative ($notags) examples"
-    rm -f $xzips
-    goto done
+    if ($?split) then
+      if ($?DEBUG) echo `date` "$0 $$ -- processing ($split)" >& /dev/stderr
+      foreach s ( $split )
+        if ($?splits) then
+	  set splits = "$splits"','
+	else
+	  set splits = '['
+	endif
+	set ext = $s:e
+	# create ZIP file name 
+	set zip = "/tmp/$0:t.$$.$class.zip"
+	if ($?DEBUG) echo `date` "$0 $$ -- creating ($zip) from split ($s)" >& /dev/stderr
+	foreach id ( `cat "$s"` )
+	  find $TMP/label/$DB -name "$id".jpg -print | xargs -I % zip -q -j -r -u "$zip" % >& /dev/stderr
+	end
+	if (-s "$zip") then
+	  # put all results into temporary directory
+	  set tmpdir = "/tmp/$$/$class"
+	  mkdir -p "$tmpdir"
+	  if ($?DEBUG) echo `date` "$0 $$ -- splitting ($zip) into ($tmpdir)" >& /dev/stderr
+	  zipsplit -b "/tmp/$$/$class/" -n $MAXZIPBYTES "$zip" >& /dev/null
+	  # success?
+	  if ($status == 0) then
+	    # get all the zips created
+	    set zips = ( `echo "/tmp/$$/$class/"*.zip` )
+	    if ($#zips > 0) then
+	      if ($?DEBUG) echo `date` "$0 $$ -- split into $#zips ZIP files ($zips)" >& /dev/stderr
+	      @ i = 1
+	      foreach z ( $zips )
+	        set b = "/tmp/$0:t.$$.$device.$class.$ext.$i.zip"
+		if ($?DEBUG) echo `date` "$0 $$ -- creating batch entry ($b)" >& /dev/stderr
+	        mv "$z" "$b"
+		if ($?batch) then
+		    set batch = "$batch"',"'"$b"'"'
+		else
+		    set batch = '["'"$b"'"'
+		endif
+		@ i++
+	      end
+	      set batch = "$batch"']'
+	      echo "BATCH: $batch" >& /dev/stderr
+	    else
+	      if ($?DEBUG) echo `date` "$0 $$ -- NO ZIPS" >& /dev/stderr
+	      unset zips
+	      exit
+	    endif
+	  else
+	    if ($?DEBUG) echo `date` "$0 $$ -- ZIPSPLIT failure" >& /dev/stderr
+	    exit
+	  endif
+	else
+	  if ($?DEBUG) echo `date` "$0 $$ -- ZIP failure" >& /dev/stderr
+	  exit
+	endif
+	if ($?zips) then
+	  unset zips
+	endif
+	rm -f "$zip"
+	set splits = "$splits""$batch"
+	unset batch
+      end
+    else
+      if ($?DEBUG) echo `date` "$0 $$ -- NO SPLIT ($split)" >& /dev/stderr
+      exit
+    endif
+    set sets = "$sets""$splits"']'
+    unset splits
+  end
+  set job = "$job""$sets"'}]}'
+else
+  if ($?DEBUG) echo `date` "$0 $$ -- NO PAIRS" >& /dev/stderr
+  exit
 endif
+
+echo "$job"
+
+exit
 
 #
 # INITIATE TRAINING
@@ -319,56 +479,56 @@ set DATE = `echo $SECONDS \/ $TTL \* $TTL | bc`
 # standardize QUERY_STRING to cache results
 setenv QUERY_STRING "db=$device&model=$model"
 
-# echo `date` "$0 $$ -- START ($QUERY_STRING)" >>! $TMP/LOG
+# echo `date` "$0 $$ -- START ($QUERY_STRING)" >& /dev/stderr
 
 #
 # make $OUTPUT
 #
-set OUTPUT = "$TMP/$APP-$API-$QUERY_STRING.$DATE.json"
+set OUTPUT = "/tmp/$APP-$API-$QUERY_STRING.$DATE.json"
 
 #
 # update Cloudant
 #
 if ($?CLOUDANT_OFF == 0 && $?CU && $?device) then
-    if ($?DEBUG) echo `date` "$0 $$ -- test if device exists ($CU/$device-$API)" >>! $TMP/LOG
+    if ($?DEBUG) echo `date` "$0 $$ -- test if device exists ($CU/$device-$API)" >>! /tmp/LOG
     set DEVICE_device = `curl -s -q -X GET "$CU/$device-$API" | jq '.db_name'`
     if ( "$DEVICE_device" == "null" ) then
-        if ($?DEBUG) echo `date` "$0 $$ -- creating device $CU/$device-$API" >>! $TMP/LOG
+        if ($?DEBUG) echo `date` "$0 $$ -- creating device $CU/$device-$API" >>! /tmp/LOG
         # create device
         set DEVICE_device = `curl -s -q -X PUT "$CU/$device-$API" | jq '.ok'`
         # test for success
         if ( "$DEVICE_device" != "true" ) then
             # failure
-            if ($?DEBUG) echo `date` "$0 $$ -- failure creating Cloudant database ($device-$API)" >>! $TMP/LOG
+            if ($?DEBUG) echo `date` "$0 $$ -- failure creating Cloudant database ($device-$API)" >>! /tmp/LOG
             setenv CLOUDANT_OFF TRUE
         else
-            if ($?DEBUG) echo `date` "$0 $$ -- success creating device $CU/$device-$API" >>! $TMP/LOG
+            if ($?DEBUG) echo `date` "$0 $$ -- success creating device $CU/$device-$API" >>! /tmp/LOG
         endif
     endif
     if ( $?CLOUDANT_OFF == 0 ) then
-        curl -s -q -o "$OLD" "$CU/$device-$API/$model" >>&! $TMP/LOG
+        curl -s -q -o "$OLD" "$CU/$device-$API/$model" >>&! /tmp/LOG
         if (-s "$OLD") then
             set doc = ( `cat "$OLD" | jq ._id,._rev | sed 's/"//g'` )
             if ($#doc == 2 && $doc[1] == $model && $doc[2] != "") then
                 set rev = $doc[2]
-                if ($?DEBUG) echo `date` "$0 $$ -- deleting old output ($rev)" >>! $TMP/LOG
-                curl -s -q -X DELETE "$CU/$device-$API/$model?rev=$rev" >>&! $TMP/LOG
+                if ($?DEBUG) echo `date` "$0 $$ -- deleting old output ($rev)" >>! /tmp/LOG
+                curl -s -q -X DELETE "$CU/$device-$API/$model?rev=$rev" >>&! /tmp/LOG
             endif
         else
-            if ($?DEBUG) echo `date` "$0 $$ -- no old output to delete" >>! $TMP/LOG
+            if ($?DEBUG) echo `date` "$0 $$ -- no old output to delete" >>! /tmp/LOG
         endif
-        if ($?DEBUG) echo `date` "$0 $$ -- storing new output" >>! $TMP/LOG
-        curl -s -q -H "Content-type: application/json" -X PUT "$CU/$device-$API/$model" -d "@$OUTPUT" >>&! $TMP/LOG
+        if ($?DEBUG) echo `date` "$0 $$ -- storing new output" >>! /tmp/LOG
+        curl -s -q -H "Content-type: application/json" -X PUT "$CU/$device-$API/$model" -d "@$OUTPUT" >>&! /tmp/LOG
         if ($status == 0) then
-            if ($?DEBUG) echo `date` "$0 $$ -- success storing new output" >>! $TMP/LOG
+            if ($?DEBUG) echo `date` "$0 $$ -- success storing new output" >>! /tmp/LOG
         else
-            if ($?DEBUG) echo `date` "$0 $$ -- failure storing new output" >>! $TMP/LOG
+            if ($?DEBUG) echo `date` "$0 $$ -- failure storing new output" >>! /tmp/LOG
         endif
     else
-        if ($?DEBUG) echo `date` "$0 $$ -- Cloudant OFF ($device-$API)" >>! $TMP/LOG
+        if ($?DEBUG) echo `date` "$0 $$ -- Cloudant OFF ($device-$API)" >>! /tmp/LOG
     endif
 else
-    if ($?DEBUG) echo `date` "$0 $$ -- no Cloudant update" >>! $TMP/LOG
+    if ($?DEBUG) echo `date` "$0 $$ -- no Cloudant update" >>! /tmp/LOG
 endif
 
 
