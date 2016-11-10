@@ -364,11 +364,32 @@ jq -c '.' "$JOB/job.json"
 
 if ($?DEBUG) echo `date` "$0 $$ -- training jobs ($JOB)" >& /dev/stderr
 
-foreach i ( $positive )
-  # first (0) set is training
-  set batches = ( `jq '.classes[]|select(.class="'"$i"'")|.sets[0][]' "$JOB" | sed 's/"//g'` )
+#
+# work out runs
+#
 
-jq '.classes[]|select(.class=="person")|.sets[0][]' "$JOB"
+set negatives = ( `jq '.classes[]|select(.class=="'"$notags"'").sets[0][]' "$JOB/job.json" | sed 's/"//g'` )
+echo "NEGATIVES = $negatives"
+@ j = 1
+foreach p ( $positive )
+  # first (0) set is training
+  set positives = ( `jq '.classes[]|select(.class=="'"$p"'").sets[0][]' "$JOB/job.json" | sed 's/"//g'` )
+  @ i = 1
+  while ($i <= $#positives) 
+    if ($?negatives) then
+      if ($?DEBUG) echo `date` "$0 $$ -- POSITIVE & NEGATIVE: $positives[$i] $negatives[$j]"
+      @ j++
+      if ($j <= $#negatives) then
+	set negatives = ( $negatives[$j-] )
+      else
+	unset negatives
+      endif
+    else
+      if ($?DEBUG) echo `date` "$0 $$ -- POSITIVE ONLY: $positives[$i]"
+    endif
+    @ i++
+  end
+end
 
 exit
 
@@ -396,12 +417,18 @@ if ($?DEBUG) echo `date` "$0 $$ -- Watson VisualRecognition for version ($verid)
 # GET EXISTING CLASSIFIERS FROM WATSON_VR
 #
 
-if ($?model) then
+if ($model != "null") then
     if ($?DEBUG) echo `date` "$0 $$ -- searching for classifier by ID" >& /dev/stderr
     set classifiers = ( `curl -q -s -L "$TU/$verid/classifiers?api_key=$api_key&version=$vdate" | jq '[.classifiers[]|select(.classifier_id=="'"$model"'")]'` )
+    if ($?DEBUG) echo `date` "$0 $$ -- got ($classifiers) for $model on $device" >& /dev/stderr
 else if ($?device) then
     if ($?DEBUG) echo `date` "$0 $$ -- searching for classifier by device" >& /dev/stderr
     set classifiers = ( `curl -q -s -L "$TU/$verid/classifiers?api_key=$api_key&version=$vdate" | jq '[.classifiers[]|select(.name=="'"$device"'")]'` )
+    set model = ( `echo "$classifiers" | jq '.[].classifier_id' | sed 's/"//g'` )
+    if ($#model > 0) then
+	if ($?DEBUG) echo `date` "$0 $$ -- using $model[1] from $device for classifier by device" >& /dev/stderr
+	set model = $model[1]
+    endif
 endif
 
 if ($?classifiers) then
@@ -415,9 +442,9 @@ endif
 # TEST CLASSIFIER STATUS (ready or training)
 #
 
-if ($#classifiers > 0 && $?model) then
+if ($#classifiers > 0 && $model != "null") then
     set ready = ( `echo "$classifiers" | jq '[.[]|select(.status=="ready")]'` )
-    set cids = `echo "$classifiers" | jq '.[]|select(.classidier_id=="'"$model"'").classifier_id' | sed 's/"//g'`
+    set cids = `echo "$classifiers" | jq '.[]|select(.classifier_id=="'"$model"'").classifier_id' | sed 's/"//g'`
     foreach cid ( $cids )
 	if ($cid == "$model") then
 	    if ($?DEBUG) echo `date` "$0 $$ -- matched specified classifier ($model)" >& /dev/stderr
@@ -465,7 +492,8 @@ else
     echo `date` "$0 $$ -- no Cloudant URL" >& /dev/stderr
     goto done
 endif
-if ($?model) then
+# logic doesn't work if model is null
+if ($model != "null") then
     set oldmodel = `curl -s -q -L "$CU/$API-$device/$model" | jq '.'`
     set doc = ( `echo "$oldmodel" | jq '._id,._rev' | sed 's/"//g'` )
     if ($#doc == 2 && $doc[1] == $model && $doc[2] != "") then
@@ -480,7 +508,10 @@ endif
 #
 
 if ($?detail) then
-    set oldclasses = ( `jq '.classes[]|.class' "$INVENTORY" | sed 's/"//g'` )
+    if ($?DEBUG) echo `date` "$0 $$ -- model details ($detail)" >& /dev/stderr
+    set oldclasses = ( `echo "$detail" | jq '.classes[].class' | sed 's/"//g'` )
+else
+    set oldclasses = ()
 endif
 
 set newclasses = ( `jq '.classes[].class' "$INVENTORY" | sed 's/"//g'` )
@@ -489,7 +520,7 @@ set notags = ( `jq '.negative' "$INVENTORY" | sed 's/"//g'` )
 set net = ()
 foreach nc ( $newclasses )
     if ($?oldclasses && $nc != "$notags") then
-	foreach od ( $oldclasses )
+	foreach oc ( $oldclasses )
 	    if ($nc == "$oc") break
 	end
 	if ($nc != "$oc") then
@@ -500,7 +531,7 @@ foreach nc ( $newclasses )
     endif
 end 
 
-if ($?DEBUG) echo `date` "$0 $$ -- OLD ($?oldclasses) NEW ($net) NEGATIVE ($notags) +++" >& /dev/stderr
+if ($?DEBUG) echo `date` "$0 $$ -- OLD ($oldclasses) NEW ($net) NEGATIVE ($notags) +++" >& /dev/stderr
 
 exit
 
