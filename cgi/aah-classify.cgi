@@ -6,7 +6,7 @@ setenv LAN "192.168.1"
 if ($?TMP == 0) setenv TMP "/var/lib/age-at-home"
 
 # don't update file information more than once per (in seconds)
-set TTL = 120
+set TTL = 1800
 set SECONDS = `date "+%s"`
 set DATE = `echo $SECONDS \/ $TTL \* $TTL | bc`
 
@@ -208,6 +208,10 @@ output:
 #
 echo "Content-Type: text/html; charset=utf-8"
 echo "Cache-Control: no-cache"
+@ age = $SECONDS - $DATE
+@ refresh = $TTL - $age
+echo "Age: $age"
+echo "Refresh: $refresh"
 echo "Last-Modified:" `date -r $DATE '+%a, %d %b %Y %H:%M:%S %Z'`
 echo ""
 cat "$HTML"

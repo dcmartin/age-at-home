@@ -354,44 +354,8 @@ endif
 # get parameters
 set device = ( `jq '.name' "$INVENTORY" | sed 's/"//g'` )
 set model = ( `jq '.model' "$INVENTORY" | sed 's/"//g'` )
-# get positive and negative examples
-set positive = ( `jq '.classes|sort_by(.count)[]|select(.class!="'$notags'")|.class' "$INVENTORY" | sed 's/"//g'` )
-set negative = ( `jq '.classes|sort_by(.count)[]|select(.class=="'$notags'")|.class' "$INVENTORY" | sed 's/"//g'` )
 
-if ($?DEBUG) echo `date` "$0 $$ -- device ($device) model ($model) (+) $positive (-) $negative" >& /dev/stderr
-
-jq -c '.' "$JOB/job.json"
-
-if ($?DEBUG) echo `date` "$0 $$ -- training jobs ($JOB)" >& /dev/stderr
-
-#
-# work out runs
-#
-
-set negatives = ( `jq '.classes[]|select(.class=="'"$notags"'").sets[0][]' "$JOB/job.json" | sed 's/"//g'` )
-echo "NEGATIVES = $negatives"
-@ j = 1
-foreach p ( $positive )
-  # first (0) set is training
-  set positives = ( `jq '.classes[]|select(.class=="'"$p"'").sets[0][]' "$JOB/job.json" | sed 's/"//g'` )
-  @ i = 1
-  while ($i <= $#positives) 
-    if ($?negatives) then
-      if ($?DEBUG) echo `date` "$0 $$ -- POSITIVE & NEGATIVE: $positives[$i] $negatives[$j]"
-      @ j++
-      if ($j <= $#negatives) then
-	set negatives = ( $negatives[$j-] )
-      else
-	unset negatives
-      endif
-    else
-      if ($?DEBUG) echo `date` "$0 $$ -- POSITIVE ONLY: $positives[$i]"
-    endif
-    @ i++
-  end
-end
-
-exit
+if ($?DEBUG) echo `date` "$0 $$ -- device ($device) model ($model)" >& /dev/stderr
 
 #
 # SETUP WATSON VISUAL_RECOGNITION
@@ -432,7 +396,7 @@ else if ($?device) then
 endif
 
 if ($?classifiers) then
-    if ($?DEBUG) echo `date` "$0 $$ -- CLASSIFIERS (" `echo "$classifiers" | jq -c '.'` ")" >& /dev/stderr
+    if ($?DEBUG) echo `date` "$0 $$ -- CLASSIFIERS ($classifiers)" >& /dev/stderr
 else
     if ($?DEBUG) echo `date` "$0 $$ -- NO EXISTING CLASSIFIERS" >& /dev/stderr
     set classifiers = ()
@@ -533,6 +497,68 @@ end
 
 if ($?DEBUG) echo `date` "$0 $$ -- OLD ($oldclasses) NEW ($net) NEGATIVE ($notags) +++" >& /dev/stderr
 
+#
+# work out runs
+#
+
+set positive = ( `jq '.classes|sort_by(.count)[]|select(.class!="'$notags'")|.class' "$INVENTORY" | sed 's/"//g'` )
+set negative = ( `jq '.classes|sort_by(.count)[]|select(.class=="'$notags'")|.class' "$INVENTORY" | sed 's/"//g'` )
+set negatives = ( `jq '.classes[]|select(.class=="'"$notags"'").sets[0][]' "$JOB/job.json" | sed 's/"//g'` )
+
+@ j = 1
+foreach p ( $positive )
+  # first (0) set is training
+  set positives = ( `jq '.classes[]|select(.class=="'"$p"'").sets[0][]' "$JOB/job.json" | sed 's/"//g'` )
+  @ i = 1
+  while ($i <= $#positives) 
+    set job = "$JOB/$p.$$.json"
+    if ($?cid) then
+      set URL = "$TU/$verid/classifiers/$cid?api_key=$api_key&version=$vdate" \
+    else
+      set URL = "$TU/$verid/classifiers?api_key=$api_key&version=$vdate -F name=$device" \
+    endif
+    if ($?negatives) then
+      if ($?DEBUG) echo `date` "$0 $$ -- POSITIVE & NEGATIVE: $positives[$i] $negatives[$j]"
+      echo curl -L -q -s "$URL" \
+	-o "$job" \
+	-F "$p""_positive_examples=@$positives[$i]" \
+	-F "negative_examples=@$negatives[$j]"
+      @ j++
+      if ($j <= $#negatives) then
+	set negatives = ( $negatives[$j-] )
+      else
+	unset negatives
+      endif
+    else
+      if ($?DEBUG) echo `date` "$0 $$ -- POSITIVE ONLY: $positives[$i]"
+      echo curl -L -q -s "$URL" \
+	-o "$job" \
+	-F "$p""_positive_examples=@$positives[$i]"
+    endif
+
+    # check result code
+    set code = `jq -c '.code' "$job" | sed 's/"//g'` 
+    if ($code == 400) then
+    endif
+    # get classifier id to check on progress
+    set cid = `jq '.classifier_id' "$job" | sed 's/"//g'`
+    set sts = `jq '.status' "$job" | sed 's/"//g'`
+    @ start = `date +%s`
+    if ($?DEBUG) echo -n "+++ LEARNING "
+    while ($sts != "ready") 
+	set sts = `curl -s -q -L "$TU/$verid/classifiers/$cid?api_key=$api_key&version=$vdate" | jq -c '.status' | sed 's/"//g'`
+	if ($?DEBUG) echo -n "."
+	sleep 10
+	break
+    end
+    @ end = `date +%s`
+    @ elapsed = $end - $start
+    if ($?DEBUG) echo " ($elapsed seconds) +++"
+    # increment to next batch
+    @ i++
+  end
+end
+
 exit
 
 #
@@ -563,33 +589,8 @@ set sts = `jq '.status' /tmp/$0:t.$$.json | sed 's/"//g'`
 #
 
 onintr done
-set start = `date +%s`
-echo -n "+++ LEARNING ."
-while ($sts != "ready") 
-    sleep 30
-    set sts = `curl -s -q -L "$TU/$verid/classifiers/$cid?api_key=$api_key&version=$vdate" | jq -c '.status' | sed 's/"//g'`
-    echo -n "."
-end
-set end = `date +%s`
-set elapsed = `echo $end - $start | bc`
-echo " ($elapsed seconds) +++"
 
 goto done
-
-# don't update file information more than once per (in seconds)
-set TTL = 30
-set SECONDS = `date "+%s"`
-set DATE = `echo $SECONDS \/ $TTL \* $TTL | bc`
-
-# standardize QUERY_STRING to cache results
-setenv QUERY_STRING "db=$device&model=$model"
-
-# echo `date` "$0 $$ -- START ($QUERY_STRING)" >& /dev/stderr
-
-#
-# make $INVENTORY
-#
-set INVENTORY = "/tmp/$APP-$API-$QUERY_STRING.$DATE.json"
 
 #
 # update Cloudant
