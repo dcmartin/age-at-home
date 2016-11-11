@@ -62,12 +62,11 @@ while ($i <= $#argv)
 end
 
 #
-# defaults (rough-fog; NO_TAGS; <this-month>*)
+# defaults (rough-fog)
 #
 if ($?device == 0) set device = rough-fog
-if ($?model == 0) set model = null
 # standardize QUERY_STRING to cache results
-setenv QUERY_STRING "db=$device&model=$model"
+setenv QUERY_STRING "db=$device"
 # ESTABLISH DEFAULT PARAMETERS
 if ($?device && $?model && $?notags) then
     echo `date` "$0 $$ -- $device $model $notags" >& /dev/stderr
@@ -185,7 +184,7 @@ mkdir -p "$JOB"
 #
 # ADDITIONAL TRAINING AND TESTING INSTRUCTIONS
 #
-# Split into three (3) sets: training, validation and testing (http://sebastianraschka.com/blog/2016/model-evaluation-selection-part3.html)
+# Split into two or three sets: training, validation (for hyper-parameters) and testing (http://sebastianraschka.com/blog/2016/model-evaluation-selection-part3.html)
 #
 @ MAXIMAGES = 10000
 @ MAXZIPBYTES = 100 * 1000 * 1000
@@ -194,7 +193,7 @@ mkdir -p "$JOB"
 @ MINSETSIZE = 50
 @ MAXSETSIZE = 5000
 @ MAXZIPSET = 200
-@ SPLITSETS = 3
+@ SPLITSETS = 2
 
 # get all classes as pairs of class name and count (including negative)
 set allclass = ( `jq '[.classes|sort_by(.count)[]|{"class":.class,"count":.count,"bytes":.bytes}]' "$INVENTORY"`)
@@ -266,7 +265,7 @@ if ($#pairs > 0) then
 	      if ($?DEBUG) echo `date` "$0 $$ -- split into $#zips ZIP files ($zips)" >& /dev/stderr
 	      @ i = 1
 	      foreach z ( $zips )
-	        set b = "$JOB/$device.$class.$ext.$i.zip"
+	        set b = "$JOB/$class.$ext.$i.zip"
 		if ($?DEBUG) echo `date` "$0 $$ -- creating batch entry ($b)" >& /dev/stderr
 	        mv "$z" "$b"
 		if ($?batch) then
@@ -353,9 +352,8 @@ endif
 
 # get parameters
 set device = ( `jq '.name' "$INVENTORY" | sed 's/"//g'` )
-set model = ( `jq '.model' "$INVENTORY" | sed 's/"//g'` )
 
-if ($?DEBUG) echo `date` "$0 $$ -- device ($device) model ($model)" >& /dev/stderr
+if ($?DEBUG) echo `date` "$0 $$ -- device ($device)" >& /dev/stderr
 
 #
 # SETUP WATSON VISUAL_RECOGNITION
@@ -381,17 +379,19 @@ if ($?DEBUG) echo `date` "$0 $$ -- Watson VisualRecognition for version ($verid)
 # GET EXISTING CLASSIFIERS FROM WATSON_VR
 #
 
-if ($model != "null") then
+if ($?model) then
     if ($?DEBUG) echo `date` "$0 $$ -- searching for classifier by ID" >& /dev/stderr
-    set classifiers = ( `curl -q -s -L "$TU/$verid/classifiers?api_key=$api_key&version=$vdate" | jq '[.classifiers[]|select(.classifier_id=="'"$model"'")]'` )
+    set classifiers = ( `curl -q -s -L "$TU/$verid/classifiers?api_key=$api_key&version=$vdate" | jq '.classifiers[]|select(.classifier_id=="'"$model"'")'` )
     if ($?DEBUG) echo `date` "$0 $$ -- got ($classifiers) for $model on $device" >& /dev/stderr
 else if ($?device) then
     if ($?DEBUG) echo `date` "$0 $$ -- searching for classifier by device" >& /dev/stderr
-    set classifiers = ( `curl -q -s -L "$TU/$verid/classifiers?api_key=$api_key&version=$vdate" | jq '[.classifiers[]|select(.name=="'"$device"'")]'` )
-    set model = ( `echo "$classifiers" | jq '.[].classifier_id' | sed 's/"//g'` )
+    set classifiers = ( `curl -q -s -L "$TU/$verid/classifiers?api_key=$api_key&version=$vdate" | jq '.classifiers[]|select(.name=="'"$device"'")'` )
+    set model = ( `echo "$classifiers" | jq '.classifier_id' | sed 's/"//g'` )
     if ($#model > 0) then
-	if ($?DEBUG) echo `date` "$0 $$ -- using $model[1] from $device for classifier by device" >& /dev/stderr
-	set model = $model[1]
+      if ($?DEBUG) echo `date` "$0 $$ -- using $model[1] from $device for classifier by device" >& /dev/stderr
+      set model = $model[1]
+    else
+      unset model
     endif
 endif
 
@@ -406,10 +406,11 @@ endif
 # TEST CLASSIFIER STATUS (ready or training)
 #
 
-if ($#classifiers > 0 && $model != "null") then
+if ($#classifiers > 0 && $?model) then
     set ready = ( `echo "$classifiers" | jq '[.[]|select(.status=="ready")]'` )
     set cids = `echo "$classifiers" | jq '.[]|select(.classifier_id=="'"$model"'").classifier_id' | sed 's/"//g'`
-    foreach cid ( $cids )
+    if ($#cids > 0) then
+      foreach cid ( $cids )
 	if ($cid == "$model") then
 	    if ($?DEBUG) echo `date` "$0 $$ -- matched specified classifier ($model)" >& /dev/stderr
 	    if ($?delete) then
@@ -421,9 +422,9 @@ if ($#classifiers > 0 && $model != "null") then
 	    endif
 	    break
 	endif
-    end
-    # test if model matched
-    if ($cid != "$model") then
+      end
+      # test if model matched
+      if ($cid != "$model") then
 	if ($?DEBUG) echo `date` "$0 $$ -- no classifier ($model) for device ($device) is ready" >& /dev/stderr
 	set training = ( `echo "$classifiers" | jq '[.[]|select(.status=="training")]'` )
 	set cids = ( `echo $training | jq '.[]|select(.name=="'"$model"'").classifier_id' | sed 's/"//g'` )
@@ -436,6 +437,7 @@ if ($#classifiers > 0 && $model != "null") then
 	end
 	# no matching model
 	unset model
+      endif
     endif
 endif
 
@@ -457,7 +459,7 @@ else
     goto done
 endif
 # logic doesn't work if model is null
-if ($model != "null") then
+if ($?model) then
     set oldmodel = `curl -s -q -L "$CU/$API-$device/$model" | jq '.'`
     set doc = ( `echo "$oldmodel" | jq '._id,._rev' | sed 's/"//g'` )
     if ($#doc == 2 && $doc[1] == $model && $doc[2] != "") then
@@ -475,7 +477,7 @@ if ($?detail) then
     if ($?DEBUG) echo `date` "$0 $$ -- model details ($detail)" >& /dev/stderr
     set oldclasses = ( `echo "$detail" | jq '.classes[].class' | sed 's/"//g'` )
 else
-    set oldclasses = ()
+    unset oldclasses
 endif
 
 set newclasses = ( `jq '.classes[].class' "$INVENTORY" | sed 's/"//g'` )
@@ -495,7 +497,7 @@ foreach nc ( $newclasses )
     endif
 end 
 
-if ($?DEBUG) echo `date` "$0 $$ -- OLD ($oldclasses) NEW ($net) NEGATIVE ($notags) +++" >& /dev/stderr
+if ($?DEBUG) echo `date` "$0 $$ -- OLD ($?oldclasses) NEW ($net) NEGATIVE ($notags) +++" >& /dev/stderr
 
 #
 # work out runs
@@ -505,58 +507,85 @@ set positive = ( `jq '.classes|sort_by(.count)[]|select(.class!="'$notags'")|.cl
 set negative = ( `jq '.classes|sort_by(.count)[]|select(.class=="'$notags'")|.class' "$INVENTORY" | sed 's/"//g'` )
 set negatives = ( `jq '.classes[]|select(.class=="'"$notags"'").sets[0][]' "$JOB/job.json" | sed 's/"//g'` )
 
+@ h = 1
 @ j = 1
-foreach p ( $positive )
+while ($h <= $#positive) 
+  set p = $positive[$h]
   # first (0) set is training
   set positives = ( `jq '.classes[]|select(.class=="'"$p"'").sets[0][]' "$JOB/job.json" | sed 's/"//g'` )
   @ i = 1
   while ($i <= $#positives) 
     set job = "$JOB/$p.$$.json"
-    if ($?cid) then
-      set URL = "$TU/$verid/classifiers/$cid?api_key=$api_key&version=$vdate" \
+    if ($?model) then
+      set URL = "$TU/$verid/classifiers/$model?api_key=$api_key&version=$vdate"
     else
-      set URL = "$TU/$verid/classifiers?api_key=$api_key&version=$vdate -F name=$device" \
+      set URL = "$TU/$verid/classifiers?api_key=$api_key&version=$vdate -F name=$device"
     endif
     if ($?negatives) then
-      if ($?DEBUG) echo `date` "$0 $$ -- POSITIVE & NEGATIVE: $positives[$i] $negatives[$j]"
-      echo curl -L -q -s "$URL" \
-	-o "$job" \
-	-F "$p""_positive_examples=@$positives[$i]" \
-	-F "negative_examples=@$negatives[$j]"
-      @ j++
+      set examples = ( -F "$p""_positive_examples=@$positives[$i]" -F "negative_examples=@$negatives[$j]" )
+    else if ($?model) then
+      set examples = ( -F "$p""_positive_examples=@$positives[$i]" )
+    else
+      echo `date` "$0 $$ ** INSUFFICIENT EXAMPLE SETS **"
+      exit
+    endif
+again:
+    if ($?DEBUG) echo `date` "$0 $$ -- LEARN ($URL $examples)" >& /dev/stderr
+    # timer start
+    @ start = `date +%s`
+    # run training 
+    curl -f -v -q -S -L "$URL" -o "$job" $examples >& /dev/stderr
+    # check status
+    if ($status != 0) then
+      echo `date` "$0 $$ ** FAILURE ($status)" >& /dev/stderr
+      goto next
+    else if (! -s "$job") then
+      echo `date` "$0 $$ ** no output ($job)" >& /dev/stderr
+      rm -f "$job"
+      goto again
+    else 
+      # check result code
+      set code = `jq -c '.code' "$job" | sed 's/"//g'` 
+      if ($code == 400) then
+	set message = `jq -c '.error' "$job" | sed 's/"//g'`
+	if ($?DEBUG) echo `date` "$0 $$ -- FAILURE ($message)" >& /dev/stderr
+	goto next
+      endif
+      # get classifier id to check on progress
+      set model = `jq '.classifier_id' "$job" | sed 's/"//g'`
+      set sts = `jq '.status' "$job" | sed 's/"//g'`
+      if ($#model > 0 && $model != "null" && $sts != "error") then
+	if ($?DEBUG) echo `date` "$0 $$ -- LEARNING ($model) status ($sts)" >& /dev/stderr
+      else
+	echo -n `date` "$0 $$ ** FAILURE ($model) ($sts) ($job)" >& /dev/stderr
+	goto next
+      endif
+    endif
+    if ($?DEBUG) echo -n "+++ WAITING "
+    while ($sts != "ready") 
+	set sts = `curl -s -q -L "$TU/$verid/classifiers/$cid?api_key=$api_key&version=$vdate" | jq -c '.status' | sed 's/"//g'`
+	if ($sts != "null") then
+	  if ($?DEBUG) echo -n "."
+	else
+	  if ($?DEBUG) echo -n "!"
+	endif
+        sleep 10
+    end
+    @ elapsed = `date +%s` - $start
+    if ($?DEBUG) echo " ($elapsed seconds) +++"
+next:
+    # increment to next batch
+    @ i++
+    @ j++
+    if ($?negatives) then
       if ($j <= $#negatives) then
 	set negatives = ( $negatives[$j-] )
       else
 	unset negatives
       endif
-    else
-      if ($?DEBUG) echo `date` "$0 $$ -- POSITIVE ONLY: $positives[$i]"
-      echo curl -L -q -s "$URL" \
-	-o "$job" \
-	-F "$p""_positive_examples=@$positives[$i]"
     endif
-
-    # check result code
-    set code = `jq -c '.code' "$job" | sed 's/"//g'` 
-    if ($code == 400) then
-    endif
-    # get classifier id to check on progress
-    set cid = `jq '.classifier_id' "$job" | sed 's/"//g'`
-    set sts = `jq '.status' "$job" | sed 's/"//g'`
-    @ start = `date +%s`
-    if ($?DEBUG) echo -n "+++ LEARNING "
-    while ($sts != "ready") 
-	set sts = `curl -s -q -L "$TU/$verid/classifiers/$cid?api_key=$api_key&version=$vdate" | jq -c '.status' | sed 's/"//g'`
-	if ($?DEBUG) echo -n "."
-	sleep 10
-	break
-    end
-    @ end = `date +%s`
-    @ elapsed = $end - $start
-    if ($?DEBUG) echo " ($elapsed seconds) +++"
-    # increment to next batch
-    @ i++
   end
+  @ h++
 end
 
 exit
@@ -640,4 +669,5 @@ endif
 done:
 
 rm -f /tmp/$0:t.$$.json
+
 echo `date` "$0 $$ -- FINISH ($*)"
