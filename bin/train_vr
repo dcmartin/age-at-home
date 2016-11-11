@@ -65,7 +65,7 @@ end
 # defaults (rough-fog)
 #
 if ($?device == 0) set device = rough-fog
-# standardize QUERY_STRING to cache results
+# standardize QUERY_STRING to manage workloads
 setenv QUERY_STRING "db=$device"
 # ESTABLISH DEFAULT PARAMETERS
 if ($?device && $?model && $?notags) then
@@ -82,7 +82,7 @@ echo `date` "$0 $$ -- START ($QUERY_STRING)" >& /dev/stderr
 ## STEP 1 - INVENTORY
 ##
 
-set INVENTORY = "$TMP/$APP-$API-$QUERY_STRING.$DATE.json"
+set INVENTORY = "$TMP/$APP-$API-$device.$DATE.json"
 set INPROGRESS = ( `echo "$INVENTORY".*` )
 if ($#INPROGRESS) then
     if ($?DEBUG) echo `date` "$0 $$ -- inventory in-progress ($INPROGRESS)" >& /dev/stderr
@@ -91,8 +91,8 @@ else if (-s "$INVENTORY") then
     if ($?DEBUG) echo `date` "$0 $$ -- found $INVENTORY" >& /dev/stderr
     goto batch
 endif
-if ($?DEBUG) echo `date` "$0 $$ -- finding old ($APP-$API-$QUERY_STRING.*.json)" >& /dev/stderr
-set old = ( `echo "$TMP/$APP-$API-$QUERY_STRING".*.json` )
+if ($?DEBUG) echo `date` "$0 $$ -- finding old ($APP-$API-$device.*.json)" >& /dev/stderr
+set old = ( `echo "$TMP/$APP-$API-$device".*.json` )
 if ($#old > 0) then
     if ($?DEBUG) echo `date` "$0 $$ -- removing old ($old)" >& /dev/stderr
     rm -f $old
@@ -142,7 +142,7 @@ rm -f "$INVENTORY.$$"
 
 batch:
 
-set JOB = "$TMP/$APP-$API-$QUERY_STRING.$DATE.job"
+set JOB = "$TMP/$APP-$API-$device.$DATE.job"
 set INPROGRESS = ( `echo "$JOB".*` )
 if ($#INPROGRESS) then
     if ($?DEBUG) echo `date` "$0 $$ -- batching in-progress ($INPROGRESS)" >& /dev/stderr
@@ -151,7 +151,7 @@ else if (-d "$JOB") then
     if ($?DEBUG) echo `date` "$0 $$ -- existing batches ($JOB)" >& /dev/stderr
     goto train
 endif
-set old = ( `echo "$TMP/$APP-$API-$QUERY_STRING".*.job` )
+set old = ( `echo "$TMP/$APP-$API-$device".*.job` )
 if ($#old > 0) then
     if ($?DEBUG) echo `date` "$0 $$ -- NOT removing old ($old)" >& /dev/stderr
     # rm -fr $old
@@ -325,7 +325,7 @@ train:
 
 if ($?DEBUG) echo `date` "$0 $$ -- TRAIN" >& /dev/stderr
 
-set TRAIN = "$TMP/$APP-$API-$QUERY_STRING.$DATE.job/train"
+set TRAIN = "$TMP/$APP-$API-$device.$DATE.job/train"
 set INPROGRESS = ( `echo "$TRAIN".*` )
 if ($#INPROGRESS) then
     if ($?DEBUG) echo `date` "$0 $$ -- training in-progress ($INPROGRESS)" >& /dev/stderr
@@ -334,15 +334,15 @@ else if (-d "$TRAIN") then
     if ($?DEBUG) echo `date` "$0 $$ -- existing training ($TRAIN)" >& /dev/stderr
     goto train
 endif
-set old = ( `echo "$TMP/$APP-$API-$QUERY_STRING.$DATE.job/train".*.json` )
+set old = ( `echo "$TMP/$APP-$API-$device.$DATE.job/train".*.json` )
 if ($#old > 0) then
     if ($?DEBUG) echo `date` "$0 $$ -- NOT removing old ($old)" >& /dev/stderr
     # rm -fr $old
 endif
 
 # check requisites
-set INVENTORY = "$TMP/$APP-$API-$QUERY_STRING.$DATE.json"
-set JOB = "$TMP/$APP-$API-$QUERY_STRING.$DATE.job"
+set INVENTORY = "$TMP/$APP-$API-$device.$DATE.json"
+set JOB = "$TMP/$APP-$API-$device.$DATE.job"
 if ((-s "$INVENTORY") && (-d "$JOB")) then
     if ($?DEBUG) echo `date` "$0 $$ -- found inventory ($INVENTORY) and job ($JOB)" >& /dev/stderr
 else 
@@ -416,6 +416,7 @@ if ($#classifiers > 0 && $?model) then
 	    if ($?delete) then
 		if ($?DEBUG) echo `date` "$0 $$ -- deleting classifier id ($cid)" >& /dev/stderr
 		curl -s -q -X DELETE "$TU/$verid/classifiers/$cid?api_key=$api_key&version=$vdate"
+		unset model
 	    else
 		if ($?DEBUG) echo `date` "$0 $$ -- getting details for classifier id ($cid)" >& /dev/stderr
 		set detail = ( `curl -s -q "$TU/$verid/classifiers/$cid?api_key=$api_key&version=$vdate" | jq '.'` )
@@ -423,20 +424,22 @@ if ($#classifiers > 0 && $?model) then
 	    break
 	endif
       end
-      # test if model matched
-      if ($cid != "$model") then
-	if ($?DEBUG) echo `date` "$0 $$ -- no classifier ($model) for device ($device) is ready" >& /dev/stderr
-	set training = ( `echo "$classifiers" | jq '[.[]|select(.status=="training")]'` )
-	set cids = ( `echo $training | jq '.[]|select(.name=="'"$model"'").classifier_id' | sed 's/"//g'` )
-	if ($?DEBUG) echo `date` "$0 $$ -- classifiers ($cids) are in training" >& /dev/stderr
-	foreach cid ( $cids )
-	    if ($cid == "$model") then
-		if ($?DEBUG) echo `date` "$0 $$ -- classifier id ($cid) in training" >& /dev/stderr
-		goto done
-	    endif
-	end
-	# no matching model
-	unset model
+      # test if model matched (and not deleted)
+      if ($?model) then
+        if ($cid != "$model") then
+	  if ($?DEBUG) echo `date` "$0 $$ -- no classifier ($model) for device ($device) is ready" >& /dev/stderr
+	  set training = ( `echo "$classifiers" | jq '[.[]|select(.status=="training")]'` )
+	  set cids = ( `echo $training | jq '.[]|select(.name=="'"$model"'").classifier_id' | sed 's/"//g'` )
+	  if ($?DEBUG) echo `date` "$0 $$ -- classifiers ($cids) are in training" >& /dev/stderr
+	  foreach cid ( $cids )
+	      if ($cid == "$model") then
+		  if ($?DEBUG) echo `date` "$0 $$ -- classifier id ($cid) in training" >& /dev/stderr
+		  goto done
+	      endif
+	  end
+	  # no matching model
+	  unset model
+	endif
       endif
     endif
 endif
@@ -516,11 +519,6 @@ while ($h <= $#positive)
   @ i = 1
   while ($i <= $#positives) 
     set job = "$JOB/$p.$$.json"
-    if ($?model) then
-      set URL = "$TU/$verid/classifiers/$model?api_key=$api_key&version=$vdate"
-    else
-      set URL = "$TU/$verid/classifiers?api_key=$api_key&version=$vdate -F name=$device"
-    endif
     if ($?negatives) then
       set examples = ( -F "$p""_positive_examples=@$positives[$i]" -F "negative_examples=@$negatives[$j]" )
     else if ($?model) then
@@ -530,14 +528,27 @@ while ($h <= $#positive)
       exit
     endif
 again:
-    if ($?DEBUG) echo `date` "$0 $$ -- LEARN ($URL $examples)" >& /dev/stderr
     # timer start
     @ start = `date +%s`
     # run training 
-    curl -f -v -q -S -L "$URL" -o "$job" $examples >& /dev/stderr
+    if ($?model) then
+      if ($?DEBUG) echo `date` "$0 $$ -- RETRAIN $model ($examples)" >& /dev/stderr
+      curl -f -v -q -S -L "$TU/$verid/classifiers/$model?api_key=$api_key&version=$vdate" -o $job $examples >& /dev/stderr
+    else
+      if ($?DEBUG) echo `date` "$0 $$ -- CREATE $device ($examples)" >& /dev/stderr
+      curl -f -v -q -S -L "$TU/$verid/classifiers?api_key=$api_key&version=$vdate" -F "name=$device" -o $job $examples >& /dev/stderr
+    endif
+    set cstatus = $status
     # check status
-    if ($status != 0) then
-      echo `date` "$0 $$ ** FAILURE ($status)" >& /dev/stderr
+    if ($cstatus != 0) then
+      echo `date` "$0 $$ ** FAILURE ($cstatus)" >& /dev/stderr
+      if (-s "$job") then
+	  echo `date` "$0 $$ ** " `cat "$job"` >& /dev/stderr
+	  # check result code
+	  set code = `jq -c '.code' "$job" | sed 's/"//g'` 
+	  set message = `jq -c '.error' "$job" | sed 's/"//g'`
+	  if ($?DEBUG) echo `date` "$0 $$ -- FAILURE ($message)" >& /dev/stderr
+      endif
       goto next
     else if (! -s "$job") then
       echo `date` "$0 $$ ** no output ($job)" >& /dev/stderr
@@ -552,18 +563,18 @@ again:
 	goto next
       endif
       # get classifier id to check on progress
-      set model = `jq '.classifier_id' "$job" | sed 's/"//g'`
+      set cid = `jq '.classifier_id' "$job" | sed 's/"//g'`
       set sts = `jq '.status' "$job" | sed 's/"//g'`
-      if ($#model > 0 && $model != "null" && $sts != "error") then
-	if ($?DEBUG) echo `date` "$0 $$ -- LEARNING ($model) status ($sts)" >& /dev/stderr
+      if ($#cid > 0 && $cid != "null" && $sts != "error") then
+	if ($?DEBUG) echo `date` "$0 $$ -- LEARNING ($cid) status ($sts)" >& /dev/stderr
       else
-	echo -n `date` "$0 $$ ** FAILURE ($model) ($sts) ($job)" >& /dev/stderr
+	echo -n `date` "$0 $$ ** FAILURE ($cid) ($sts) ($job)" >& /dev/stderr
 	goto next
       endif
     endif
     if ($?DEBUG) echo -n "+++ WAITING "
     while ($sts != "ready") 
-	set sts = `curl -s -q -L "$TU/$verid/classifiers/$cid?api_key=$api_key&version=$vdate" | jq -c '.status' | sed 's/"//g'`
+	set sts = ( `curl -s -q -L "$TU/$verid/classifiers/$cid?api_key=$api_key&version=$vdate" | jq -c '.status' | sed 's/"//g'` )
 	if ($sts != "null") then
 	  if ($?DEBUG) echo -n "."
 	else
@@ -573,6 +584,8 @@ again:
     end
     @ elapsed = `date +%s` - $start
     if ($?DEBUG) echo " ($elapsed seconds) +++"
+    set model = "$cid"
+
 next:
     # increment to next batch
     @ i++
