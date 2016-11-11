@@ -381,12 +381,12 @@ if ($?DEBUG) echo `date` "$0 $$ -- Watson VisualRecognition for version ($verid)
 
 if ($?model) then
     if ($?DEBUG) echo `date` "$0 $$ -- searching for classifier by ID" >& /dev/stderr
-    set classifiers = ( `curl -q -s -L "$TU/$verid/classifiers?api_key=$api_key&version=$vdate" | jq '.classifiers[]|select(.classifier_id=="'"$model"'")'` )
+    set classifiers = ( `curl -q -s -L "$TU/$verid/classifiers?api_key=$api_key&version=$vdate" | jq '[.classifiers[]|select(.classifier_id=="'"$model"'")]'` )
     if ($?DEBUG) echo `date` "$0 $$ -- got ($classifiers) for $model on $device" >& /dev/stderr
 else if ($?device) then
     if ($?DEBUG) echo `date` "$0 $$ -- searching for classifier by device" >& /dev/stderr
-    set classifiers = ( `curl -q -s -L "$TU/$verid/classifiers?api_key=$api_key&version=$vdate" | jq '.classifiers[]|select(.name=="'"$device"'")'` )
-    set model = ( `echo "$classifiers" | jq '.classifier_id' | sed 's/"//g'` )
+    set classifiers = ( `curl -q -s -L "$TU/$verid/classifiers?api_key=$api_key&version=$vdate" | jq '[.classifiers[]|select(.name=="'"$device"'")]'` )
+    set model = ( `echo "$classifiers" | jq '.[].classifier_id' | sed 's/"//g'` )
     if ($#model > 0) then
       if ($?DEBUG) echo `date` "$0 $$ -- using $model[1] from $device for classifier by device" >& /dev/stderr
       set model = $model[1]
