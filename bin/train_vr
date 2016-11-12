@@ -132,7 +132,7 @@ foreach xdir ( "$TMP/label/$device/"* )
 end
 echo ']}' >> "$INVENTORY.$$"
  
-jq -c '.' "$INVENTORY.$$" >! "$INVENTORY"
+jq '.' "$INVENTORY.$$" >! "$INVENTORY"
 
 rm -f "$INVENTORY.$$"
 
@@ -533,10 +533,10 @@ again:
     # run training 
     if ($?model) then
       if ($?DEBUG) echo `date` "$0 $$ -- RETRAIN $model ($examples)" >& /dev/stderr
-      curl -f -v -q -S -L "$TU/$verid/classifiers/$model?api_key=$api_key&version=$vdate" -o $job $examples >& /dev/stderr
+      curl -f -s -q -S -L "$TU/$verid/classifiers/$model?api_key=$api_key&version=$vdate" -o $job $examples >& /dev/stderr
     else
       if ($?DEBUG) echo `date` "$0 $$ -- CREATE $device ($examples)" >& /dev/stderr
-      curl -f -v -q -S -L "$TU/$verid/classifiers?api_key=$api_key&version=$vdate" -F "name=$device" -o $job $examples >& /dev/stderr
+      curl -f -s -q -S -L "$TU/$verid/classifiers?api_key=$api_key&version=$vdate" -F "name=$device" -o $job $examples >& /dev/stderr
     endif
     set cstatus = $status
     # check status
@@ -545,8 +545,8 @@ again:
       if (-s "$job") then
 	  echo `date` "$0 $$ ** " `cat "$job"` >& /dev/stderr
 	  # check result code
-	  set code = `jq -c '.code' "$job" | sed 's/"//g'` 
-	  set message = `jq -c '.error' "$job" | sed 's/"//g'`
+	  set code = `jq '.code' "$job" | sed 's/"//g'` 
+	  set message = `jq '.error' "$job" | sed 's/"//g'`
 	  if ($?DEBUG) echo `date` "$0 $$ -- FAILURE ($message)" >& /dev/stderr
       endif
       goto next
@@ -556,9 +556,9 @@ again:
       goto again
     else 
       # check result code
-      set code = `jq -c '.code' "$job" | sed 's/"//g'` 
+      set code = `jq '.code' "$job" | sed 's/"//g'` 
       if ($code == 400) then
-	set message = `jq -c '.error' "$job" | sed 's/"//g'`
+	set message = `jq '.error' "$job" | sed 's/"//g'`
 	if ($?DEBUG) echo `date` "$0 $$ -- FAILURE ($message)" >& /dev/stderr
 	goto next
       endif
@@ -574,7 +574,7 @@ again:
     endif
     if ($?DEBUG) echo -n "+++ WAITING "
     while ($sts != "ready") 
-	set sts = ( `curl -s -q -L "$TU/$verid/classifiers/$cid?api_key=$api_key&version=$vdate" | jq -c '.status' | sed 's/"//g'` )
+	set sts = ( `curl -s -q -L "$TU/$verid/classifiers/$cid?api_key=$api_key&version=$vdate" | jq '.status' | sed 's/"//g'` )
 	if ($sts != "null") then
 	  if ($?DEBUG) echo -n "."
 	else
@@ -601,6 +601,10 @@ next:
   @ h++
 end
 
+if ($?DEBUG) echo `date` "$0 $$ -- COMPLETE ($model)" >& /dev/stderr
+
+set classifier = ( `curl -s -q -L "$TU/$verid/classifiers/$model?api_key=$api_key&version=$vdate" | jq '.'` )
+
 exit
 
 #
@@ -616,7 +620,7 @@ rm -f /tmp/$0:t.$$.sh
 rm -f $xzips
 
 # check result code
-set code = `jq -c '.code' /tmp/$0:t.$$.json | sed 's/"//g'` 
+set code = `jq '.code' /tmp/$0:t.$$.json | sed 's/"//g'` 
 if ($code == 400) then
     jq '.error' /tmp/$0:t.$$.json
     goto done
