@@ -8,7 +8,26 @@ setenv TTL 28800
 setenv SECONDS `date "+%s"`
 setenv DATE `echo $SECONDS \/ $TTL \* $TTL | bc`
 
+# debug set/not
 set DEBUG = true 
+
+#
+# GET CLOUDANT SETUP
+#
+if (-e ~$USER/.cloudant_url) then
+    set cc = ( `cat ~$USER/.cloudant_url` )
+    if ($#cc > 0) set CU = $cc[1]
+    if ($#cc > 1) set CN = $cc[2]
+    if ($#cc > 2) set CP = $cc[3]
+endif
+if ($?CLOUDANT_URL) then
+    set CU = $CLOUDANT_URL
+else if ($?CN && $?CP) then
+    set CU = "$CN":"$CP"@"$CN.cloudant.com"
+else
+    echo `date` "$0 $$ -- no Cloudant URL" >& /dev/stderr
+    exit
+endif
 
 #
 # PROCESS CGI QUERY_STRING
@@ -77,6 +96,21 @@ else
 endif
 
 echo `date` "$0 $$ -- START ($QUERY_STRING)" >& /dev/stderr
+
+# logic doesn't work if model is null
+if ($?model) then
+    set previous = ( `curl -s -q -L "$CU/$API-$device/$model" | jq '.'` )
+    set doc = ( `echo "$previous" | jq '._id,._rev' | sed 's/"//g'` )
+    if ($#doc == 2 && $doc[1] == $model && $doc[2] != "") then
+	set sets = ( `echo "$previous" | jq '.classes[].class' | sed 's/"//g'` )
+	set positive = ( `echo "$previous" | jq '.detail.classes[].class' | sed 's/"//g'` )
+	set negative = `echo "$previous" | jq '.negative' | sed 's/"//g'` )
+	set when = `echo "$previous" | jq '.date' | sed 's/"//g'` )
+	if ($?DEBUG) echo `date` "$0 $$ -- date ($when) sets ($sets) negative ($negative) positive ($positive)" >& /dev/stderr
+    else
+        if ($?DEBUG) echo `date` "$0 $$ -- no stored model ($previous)" >& /dev/stderr
+    endif
+endif
 
 ##
 ## STEP 1 - INVENTORY
@@ -521,10 +555,10 @@ again:
 	  set message = `jq '.error' "$job" | sed 's/"//g'`
 	  if ($?DEBUG) echo `date` "$0 $$ -- FAILURE ($message)" >& /dev/stderr
       endif
+      rm -f "$job"
       goto next
     else if (! -s "$job") then
       echo `date` "$0 $$ ** no output ($job)" >& /dev/stderr
-      rm -f "$job"
       goto again
     else 
       # check result code
@@ -544,6 +578,7 @@ again:
 	goto next
       endif
     endif
+    rm -f "$job"
     if ($?DEBUG) echo -n "+++ WAITING "
     while ($sts != "ready") 
 	set detail = ( `curl -s -q -L "$TU/$verid/classifiers/$model?api_key=$api_key&version=$vdate" | jq '.'` )
@@ -585,50 +620,22 @@ else
 endif
 
 #
-# GET CLOUDANT SETUP
-#
-if (-e ~$USER/.cloudant_url) then
-    set cc = ( `cat ~$USER/.cloudant_url` )
-    if ($#cc > 0) set CU = $cc[1]
-    if ($#cc > 1) set CN = $cc[2]
-    if ($#cc > 2) set CP = $cc[3]
-endif
-if ($?CLOUDANT_URL) then
-    set CU = $CLOUDANT_URL
-else if ($?CN && $?CP) then
-    set CU = "$CN":"$CP"@"$CN.cloudant.com"
-else
-    echo `date` "$0 $$ -- no Cloudant URL" >& /dev/stderr
-    goto done
-endif
-# logic doesn't work if model is null
-if ($?model) then
-    set oldmodel = `curl -s -q -L "$CU/$API-$device/$model" | jq '.'`
-    set doc = ( `echo "$oldmodel" | jq '._id,._rev' | sed 's/"//g'` )
-    if ($#doc == 2 && $doc[1] == $model && $doc[2] != "") then
-	set known = ( `echo "$oldmodel" | jq '.classes[].class' | sed 's/"//g'` )
-    else
-        if ($?DEBUG) echo `date` "$0 $$ -- no stored model ($oldmodel)" >& /dev/stderr
-    endif
-endif
-
-#
 # update Cloudant
 #
 if ($?CLOUDANT_OFF == 0 && $?CU && $?device) then
-    if ($?DEBUG) echo `date` "$0 $$ -- test if device exists ($CU/$API-$device)" >>! /tmp/LOG
-    set DEVICE_device = `curl -s -q -X GET "$CU/$API-$device" | jq '.db_name'`
-    if ( "$DEVICE_device" == "null" ) then
-        if ($?DEBUG) echo `date` "$0 $$ -- creating device $CU/$API-$device" >>! /tmp/LOG
+    if ($?DEBUG) echo `date` "$0 $$ -- test if device exists ($CU/$API-$device)" >& /dev/stderr
+    set devdb = `curl -s -q -X GET "$CU/$API-$device" | jq '.db_name'`
+    if ( "$devdb" == "null" ) then
+        if ($?DEBUG) echo `date` "$0 $$ -- creating device $CU/$API-$device" >>& /dev/stderr
         # create device
-        set DEVICE_device = `curl -s -q -X PUT "$CU/$API-$device" | jq '.ok'`
+        set devdb = `curl -s -q -X PUT "$CU/$API-$device" | jq '.ok'`
         # test for success
-        if ( "$DEVICE_device" != "true" ) then
+        if ( "$devdb" != "true" ) then
             # failure
-            if ($?DEBUG) echo `date` "$0 $$ -- failure creating Cloudant database ($API-$device)" >>! /tmp/LOG
+            if ($?DEBUG) echo `date` "$0 $$ -- failure creating Cloudant database ($API-$device)" >& /dev/stderr
             setenv CLOUDANT_OFF TRUE
         else
-            if ($?DEBUG) echo `date` "$0 $$ -- success creating device $CU/$API-$device" >>! /tmp/LOG
+            if ($?DEBUG) echo `date` "$0 $$ -- success creating device $CU/$API-$device" >& /dev/stderr
         endif
     endif
     if ( $?CLOUDANT_OFF == 0 ) then
@@ -637,28 +644,26 @@ if ($?CLOUDANT_OFF == 0 && $?CU && $?device) then
             set doc = ( `cat "$INVENTORY.$$" | jq ._id,._rev | sed 's/"//g'` )
             if ($#doc == 2 && $doc[1] == $model && $doc[2] != "") then
                 set rev = $doc[2]
-                if ($?DEBUG) echo `date` "$0 $$ -- deleting old output ($rev)" >>! /tmp/LOG
-                curl -s -q -X DELETE "$CU/$API-$device/$model?rev=$rev" >>&! /tmp/LOG
+                if ($?DEBUG) echo `date` "$0 $$ -- deleting old output ($rev)" >& /dev/stderr
+                curl -s -q -X DELETE "$CU/$API-$device/$model?rev=$rev" >& /dev/stderr
             endif
         else
-            if ($?DEBUG) echo `date` "$0 $$ -- no old output to delete" >>! /tmp/LOG
+            if ($?DEBUG) echo `date` "$0 $$ -- no old output to delete" >& /dev/stderr
         endif
-        if ($?DEBUG) echo `date` "$0 $$ -- storing new output" >>! /tmp/LOG
+        if ($?DEBUG) echo `date` "$0 $$ -- storing new output" >& /dev/stderr
         curl -s -q -H "Content-type: application/json" -X PUT "$CU/$API-$device/$model" -d "@$INVENTORY" >>&! /tmp/LOG
         if ($status == 0) then
-            if ($?DEBUG) echo `date` "$0 $$ -- success storing new output" >>! /tmp/LOG
+            if ($?DEBUG) echo `date` "$0 $$ -- success storing new output" >& /dev/stderr
         else
-            if ($?DEBUG) echo `date` "$0 $$ -- failure storing new output" >>! /tmp/LOG
+            if ($?DEBUG) echo `date` "$0 $$ -- failure storing new output" >& /dev/stderr
         endif
     else
-        if ($?DEBUG) echo `date` "$0 $$ -- Cloudant OFF ($API-$device)" >>! /tmp/LOG
+        if ($?DEBUG) echo `date` "$0 $$ -- Cloudant OFF ($API-$device)" >& /dev/stderr
     endif
 else
-    if ($?DEBUG) echo `date` "$0 $$ -- no Cloudant update" >>! /tmp/LOG
+    if ($?DEBUG) echo `date` "$0 $$ -- no Cloudant update" >& /dev/stderr
 endif
 
 done:
-
-rm -f /tmp/$0:t.$$.json
 
 echo `date` "$0 $$ -- FINISH ($*)"
