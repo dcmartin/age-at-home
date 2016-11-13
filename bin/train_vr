@@ -1,4 +1,4 @@
-#!/bin/csh -fb
+##!/bin/csh -fb
 setenv APP "aah"
 setenv API "train"
 if ($?TMP == 0) setenv TMP "/var/lib/age-at-home/"
@@ -12,10 +12,11 @@ setenv DATE `echo $SECONDS \/ $TTL \* $TTL | bc`
 set DEBUG = true 
 
 #
-# GET CLOUDANT SETUP
+# CLOUDANT SETUP
 #
-if (-e ~$USER/.cloudant_url) then
-    set cc = ( `cat ~$USER/.cloudant_url` )
+set creds = ~$USER/.cloudant_url
+if (-e $creds) then
+    set cc = ( `cat $creds` )
     if ($#cc > 0) set CU = $cc[1]
     if ($#cc > 1) set CN = $cc[2]
     if ($#cc > 2) set CP = $cc[3]
@@ -25,7 +26,32 @@ if ($?CLOUDANT_URL) then
 else if ($?CN && $?CP) then
     set CU = "$CN":"$CP"@"$CN.cloudant.com"
 else
-    echo `date` "$0 $$ -- no Cloudant URL" >& /dev/stderr
+    echo `date` "$0 $$ -- no Cloudant URL ($creds)" >& /dev/stderr
+    exit
+endif
+if ($?DEBUG) echo `date` "$0 $$ -- Cloudant noSQL ($CU)" >& /dev/stderr
+
+#
+# VISUAL_RECOGNITION SETUP
+#
+
+set creds = ~$USER/.watson.visual-recognition.json
+if (-e $creds) then
+    # this is to handle multiple entires
+    set keys = ( `jq '.[]|.credentials.api_key' $creds` )
+    if ($#keys > 0) set api_key = `echo "$keys[1]" | sed 's/"//g'`
+    set urls = ( `jq '.[]|.credentials.url' $creds` )
+    if ($#urls > 0) set TU = `echo "$urls[1]" | sed 's/"//g'`
+else 
+    echo `date` "$0 $$ -- no VisualRecognition ($creds)" >& /dev/stderr
+    exit
+endif
+if ($?TU && $?api_key) then
+    if ($?verid == 0) set verid = "v3"
+    if ($?vdate == 0) set vdate = "2016-05-20"
+    if ($?DEBUG) echo `date` "$0 $$ -- VisualRecognition $verid/$vdate ($TU)" >& /dev/stderr
+else
+    echo `date` "$0 $$ -- invalid VisualRecognition ($creds)" >& /dev/stderr
     exit
 endif
 
@@ -81,12 +107,10 @@ while ($i <= $#argv)
 end
 
 #
-# defaults (rough-fog)
+# configure defaults
 #
+
 if ($?device == 0) set device = rough-fog
-# standardize QUERY_STRING to manage workloads
-setenv QUERY_STRING "db=$device"
-# ESTABLISH DEFAULT PARAMETERS
 if ($?device && $?model && $?notags) then
     echo `date` "$0 $$ -- $device $model $notags" >& /dev/stderr
 else
@@ -94,23 +118,45 @@ else
     if ($device == "rough-fog" && $?notags == 0) set notags = "kitchen"
     if ($device == "damp-cloud" && $?notags == 0) set notags = "bathroom"
 endif
+setenv QUERY_STRING "db=$device"
 
 echo `date` "$0 $$ -- START ($QUERY_STRING)" >& /dev/stderr
 
-# logic doesn't work if model is null
-if ($?model) then
-    set previous = ( `curl -s -q -L "$CU/$API-$device/$model" | jq '.'` )
-    set doc = ( `echo "$previous" | jq '._id,._rev' | sed 's/"//g'` )
-    if ($#doc == 2 && $doc[1] == $model && $doc[2] != "") then
-	set sets = ( `echo "$previous" | jq '.classes[].class' | sed 's/"//g'` )
-	set positive = ( `echo "$previous" | jq '.detail.classes[].class' | sed 's/"//g'` )
-	set negative = `echo "$previous" | jq '.negative' | sed 's/"//g'` )
-	set when = `echo "$previous" | jq '.date' | sed 's/"//g'` )
-	if ($?DEBUG) echo `date` "$0 $$ -- date ($when) sets ($sets) negative ($negative) positive ($positive)" >& /dev/stderr
-    else
-        if ($?DEBUG) echo `date` "$0 $$ -- no stored model ($previous)" >& /dev/stderr
+#
+# FIND OLD MODEL
+#
+
+if ($?CLOUDANT_OFF == 0) then
+    set db = ( `curl -s -q -L "$CU/$API-$device" | jq '.'` )
+    if ($#db) then
+      set error = ( `echo "$db" | jq '.error,.reason' | sed 's/"//g'` )
+      if ($#error > 0 && $error[1] == "not_found") then
+        if ($?DEBUG) echo `date` "$0 $$ -- $error[2-] ($API-$device)" >& /dev/stderr
+	unset db
+      endif
     endif
+    if ($?db) then
+      set device_models = ( `curl -s -q -L "$CU/$API-$device/_all_docs?include_docs=true" | jq '.rows[]|select(.doc.name=="'"$device"'")'` )
+    endif
+    if ($?device_models) then
+      set classifier_ids = ( `echo "$device_models" | jq '.doc.detail.classifier_id' | sed 's/"//g'` )
+      set models = ( `echo "$device_models" | jq '.doc.model' | sed 's/"//g'` )
+      if ($?DEBUG) echo `date` "$0 $$ -- classifiers ($classifier_ids) models ($models)" >& /dev/stderr
+    endif
+    if ($?model) then
+      set previous = ( `curl -s -q -L "$CU/$API-$device/$model" | jq '.'` )
+      echo "$previous"
+      set s = ( `echo "$previous" | jq '.classes[].class' | sed 's/"//g'` )
+      set p = ( `echo "$previous" | jq '.detail.classes[].class' | sed 's/"//g'` )
+      set n = ( `echo "$previous" | jq '.negative' | sed 's/"//g'` )
+      set w = `echo "$previous" | jq '.date' | sed 's/"//g'`
+      if ($?DEBUG) echo `date` "$0 $$ -- date ($w) sets ($s) negative ($n) positive ($p)" >& /dev/stderr
+    endif
+else
+    if ($?DEBUG) echo `date` "$0 $$ -- Cloudant OFF" >& /dev/stderr
 endif
+
+if ($?DEBUG) echo `date` "$0 $$ -- DEVICE MODELS $?device_models" >& /dev/stderr
 
 ##
 ## STEP 1 - INVENTORY
@@ -142,7 +188,7 @@ endif
 
 echo '{"name":"'$device'","negative":"'$notags'","model":' >! "$INVENTORY.$$"
 if ($?model) then
-  echo '"'$model'","detail": null',' >> "$INVENTORY.$$"
+  echo '"'$model'","detail": null,' >> "$INVENTORY.$$"
 else
   echo 'null,' >> "$INVENTORY.$$"
 endif
@@ -181,8 +227,8 @@ set INPROGRESS = ( `echo "$JOB".*` )
 if ($#INPROGRESS) then
     if ($?DEBUG) echo `date` "$0 $$ -- batching in-progress ($INPROGRESS)" >& /dev/stderr
     goto done
-else if (-d "$JOB") then
-    if ($?DEBUG) echo `date` "$0 $$ -- existing batches ($JOB)" >& /dev/stderr
+else if (-s "$JOB/job.json") then
+    if ($?DEBUG) echo `date` "$0 $$ -- existing batches ($JOB/job.json)" >& /dev/stderr
     goto train
 endif
 set old = ( `echo "$TMP/$APP-$API-$device".*.job` )
@@ -216,7 +262,7 @@ mkdir -p "$JOB"
 # 3) Uploading a total of 150-200 images per .zip file gives you the best balance between the time it takes to train and the improvement to classifier accuracy. 
 #    More than 200 images increases the time, and it does increace the accuracy, but with diminishing returns for the amount of time it takes.
 #
-# ADDITIONAL TRAINING AND TESTING INSTRUCTIONS
+# ADDITIONAL INSTRUCTIONS
 #
 # Split into two or three sets: training, validation (for hyper-parameters) and testing (http://sebastianraschka.com/blog/2016/model-evaluation-selection-part3.html)
 #
@@ -235,11 +281,14 @@ if ($?DEBUG) echo `date` "$0 $$ -- batching classes by counts ($allclass)" >& /d
 
 # process all samples into training, validation and test sets
 set pairs = ( `echo "$allclass" | jq '.[]|.class,.count' | sed 's/"//g'` )
-if ($#pairs > 0) then
-  @ p = 1
-  echo 
-  set job = '{"device":"'"$device"'","job":'"$DATE"',"classes":['
-  while ($p < $#pairs) 
+if ($#pairs == 0) then
+    if ($?DEBUG) echo `date` "$0 $$ -- NO PAIRS" >& /dev/stderr
+    exit
+endif
+
+@ p = 1
+set job = '{"device":"'"$device"'","job":'"$DATE"',"classes":['
+while ($p < $#pairs) 
     set class = $pairs[$p]
     @ p++
     set count = $pairs[$p]
@@ -249,101 +298,106 @@ if ($#pairs > 0) then
     @ split = ( $count / $SPLITSETS ) + ( $count % $SPLITSETS )
     # test is split size is sufficient
     if ($split > $MINIMAGES) then
-      # test if too many samples
-      if ($split > $MAXSETSIZE) then
-	if ($?DEBUG) echo `date` "$0 $$ -- split size ($MAXSETSIZE); actual ($split)" >& /dev/stderr
-	set split = MAXSETSIZE
-      else
-	if ($?DEBUG) echo `date` "$0 $$ -- split size ($split)" >& /dev/stderr
-      endif
-      set base = "$JOB/$class." 
-      jq '.classes[]|select(.class=="'$class'").ids[]' "$INVENTORY" | sed 's/"//g' | split -l $split - $base 
-      set split = ( `echo $base*` )
-      if ($?sets) then
-	set sets = "$sets"'},{"class":"'"$class"'","sets":'
-      else
-	set sets = '{"class":"'"$class"'","sets":'
-      endif
+	# test if too many samples
+	if ($split > $MAXSETSIZE) then
+	    if ($?DEBUG) echo `date` "$0 $$ -- split size ($MAXSETSIZE); actual ($split)" >& /dev/stderr
+	    set split = MAXSETSIZE
+	else
+	    if ($?DEBUG) echo `date` "$0 $$ -- split size ($split)" >& /dev/stderr
+	endif
+	set base = "$JOB/$class." 
+	jq '.classes[]|select(.class=="'$class'").ids[]' "$INVENTORY" | sed 's/"//g' | split -l $split - $base 
+	set split = ( `echo $base*` )
+	if ($?sets) then
+	    set sets = "$sets"'},{"class":"'"$class"'","sets":'
+	else
+	    set sets = '{"class":"'"$class"'","sets":'
+	endif
     else
-      if ($?DEBUG) echo `date` "$0 $$ -- insufficient samples ($split)" >& /dev/stderr
-      unset split
+	if ($?DEBUG) echo `date` "$0 $$ -- insufficient samples ($split)" >& /dev/stderr
+	unset split
     endif
     if ($?split) then
-      if ($?DEBUG) echo `date` "$0 $$ -- processing ($split)" >& /dev/stderr
-      foreach s ( $split )
-        if ($?splits) then
-	  set splits = "$splits"','
-	else
-	  set splits = '['
-	endif
-	set ext = $s:e
-	# create ZIP file name 
-	set zip = "$JOB/$class.zip"
-	if ($?DEBUG) echo `date` "$0 $$ -- creating ($zip) from split ($s)" >& /dev/stderr
-	foreach id ( `cat "$s"` )
-	  # slow but complete
-	  find $TMP/label/$device -name "$id".jpg -print | xargs -I % zip -q -j -r -u "$zip" % >& /dev/stderr
-	end
-	rm -f "$s"
-	if (-s "$zip") then
-	  # put all results into temporary directory
-	  set base = "$JOB/$class"
-	  mkdir -p "$base"
-	  if ($?DEBUG) echo `date` "$0 $$ -- splitting ($zip) into ($base)" >& /dev/stderr
-	  zipsplit -b "$base/" -n $MAXZIPBYTES "$zip" >& /dev/null
-	  # success?
-	  if ($status == 0) then
-	    # get all the zips created
-	    set zips = ( `echo "$base/"*.zip` )
-	    if ($#zips > 0) then
-	      if ($?DEBUG) echo `date` "$0 $$ -- split into $#zips ZIP files ($zips)" >& /dev/stderr
-	      @ i = 1
-	      foreach z ( $zips )
-	        set b = "$JOB/$class.$ext.$i.zip"
-		if ($?DEBUG) echo `date` "$0 $$ -- creating batch entry ($b)" >& /dev/stderr
-	        mv "$z" "$b"
-		if ($?batch) then
-		    set batch = "$batch"',"'"$b"'"'
-		else
-		    set batch = '["'"$b"'"'
-		endif
-		@ i++
-	      end
-	      set batch = "$batch"']'
-	      if ($?DEBUG) echo `date` "$0 $$ -- BATCH: $batch" >& /dev/stderr
+	if ($?DEBUG) echo `date` "$0 $$ -- processing ($split)" >& /dev/stderr
+	foreach s ( $split )
+	    if ($?splits) then
+		set splits = "$splits"','
 	    else
-	      if ($?DEBUG) echo `date` "$0 $$ -- NO ZIPS" >& /dev/stderr
-	      unset zips
-	      exit
+		set splits = '['
 	    endif
-	  else
-	    if ($?DEBUG) echo `date` "$0 $$ -- ZIPSPLIT failure" >& /dev/stderr
-	    exit
-	  endif
-	  rm -fr "$base"
-	else
-	  if ($?DEBUG) echo `date` "$0 $$ -- ZIP failure" >& /dev/stderr
-	  exit
-	endif
-	if ($?zips) then
-	  unset zips
-	endif
-	rm -f "$zip"
-	set splits = "$splits""$batch"
-	unset batch
-      end
+	    set ext = $s:e
+	    # create ZIP file name 
+	    set zip = "$JOB/$class.zip"
+	    if ($?DEBUG) echo `date` "$0 $$ -- creating ($zip) from split ($s)" >& /dev/stderr
+	    foreach id ( `cat "$s"` )
+		if ($?ids) then
+		    set ids = "$ids"',"'"$id"'"'
+		else
+		    set ids = '["'"$id"'"'
+		endif
+		# slow but complete
+		find $TMP/label/$device -name "$id".jpg -print | xargs -I % zip -q -j -r -u "$zip" % >& /dev/stderr
+	    end
+	    set ids = "$ids"']'
+	    if ($?DEBUG) echo `date` "$0 $$ -- IDS: $ids" >& /dev/stderr
+	    rm -f "$s"
+	    if (-s "$zip") then
+		# put all results into temporary directory
+		set base = "$JOB/$class"
+		mkdir -p "$base"
+		if ($?DEBUG) echo `date` "$0 $$ -- splitting ($zip) into ($base)" >& /dev/stderr
+		zipsplit -b "$base/" -n $MAXZIPBYTES "$zip" >& /dev/null
+		# success?
+		if ($status == 0) then
+		    # get all the zips created
+		    set zips = ( `echo "$base/"*.zip` )
+		    if ($#zips > 0) then
+			if ($?DEBUG) echo `date` "$0 $$ -- split into $#zips ZIP files ($zips)" >& /dev/stderr
+			@ i = 1
+			foreach z ( $zips )
+			    set b = "$JOB/$class.$ext.$i.zip"
+			    if ($?DEBUG) echo `date` "$0 $$ -- creating batch entry ($b)" >& /dev/stderr
+			    mv "$z" "$b"
+			    if ($?batch) then
+				set batch = "$batch"',"'"$b"'"'
+			    else
+				set batch = '["'"$b"'"'
+			    endif
+			    @ i++
+			end
+			set batch = "$batch"']'
+			if ($?DEBUG) echo `date` "$0 $$ -- BATCH: $batch" >& /dev/stderr
+		    else
+			echo `date` "$0 $$ -- NO ZIPS" >& /dev/stderr
+			exit
+		    endif
+		else
+		    echo `date` "$0 $$ -- ZIPSPLIT failure" >& /dev/stderr
+		    exit
+		endif
+		rm -fr "$base"
+	    else
+		echo `date` "$0 $$ -- ZIP failure" >& /dev/stderr
+		exit
+	    endif
+	    if ($?zips) then
+		unset zips
+	    endif
+	    rm -f "$zip"
+	    set splits = "$splits""$batch","$ids"
+	    if ($?DEBUG) echo `date` "$0 $$ -- SPLITS: $splits" >& /dev/stderr
+	    unset batch
+	    unset ids
+	end
     else
-      if ($?DEBUG) echo `date` "$0 $$ -- NO SPLIT ($split)" >& /dev/stderr
-      exit
+	echo `date` "$0 $$ -- NO SPLIT ($split)" >& /dev/stderr
+	exit
     endif
     set sets = "$sets""$splits"']'
+    if ($?DEBUG) echo `date` "$0 $$ -- SETS: $sets" >& /dev/stderr
     unset splits
-  end
-  set job = "$job""$sets"'}]}'
-else
-  if ($?DEBUG) echo `date` "$0 $$ -- NO PAIRS" >& /dev/stderr
-  exit
-endif
+end
+set job = "$job""$sets"'}]}'
 
 # store result
 echo "$job" >! "$JOB/job.json"
@@ -388,27 +442,6 @@ endif
 set device = ( `jq '.name' "$INVENTORY" | sed 's/"//g'` )
 
 if ($?DEBUG) echo `date` "$0 $$ -- device ($device)" >& /dev/stderr
-
-#
-# SETUP WATSON VISUAL_RECOGNITION
-#
-
-set creds = ~$USER/.watson.visual-recognition.json
-if (-e $creds) then
-    set keys = ( `jq '.[]|.credentials.api_key' $creds` )
-    if ($#keys > 0) set api_key = `echo "$keys[1]" | sed 's/"//g'`
-    set urls = ( `jq '.[]|.credentials.url' $creds` )
-    if ($#urls > 0) set TU = `echo "$urls[1]" | sed 's/"//g'`
-else 
-    echo `date` "$0 $$ -- NO CREDENTIALS ($creds); create file and copy credentials from visual-recognition service on bluemix.net" >& /dev/stderr
-    goto done
-endif
-# these should be query'able from the API
-if ($?verid == 0) set verid = "v3"
-if ($?vdate == 0) set vdate = "2016-05-20"
-
-if ($?DEBUG) echo `date` "$0 $$ -- Watson VisualRecognition for version ($verid) - date ($vdate) @ ($TU)" >& /dev/stderr
-
 #
 # GET EXISTING CLASSIFIERS FROM WATSON_VR
 #
@@ -514,6 +547,8 @@ if ($?DEBUG) echo `date` "$0 $$ -- OLD ($?oldclasses) NEW ($net) NEGATIVE ($nota
 
 set positive = ( `jq '.classes|sort_by(.count)[]|select(.class!="'$notags'")|.class' "$INVENTORY" | sed 's/"//g'` )
 set negative = ( `jq '.classes|sort_by(.count)[]|select(.class=="'$notags'")|.class' "$INVENTORY" | sed 's/"//g'` )
+
+# the zero'th set is the training example ZIPs; correspong +1 set are the IDs used in those ZIPs
 set negatives = ( `jq '.classes[]|select(.class=="'"$notags"'").sets[0][]' "$JOB/job.json" | sed 's/"//g'` )
 
 @ h = 1
@@ -610,8 +645,10 @@ next:
 end
 
 if ($?DEBUG) echo `date` "$0 $$ -- COMPLETE $DATE ($model) ($detail)" >& /dev/stderr
+# get jobs batches
+set batches = ( `jq '.' "$JOB/job.json"` )
 # update INVENTORY with resulting model
-cat "$INVENTORY" | jq '.date="'"$DATE"'"' | jq '.model="'"$model"'"' | jq .detail="$detail" >! "$INVENTORY.$$"
+cat "$INVENTORY" | jq '.jobs='"$batches" | jq '.date="'"$DATE"'"' | jq '.model="'"$model"'"' | jq .detail="$detail" >! "$INVENTORY.$$"
 if (-s "$INVENTORY.$$") then
   mv -f "$INVENTORY.$$" "$INVENTORY"
 else
