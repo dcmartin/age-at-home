@@ -65,7 +65,7 @@ if ($?DB && $?id && $?old && $?skip) then
     endif
     # all done
     goto output
-else if ($?DB && $?id && $?image && $?old && $?new) then
+else if ($?DB && $?id && $?image && $?old && ($?new || $?add)) then
     if ($?add) then
 	set new = "$add"
     endif
