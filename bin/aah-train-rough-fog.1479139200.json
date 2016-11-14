@@ -1,7 +1,7 @@
 {
   "name": "rough-fog",
   "negative": "kitchen",
-  "model": "roughfog_1288555148",
+  "model": "roughfog_1247378820",
   "classes": [
     {
       "class": "cat",
@@ -3039,8 +3039,8 @@
       "count": 59
     }
   ],
-  "created": "1479177331",
-  "retrained": "1479178700",
+  "created": "1479181790",
+  "retrained": "1479182944",
   "jobs": {
     "device": "rough-fog",
     "date": 1479139200,
@@ -3049,7 +3049,7 @@
         "class": "keli",
         "sets": [
           [
-            "/tmp/aah-train-rough-fog.1479139200.job/keli.aa.1.zip"
+            "/tmp/aah-rough-fog-train.1479139200.job/keli.aa.1.zip"
           ],
           [
             "20161111133617-6476-01",
@@ -3071,7 +3071,7 @@
             "20161113094409-6954-01"
           ],
           [
-            "/tmp/aah-train-rough-fog.1479139200.job/keli.ab.1.zip"
+            "/tmp/aah-rough-fog-train.1479139200.job/keli.ab.1.zip"
           ],
           [
             "20161113094439-6955-00",
@@ -3097,7 +3097,7 @@
         "class": "ian",
         "sets": [
           [
-            "/tmp/aah-train-rough-fog.1479139200.job/ian.aa.1.zip"
+            "/tmp/aah-rough-fog-train.1479139200.job/ian.aa.1.zip"
           ],
           [
             "20161111131358-6471-01",
@@ -3128,7 +3128,7 @@
             "20161112132603-6694-00"
           ],
           [
-            "/tmp/aah-train-rough-fog.1479139200.job/ian.ab.1.zip"
+            "/tmp/aah-rough-fog-train.1479139200.job/ian.ab.1.zip"
           ],
           [
             "20161112132802-6696-00",
@@ -3164,7 +3164,7 @@
         "class": "riley",
         "sets": [
           [
-            "/tmp/aah-train-rough-fog.1479139200.job/riley.aa.1.zip"
+            "/tmp/aah-rough-fog-train.1479139200.job/riley.aa.1.zip"
           ],
           [
             "20161111141756-6500-00",
@@ -3199,7 +3199,7 @@
             "20161112113029-6658-00"
           ],
           [
-            "/tmp/aah-train-rough-fog.1479139200.job/riley.ab.1.zip"
+            "/tmp/aah-rough-fog-train.1479139200.job/riley.ab.1.zip"
           ],
           [
             "20161112113125-6659-00",
@@ -3238,7 +3238,7 @@
         "class": "ellen",
         "sets": [
           [
-            "/tmp/aah-train-rough-fog.1479139200.job/ellen.aa.1.zip"
+            "/tmp/aah-rough-fog-train.1479139200.job/ellen.aa.1.zip"
           ],
           [
             "20161111135719-6485-00",
@@ -3274,7 +3274,7 @@
             "20161112135001-6704-00"
           ],
           [
-            "/tmp/aah-train-rough-fog.1479139200.job/ellen.ab.1.zip"
+            "/tmp/aah-rough-fog-train.1479139200.job/ellen.ab.1.zip"
           ],
           [
             "20161112135043-6705-00",
@@ -3315,7 +3315,7 @@
         "class": "kitchen",
         "sets": [
           [
-            "/tmp/aah-train-rough-fog.1479139200.job/kitchen.aa.1.zip"
+            "/tmp/aah-rough-fog-train.1479139200.job/kitchen.aa.1.zip"
           ],
           [
             "20160930100238-710-00",
@@ -3359,7 +3359,7 @@
             "20161028202920-2379-01"
           ],
           [
-            "/tmp/aah-train-rough-fog.1479139200.job/kitchen.ab.1.zip"
+            "/tmp/aah-rough-fog-train.1479139200.job/kitchen.ab.1.zip"
           ],
           [
             "20161028203615-2380-01",
@@ -3407,7 +3407,7 @@
         "class": "cat",
         "sets": [
           [
-            "/tmp/aah-train-rough-fog.1479139200.job/cat.aa.1.zip"
+            "/tmp/aah-rough-fog-train.1479139200.job/cat.aa.1.zip"
           ],
           [
             "20160430213101-1643-01",
@@ -3462,7 +3462,7 @@
             "20161031205659-3396-00"
           ],
           [
-            "/tmp/aah-train-rough-fog.1479139200.job/cat.ab.1.zip"
+            "/tmp/aah-rough-fog-train.1479139200.job/cat.ab.1.zip"
           ],
           [
             "20161103055919-4115-01",
@@ -3522,7 +3522,7 @@
         "class": "david",
         "sets": [
           [
-            "/tmp/aah-train-rough-fog.1479139200.job/david.aa.1.zip"
+            "/tmp/aah-rough-fog-train.1479139200.job/david.aa.1.zip"
           ],
           [
             "20161111134655-6481-00",
@@ -3591,7 +3591,7 @@
             "20161112203229-6851-00"
           ],
           [
-            "/tmp/aah-train-rough-fog.1479139200.job/david.ab.1.zip"
+            "/tmp/aah-rough-fog-train.1479139200.job/david.ab.1.zip"
           ],
           [
             "20161112213456-6858-01",
@@ -3664,7 +3664,7 @@
         "class": "dog",
         "sets": [
           [
-            "/tmp/aah-train-rough-fog.1479139200.job/dog.aa.1.zip"
+            "/tmp/aah-rough-fog-train.1479139200.job/dog.aa.1.zip"
           ],
           [
             "20160924204007-12029-00",
@@ -3910,7 +3910,7 @@
             "20161027083146-1941-01"
           ],
           [
-            "/tmp/aah-train-rough-fog.1479139200.job/dog.ab.1.zip"
+            "/tmp/aah-rough-fog-train.1479139200.job/dog.ab.1.zip"
           ],
           [
             "20161027094043-1948-00",
@@ -4161,9 +4161,9 @@
         "class": "person",
         "sets": [
           [
-            "/tmp/aah-train-rough-fog.1479139200.job/person.aa.1.zip",
-            "/tmp/aah-train-rough-fog.1479139200.job/person.aa.2.zip",
-            "/tmp/aah-train-rough-fog.1479139200.job/person.aa.3.zip"
+            "/tmp/aah-rough-fog-train.1479139200.job/person.aa.1.zip",
+            "/tmp/aah-rough-fog-train.1479139200.job/person.aa.2.zip",
+            "/tmp/aah-rough-fog-train.1479139200.job/person.aa.3.zip"
           ],
           [
             "20160821203750-3027-00",
@@ -5158,9 +5158,9 @@
             "20161026100817-1680-00"
           ],
           [
-            "/tmp/aah-train-rough-fog.1479139200.job/person.ab.1.zip",
-            "/tmp/aah-train-rough-fog.1479139200.job/person.ab.2.zip",
-            "/tmp/aah-train-rough-fog.1479139200.job/person.ab.3.zip"
+            "/tmp/aah-rough-fog-train.1479139200.job/person.ab.1.zip",
+            "/tmp/aah-rough-fog-train.1479139200.job/person.ab.2.zip",
+            "/tmp/aah-rough-fog-train.1479139200.job/person.ab.3.zip"
           ],
           [
             "20161026101031-1681-01",
@@ -6160,14 +6160,26 @@
   },
   "date": "1479139200",
   "detail": {
-    "classifier_id": "roughfog_1288555148",
+    "classifier_id": "roughfog_1247378820",
     "name": "rough-fog",
     "owner": "6d283517-32f1-4fd4-bcf7-df0da07f4f0f",
     "status": "ready",
-    "created": "2016-11-14T18:35:31.284Z",
+    "created": "2016-11-14T19:49:50.470Z",
     "classes": [
       {
+        "class": "cat"
+      },
+      {
+        "class": "riley"
+      },
+      {
         "class": "keli"
+      },
+      {
+        "class": "david"
+      },
+      {
+        "class": "ian"
       },
       {
         "class": "dog"
@@ -6176,21 +6188,9 @@
         "class": "person"
       },
       {
-        "class": "riley"
-      },
-      {
-        "class": "david"
-      },
-      {
-        "class": "cat"
-      },
-      {
         "class": "ellen"
-      },
-      {
-        "class": "ian"
       }
     ],
-    "retrained": "2016-11-14T18:58:20.466Z"
+    "retrained": "2016-11-14T20:09:04.910Z"
   }
 }

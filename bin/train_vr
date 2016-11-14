@@ -127,16 +127,16 @@ echo `date` "$0 $$ -- START ($QUERY_STRING)" >& /dev/stderr
 #
 
 if ($?CLOUDANT_OFF == 0) then
-    set db = ( `curl -s -q -L "$CU/$API-$device" | jq '.'` )
+    set db = ( `curl -s -q -L "$CU/$device-$API" | jq '.'` )
     if ($#db) then
       set error = ( `echo "$db" | jq '.error,.reason' | sed 's/"//g'` )
       if ($#error > 0 && $error[1] == "not_found") then
-        if ($?DEBUG) echo `date` "$0 $$ -- $error[2-] ($API-$device)" >& /dev/stderr
+        if ($?DEBUG) echo `date` "$0 $$ -- $error[2-] ($device-$API)" >& /dev/stderr
 	unset db
       endif
     endif
     if ($?db) then
-      set device_models = ( `curl -s -q -L "$CU/$API-$device/_all_docs?include_docs=true" | jq '.rows[]|select(.doc.name=="'"$device"'")'` )
+      set device_models = ( `curl -s -q -L "$CU/$device-$API/_all_docs?include_docs=true" | jq '.rows[]|select(.doc.name=="'"$device"'")'` )
     endif
     if ($?device_models) then
       if ($?DEBUG) echo `date` "$0 $$ -- DEVICE MODELS ($#device_models)" >& /dev/stderr
@@ -154,17 +154,17 @@ if ($?CLOUDANT_OFF == 0) then
     if ($?model) then
 	if ($?delete) then
 	    # find old model in Cloudant
-            set doc = ( `curl -s -q "$CU/$API-$device/$model" | jq ._id,._rev | sed 's/"//g'` )
+            set doc = ( `curl -s -q "$CU/$device-$API/$model" | jq ._id,._rev | sed 's/"//g'` )
             if ($#doc == 2 && $doc[1] == $model && $doc[2] != "") then
                 set rev = $doc[2]
                 if ($?DEBUG) echo `date` "$0 $$ -- DELETE OLD MODEL ($model) ($rev)" >& /dev/stderr
-                curl -s -q -X DELETE "$CU/$API-$device/$model?rev=$rev" >& /dev/stderr
+                curl -s -q -X DELETE "$CU/$device-$API/$model?rev=$rev" >& /dev/stderr
 	    else
 	      if ($?DEBUG) echo `date` "$0 $$ -- NO OLD MODEL ($model) in Cloudant" >& /dev/stderr
 	    endif
 	    unset model
 	else
-	  set previous = ( `curl -s -q -L "$CU/$API-$device/$model" | jq '.'` )
+	  set previous = ( `curl -s -q -L "$CU/$device-$API/$model" | jq '.'` )
 	  set w = `echo "$previous" | jq '.date' | sed 's/"//g'`
 	  if ($w == "$DATE") then
 	      echo `date` "$0 $$ ** MODEL for  date ($w) exists" >& /dev/stderr
@@ -191,7 +191,7 @@ if ($?previous && $?model) then
   if ($?DEBUG) echo `date` "$0 $$ -- PREVIOUS MODEL ($model)" `jq '.' "$previous"` >& /dev/stderr
 endif
 
-set INVENTORY = "$TMP/$APP-$API-$device.$DATE.json"
+set INVENTORY = "$TMP/$APP-$API-$QUERY_STRING.$DATE.json"
 set INPROGRESS = ( `echo "$INVENTORY".*` )
 if ($#INPROGRESS) then
     if ($?DEBUG) echo `date` "$0 $$ -- inventory in-progress ($INPROGRESS)" >& /dev/stderr
@@ -200,8 +200,8 @@ else if (-s "$INVENTORY") then
     if ($?DEBUG) echo `date` "$0 $$ -- found $INVENTORY" >& /dev/stderr
     goto batch
 endif
-if ($?DEBUG) echo `date` "$0 $$ -- finding old ($APP-$API-$device.*.json)" >& /dev/stderr
-set old = ( `echo "$TMP/$APP-$API-$device".*.json` )
+if ($?DEBUG) echo `date` "$0 $$ -- finding old ($APP-$API-$QUERY_STRING.*.json)" >& /dev/stderr
+set old = ( `echo "$TMP/$APP-$API-$QUERY_STRING".*.json` )
 if ($#old > 0) then
     if ($?DEBUG) echo `date` "$0 $$ -- removing old ($old)" >& /dev/stderr
     rm -f $old
@@ -251,7 +251,7 @@ rm -f "$INVENTORY.$$"
 
 batch:
 
-set JOB = "$TMP/$APP-$API-$device.$DATE.job"
+set JOB = "$TMP/$APP-$API-$QUERY_STRING.$DATE.job"
 set INPROGRESS = ( `echo "$JOB".*` )
 if ($#INPROGRESS) then
     if ($?DEBUG) echo `date` "$0 $$ -- batching in-progress ($INPROGRESS)" >& /dev/stderr
@@ -260,7 +260,7 @@ else if (-s "$JOB/job.json") then
     if ($?DEBUG) echo `date` "$0 $$ -- existing batches ($JOB/job.json)" >& /dev/stderr
     goto training
 endif
-set old = ( `echo "$TMP/$APP-$API-$device".*.job` )
+set old = ( `echo "$TMP/$APP-$API-$QUERY_STRING".*.job` )
 if ($#old > 0) then
     if ($?DEBUG) echo `date` "$0 $$ -- removing old ($old); entries remain in DB and VR" >& /dev/stderr
     rm -fr $old
@@ -442,7 +442,7 @@ training:
 
 if ($?DEBUG) echo `date` "$0 $$ -- TRAIN" >& /dev/stderr
 
-set TRAIN = "$TMP/$APP-$API-$device.$DATE.job/train"
+set TRAIN = "$TMP/$APP-$API-$QUERY_STRING.$DATE.job/train"
 set INPROGRESS = ( `echo "$TRAIN".*` )
 if ($#INPROGRESS) then
     if ($?DEBUG) echo `date` "$0 $$ -- training in-progress ($INPROGRESS)" >& /dev/stderr
@@ -451,15 +451,15 @@ else if (-d "$TRAIN") then
     if ($?DEBUG) echo `date` "$0 $$ -- existing training ($TRAIN)" >& /dev/stderr
     goto training
 endif
-set old = ( `echo "$TMP/$APP-$API-$device.$DATE.job/train".*.json` )
+set old = ( `echo "$TMP/$APP-$API-$QUERY_STRING.$DATE.job/train".*.json` )
 if ($#old > 0) then
     if ($?DEBUG) echo `date` "$0 $$ -- NOT removing old ($old)" >& /dev/stderr
     # rm -fr $old
 endif
 
 # check requisites
-set INVENTORY = "$TMP/$APP-$API-$device.$DATE.json"
-set JOB = "$TMP/$APP-$API-$device.$DATE.job"
+set INVENTORY = "$TMP/$APP-$API-$QUERY_STRING.$DATE.json"
+set JOB = "$TMP/$APP-$API-$QUERY_STRING.$DATE.job"
 if ((-s "$INVENTORY") && (-d "$JOB")) then
     if ($?DEBUG) echo `date` "$0 $$ -- found inventory ($INVENTORY) and job ($JOB)" >& /dev/stderr
 else 
@@ -719,42 +719,42 @@ endif
 #
 
 if ($?CLOUDANT_OFF == 0 && $?CU && $?device) then
-    if ($?DEBUG) echo `date` "$0 $$ -- test if device exists ($CU/$API-$device)" >& /dev/stderr
-    set devdb = `curl -s -q -X GET "$CU/$API-$device" | jq '.db_name'`
+    if ($?DEBUG) echo `date` "$0 $$ -- test if device exists ($CU/$device-$API)" >& /dev/stderr
+    set devdb = `curl -s -q -X GET "$CU/$device-$API" | jq '.db_name'`
     if ( "$devdb" == "null" ) then
-        if ($?DEBUG) echo `date` "$0 $$ -- creating device $CU/$API-$device" >>& /dev/stderr
+        if ($?DEBUG) echo `date` "$0 $$ -- creating device $CU/$device-$API" >>& /dev/stderr
         # create device
-        set devdb = `curl -s -q -X PUT "$CU/$API-$device" | jq '.ok'`
+        set devdb = `curl -s -q -X PUT "$CU/$device-$API" | jq '.ok'`
         # test for success
         if ( "$devdb" != "true" ) then
             # failure
-            if ($?DEBUG) echo `date` "$0 $$ -- failure creating Cloudant database ($API-$device)" >& /dev/stderr
+            if ($?DEBUG) echo `date` "$0 $$ -- failure creating Cloudant database ($device-$API)" >& /dev/stderr
             setenv CLOUDANT_OFF TRUE
         else
-            if ($?DEBUG) echo `date` "$0 $$ -- success creating device $CU/$API-$device" >& /dev/stderr
+            if ($?DEBUG) echo `date` "$0 $$ -- success creating device $CU/$device-$API" >& /dev/stderr
         endif
     endif
     if ( $?CLOUDANT_OFF == 0 ) then
-        curl -s -q -o "$INVENTORY.$$" "$CU/$API-$device/$model" >>&! /tmp/LOG
+        curl -s -q -o "$INVENTORY.$$" "$CU/$device-$API/$model" >>&! /tmp/LOG
         if (-s "$INVENTORY.$$") then
             set doc = ( `cat "$INVENTORY.$$" | jq ._id,._rev | sed 's/"//g'` )
             if ($#doc == 2 && $doc[1] == $model && $doc[2] != "") then
                 set rev = $doc[2]
                 if ($?DEBUG) echo `date` "$0 $$ -- deleting old output ($rev)" >& /dev/stderr
-                curl -s -q -X DELETE "$CU/$API-$device/$model?rev=$rev" >& /dev/stderr
+                curl -s -q -X DELETE "$CU/$device-$API/$model?rev=$rev" >& /dev/stderr
             endif
         else
             if ($?DEBUG) echo `date` "$0 $$ -- no old output to delete" >& /dev/stderr
         endif
         if ($?DEBUG) echo `date` "$0 $$ -- storing new output" >& /dev/stderr
-        curl -s -q -H "Content-type: application/json" -X PUT "$CU/$API-$device/$model" -d "@$INVENTORY" >>&! /tmp/LOG
+        curl -s -q -H "Content-type: application/json" -X PUT "$CU/$device-$API/$model" -d "@$INVENTORY" >>&! /tmp/LOG
         if ($status == 0) then
             if ($?DEBUG) echo `date` "$0 $$ -- success storing new output" >& /dev/stderr
         else
             if ($?DEBUG) echo `date` "$0 $$ -- failure storing new output" >& /dev/stderr
         endif
     else
-        if ($?DEBUG) echo `date` "$0 $$ -- Cloudant OFF ($API-$device)" >& /dev/stderr
+        if ($?DEBUG) echo `date` "$0 $$ -- Cloudant OFF ($device-$API)" >& /dev/stderr
     endif
 else
     if ($?DEBUG) echo `date` "$0 $$ -- no Cloudant update" >& /dev/stderr
@@ -762,11 +762,7 @@ endif
 
 cleanup:
 
-if ($?INPROGRESS) then
-  if ($#INPROGRESS) then
-    rm -f "$INPROGRESS"
-  endif    
-endif
+rm -f "$TMP/$APP-$API-$QUERY_STRING.$DATE.json".*
 
 done:
   echo `date` "$0 $$ -- FINISH ($*)"

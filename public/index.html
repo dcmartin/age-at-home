@@ -13,10 +13,6 @@
 </style>
 <title>Age At Home</title>
 </head>
-<!-- start Intercom -->
-<script> window.intercomSettings = { app_id: "qhj4pwpj" }; </script>
-<script>(function(){var w=window;var ic=w.Intercom;if(typeof ic==="function"){ic('reattach_activator');ic('update',intercomSettings);}else{var d=document;var i=function(){i.c(arguments)};i.q=[];i.c=function(args){i.q.push(args)};w.Intercom=i;function l(){var s=d.createElement('script');s.type='text/javascript';s.async=true;s.src='https://widget.intercom.io/widget/qhj4pwpj';var x=d.getElementsByTagName('script')[0];x.parentNode.insertBefore(s,x);}if(w.attachEvent){w.attachEvent('onload',l);}else{w.addEventListener('load',l,false);}}})()</script>
-<!-- end Intercom -->
 <!-- start Mixpanel -->
 <script type="text/javascript">(function(e,b){if(!b.__SV){var a,f,i,g;window.mixpanel=b;b._i=[];b.init=function(a,e,d){function f(b,h){var a=h.split(".");2==a.length&&(b=b[a[0]],h=a[1]);b[h]=function(){b.push([h].concat(Array.prototype.slice.call(arguments,0)))}}var c=b;"undefined"!==typeof d?c=b[d]=[]:d="mixpanel";c.people=c.people||[];c.toString=function(b){var a="mixpanel";"mixpanel"!==d&&(a+="."+d);b||(a+=" (stub)");return a};c.people.toString=function(){return c.toString(1)+".people (stub)"};i="disable time_event track track_pageview track_links track_forms register register_once alias unregister identify name_tag set_config people.set people.set_once people.increment people.append people.union people.track_charge people.clear_charges people.delete_user".split(" ");
 for(g=0;g<i.length;g++)f(c,i[g]);b._i.push([a,e,d])};b.__SV=1.2;a=e.createElement("script");a.type="text/javascript";a.async=!0;a.src="undefined"!==typeof MIXPANEL_CUSTOM_LIB_URL?MIXPANEL_CUSTOM_LIB_URL:"file:"===e.location.protocol&&"//cdn.mxpnl.com/libs/mixpanel-2-latest.min.js".match(/^\/\//)?"https://cdn.mxpnl.com/libs/mixpanel-2-latest.min.js":"//cdn.mxpnl.com/libs/mixpanel-2-latest.min.js";f=e.getElementsByTagName("script")[0];f.parentNode.insertBefore(a,f)}})(document,window.mixpanel||[]);
@@ -233,26 +229,25 @@ rf_req.send();
 <p>
 <h2>System Overview</h2>
 <p>
-The solution is patterned on a "do-it-yourself" (DIY) approach and utilizes inexpensive hardware, open source software, and free services from the IBM BlueMix cloud.  The local device is comprised of a RaspberryPi computer and PlayStation3 Eye USB camera with four (4) internal microphones.  Total cost of hardware is under US$80 on-line.
+The solution is patterned on a "do-it-yourself" (DIY) approach and utilizes inexpensive hardware, open source software, and free services from the IBM Bluemix cloud.  The local device is comprised of a RaspberryPi computer and PlayStation3 Eye USB camera with four (4) internal microphones.  Total cost of hardware is under US$80 on-line.
 <br>
 <img width="75%" src="images/system-overview.png">
 <p>
-The <a href="http://www.bluemix.net/">IBM BlueMix</a> cloud provides a suite of services for the application, including this Web site, which is a Node.js CloudFoundry application.
-The BlueMix environment enables this application context to apply to other services, 
+The <a href="http://www.bluemix.net/">IBM Bluemix</a> cloud provides a suite of services for the application, including this Web site, which is a Node.js CloudFoundry application.
+The Bluemix environment enables this application context to apply to other services, 
 notably the IBM Watson <a href="http://www.ibm.com/smarterplanet/us/en/ibmwatson/developercloud/visual-recognition.html">image recognition services</a>.  
 In addition, the <a href="http://cloudant.com/">Cloudant</a> NoSQL repository stores the historical event and image recognition information.
 <p>
-BlueMix also provides the <a href="http://www.ibm.com/software/data/dashdb/">dashDB</a> hybrid relational data warehousing service.  
+Bluemix also provides the <a href="http://www.ibm.com/software/data/dashdb/">dashDB</a> hybrid relational data warehousing service.  
 This service automatically replicates from the Cloudant repository and provides an SQL interface for SELECT, PROJECT and JOIN.
 This SQL services can also be consumed by <a href="http://watson.analytics.ibmcloud.com">Watson Analytics</a> and other third-party software packages from IBM 
 and business partners (e.g. <a href="http://www.looker.com">Looker</a>).
 <p>
-Also on BlueMix, the IBM <a href="https://internetofthings.ibmcloud.com/">Internet of Things</a> platform and 
+Also on Bluemix, the IBM <a href="https://internetofthings.ibmcloud.com/">Internet of Things</a> platform and 
 associated <a href="https://iotrti-prod.mam.ibmserviceengage.com/">Real-Time Insights</a> provide device registration and system status monitoring for the RaspberryPi.
 General purpose conditionals can be applied for integration with email, <a href="http://www.ifttt.com">IFTTT</a>, Node.Red and arbitrary web-hook.
 <p>
-In addition, this site utilizes Mixpanel (www.mixpanel.com) and Intercom.io (www.intercom.io) to provide user tracking and near-line chat
-(n.b. look in lower right corner for chat icon).
+In addition, this site utilizes Mixpanel (www.mixpanel.com) to provide user tracking.
 <h2>
 Training
 </h2>
@@ -272,13 +267,25 @@ a hierarchy, but neither the classes nor the hierarchy is published and must be 
 Therefore, I embarked on building a training loop for whatever recognition algorithm I might utilize.  This loop would capture the images from the camera's local storage (n.b. uSD card) and
 present those images to the application user community (e.g. elderly individual/couple) and enable manual classification for subsequent training, testing, and deploying of a model specific to both this application context (i.e. people detection) as well as the local environs (e.g. room location, dogs, cats, residents, ...)
 <h3>
+Collecting the images
+</h3>
+<p>
+The images needed to create the training data for Watson VR are stored on each device in a local directory (n.b. <code>/var/lib/motion</code>).  
+The image file names correspond to the date and time of the image, as well as a monotonically increasing sequence number.  
+Access to these images is provided through FTP, restricted to access from the local LAN.
+<p>
+When the end-user engages in curating, a.k.a. labeling, the images into their respective distinct classes (see the next section), another service is invoked (<code>aah-review</code>).
+The <b>review</b> service periodically collects new events stored by the device in the Cloudant noSQL repository (e.g. <a href="https://538e7925-b7f5-478b-bf75-2f292dcf642a-bluemix.cloudant.com/rough-fog"><code>rough-fog</code></a>).
+New events include the image identifier; the device is accessed via FTP and the image is collected and collated.
+When the process is complete, the count of images in each class is updated in Cloudant (e.g. <a href="https://538e7925-b7f5-478b-bf75-2f292dcf642a-bluemix.cloudant.com/rough-fog-review/all"><code>rough-fog/review/all</code></a>), in addition to the sequence number of last event processed.
+<h3>
 Labeling the images
 </h3>
 <p>
 Below is the user-interface for labeling images.  Options are available as buttons (e.g. person, kitchen, dog, ..) based on previous labels assigned; new labels can be added in the text entry box and the 
-image's initial (AlchemyAPI) classification and capture date are shown.
+image's initial classification and capture date are shown.
 <figure>
-<img src="images/label-web-app.png" width="90%">
+<img src="images/label-web-app.png" width="50%">
 <figcaption>Simple Web application to label images</figcaption>
 </figure>
 <p>
@@ -286,11 +293,14 @@ Ideally, images are labeled if and only if the image contains the entity in ques
 The training set also requires negative examples which do not include <i>any</i> entity (i.e. person, dog or cat).
 To achieve this distinction, each camera installation has been pre-defined to a corresponding label (e.g. "kitchen") that is used to identify the negative examples.
 Similarly, other locations may also be suitably classified (e.g. bathroom, dining room, living room, ...)
+<p>
+Labeled images are collated into separate directory structure for their new classes and symbolic links are utilized as a state maintaince indicator (i.e. collected, labeled).
+Once images are labeled they are deemed ready for training; additional curation of the labeled images is performed in the <b>Training</b> phase.
 <h3>
-Learning the classifiers
+Training the classifiers
 </h3>
 <p>
-The Watson VisualRecognition image classifier provides both for initial learning as well as updates with new images.  The API does not provide details on images utilized in training for
+The Watson VisualRecognition service provides for both initial learning as well as updates with new classes and images.  The API does not provide details on images utilized in training for
 either positive or negative examples so an independent record of images utilized must be maintained.  In addition, no standard of practice is defined for validating or measuring the quality
 of the learned model, so independent testing and quality measurement must be constructed.  Finally, as the training process appears to be a required constiuent component, 
 other entities (e.g. myself, my wife, my kids, ..) could also be identified and used to train Watson VR.
@@ -299,7 +309,40 @@ The training set is limited to 100 megabytes (MB) of data for each class with a 
 labeled set at a time, also including negative examples (i.e. not including any previously labeled entities).
 <p>
 Each learned model is referred to by both a name as well as a specific identifier.  The name is being utilized for the device (e.g. rough-fog) and the identifier determines the model and serves
-as an index to keep track of which images have been used for training purposes -- both positive and negative examples.  The script is still in process <a href="https://github.com/dcmartin/age-at-home/blob/master/bin/train_vr"><code>train_vr</code></a>.
+as an index to keep track of which images have been used for training purposes -- both positive and negative examples.  The 
+<a href="https://github.com/dcmartin/age-at-home/blob/master/bin/train_vr">
+<code>train_vr</code>
+</a>
+script is still in process.  Evident in the 
+<a href="https://github.com/dcmartin/age-at-home/blob/master/bin/aah-train-rough-fog.1479139200.out">
+log</a> are failures of the Watson VR API call, e.g. <code>413 Request Entity Too Large</code>, and corresponding successful repetition.
+<pre>
+Mon Nov 14 10:43:14 PST 2016 ./train_vr 61457 -- RETRAIN roughfog_1288555148 (-F person_positive_examples=@/tmp/aah-train-rough-fog.1479139200.job/person.aa.1.zip)
+curl: (22) The requested URL returned error: 413 Request Entity Too Large
+Mon Nov 14 10:46:27 PST 2016 ./train_vr 61457 ** no output (/tmp/aah-train-rough-fog.1479139200.job/person.61457.json)
+Mon Nov 14 10:46:27 PST 2016 ./train_vr 61457 -- RETRAIN roughfog_1288555148 (-F person_positive_examples=@/tmp/aah-train-rough-fog.1479139200.job/person.aa.1.zip)
+Mon Nov 14 10:48:43 PST 2016 ./train_vr 61457 -- LEARNING (roughfog_1288555148) status (retraining)
+Mon Nov 14 10:48:43 PST 2016 ./train_vr 61457 -- WAITING ........ (222 seconds)
+</pre>
+<p>
+Once the process has successfully complete, the updated <a href="https://github.com/dcmartin/age-at-home/blob/master/bin/aah-train-rough-fog.1479139200.json">model</a> 
+definition and resulting details from the Watson VR system are stored into <a href="https://538e7925-b7f5-478b-bf75-2f292dcf642a-bluemix.cloudant.com/rough-fog-train/_all_docs?include_docs=true">Cloudant</a>.
+<h4>Process Model</h4>
+<p>The script executes a number of steps sequentially based on the output of the <code>aah-classify</code> Web application.
+The curated images are organized in the file-system in a directory structure corresponding to <i>device</i> and <i>class</i>, e.g. <code>rough-fog/person</code>.
+<ul>
+<li>Label images by <i>class</i>
+<li>Split each image <i>class</i> <i>train</i> and <i>test</i> sets
+<li>Separate sets into batches of no more than 100 M-byte
+<li>Build model from <i>train</i> set (iterate batches)
+<li>Apply classifier to <i>test</i> set
+<li>Calculate quality metrics
+<li>Curate sets; iterate build
+<li>QA/QC vs production
+<li>Promote to production
+</ul>
+
+
 <h2>
 Analysis
 </h2>
@@ -475,8 +518,8 @@ Including the ability to ssh(1) into a terminal for command line interface:
 <h2>IBM IoTF Platform</h2>
 I added the IBM IoT Foundation <a href="https://developer.ibm.com/recipes/tutorials/raspberry-pi-4/">Quickstart for Raspberry Pi</a>
 to the environment and you can see a <a href="https://quickstart.internetofthings.ibmcloud.com/#/device/b827eb7bf9fb"> live stream </a>
-of instrumentation data.  The dashboard below is shown once a device is registered to a BlueMix account and affiliated with an organization (another level of indirection 
-off your BlueMix account).
+of instrumentation data.  The dashboard below is shown once a device is registered to a Bluemix account and affiliated with an organization (another level of indirection 
+off your Bluemix account).
 <p>
 <img width="33%" src="images/iotf-platform-dashboard.png">
 <br> <i>IBM IoTF Platform Dashboard</i>
@@ -510,7 +553,7 @@ The following image is a more detailed diagram of the system operational compone
 GitHub repositories are publically accessible at:
 <ul>
 <li><a href="https://github.com/dcmartin/AgeAtHome">RaspberryPi container for resin.io deployment</a>
-<li><a href="https://github.com/dcmartin/age-at-home">BlueMix CloudFoundry application</a>.
+<li><a href="https://github.com/dcmartin/age-at-home">Bluemix CloudFoundry application</a>.
 </ul>
 SETUP (in-progress):
 <ol>

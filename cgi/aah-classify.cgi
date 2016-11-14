@@ -89,7 +89,6 @@ echo '<input type="submit" style="background-color:#ff9933" value="CHANGE"></for
 
 echo '<p><b>Instructions:</b>  Click the button (e.g. <b>person</b>) when the image contains ONLY that entity.' >> "$HTML"
 echo '<p>If the scene is empty, click the red button.  If the image contains multiple entities, click the SKIP button.' >> "$HTML"
-echo '<p>To create a new entity, type the label and click the CREATE button.  You may also click on the image to label as <b>person</b><p>' >> "$HTML"
 
 # find in one or all directories
 if ($id == all) then
