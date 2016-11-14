@@ -464,7 +464,7 @@ if ((-s "$INVENTORY") && (-d "$JOB")) then
     if ($?DEBUG) echo `date` "$0 $$ -- found inventory ($INVENTORY) and job ($JOB)" >& /dev/stderr
 else 
     if ($?DEBUG) echo `date` "$0 $$ -- no inventory ($INVENTORY) or job ($JOB)" >& /dev/stderr
-    goto done
+    goto cleanup
 endif
 
 # get parameters
@@ -531,7 +531,7 @@ if ($#classifiers > 0 && $?model) then
 	  foreach cid ( $cids )
 	      if ($cid == "$model") then
 		  if ($?DEBUG) echo `date` "$0 $$ -- classifier id ($cid) in training" >& /dev/stderr
-		  goto done
+		  goto cleanup
 	      endif
 	  end
 	  # no matching model
@@ -571,10 +571,8 @@ end
 
 if ($?DEBUG) echo `date` "$0 $$ -- OLD ($?oldclasses) NEW ($net) NEGATIVE ($notags) +++" >& /dev/stderr
 
-goto update
-
 #
-# work out runs
+# RUN TRAINING JOBS
 #
 
 set positive = ( `jq '.classes|sort_by(.count)[]|select(.class!="'$notags'")|.class' "$INVENTORY" | sed 's/"//g'` )
@@ -640,6 +638,7 @@ again:
       set sts = `jq '.status' "$job" | sed 's/"//g'`
       if ($#cid > 0 && $cid != "null" && $sts != "error") then
 	if ($?DEBUG) echo `date` "$0 $$ -- LEARNING ($cid) status ($sts)" >& /dev/stderr
+	set model = "$cid"
       else
 	echo -n `date` "$0 $$ ** FAILURE ($cid) ($sts) ($job)" >& /dev/stderr
 	goto next
@@ -678,12 +677,18 @@ end
 
 if ($?DEBUG) echo `date` "$0 $$ -- COMPLETE $DATE ($model) ($detail)" >& /dev/stderr
 
-set nfiles = ( `jq '.classes[]|select(.class=="'"$notags"'").sets[1][]' "$JOB/job.json" | sed 's/"//g'` )
-# if ($?DEBUG) echo `date` "$0 $$ -- $notags : ($#nfiles)"
-foreach p ( $positive )
+if ($?DEBUG) then
+  set nfiles = ( `jq '.classes[]|select(.class=="'"$notags"'").sets[1][]' "$JOB/job.json" | sed 's/"//g'` )
+  echo `date` "$0 $$ -- $notags : ($#nfiles)"
+  foreach p ( $positive )
     set pfiles = ( `jq '.classes[]|select(.class=="'"$p"'").sets[1][]' "$JOB/job.json" | sed 's/"//g'` )
-    if ($?DEBUG) echo `date` "$0 $$ -- $p : ($#pfiles)"
-end
+    echo `date` "$0 $$ -- $p : ($#pfiles)"
+  end
+endif
+
+#
+# UPDATE INVENTORY INDICATING SUCCESS
+#
 
 update:
 
@@ -712,6 +717,7 @@ endif
 #
 # update Cloudant
 #
+
 if ($?CLOUDANT_OFF == 0 && $?CU && $?device) then
     if ($?DEBUG) echo `date` "$0 $$ -- test if device exists ($CU/$API-$device)" >& /dev/stderr
     set devdb = `curl -s -q -X GET "$CU/$API-$device" | jq '.db_name'`
@@ -754,6 +760,13 @@ else
     if ($?DEBUG) echo `date` "$0 $$ -- no Cloudant update" >& /dev/stderr
 endif
 
-done:
+cleanup:
 
-echo `date` "$0 $$ -- FINISH ($*)"
+if ($?INPROGRESS) then
+  if ($#INPROGRESS) then
+    rm -f "$INPROGRESS"
+  endif    
+endif
+
+done:
+  echo `date` "$0 $$ -- FINISH ($*)"
