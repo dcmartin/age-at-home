@@ -105,12 +105,12 @@ again:
 	    curl -f -s -q -L -F "images_file=@$ifiles" -o $partial \
 		"$TU/$verid/classify?api_key=$api_key&classifier_ids=default,$classifier&threshold=0.000001&version=$vdate" >& /dev/stderr
 	else
-	    if ($?DEBUG) echo `date` "$0 $$ -- CLASSIFY $ifiles using ($classifier)"
+	    if ($?DEBUG) echo `date` "$0 $$ -- CLASSIFY $ifiles using ($classifier)" >& /dev/stderr
 	    curl -f -s -q -L -F "images_file=@$ifiles" -o $partial \
 		"$TU/$verid/classify?api_key=$api_key&classifier_ids=$classifier&threshold=0.000001&version=$vdate" >& /dev/stderr
 	endif
     else
-	if ($?DEBUG) echo `date` "$0 $$ -- CLASSIFY $ifiles using default"
+	if ($?DEBUG) echo `date` "$0 $$ -- CLASSIFY $ifiles using default" >& /dev/stderr
 	curl -f -s -q -L -F "images_file=@$ifiles" -o $partial \
 	    "$TU/$verid/classify?api_key=$api_key&classifier_ids=default&threshold=0.000001&version=$vdate" >& /dev/stderr
     endif
@@ -127,7 +127,7 @@ again:
     # { "status": "ERROR", "statusInfo": "daily-transaction-limit-exceeded" }
     set error = `jq '.status' $partial`
     if ($status == 0 && $error == "ERROR") then
-	if ($?DEBUG) echo `date` "$0 $$ -- $error - " `jq '.statusInfo' $partial`
+	if ($?DEBUG) echo `date` "$0 $$ -- $error - " `jq '.statusInfo' $partial` >& /dev/stderr
         rm -f $partial
 	rm -f $zip
 	goto done
