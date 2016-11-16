@@ -63,6 +63,8 @@ set seqid = `/usr/local/bin/jq -c '.seqid' "$REVIEW" | sed 's/"//g'`
 # get all classes in order of prevelance (small to large) from initial classification
 set allclasses = ( `/usr/local/bin/jq -c '.classes|sort_by(.count)[]|.name' "$REVIEW" | sed 's/"//g'` )
 
+rm -f "$REVIEW"
+
 set MIXPANELJS = "http://$WWW/CGI/script/mixpanel-aah.js"
 
 # header
@@ -218,4 +220,5 @@ cat "$HTML"
 done:
 
 rm -f "$HTML"
+
 echo `date` "$0 $$ -- FINISH ($QUERY_STRING)" >>! $TMP/LOG
