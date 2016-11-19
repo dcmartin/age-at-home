@@ -1,4 +1,4 @@
-##!/bin/csh -fb
+##!/bin/csh -b
 setenv APP "aah"
 setenv API "train"
 if ($?TMP == 0) setenv TMP "/var/lib/age-at-home/"

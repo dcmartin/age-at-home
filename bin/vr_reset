@@ -2,6 +2,10 @@
 set db = /tmp/rough-fog.json
 set ln = /var/lib/age-at-home/rough-fog
 
+if (! -s "$db") then
+    curl -s -q -L "538e7925-b7f5-478b-bf75-2f292dcf642a-bluemix.cloudant.com/rough-fog/_changes?include_docs=true" >! "$db"
+endif
+
 if (-d "$1") then
   set dir = "$1"
   foreach i ( `find "$dir/" -name "*.jpg" -print`  )

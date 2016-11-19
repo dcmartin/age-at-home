@@ -1,4 +1,4 @@
-#!/bin/csh -fb
+#!/bin/csh
 
 set DEBUG = true
 
