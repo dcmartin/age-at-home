@@ -1,20 +1,28 @@
 #!/bin/csh -fb
-set db = /tmp/rough-fog.json
-set ln = /var/lib/age-at-home/rough-fog
+if ($# == 0) then
+  echo "vr_reset <device>/<class> - to reset images labeled as <class> for <device>"
+  exit
+endif
+set dev = $1:h
+set class = $1:t
+set db = /tmp/$dev.json
+set ln = /var/lib/age-at-home/$dev
+set dir = /var/lib/age-at-home/label/$dev/$class
 
 if (! -s "$db") then
-    curl -s -q -L "538e7925-b7f5-478b-bf75-2f292dcf642a-bluemix.cloudant.com/rough-fog/_changes?include_docs=true" >! "$db"
+    curl -s -q -L "538e7925-b7f5-478b-bf75-2f292dcf642a-bluemix.cloudant.com/$dev/_changes?include_docs=true" >! "$db"
 endif
 
-if (-d "$1") then
-  set dir = "$1"
+if (-d "$dir") then
   foreach i ( `find "$dir/" -name "*.jpg" -print`  )
     set j = "$i:t:r"
     set r = ( `jq -c '.results[]|select(.doc._id=="'"$j"'").doc.alchemy|.text,.score' "$db" | sed 's/"//g'` )
     echo "$i" "$r"
     if ($#r > 0) then
-        if (-e "$ln/$r[1]/$i:t") then
-	  ls -al "$ln/$r[1]/$i:t"
+	set dest = "$ln/$r[1]/$i:t"
+        if (-e "$dest") then
+	  ls -al "$dest"
+	  rm "$dest"
 	endif
         mkdir -p "$ln/$r[1]/"
         mv "$i" "$ln/$r[1]/"
@@ -23,5 +31,5 @@ if (-d "$1") then
     endif
   end
 else
-  echo "$1 not a directory"
+  echo "$dir not a directory"
 endif
