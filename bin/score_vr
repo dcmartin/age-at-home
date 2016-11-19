@@ -1,0 +1,19 @@
+#!/bin/csh -b
+
+set CU = "538e7925-b7f5-478b-bf75-2f292dcf642a-bluemix.cloudant.com"
+# get test classes
+set classes = ( `/usr/local/bin/curl -s -q -L "$CU/rough-fog-train/_all_docs?include_docs=true" | /usr/local/bin/jq '.rows[].doc.jobs.classes[].class' | /usr/bin/sed 's/"//g'` )
+if ($#classes) then
+    foreach class ( $classes )
+	set files = ()
+	set ids = ( `/usr/local/bin/curl -s -q -L "$CU/rough-fog-train/_all_docs?include_docs=true" | /usr/local/bin/jq '.rows[].doc.jobs.classes[]|select(.class=="'$class'").sets[3][]' | /usr/bin/sed 's/"//g'` )
+	foreach id ( $ids )
+	    set path = ( `/bin/echo "/var/lib/age-at-home/rough-fog/"*"/$id".jpg` )
+	    if ($#path) set files = ( $files $path )
+        end
+	/bin/echo
+        /bin/echo "$class : $#files files"
+ 	./test_vr $files >! "$class-scores.json"
+    end
+endif
+
