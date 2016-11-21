@@ -3,45 +3,49 @@ setenv APP "aah"
 setenv API "score"
 setenv LAN "192.168.1"
 if ($?TMP == 0) setenv TMP "/var/lib/age-at-home"
-# don't update statistics more than once per 24 hours
-set TTL = `echo "24 * 60 * 60" | bc`
+# don't update statistics more than once per seconds
+set TTL = 30
 set SECONDS = `date "+%s"`
 set DATE = `echo $SECONDS \/ $TTL \* $TTL | bc`
 
-echo `date` "$0 $$ -- START" >>! $TMP/LOG
-
 if ($?QUERY_STRING) then
-    set DB = `echo "$QUERY_STRING" | sed "s/.*db=\([^&]*\).*/\1/"`
-    if ($#DB == 0) set DB = rough-fog
-else
-    set DB = rough-fog
+    set device = `echo "$QUERY_STRING" | sed "s/.*db=\([^&]*\).*/\1/"`
+    if ($device == "$QUERY_STRING") unset device
+    set model = `echo "$QUERY_STRING" | sed 's/.*cid=\([^&]*\).*/\1/'`
+    if ($model == "$QUERY_STRING") unset model
+    set image = `echo "$QUERY_STRING" | sed 's/.*jpg=\([^&]*\).*/\1/'`
+    if ($image == "$QUERY_STRING") unset image
 endif
-setenv QUERY_STRING "db=$DB"
+if ($?device == 0) set device = rough-fog
+if ($?model == 0) set model = any
+if ($?image == 0) set image = any
+
+if ($?device && $?model && $?image) then
+    setenv QUERY_STRING "db=$DB&cid=$model&jpg=$image"
+else
+    echo `date` "$0 $$ ** FAIL: invalid arguments ($?device $?model $?image)" >>! $TMP/LOG
+    exit
+endif
+
+echo `date` "$0 $$ -- START ($QUERY_STRING)" >>! $TMP/LOG
 
 set OUTPUT = "$TMP/$APP-$API-$QUERY_STRING.$DATE.json"
 if (! -e "$OUTPUT") then
     rm -f "$TMP/$APP-$API-$QUERY_STRING".*.json
-    if ($DB == "damp-cloud") then
-    	# damp cloud (visual-classifier, score, time) Public Access
-	curl -L -s -q -o "$OUTPUT.$$" "https://ibmcds.looker.com/looks/gGt5s3SmqfMt2HDbr7R2pCNcM2th3h4s.json?apply_formatting=true"
+    set models = ( `curl -s -q -L "538e7925-b7f5-478b-bf75-2f292dcf642a-bluemix.cloudant.com/rough-fog-train/_all_docs" | jq '.rows[].id' | sed 's/"//g'` )
+    if ($#models > 0) then
+      foreach m ( $models )
+	if ($m == "$model" || $model == "any") then
+	  set model = $m
+	endif
+      end
     else
-	curl -L -s -q -o "$OUTPUT.$$" "https://ibmcds.looker.com/looks/9fBDPkqVtjHyBJqQBr6xrW4JP9dXgkRv.json?apply_formatting=true"
+      set model = "default"
     endif
+    echo '{"device":"'$DB'", "model":"'"$model"'","jpg":"'"$image"'","classes":[' >! "$OUTPUT".$$
 
-    echo '{"device":"'$DB'", "scores":' >! "$OUTPUT".$$.$$
-
-    if ($DB == "damp-cloud") then
-	cat "$OUTPUT".$$ \
-	    | sed "s/dampcloud\.alchemy_//" \
-	    | sed "s/dampcloud_visual_scores\.//g" >> "$OUTPUT".$$.$$
-    else
-	cat "$OUTPUT".$$ \
-	    | sed "s/roughfog\.alchemy_//" \
-	    | sed "s/roughfog_visual_scores\.//g" >> "$OUTPUT".$$.$$
-    endif
-    rm -f "$OUTPUT.$$"
-    echo '}' >> "$OUTPUT.$$.$$"
-    mv -f "$OUTPUT".$$.$$ "$OUTPUT"
+    echo ']}' >> "$OUTPUT.$$
+    mv -f "$OUTPUT".$$ "$OUTPUT"
 endif
 
 echo "Content-Type: application/json; charset=utf-8"
