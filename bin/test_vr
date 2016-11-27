@@ -11,20 +11,26 @@ if (! -e /usr/local/bin/jq) then
    brew install jq >& /dev/stderr
 endif
 
-if ($#argv > 0) then
-    @ i = 0
-    set t = "$argv[1]"
-    if (($#t == 1) && ($#argv > 1)) then
-	if ("$t" == "-m") then
-	    set model = $argv[2]
-	    @ i = 2
-	endif
+@ i = 1
+while ($i <= $#argv)
+    set t = "$argv[$i]"
+    if (($#t == 1) && ($#argv >= $i)) then
+        if ("$t" == "-n") then
+            @ i++
+            set maxfiles = $argv[$i]
+        else if ("$t" == "-m") then
+            @ i++
+            # model by <classifier_id>
+            set model = $argv[$i]
+        else if ($#argv >= $i) then
+           # name of directory in TMP
+	   set jpegfiles = ( $argv[$i-] ) 
+	   break
+        endif
     endif
-    if ($#argv > $i) then
-	@ i++
-        set jpegfiles = ( $argv[$i-] ) 
-    endif
-endif
+    @ i++
+end
+
 if ($?jpegfiles == 0) then
     if ($?DEBUG) echo `date` "$0 $$ -- USAGE: $0 [-m <model>] JPEG(s)" >& /dev/stderr
     goto done
@@ -70,11 +76,14 @@ endif
 # The max number of images in a .zip file is limited to 20, and limited to 5 MB.
 @ maxfiles = ( `ls -l $jpegfiles | awk '{ n += 1; sum += $5 } END { max = (5000*1024) / (sum / n); if (max > 20) max = 20; printf("%d\n", max) }'` )
 
+@ total = 0 
+@ count = 0
 @ i = 1
 @ z = $maxfiles
 @ t = 0
 @ n = $#jpegfiles
 set zip = /tmp/$0:t.$$.zip
+set json = /tmp/$0:t.$$.json
 
 while ($i <= $n) 
     @ t = $t + $z
@@ -82,7 +91,11 @@ while ($i <= $n)
 again:
     set partial = /tmp/$0:t.$$.$i.$t.json
     
-    if (-e "$partial") continue
+    # no idea why I did this
+    if (-e "$partial") then
+	if ($?DEBUG) echo `date` "$0 $$ -- PARTIAL EXISTS ($partial)" >& /dev/stderr
+	continue
+    endif
 
     if ($t >= $n) @ t = $n
     set ifiles = ( $jpegfiles[$i-$t] )
@@ -124,64 +137,58 @@ again:
 	rm -f $zip $partial
 	goto again
     endif
-    # { "status": "ERROR", "statusInfo": "daily-transaction-limit-exceeded" }
     set error = `jq '.status' $partial`
     if ($status == 0 && $error == "ERROR") then
 	if ($?DEBUG) echo `date` "$0 $$ -- $error - " `jq '.statusInfo' $partial` >& /dev/stderr
         rm -f $partial
 	rm -f $zip
 	goto done
-    else if (-s $zip) then
-	# we sent a ZIP file; remove it and elide the ZIP file pre-pended to image name
-	rm -f $zip
-	cat $partial | sed "s@$zip/@@" >>! /tmp/$0:t.$$.json
-    else if ($nfiles > 0) then
-        # simply append partial to complete
-	cat $partial >>! /tmp/$0:t.$$.json
     endif
+    # SUCCESS !
     set end = `date +%s`
     @ elapsed = $end - $start
-    if ($?DEBUG) echo "($elapsed seconds)" >& /dev/stderr
+    if ($?DEBUG) echo `/bin/date` "$0 $$ - SUCCESS ($elapsed seconds)" >& /dev/stderr
+    if (-s "$json") then
+	echo ',' >> "$json"
+    else
+        echo '{"results":[' >! "$json"
+    endif
+    if (-s $zip) then
+	# we sent a ZIP file; remove it and elide the ZIP file pre-pended to image name
+	rm -f $zip
+        jq '.' "$partial" | sed 's/"image": ".*\/\(.*\)\.jpg"/"id": "\1"/' >> "$json"
+    else
+	# simply append partial to complete
+	jq '.' "$partial" >> "$json"
+    endif
     # output partial results
     if ($?DEBUG) jq -c '.images[]|{"image":.image,"classes":[.classifiers[].classes[]]|sort_by(.score)[-1]}' $partial >& /dev/stderr
 
     # remove partial
     rm -f $partial
+    # total time
+    @ total += $elapsed
+    @ count += $nfiles
 
     # increment to next set of images
     @ i = $t + 1
-
-    if ($?FACES) then
-	# should pick only those classified as "person"
-	echo "+++ FACES +++"
-	curl -s -q -L -o /tmp/$0:t.$$.json -X POST -F "images_file=@$ifile" "$TU/$verid/detect_faces?api_key=$api_key&version=$vdate"
-	jq '.' /tmp/$0:t.$$.json
-    endif
-    if ($?TEXT) then
-	echo "+++ TEXT +++"
-	curl -s -q -L -o /tmp/$0:t.$$.json -X POST -F "images_file=@$ifile" "$TU/$verid/recognize_text?api_key=$api_key&version=$vdate"
-	jq '.' /tmp/$0:t.$$.json
-    endif
 end
+if (-s "$json") echo '],"count":'$count',"time":'$total',"model":"'"$model"'"}' >> "$json"
 
 output:
 
 # top class (by score) per image for each classifier applied
-# {"image":"20160428095504-749-00.jpg","classes":[{"name":"default","id":"default","classes":null},{"name":"damp-cloud","id":"dampcloud_231362639","classes":{"class":"person","score":0.309657}},{"name":"damp-cloud","id":"dampcloud_257127137","classes":{"class":"person","score":0.310192}},{"name":"rough-fog","id":"roughfog_1514965218","classes":{"class":"dog","score":0.480892}},{"name":"rough-fog","id":"roughfog_228618634","classes":{"class":"dog","score":0.478403}},{"name":"rough-fog","id":"roughfog_653635843","classes":{"class":"dog","score":0.479636}},{"name":"rough-fog","id":"roughfog_80528242","classes":{"class":"dog","score":0.512194}}]}
 # jq -c '.images[]|{"image":.image,"classes":[.classifiers[]|{"name":.name,"id":.classifier_id,"classes":.classes|sort_by(.score)[-1]}]}'
 
 # all classes per image for all classifiers applied
-# {"image":"20160428095504-749-00.jpg","classes":[{"class":"person","score":0.309657},{"class":"person","score":0.310192},{"class":"cat","score":0.0383389},{"class":"dog","score":0.480892},{"class":"person","score":0.186817},{"class":"cat","score":0.0383551},{"class":"dog","score":0.478403},{"class":"person","score":0.186166},{"class":"cat","score":0.0383465},{"class":"dog","score":0.479636},{"class":"person","score":0.186099},{"class":"cat","score":0.0321449},{"class":"dog","score":0.512194},{"class":"person","score":0.142043}]}
 # jq -c '.images[]|{"image":.image,"classes":[.classifiers[].classes[]]}' 
 
 # top class (by score) per image for all classifiers applied
 # {"image":"20160428095504-749-00.jpg","classes":{"class":"dog","score":0.512194}}
-# jq -c '.images[]|{"image":.image,"classes":[.classifiers[].classes[]]|sort_by(.score)[-1]}' /tmp/$0:t.$$.json
+# jq -c '.images[]|{"image":.image,"classes":[.classifiers[].classes[]]|sort_by(.score)[-1]}'
 
-output:
-
-cat /tmp/$0.$$.json
+jq '.' "$json"
 
 done:
 
-rm -f /tmp/$0:t.$$.json
+rm -f /tmp/$0:t.$$.*

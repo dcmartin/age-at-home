@@ -82,7 +82,7 @@ output:
 echo "Content-Type: application/json; charset=utf-8"
 echo "Access-Control-Allow-Origin: *"
 set age = `echo "$SECONDS - $DATE" | bc`
-set refresh = `echo "$TTL - $age | bc`
+set refresh = `echo "$TTL - $age" | bc`
 echo "Age: $age"
 echo "Refresh: $refresh"
 echo "Cache-Control: max-age=$TTL"

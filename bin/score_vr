@@ -1,19 +1,177 @@
-#!/bin/csh -b
+#!/bin/csh
+setenv APP "aah"
+setenv API "test"
+if ($?TMP == 0) setenv TMP "/var/lib/age-at-home"
 
-set CU = "538e7925-b7f5-478b-bf75-2f292dcf642a-bluemix.cloudant.com"
-# get test classes
-set classes = ( `/usr/local/bin/curl -s -q -L "$CU/rough-fog-train/_all_docs?include_docs=true" | /usr/local/bin/jq '.rows[].doc.jobs.classes[].class' | /usr/bin/sed 's/"//g'` )
-if ($#classes) then
-    foreach class ( $classes )
-	set files = ()
-	set ids = ( `/usr/local/bin/curl -s -q -L "$CU/rough-fog-train/_all_docs?include_docs=true" | /usr/local/bin/jq '.rows[].doc.jobs.classes[]|select(.class=="'$class'").sets[3][]' | /usr/bin/sed 's/"//g'` )
-	foreach id ( $ids )
-	    set path = ( `/bin/echo "/var/lib/age-at-home/rough-fog/"*"/$id".jpg` )
-	    if ($#path) set files = ( $files $path )
-        end
-	/bin/echo
-        /bin/echo "$class : $#files files"
- 	./test_vr $files >! "$class-scores.json"
-    end
+# don't update file information more than once per (in seconds)
+setenv TTL 28800
+setenv SECONDS `/bin/date "+%s"`
+setenv DATE `echo $SECONDS \/ $TTL \* $TTL | bc`
+
+# debug set/not
+set DEBUG = true
+
+#
+# CLOUDANT SETUP
+#
+set creds = ~$USER/.cloudant_url
+if (-e $creds) then
+    set cc = ( `/bin/cat $creds` )
+    if ($#cc > 0) set CU = $cc[1]
+    if ($#cc > 1) set CN = $cc[2]
+    # if ($#cc > 2) set CP = $cc[3]
+endif
+if ($?CLOUDANT_URL) then
+    set CU = $CLOUDANT_URL
+else if ($?CN && $?CP) then
+    set CU = "$CN":"$CP"@"$CN.cloudant.com"
+else
+    echo `/bin/date` "$0 $$ -- no Cloudant URL ($creds)" >& /dev/stderr
+    exit
+endif
+if ($?DEBUG) echo `/bin/date` "$0 $$ -- Cloudant noSQL ($CU)" >& /dev/stderr
+
+@ i = 1
+while ($i <= $#argv)
+    set t = "$argv[$i]"
+    if (($#t == 1) && ($#argv >= $i)) then
+       if ("$t" == "-m") then
+            @ i++
+            # model by <classifier_id>
+            set model = $argv[$i]
+        else if ("$t" == "-j") then
+            @ i++
+            # find by job_id (DATE)
+            setenv DATE $argv[$i]
+        else if ("$t" == "-d") then
+            @ i++
+            # base path directory
+            setenv TMP "$argv[$i]"
+       else if ($#argv >= $i) then
+           # name of directory in TMP
+           set device = "$argv[$i]"
+       endif
+    endif
+    @ i++
+end
+
+if ($?device && $?model) then
+    # find model
+    if ($?DEBUG) echo `/bin/date` "$0 $$ -- FINDING model ($model)" >& /dev/stderr
+    set model = ( `/usr/local/bin/curl -s -q -L "$CU/$device-train/_all_docs?include_docs=true" | /usr/local/bin/jq '.rows[]|select(.doc.model=="'"$model"'").doc'` )
+    if ($?DEBUG) echo `/bin/date` "$0 $$ -- FOUND $#model models" >& /dev/stderr
+    if ($#model == 0) unset model
+else if ($?device) then
+    # find most recent model for device
+    set model = ( `/usr/local/bin/curl -s -q -L "$CU/$device-train/_all_docs?include_docs=true" | /usr/local/bin/jq '[.rows[]|select(.doc.name=="'"$device"'")]|sort_by(.rows.doc.date)[-1].doc'` )
+    if ($#model == 0) unset model
+else
+    /bin/echo "$0 $$ -- USAGE: $0:t -m <model> <device>"
+    exit
 endif
 
+if ($?model) then
+    # record scores
+    set SCORES = /tmp/$0:t.$$.json
+    # get test classes
+    set classes = ( `/bin/echo "$model" | /usr/local/bin/jq '.sets.jobs[].class' | /usr/bin/sed 's/"//g'` )
+    set model = ( `/bin/echo "$model" | /usr/local/bin/jq '.detail.classifier_id' | /usr/bin/sed 's/"//g'` )
+    if ($?DEBUG) echo `/bin/date` "$0 $$ -- GOT model ($model)" >& /dev/stderr
+    if ($#classes) then
+        if ($?DEBUG) echo `/bin/date` "$0 $$ -- FOUND $#classes classes ($classes)" >& /dev/stderr
+	foreach class ( $classes )
+	    set files = ()
+	    # get test set ids
+	    set ids = ( `/usr/local/bin/curl -s -q -L "$CU/$device-train/_all_docs?include_docs=true" | /usr/local/bin/jq '.rows[].doc.sets.jobs[]|select(.class=="'$class'").sets[3][]' | /usr/bin/sed 's/"//g'` )
+	    if ($#ids) then
+		foreach id ( $ids )
+		    set dir = "$TMP/label/$device/$class"
+		    if (-d "$dir") then
+			set path = ( `/usr/bin/find "$dir" -name "$id.jpg" -print` )
+			if ($#path) set files = ( $files $path )
+		    else
+			if ($?DEBUG) echo `/bin/date` "$0 $$ -- NO DIRECTORY ($dir)" >& /dev/stderr
+		    endif
+		end
+		if ($#files) then
+		    if ($?DEBUG) /bin/echo `/bin/date` "$0 $$ -- PROCESSING $class with $#files files" >& /dev/stderr
+		    set vrout = $TMP/$0:t.$class.$DATE.json
+		    if (! -s "$vrout") then
+			if ($?DEBUG) /bin/echo `/bin/date` "$0 $$ -- MAKING $vrout" >& /dev/stderr
+			$0:h/test_vr -m "$model" $files >! $vrout
+		    endif
+		    if (-s "$SCORES") then
+			/bin/echo ',' >> "$SCORES"
+		    else
+			/bin/echo '{"model":"'$model'","classes":[' >! "$SCORES"
+		    endif
+		    /usr/local/bin/jq '{"class":"'$class'","results":[.results[].images[]|{"id":.id,"classes":[.classifiers[].classes[]]|sort_by(.score)[-1]}]}' "$vrout" >> "$SCORES"
+		else
+		    if ($?DEBUG) /bin/echo `/bin/date` "$0 $$ -- NO FILES ($class) for $#ids ids" >& /dev/stderr
+		endif
+	    else
+	        if ($?DEBUG) /bin/echo `/bin/date` "$0 $$ -- NO IDS ($class)" >& /dev/stderr
+	    endif
+	end
+	/bin/echo ']}' >> "$SCORES"
+    endif
+else
+    /bin/echo `/bin/date` "$0 $$ -- NO MODEL SPECIFIED OR FOUND"
+    goto done
+endif
+
+update:
+
+#
+# update Cloudant
+#
+
+if ($?CLOUDANT_OFF == 0 && $?CU && $?device) then
+    if ($?DEBUG) /bin/echo `/bin/date` "$0 $$ -- test if device exists ($device-$API)" >& /dev/stderr
+    set devdb = `/usr/local/bin/curl -s -q -X GET "$CU/$device-$API" | /usr/local/bin/jq '.db_name'`
+    if ( "$devdb" == "null" ) then
+        if ($?DEBUG) /bin/echo `/bin/date` "$0 $$ -- creating device $device-$API" >>& /dev/stderr
+        # create device
+        set devdb = `/usr/local/bin/curl -s -q -X PUT "$CU/$device-$API" | /usr/local/bin/jq '.ok'`
+        # test for success
+        if ( "$devdb" != "true" ) then
+            # failure
+            if ($?DEBUG) /bin/echo `/bin/date` "$0 $$ -- failure creating Cloudant database ($device-$API)" >& /dev/stderr
+            setenv CLOUDANT_OFF TRUE
+        else
+            if ($?DEBUG) /bin/echo `/bin/date` "$0 $$ -- success creating device $CU/$device-$API" >& /dev/stderr
+        endif
+    endif
+    if ( $?CLOUDANT_OFF == 0 ) then
+        /usr/local/bin/curl -s -q -o "$SCORES.$$" "$CU/$device-$API/$model" >>&! /tmp/LOG
+        if (-s "$SCORES.$$") then
+            set doc = ( `/bin/cat "$SCORES.$$" | /usr/local/bin/jq ._id,._rev | /usr/bin/sed 's/"//g'` )
+            if ($#doc == 2 && $doc[1] == $model && $doc[2] != "") then
+                set rev = $doc[2]
+                if ($?DEBUG) /bin/echo `/bin/date` "$0 $$ -- deleting old output ($rev)" >& /dev/stderr
+                /usr/local/bin/curl -s -q -X DELETE "$CU/$device-$API/$model?rev=$rev" >& /dev/stderr
+            endif
+        else
+            if ($?DEBUG) /bin/echo `/bin/date` "$0 $$ -- no old output to delete" >& /dev/stderr
+        endif
+	/bin/rm -f "$SCORES.$$"
+        if ($?DEBUG) /bin/echo `/bin/date` "$0 $$ -- storing new output ($SCORES)" >& /dev/stderr
+        /usr/local/bin/curl -s -q -H "Content-type: application/json" -X PUT "$CU/$device-$API/$model" -d "@$SCORES" >& /dev/stderr
+        if ($status == 0) then
+            if ($?DEBUG) /bin/echo `/bin/date` "$0 $$ -- success storing new output" >& /dev/stderr
+        else
+            if ($?DEBUG) /bin/echo `/bin/date` "$0 $$ -- failure storing new output" >& /dev/stderr
+        endif
+    else
+        if ($?DEBUG) /bin/echo `/bin/date` "$0 $$ -- Cloudant OFF ($device-$API)" >& /dev/stderr
+    endif
+else
+    if ($?DEBUG) /bin/echo `/bin/date` "$0 $$ -- no Cloudant up/bin/date" >& /dev/stderr
+endif
+
+output:
+
+/usr/local/bin/jq '.' "$SCORES" >! "$model-test.json"
+
+done:
+/bin/rm -f /tmp/$0:t.$$.*

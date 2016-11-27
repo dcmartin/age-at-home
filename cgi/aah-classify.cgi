@@ -5,6 +5,8 @@ setenv WWW "www.dcmartin.com"
 setenv LAN "192.168.1"
 if ($?TMP == 0) setenv TMP "/var/lib/age-at-home"
 
+set DEBUG = true
+
 # don't update file information more than once per (in seconds)
 set TTL = 1800
 set SECONDS = `date "+%s"`

@@ -1,7 +1,7 @@
-##!/bin/csh -b
+#!/bin/csh
 setenv APP "aah"
 setenv API "train"
-if ($?TMP == 0) setenv TMP "/var/lib/age-at-home/"
+if ($?TMP == 0) setenv TMP "/var/lib/age-at-home"
 
 # don't update file information more than once per (in seconds)
 setenv TTL 28800
@@ -63,9 +63,9 @@ if ($?QUERY_STRING) then
     set device = `echo "$QUERY_STRING" | sed 's/.*db=\([^&]*\).*/\1/'`
     if ($device == "$QUERY_STRING") unset device
     set model = `echo "$QUERY_STRING" | sed 's/.*model=\([^&]*\).*/\1/'`
-    if ($model == "$QUERY_STRING") set model = ""
+    if ($model == "$QUERY_STRING") unset model
     set notags = `echo "$QUERY_STRING" | sed 's/.*notags=\([^&]*\).*/\1/'`
-    if ($notags == "$QUERY_STRING") set notags = ""
+    if ($notags == "$QUERY_STRING") unset notags
 endif
 
 #
@@ -99,7 +99,7 @@ while ($i <= $#argv)
 	    # base path directory
 	    setenv TMP "$argv[$i]"
        else if ($#argv >= $i) then
-	   # name of directory in TMP
+	   # name of directory in $TMP/label
 	   set device = "$argv[$i]"
        endif
     endif
@@ -135,10 +135,21 @@ if ($?CLOUDANT_OFF == 0) then
 	unset db
       endif
     endif
-    if ($?db) then
+    if ($?db && $?model) then
+      set model = ( `curl -s -q -L "$CU/$device-$API/_all_docs?include_docs=true" | jq '.rows[]|select(.doc.model=="'"$model"'")'` )
+    else if ($?db) then
       set device_models = ( `curl -s -q -L "$CU/$device-$API/_all_docs?include_docs=true" | jq '.rows[]|select(.doc.name=="'"$device"'")'` )
     endif
-    if ($?device_models) then
+    if ($?model) then
+      if ($?DEBUG) echo `date` "$0 $$ -- FOUND MODEL ($#model)" >& /dev/stderr
+      # CHECK INVENTORY AGAINST TRAINED SET
+      set w = ( `echo "$model" | jq '.date' | sed 's/"//g'` )
+      set s = ( `echo "$model" | jq '.images[].class' | sed 's/"//g'` )
+      set p = ( `echo "$model" | jq '.detail.classes[].class' | sed 's/"//g'` )
+      set n = ( `echo "$model" | jq '.negative' | sed 's/"//g'` )
+      if ($?DEBUG) echo `date` "$0 $$ -- EXISTING MODEL ($model) date ($w) sets ($s) negative ($n) positive ($p)" >& /dev/stderr
+      exit
+    else if ($?device_models) then
       if ($?DEBUG) echo `date` "$0 $$ -- DEVICE MODELS ($#device_models)" >& /dev/stderr
       set classifier_ids = ( `echo "$device_models" | jq '.doc.detail.classifier_id' | sed 's/"//g'` )
       set models = ( `echo "$device_models" | jq '.doc.model' | sed 's/"//g'` )
@@ -151,34 +162,14 @@ if ($?CLOUDANT_OFF == 0) then
       endif
       if ($?DEBUG) echo `date` "$0 $$ -- classifiers ($classifier_ids) models ($models)" >& /dev/stderr
     endif
-    if ($?model) then
-	if ($?delete) then
-	    # find old model in Cloudant
-            set doc = ( `curl -s -q "$CU/$device-$API/$model" | jq ._id,._rev | sed 's/"//g'` )
-            if ($#doc == 2 && $doc[1] == $model && $doc[2] != "") then
-                set rev = $doc[2]
-                if ($?DEBUG) echo `date` "$0 $$ -- DELETE OLD MODEL ($model) ($rev)" >& /dev/stderr
-                curl -s -q -X DELETE "$CU/$device-$API/$model?rev=$rev" >& /dev/stderr
-	    else
-	      if ($?DEBUG) echo `date` "$0 $$ -- NO OLD MODEL ($model) in Cloudant" >& /dev/stderr
-	    endif
-	    unset model
-	else
-	  set previous = ( `curl -s -q -L "$CU/$device-$API/$model" | jq '.'` )
-	  set w = `echo "$previous" | jq '.date' | sed 's/"//g'`
-	  if ($w == "$DATE") then
-	      echo `date` "$0 $$ ** MODEL for  date ($w) exists" >& /dev/stderr
-	      goto training
-	  else
-	      set s = ( `echo "$previous" | jq '.classes[].class' | sed 's/"//g'` )
-	      set p = ( `echo "$previous" | jq '.detail.classes[].class' | sed 's/"//g'` )
-	      set n = ( `echo "$previous" | jq '.negative' | sed 's/"//g'` )
-	      if ($?DEBUG) echo `date` "$0 $$ -- EXISTING MODEL ($model) date ($w) sets ($s) negative ($n) positive ($p)" >& /dev/stderr
-	  endif
-	endif
-    endif
 else
     if ($?DEBUG) echo `date` "$0 $$ -- Cloudant OFF" >& /dev/stderr
+endif
+
+if ($?model) then
+    if ($?DEBUG) echo `date` "$0 $$ -- model ($model) in Cloudant" >& /dev/stderr
+else
+    if ($?DEBUG) echo `date` "$0 $$ -- NO MODEL ($device)" >& /dev/stderr
 endif
 
 ##
@@ -215,19 +206,20 @@ if (! -d "$TMP/label") then
     exit
 endif
 
-echo '{"name":"'$device'","negative":"'$notags'","model":' >! "$INVENTORY.$$"
-if ($?model) then
-  echo '"'$model'","detail": null,' >> "$INVENTORY.$$"
-else
-  echo 'null,' >> "$INVENTORY.$$"
-endif
+echo '{"name":"'$device'","negative":"'$notags'",' >! "$INVENTORY.$$"
 
-echo '"classes":[' >> "$INVENTORY.$$"
+unset classes
+echo '"images":[' >> "$INVENTORY.$$"
 # iterate
 foreach xdir ( "$TMP/label/$device/"* )
     if ($?DEBUG) echo `date` "$0 $$ -- processing $xdir" >& /dev/stderr
     if ($?set) echo ',' >> "$INVENTORY.$$"
     set set = "$xdir:t"
+    if ($?classes) then
+	set classes = "$classes"',"'"$set"'"'
+    else
+      set classes = '"'"$set"'"'
+    endif
     echo '{"class":"'$set'","ids":[' >> "$INVENTORY.$$"
     @ count = 0
     @ bytes = 0
@@ -239,7 +231,7 @@ foreach xdir ( "$TMP/label/$device/"* )
     end
     echo '],"bytes":'$bytes',"count":'$count'}' >> "$INVENTORY.$$"
 end
-echo ']}' >> "$INVENTORY.$$"
+echo '],"classes":['"$classes"']}' >> "$INVENTORY.$$"
  
 jq '.' "$INVENTORY.$$" >! "$INVENTORY"
 
@@ -305,8 +297,8 @@ mkdir -p "$JOB"
 @ SPLITSETS = 2
 
 # get all classes as pairs of class name and count (including negative)
-set allclass = ( `jq '[.classes|sort_by(.count)[]|{"class":.class,"count":.count,"bytes":.bytes}]' "$INVENTORY"`)
-if ($?DEBUG) echo `date` "$0 $$ -- batching classes by counts ($allclass)" >& /dev/stderr
+set allclass = ( `jq '[.images|sort_by(.count)[]|{"class":.class,"count":.count,"bytes":.bytes}]' "$INVENTORY"`)
+if ($?DEBUG) echo `date` "$0 $$ -- batching images by counts ($allclass)" >& /dev/stderr
 
 # process all samples into training, validation and test sets
 set pairs = ( `echo "$allclass" | jq '.[]|.class,.count' | sed 's/"//g'` )
@@ -316,7 +308,8 @@ if ($#pairs == 0) then
 endif
 
 @ p = 1
-set job = '{"device":"'"$device"'","date":'"$DATE"',"classes":['
+set job = '{"device":"'"$device"'","date":'"$DATE"',"jobs":['
+unset sets
 while ($p < $#pairs) 
     set class = $pairs[$p]
     @ p++
@@ -335,7 +328,7 @@ while ($p < $#pairs)
 	    if ($?DEBUG) echo `date` "$0 $$ -- split size ($split)" >& /dev/stderr
 	endif
 	set base = "$JOB/$class." 
-	jq '.classes[]|select(.class=="'$class'").ids[]' "$INVENTORY" | sed 's/"//g' | split -l $split - $base 
+	jq '.images[]|select(.class=="'$class'").ids[]' "$INVENTORY" | sed 's/"//g' | split -l $split - $base 
 	set split = ( `echo $base*` )
 	if ($?sets) then
 	    set sets = "$sets"'},{"class":"'"$class"'","sets":'
@@ -418,18 +411,34 @@ while ($p < $#pairs)
 	    unset batch
 	    unset ids
 	end
+	set splits = "$splits"']'
     else
-	echo `date` "$0 $$ -- NO SPLIT ($split)" >& /dev/stderr
-	exit
+	echo `date` "$0 $$ -- NO SPLIT" >& /dev/stderr
+        unset splits
     endif
-    set sets = "$sets""$splits"']'
-    # if ($?DEBUG) echo `date` "$0 $$ -- SETS: $sets" >& /dev/stderr
+    if ($?splits) then
+	set sets = "$sets""$splits"
+	# if ($?DEBUG) echo `date` "$0 $$ -- SETS: $sets" >& /dev/stderr
+    endif
     unset splits
 end
-set job = "$job""$sets"'}]}'
-
-# store result
-echo "$job" >! "$JOB/job.json"
+# SETS
+if ($?sets) then
+    set job = "$job""$sets"'}]}'
+else 
+    set job = "$job"'}]}'
+else
+    # NO SETS?
+    if ($?DEBUG) echo `date` "$0 $$ !! NO SETS" >& /dev/stderr
+endif
+if ($?job) then
+    # store result
+    echo "$job" >! "$JOB/job.json"
+    jq . "$JOB/job.json"
+else
+    if ($?DEBUG) echo `date` "$0 $$ !! NO JOB" >& /dev/stderr
+    exit
+endif
 
 # all done
 rm -f "$JOB.$$"
@@ -480,7 +489,7 @@ if ($?model) then
     if ($?DEBUG) echo `date` "$0 $$ -- searching for classifier by ID" >& /dev/stderr
     set classifiers = ( `curl -q -s -L "$TU/$verid/classifiers?api_key=$api_key&version=$vdate" | jq '[.classifiers[]|select(.classifier_id=="'"$model"'")]'` )
     if ($?DEBUG) echo `date` "$0 $$ -- got ($classifiers) for $model on $device" >& /dev/stderr
-else if ($?device) then
+else if ($?device && $?USE_MOST_RECENT) then
     if ($?DEBUG) echo `date` "$0 $$ -- searching for classifier by device" >& /dev/stderr
     set classifiers = ( `curl -q -s -L "$TU/$verid/classifiers?api_key=$api_key&version=$vdate" | jq '[.classifiers[]|select(.name=="'"$device"'")]'` )
     set model = ( `echo "$classifiers" | jq '.[].classifier_id' | sed 's/"//g'` )
@@ -552,7 +561,7 @@ else
     unset oldclasses
 endif
 
-set newclasses = ( `jq '.classes[].class' "$INVENTORY" | sed 's/"//g'` )
+set newclasses = ( `jq '.images[].class' "$INVENTORY" | sed 's/"//g'` )
 set notags = ( `jq '.negative' "$INVENTORY" | sed 's/"//g'` )
 
 set net = ()
@@ -575,18 +584,20 @@ if ($?DEBUG) echo `date` "$0 $$ -- OLD ($?oldclasses) NEW ($net) NEGATIVE ($nota
 # RUN TRAINING JOBS
 #
 
-set positive = ( `jq '.classes|sort_by(.count)[]|select(.class!="'$notags'")|.class' "$INVENTORY" | sed 's/"//g'` )
-set negative = ( `jq '.classes|sort_by(.count)[]|select(.class=="'$notags'")|.class' "$INVENTORY" | sed 's/"//g'` )
+set positive = ( `jq '.images|sort_by(.count)[]|select(.class!="'$notags'")|.class' "$INVENTORY" | sed 's/"//g'` )
+set negative = ( `jq '.images|sort_by(.count)[]|select(.class=="'$notags'")|.class' "$INVENTORY" | sed 's/"//g'` )
 
-# the zero'th set is the training example ZIPs; correspong +1 set are the IDs used in those ZIPs
-set negatives = ( `jq '.classes[]|select(.class=="'"$notags"'").sets[0][]' "$JOB/job.json" | sed 's/"//g'` )
+if ($?DEBUG) echo `date` "$0 $$ -- POSITIVE ($positive) NEGATIVE ($negative) +++" >& /dev/stderr
+
+# the zero'th set is the training example ZIPs; corresponding +1 set are the IDs used in those ZIPs
+set negatives = ( `jq '.jobs[]|select(.class=="'"$notags"'").sets[0][]' "$JOB/job.json" | sed 's/"//g'` )
 
 @ h = 1
 @ j = 1
 while ($h <= $#positive) 
   set p = $positive[$h]
   # first (0) set is training
-  set positives = ( `jq '.classes[]|select(.class=="'"$p"'").sets[0][]' "$JOB/job.json" | sed 's/"//g'` )
+  set positives = ( `jq '.jobs[]|select(.class=="'"$p"'").sets[0][]' "$JOB/job.json" | sed 's/"//g'` )
   @ i = 1
   while ($i <= $#positives) 
     set job = "$JOB/$p.$$.json"
@@ -678,10 +689,10 @@ end
 if ($?DEBUG) echo `date` "$0 $$ -- COMPLETE $DATE ($model) ($detail)" >& /dev/stderr
 
 if ($?DEBUG) then
-  set nfiles = ( `jq '.classes[]|select(.class=="'"$notags"'").sets[1][]' "$JOB/job.json" | sed 's/"//g'` )
+  set nfiles = ( `jq '.jobs[]|select(.class=="'"$notags"'").sets[1][]' "$JOB/job.json" | sed 's/"//g'` )
   echo `date` "$0 $$ -- $notags : ($#nfiles)"
   foreach p ( $positive )
-    set pfiles = ( `jq '.classes[]|select(.class=="'"$p"'").sets[1][]' "$JOB/job.json" | sed 's/"//g'` )
+    set pfiles = ( `jq '.jobs[]|select(.class=="'"$p"'").sets[1][]' "$JOB/job.json" | sed 's/"//g'` )
     echo `date` "$0 $$ -- $p : ($#pfiles)"
   end
 endif
@@ -698,11 +709,13 @@ set created = `echo "$detail" | jq '.created' | sed 's/"//g'`
 set created = `date -j -f '%Y-%m-%dT%H:%M:%S' +%s $created:r`
 set retrained = `echo "$detail" | jq '.retrained' | sed 's/"//g'`
 set retrained = `date -j -f '%Y-%m-%dT%H:%M:%S' +%s $retrained:r`
+set classes = `echo "$batches" | jq '[.jobs[].class]'`
 # update INVENTORY with resulting model
 cat "$INVENTORY" \
+    | jq '.classes='"$classes" \
     | jq '.created="'$created'"' \
     | jq '.retrained="'$retrained'"' \
-    | jq '.jobs='"$batches" \
+    | jq '.sets='"$batches" \
     | jq '.date="'"$DATE"'"' \
     | jq '.model="'"$model"'"' \
     | jq .detail="$detail" \
@@ -719,7 +732,7 @@ endif
 #
 
 if ($?CLOUDANT_OFF == 0 && $?CU && $?device) then
-    if ($?DEBUG) echo `date` "$0 $$ -- test if device exists ($CU/$device-$API)" >& /dev/stderr
+    if ($?DEBUG) echo `date` "$0 $$ -- test if device exists ($device-$API)" >& /dev/stderr
     set devdb = `curl -s -q -X GET "$CU/$device-$API" | jq '.db_name'`
     if ( "$devdb" == "null" ) then
         if ($?DEBUG) echo `date` "$0 $$ -- creating device $CU/$device-$API" >>& /dev/stderr
@@ -731,7 +744,7 @@ if ($?CLOUDANT_OFF == 0 && $?CU && $?device) then
             if ($?DEBUG) echo `date` "$0 $$ -- failure creating Cloudant database ($device-$API)" >& /dev/stderr
             setenv CLOUDANT_OFF TRUE
         else
-            if ($?DEBUG) echo `date` "$0 $$ -- success creating device $CU/$device-$API" >& /dev/stderr
+            if ($?DEBUG) echo `date` "$0 $$ -- success creating device $device-$API" >& /dev/stderr
         endif
     endif
     if ( $?CLOUDANT_OFF == 0 ) then
@@ -746,6 +759,7 @@ if ($?CLOUDANT_OFF == 0 && $?CU && $?device) then
         else
             if ($?DEBUG) echo `date` "$0 $$ -- no old output to delete" >& /dev/stderr
         endif
+	rm -f "$INVENTORY.$$"
         if ($?DEBUG) echo `date` "$0 $$ -- storing new output" >& /dev/stderr
         curl -s -q -H "Content-type: application/json" -X PUT "$CU/$device-$API/$model" -d "@$INVENTORY" >>&! /tmp/LOG
         if ($status == 0) then
