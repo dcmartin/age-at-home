@@ -127,6 +127,7 @@ again:
 	curl -f -s -q -L -F "images_file=@$ifiles" -o $partial \
 	    "$TU/$verid/classify?api_key=$api_key&classifier_ids=default&threshold=0.000001&version=$vdate" >& /dev/stderr
     endif
+    # curl failure; assume file size too large
     if ($status == 22 || ! -s $partial) then
         # call failed -- retry
 	if ($?DEBUG) echo "FAILED ($t $z) ($ifiles)" >& /dev/stderr
@@ -137,11 +138,10 @@ again:
 	rm -f $zip $partial
 	goto again
     endif
-    set error = `jq '.status' $partial`
+    set error = `jq '.status' "$partial"`
     if ($status == 0 && $error == "ERROR") then
-	if ($?DEBUG) echo `date` "$0 $$ -- $error - " `jq '.statusInfo' $partial` >& /dev/stderr
-        rm -f $partial
-	rm -f $zip
+	if ($?DEBUG) echo `date` "$0 $$ -- $error - " `jq '.' $partial` >& /dev/stderr
+        rm -f $zip $partial
 	goto done
     endif
     # SUCCESS !
@@ -153,16 +153,22 @@ again:
     else
         echo '{"results":[' >! "$json"
     endif
+    # Sometimes you get elements of the results like the following:
+    # { "error": { "description": "An undefined server error occurred.", "error_id": "server_error" }, "id": "20161126155646-11447-01" },
+    # We re-write the results to indicate a failure with null for results
     if (-s $zip) then
 	# we sent a ZIP file; remove it and elide the ZIP file pre-pended to image name
 	rm -f $zip
         jq '.' "$partial" | sed 's/"image": ".*\/\(.*\)\.jpg"/"id": "\1"/' >> "$json"
+	# jq '.images[]|{"id":.id,"results":.classifiers}' "$partial" | sed 's/"image": ".*\/\(.*\)\.jpg"/"id": "\1"/' >> "$json"
     else
 	# simply append partial to complete
 	jq '.' "$partial" >> "$json"
+	# jq '.images[]|{"id":.id,"results":.classifiers}' "$partial" >> "$json"
     endif
+
     # output partial results
-    if ($?DEBUG) jq -c '.images[]|{"image":.image,"classes":[.classifiers[].classes[]]|sort_by(.score)[-1]}' $partial >& /dev/stderr
+    if ($?DEBUG) jq -c '.images[]|{"image":.image,"classes":[.classifiers[]?.classes[]]|sort_by(.score)[-1]}' $partial >& /dev/stderr
 
     # remove partial
     rm -f $partial

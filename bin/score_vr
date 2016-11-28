@@ -58,31 +58,32 @@ end
 if ($?device && $?model) then
     # find model
     if ($?DEBUG) echo `/bin/date` "$0 $$ -- FINDING model ($model)" >& /dev/stderr
-    set model = ( `/usr/local/bin/curl -s -q -L "$CU/$device-train/_all_docs?include_docs=true" | /usr/local/bin/jq '.rows[]|select(.doc.model=="'"$model"'").doc'` )
-    if ($?DEBUG) echo `/bin/date` "$0 $$ -- FOUND $#model models" >& /dev/stderr
-    if ($#model == 0) unset model
+    set cid = ( `/usr/local/bin/curl -s -q -L "$CU/$device-train/_all_docs?include_docs=true" | /usr/local/bin/jq '.rows[]|select(.doc.model=="'"$model"'").doc'` )
+    if ($?DEBUG) echo `/bin/date` "$0 $$ -- FOUND $#cid models" >& /dev/stderr
+    if ($#cid == 0) unset cid
 else if ($?device) then
     # find most recent model for device
-    set model = ( `/usr/local/bin/curl -s -q -L "$CU/$device-train/_all_docs?include_docs=true" | /usr/local/bin/jq '[.rows[]|select(.doc.name=="'"$device"'")]|sort_by(.rows.doc.date)[-1].doc'` )
-    if ($#model == 0) unset model
+    set cid = ( `/usr/local/bin/curl -s -q -L "$CU/$device-train/_all_docs?include_docs=true" | /usr/local/bin/jq '[.rows[]|select(.doc.name=="'"$device"'")]|sort_by(.rows.doc.date)[-1].doc'` )
+    if ($#cid == 0) unset cid 
 else
     /bin/echo "$0 $$ -- USAGE: $0:t -m <model> <device>"
     exit
 endif
 
-if ($?model) then
+if ($?cid) then
     # record scores
     set SCORES = /tmp/$0:t.$$.json
     # get test classes
-    set classes = ( `/bin/echo "$model" | /usr/local/bin/jq '.sets.jobs[].class' | /usr/bin/sed 's/"//g'` )
-    set model = ( `/bin/echo "$model" | /usr/local/bin/jq '.detail.classifier_id' | /usr/bin/sed 's/"//g'` )
-    if ($?DEBUG) echo `/bin/date` "$0 $$ -- GOT model ($model)" >& /dev/stderr
+    set classes = ( `/bin/echo "$cid" | /usr/local/bin/jq '.sets.jobs[].class' | /usr/bin/sed 's/"//g'` )
+    set name = ( `/bin/echo "$cid" | /usr/local/bin/jq '.detail.classifier_id' | /usr/bin/sed 's/"//g'` )
+    if ($?DEBUG) echo `/bin/date` "$0 $$ -- GOT model ($name)" >& /dev/stderr
     if ($#classes) then
         if ($?DEBUG) echo `/bin/date` "$0 $$ -- FOUND $#classes classes ($classes)" >& /dev/stderr
 	foreach class ( $classes )
 	    set files = ()
 	    # get test set ids
-	    set ids = ( `/usr/local/bin/curl -s -q -L "$CU/$device-train/_all_docs?include_docs=true" | /usr/local/bin/jq '.rows[].doc.sets.jobs[]|select(.class=="'$class'").sets[3][]' | /usr/bin/sed 's/"//g'` )
+	    set ids = ( `/bin/echo "$cid" | /usr/local/bin/jq '.sets.jobs[]|select(.class=="'$class'").sets[3][]' | /usr/bin/sed 's/"//g'` )
+	    if ($?DEBUG) echo `/bin/date` "$0 $$ -- FOUND $#ids ids ($class)" >& /dev/stderr
 	    if ($#ids) then
 		foreach id ( $ids )
 		    set dir = "$TMP/label/$device/$class"
@@ -98,14 +99,14 @@ if ($?model) then
 		    set vrout = $TMP/$0:t.$class.$DATE.json
 		    if (! -s "$vrout") then
 			if ($?DEBUG) /bin/echo `/bin/date` "$0 $$ -- MAKING $vrout" >& /dev/stderr
-			$0:h/test_vr -m "$model" $files >! $vrout
+			$0:h/test_vr -m "$name" $files >! $vrout
 		    endif
 		    if (-s "$SCORES") then
 			/bin/echo ',' >> "$SCORES"
 		    else
-			/bin/echo '{"model":"'$model'","classes":[' >! "$SCORES"
+			/bin/echo '{"model":"'$name'","classes":[' >! "$SCORES"
 		    endif
-		    /usr/local/bin/jq '{"class":"'$class'","results":[.results[].images[]|{"id":.id,"classes":[.classifiers[].classes[]]|sort_by(.score)[-1]}]}' "$vrout" >> "$SCORES"
+		    /usr/local/bin/jq '{"class":"'$class'","results":[.results[].images[]|{"id":.id,"classes":[.classifiers[]?.classes[]]|sort_by(.score)[-1]}]}' "$vrout" >> "$SCORES"
 		else
 		    if ($?DEBUG) /bin/echo `/bin/date` "$0 $$ -- NO FILES ($class) for $#ids ids" >& /dev/stderr
 		endif
@@ -143,20 +144,20 @@ if ($?CLOUDANT_OFF == 0 && $?CU && $?device) then
         endif
     endif
     if ( $?CLOUDANT_OFF == 0 ) then
-        /usr/local/bin/curl -s -q -o "$SCORES.$$" "$CU/$device-$API/$model" >>&! /tmp/LOG
+        /usr/local/bin/curl -s -q -o "$SCORES.$$" "$CU/$device-$API/$name" >>&! /tmp/LOG
         if (-s "$SCORES.$$") then
             set doc = ( `/bin/cat "$SCORES.$$" | /usr/local/bin/jq ._id,._rev | /usr/bin/sed 's/"//g'` )
-            if ($#doc == 2 && $doc[1] == $model && $doc[2] != "") then
+            if ($#doc == 2 && $doc[1] == $name && $doc[2] != "") then
                 set rev = $doc[2]
                 if ($?DEBUG) /bin/echo `/bin/date` "$0 $$ -- deleting old output ($rev)" >& /dev/stderr
-                /usr/local/bin/curl -s -q -X DELETE "$CU/$device-$API/$model?rev=$rev" >& /dev/stderr
+                /usr/local/bin/curl -s -q -X DELETE "$CU/$device-$API/$name?rev=$rev" >& /dev/stderr
             endif
         else
             if ($?DEBUG) /bin/echo `/bin/date` "$0 $$ -- no old output to delete" >& /dev/stderr
         endif
 	/bin/rm -f "$SCORES.$$"
         if ($?DEBUG) /bin/echo `/bin/date` "$0 $$ -- storing new output ($SCORES)" >& /dev/stderr
-        /usr/local/bin/curl -s -q -H "Content-type: application/json" -X PUT "$CU/$device-$API/$model" -d "@$SCORES" >& /dev/stderr
+        /usr/local/bin/curl -s -q -H "Content-type: application/json" -X PUT "$CU/$device-$API/$name" -d "@$SCORES" >& /dev/stderr
         if ($status == 0) then
             if ($?DEBUG) /bin/echo `/bin/date` "$0 $$ -- success storing new output" >& /dev/stderr
         else
@@ -171,7 +172,7 @@ endif
 
 output:
 
-/usr/local/bin/jq '.' "$SCORES" >! "$model-test.json"
+/usr/local/bin/jq '.' "$SCORES" >! "$name-test.json"
 
 done:
 /bin/rm -f /tmp/$0:t.$$.*

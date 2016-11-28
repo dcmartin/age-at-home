@@ -434,7 +434,6 @@ endif
 if ($?job) then
     # store result
     echo "$job" >! "$JOB/job.json"
-    jq . "$JOB/job.json"
 else
     if ($?DEBUG) echo `date` "$0 $$ !! NO JOB" >& /dev/stderr
     exit
