@@ -591,6 +591,7 @@ if ($?DEBUG) echo `date` "$0 $$ -- POSITIVE ($positive) NEGATIVE ($negative) +++
 # the zero'th set is the training example ZIPs; corresponding +1 set are the IDs used in those ZIPs
 set negatives = ( `jq '.jobs[]|select(.class=="'"$notags"'").sets[0][]' "$JOB/job.json" | sed 's/"//g'` )
 
+@ ttime = 0
 @ h = 1
 @ j = 1
 while ($h <= $#positive) 
@@ -655,7 +656,8 @@ again:
       endif
     endif
     rm -f "$job"
-    if ($?DEBUG) echo -n `date` "$0 $$ -- WAITING "
+    @ elapsed = `date +%s` - $start
+    if ($?DEBUG) echo -n `date` "$0 $$ -- LOAD COMPLETE ($elapsed) WAITING "
     while ($sts != "ready") 
 	set detail = ( `curl -s -q -L "$TU/$verid/classifiers/$model?api_key=$api_key&version=$vdate" | jq '.'` )
 	set sts = ( `echo "$detail" | jq '.status' | sed 's/"//g'` )
@@ -669,7 +671,7 @@ again:
     @ elapsed = `date +%s` - $start
     if ($?DEBUG) echo " ($elapsed seconds)"
     set model = "$cid"
-
+    @ ttime += $elapsed
 next:
     # increment to next batch
     @ i++
@@ -685,7 +687,7 @@ next:
   @ h++
 end
 
-if ($?DEBUG) echo `date` "$0 $$ -- COMPLETE $DATE ($model) ($detail)" >& /dev/stderr
+if ($?DEBUG) echo `date` "$0 $$ -- COMPLETE $DATE ($model) time ($ttime) ($detail)" >& /dev/stderr
 
 if ($?DEBUG) then
   set nfiles = ( `jq '.jobs[]|select(.class=="'"$notags"'").sets[1][]' "$JOB/job.json" | sed 's/"//g'` )
