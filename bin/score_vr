@@ -29,7 +29,7 @@ else
     echo `/bin/date` "$0 $$ -- no Cloudant URL ($creds)" >& /dev/stderr
     exit
 endif
-if ($?DEBUG) echo `/bin/date` "$0 $$ -- Cloudant noSQL ($CU)" >& /dev/stderr
+if ($?DEBUG) echo `/bin/date` "$0 $$ -- Cloudant noSQL" >& /dev/stderr
 
 @ i = 1
 while ($i <= $#argv)
@@ -114,12 +114,15 @@ if ($?cid) then
 	        if ($?DEBUG) /bin/echo `/bin/date` "$0 $$ -- NO IDS ($class)" >& /dev/stderr
 	    endif
 	end
-	/bin/echo ']}' >> "$SCORES"
+	/bin/echo '],"date":"'"$DATE"'"}' >> "$SCORES"
     endif
 else
     /bin/echo `/bin/date` "$0 $$ -- NO MODEL SPECIFIED OR FOUND"
     goto done
 endif
+
+# annotate results with current date interval
+
 
 update:
 

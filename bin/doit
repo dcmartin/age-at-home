@@ -1,0 +1,105 @@
+#!/bin/csh
+set TU = "https://gateway-a.watsonplatform.net/visual-recognition/api"
+set verid = "v3"
+set vdate = "2016-05-20"
+set api_key = "6ef476e3dd8b7c9285facef18788dba80e230ec5"
+
+set CU = "538e7925-b7f5-478b-bf75-2f292dcf642a-bluemix.cloudant.com"
+
+set classifiers = ( `curl -q -s -L -f "$TU/$verid/classifiers?api_key=$api_key&version=$vdate" | jq '.classifiers[]'` )
+set cids = ( `echo "$classifiers" | jq -r '.classifier_id'` )
+
+echo `date` "$0 $$ -- FOUND $#cids Watson VR classifiers ($cids)" >& /dev/stderr
+
+foreach cid ( $cids )
+
+again:
+    set classifier = ( `echo "$classifiers" | jq '.|select(.classifier_id=="'"$cid"'")'` )
+    set ready = ( `echo "$classifier" | jq -r '.status'` )
+    set name = ( `echo "$classifier" | jq -r '.name'` )
+
+    if ($ready == "ready") then
+      echo `date` "$0 $$ -- READY ($cid) for device ($name)" >& /dev/stderr
+
+      set trained = ( `curl -s -q -L -f $CU/$name-train/$cid | jq '.'` )
+      if ($#trained == 0) then
+	  set train = ( `curl -q -s -L -f "$CU/$cid"` )
+	  if ($#train) then
+	      echo `date` "$0 $$ -- TRAINING model ($cid)" >& /dev/stderr
+	      echo $0:h/train_vr -m "$cid" "$name"
+	      set classifiers = ( `curl -q -s -L -f "$TU/$verid/classifiers?api_key=$api_key&version=$vdate" | jq '.classifiers[]'` )
+	      goto again
+	  else
+	      echo `date` "$0 $$ -- NOT CATALOGED - Watson VR classifier id ($cid)" >& /dev/stderr
+	      # curl -s -q -X DELETE "$TU/$verid/classifiers/$cid?api_key=$api_key&version=$vdate"
+	  endif
+      else
+	  set date = ( `echo "$trained" | jq -r '.date'` )
+	  echo `date` "$0 $$ -- Model ($cid) was trained on date ($date)" >& /dev/stderr
+      endif
+      set tested = ( `curl -s -q -L -f $CU/$name-test/$cid | jq '.'` )
+      if ($#tested) then
+	  set date = ( `echo "$tested" | jq -r '.date'` )
+	  if ($#date && $date != "null") then
+	      echo `date` "$0 $$ -- Model ($cid) was tested on date ($date)" >& /dev/stderr
+	  else
+	      echo `date` "$0 $$ -- Model ($cid) was tested (no date)" >& /dev/stderr
+	      unset date
+	  endif
+      endif
+      if ($?date == 0) then
+	  echo `date` "$0 $$ -- TESTING model ($cid)" >& /dev/stderr
+	  $0:h/score_vr -m "$cid" "$name"
+      endif
+      unset c
+      set results = ( `curl -s -q -L -f $CU/$name-test/$cid | jq '.'` )
+      if ($#results) then
+	  echo `date` "$0 $$ -- CALCULATING CONFUSION MATRIX ($cid)" >& /dev/stderr
+	  set lbs = ( 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 )
+	  set tps = ( 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 )
+	  set fns = ( 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 )
+	  foreach line ( `echo "$results" | jq -c '.classes[]|{"class":.class,"results":.results[]}' | jq -j '.class,",",.results.id,",",.results.classes.class,",",.results.classes.score,"\n"'` )
+	    set vals = ( `echo "$line" | sed 's/,/ /g'` )
+	    if ($?c == 0) then
+	      set c = $vals[1]
+	      @ i = 1
+	      set lbs[$i] = $c
+	      @ tp = 0
+	      @ fn = 0
+	    else if ($c != $vals[1]) then
+	      set c = $vals[1]
+	      @ i++
+	      set lbs[$i] = $c
+	      @ tp = 0
+	      @ fn = 0
+	    endif
+	    if ($vals[1] == $vals[3]) then
+		@ tp++
+		set tps[$i] = $tp
+	    else 
+		@ fn++
+		set fns[$i] = $fn
+	    endif
+	    # echo "$vals[2],$vals[1],$vals[3],$vals[4]"
+	  end
+	  echo "TRUE POSITIVES: $tps"
+	  echo "FALSE NEGATIVES: $fns" 
+	  @ j = 1
+	  foreach l ( $lbs )
+	    if ($l != 0) then
+	      echo -n "RATE $l - "
+	      echo "$tps[$j] / ( $tps[$j] + $fns[$j] ) * 100" | bc -l
+	      @ j++
+	    else
+	      break
+	    endif
+	  end
+      else
+	  echo `date` "$0 $$ -- NO RESULTS ($cid) $results" >& /dev/stderr
+      endif
+    else
+      echo `date` "$0 $$ -- STATUS ($ready): model ($cid) for device ($name)" >& /dev/stderr
+    endif
+end
+
+
