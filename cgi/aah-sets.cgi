@@ -34,7 +34,7 @@ if (! -s "$OUTPUT" && $#INPROGRESS == 0 ) then
     set output = "$output"'null}'
     goto output
   endif
-  set classes = ( `find "$TMP/label/$DB" -name "[^\.]*" -type d -print | sed "s@$TMP/label/$DB/@@"` )
+  set classes = ( `find "$TMP/label/$DB" -name "[^\.]*" -type d -print | sed "s@$TMP/label/$DB@@" | sed "s@/@@"` )
   if ($#classes) then
     set output = "$output"'['
     foreach class ( $classes )
