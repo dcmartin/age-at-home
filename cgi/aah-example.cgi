@@ -35,15 +35,21 @@ set image = ( `find "$TMP/label/$DB/$class" -name "$id.jpg" -type f -print` )
 
 output:
 
-echo "Content-Type: image/jpeg"
 echo "Access-Control-Allow-Origin: *"
 set AGE = `echo "$SECONDS - $DATE" | bc`
 echo "Age: $AGE"
 echo "Cache-Control: max-age=$TTL"
 echo "Last-Modified:" `date -r $DATE '+%a, %d %b %Y %H:%M:%S %Z'`
-echo ""
 
-if ($#image) dd if="$image[1]"
+if ($#image == 1) then
+    echo "Content-Type: image/jpeg"
+    echo ""
+    dd if="$image[1]"
+else if ($#image > 1) then
+    echo "Content-Type: application/zip"
+    echo ""
+    zip - $image | dd of=/dev/stdout
+endif
 
 done:
 
