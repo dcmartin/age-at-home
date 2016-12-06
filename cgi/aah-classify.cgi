@@ -161,7 +161,7 @@ if (-d "$CDIR") then
 	    echo '<input type="hidden" name="old" value="'"$dir"'">' >> "$HTML"
 	    echo '<input type="hidden" name="match" value="'"$match"'">' >> "$HTML"
 	    echo '<input type="hidden" name="limit" value="'"$limit"'">' >> "$HTML"
-	    echo '<button style="background-color:#999999" type="submit" name="skip" value="'"$jpg"'"">SKIP</button>' >> "$HTML"
+	    echo '<button style="background-color:#999999" type="submit" name="skip" value="'"$jpg"'">SKIP</button>' >> "$HTML"
 	    echo '<button style="background-color:#ff0033" type="submit" name="new" value="'"$location"'">'"$location"'</button>' >> "$HTML"
 	    echo '<button style="background-color:#33cc00" type="submit" name="new" value="person">person</button>' >> "$HTML"
 	    foreach i ( $TMP/label/$DB/* )
