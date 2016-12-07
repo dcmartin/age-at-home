@@ -1,0 +1,173 @@
+#!/bin/csh -fb
+setenv DEBUG true
+setenv APP "aah"
+setenv API "index"
+setenv WWW "www.dcmartin.com"
+setenv LAN "192.168.1"
+if ($?TMP == 0) setenv TMP "/var/lib/age-at-home"
+
+# don't update statistics more than once per (in seconds)
+set TTL = 1800
+set SECONDS = `date "+%s"`
+set DATE = `echo $SECONDS \/ $TTL \* $TTL | bc`
+
+echo `date` "$0 $$ -- START ($DATE)" >>! $TMP/LOG
+
+if ($?QUERY_STRING) then
+    echo `date` "$0 $$ -- query ($QUERY_STRING)" >>! $TMP/LOG
+    set noglob
+    set DB = `echo "$QUERY_STRING" | sed 's/.*db=\([^&]*\).*/\1/'`
+    if ("$DB" == "$QUERY_STRING") set DB = rough-fog
+    set class = `echo "$QUERY_STRING" | sed 's/.*class=\([^&]*\).*/\1/'`
+    if ("$class" == "$QUERY_STRING") unset class
+    set id = `echo "$QUERY_STRING" | sed 's/.*id=\([^&]*\).*/\1/'`
+    if ("$id" == "$QUERY_STRING") unset id
+    unset noglob
+endif
+
+if ($?DB) then
+  set db = $DB:h
+else
+  set DB = rough-fog
+  set db = $DB
+endif
+set DBt = ( $DB:t )
+set dbt = ( $db:t ) 
+if ($#dbt && $dbt != $db && $?class == 0) then
+  set class = $db:t
+  set db = $db:h
+endif
+if ($#DBt && $#dbt && $?id == 0) then
+  set id = $DB:t
+  set ide = ( $id:e )
+  if ($#ide == 0) unset id
+endif
+if ($?class) then
+  set class = $class:h
+endif
+if ($?id) then
+  set id = $id:r
+endif
+
+if ($?db && $?class && $?id) then
+    setenv QUERY_STRING "db=$db&class=$class&id=$id"
+else if ($?db && $?class) then
+    setenv QUERY_STRING "db=$db&class=$class"
+else if ($?db) then
+    setenv QUERY_STRING "db=$db"
+endif
+
+
+echo `date` "$0 $$ -- query string ($QUERY_STRING)" >>! $TMP/LOG
+
+# handle image
+if ($?id) then
+    set base = "$TMP/label/$db/$class"
+    set images = ( `find "$base" -name "$id.jpg" -type f -print` )
+    echo `date` "$0 $$ -- IMAGE ($id) count ($#images) " >>! $TMP/LOG
+    # should be singleton image
+    echo "Access-Control-Allow-Origin: *"
+    set AGE = `echo "$SECONDS - $DATE" | bc`
+    echo "Age: $AGE"
+    echo "Cache-Control: max-age=$TTL"
+    echo "Last-Modified:" `date -r $DATE '+%a, %d %b %Y %H:%M:%S %Z'`
+
+    if ($#images == 1) then
+	echo "Content-Type: image/jpeg"
+	echo ""
+	echo `date` "$0 $$ -- DD ($id) count ($images) " >>! $TMP/LOG
+	dd if="$images"
+    else if ($#images > 1) then
+	echo "Content-Type: application/zip"
+	echo ""
+	zip - $images | dd of=/dev/stdout
+    endif
+    goto done
+endif
+
+#
+# build HTML
+#
+set OUTPUT = "$TMP/$APP-$API-$QUERY_STRING.$DATE.html"
+if (-s "$OUTPUT") then
+    if ($?DEBUG) echo `date` "$0 $$ -- EXISTING $OUTPUT" >>! $TMP/LOG
+    goto output
+endif
+set INPROGRESS = ( `echo "$OUTPUT".*` )
+set OLD = ( `echo "$TMP/$APP-$API-$QUERY_STRING".*.html` )
+if ($#INPROGRESS) then
+    if ($?DEBUG) echo `date` "$0 $$ -- IN-PROGRESS $INPROGRESS" >>! $TMP/LOG
+    if ($#OLD) then
+	if (-s "$OLD[1]") then
+	    set OUTPUT = $OLD[1]
+	    goto output
+	endif
+    endif
+    if ($?DEBUG) echo `date` "$0 $$ -- NO OLD HTML" >>! $TMP/LOG
+    goto done
+endif
+
+# start work
+touch "$OUTPUT.$$"
+
+# cleanup old
+if ($#OLD > 1) rm -f $OLD[2-]
+
+if ($?class) then
+    set base = "$TMP/label/$db/$class"
+    if ($?id) then
+	set images = ( `find "$base" -name "$id.jpg" -type f -print` )
+    else
+	set images = ( `find "$base" -name "*.jpg" -type f -print | sed "s@$base/\(.*\)\.jpg@\1@"` )
+    endif
+else 
+    set base = "$TMP/label/$db"
+    set classes = ( `find "$base" -name "[^\.]*" -type d -print | sed "s@$base@@" | sed "s@/@@"` )
+endif
+
+echo `date` "$0 $$ -- $db $?id ($?images) $?class ($?classes)" >>! $TMP/LOG
+
+if ($?class) then
+    # should be a directory listing of images
+    set dir = "$db/$class"
+    echo '<html><head><title>Index of '"$dir"'</title></head>' >! "$OUTPUT.$$"
+    echo '<body bgcolor="white"><h1>Index of '"$dir"'</h1><hr><pre><a href="http://'"$WWW/CGI/$APP-$API.cgi?db=$db"'/">../</a>' >>! "$OUTPUT.$$"
+    foreach i ( $images )
+      set file = '<a href="http://'"$WWW/CGI/$APP-$API"'.cgi?db='"$db"'&class='"$class"'&id='"$i"'.jpg">'"$i.jpg"'</a>' 
+      set ctime = `date '+%d-%h-%Y %H:%M'`
+      set fsize = `ls -l "$TMP/label/$db/$class/$i.jpg" | awk '{ print $5 }'`
+      echo "$file" "$ctime" "$fsize" >>! "$OUTPUT.$$"
+    end
+    echo '</pre><hr></body></html>' >>! "$OUTPUT.$$"
+else if ($?classes) then
+    # should be a directory listing of directories
+    set dir = "$db"
+    echo '<html><head><title>Index of '"$dir"'/</title></head>' >! "$OUTPUT.$$"
+    echo '<body bgcolor="white"><h1>Index of '"$dir"'/</h1><hr><pre><a href="http://'"$WWW/CGI/$APP-$API.cgi?db=$db"'/">../</a>' >>! "$OUTPUT.$$"
+    foreach i ( $classes )
+      set class = '<a href="http://www.dcmartin.com/CGI/aah-index.cgi?db='"$db"'&class='"$i"'/">'"$i"'/</a>' >>! "$OUTPUT.$$"
+      set ctime = `date '+%d-%h-%Y %H:%M'`
+      set fsize = "-"
+      echo "$class" "$ctime" "$fsize" >>! "$OUTPUT.$$"
+    end
+    echo '</pre><hr></body></html>' >>! "$OUTPUT.$$"
+endif
+
+mv "$OUTPUT.$$" "$OUTPUT"
+
+output:
+
+echo "Access-Control-Allow-Origin: *"
+set AGE = `echo "$SECONDS - $DATE" | bc`
+echo "Age: $AGE"
+echo "Cache-Control: max-age=$TTL"
+echo "Last-Modified:" `date -r $DATE '+%a, %d %b %Y %H:%M:%S %Z'`
+echo "Content-Type: text/html"
+echo ""
+
+cat "$OUTPUT"
+
+done:
+
+rm -f "$TMP/$APP-$API-"*.$$
+echo `date` "$0 $$ -- FINISH" >>! $TMP/LOG

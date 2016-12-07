@@ -18,7 +18,6 @@ if ($?QUERY_STRING) then
     if ($class == "$QUERY_STRING") unset class
     set id = `echo "$QUERY_STRING" | sed 's/.*id=\([^&]*\).*/\1/'`
     if ($id == "$QUERY_STRING") unset id
-	     
 endif
 if ($?DB == 0) set DB = rough-fog
 if ($?class == 0) set class = ""
