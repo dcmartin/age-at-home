@@ -124,10 +124,13 @@ endif
 
 if ($?DEBUG) echo `date` "$0 $$ -- $db $?id ($?images) $?class ($?classes)" >>! $TMP/LOG
 
+set MIXPANELJS = "http://$WWW/CGI/script/mixpanel-aah.js"
+
 if ($?class) then
     # should be a directory listing of images
     set dir = "$db/$class"
     echo '<html><head><title>Index of '"$dir"'</title></head>' >! "$OUTPUT.$$"
+    echo '<script type="text/javascript" src="'$MIXPANELJS'"></script><script>mixpanel.track('"'"$APP-$API"'"',{"db":"'$db'","class":"'$class'"});</script>' >> "$OUTPUT.$$"
     echo '<body bgcolor="white"><h1>Index of '"$dir"'</h1><hr><pre><a href="http://'"$WWW/CGI/$APP-$API.cgi?db=$db"'/">../</a>' >>! "$OUTPUT.$$"
     foreach i ( $images )
       set file = '<a href="http://'"$WWW/CGI/$APP-$API"'.cgi?db='"$db"'&class='"$class"'&id='"$i"'.jpg">'"$i.jpg"'</a>' 
@@ -140,6 +143,7 @@ else if ($?classes) then
     # should be a directory listing of directories
     set dir = "$db"
     echo '<html><head><title>Index of '"$dir"'/</title></head>' >! "$OUTPUT.$$"
+    echo '<script type="text/javascript" src="'$MIXPANELJS'"></script><script>mixpanel.track('"'"$APP-$API"'"',{"db":"'$db'"});</script>' >> "$OUTPUT.$$"
     echo '<body bgcolor="white"><h1>Index of '"$dir"'/</h1><hr><pre><a href="http://'"$WWW/CGI/$APP-$API.cgi?db=$db"'/">../</a>' >>! "$OUTPUT.$$"
     foreach i ( $classes )
       set class = '<a href="http://www.dcmartin.com/CGI/aah-index.cgi?db='"$db"'&class='"$i"'/">'"$i"'/</a>' >>! "$OUTPUT.$$"
