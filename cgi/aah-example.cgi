@@ -20,7 +20,6 @@ if ($?QUERY_STRING) then
     if ($id == "$QUERY_STRING") unset id
 endif
 if ($?DB == 0) set DB = rough-fog
-if ($?class == 0) set class = ""
 if ($?id == 0) set id = "*"
 setenv QUERY_STRING "db=$DB"
 
@@ -30,7 +29,11 @@ echo `date` "$0 $$ -- START ($QUERY_STRING)" >>! $TMP/LOG
 # get OUTPUT
 #
 
-set image = ( `find "$TMP/label/$DB/$class" -name "$id.jpg" -type f -print` )
+if ($?class) then
+    set image = ( `find "$TMP/label/$DB/$class" -name "$id.jpg" -type f -print` )
+else
+    set image = ( `find "$TMP/label/$DB" -name "$id.jpg" -type f -print | egrep -v "skipped"` )
+endif
 
 output:
 
