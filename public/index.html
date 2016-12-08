@@ -327,6 +327,25 @@ Mon Nov 14 10:48:43 PST 2016 ./train_vr 61457 -- WAITING ........ (222 seconds)
 <p>
 Once the process has successfully complete, the updated <a href="https://github.com/dcmartin/age-at-home/blob/master/bin/aah-train-rough-fog.1479139200.json">model</a> 
 definition and resulting details from the Watson VR system are stored into <a href="https://538e7925-b7f5-478b-bf75-2f292dcf642a-bluemix.cloudant.com/rough-fog-train/_all_docs?include_docs=true">Cloudant</a>.
+<h4>
+Results from Watson VR
+</h4>
+<p>
+The results from training the Watson VR algorithm using the curated examples improved the results, but overall the recall was less than 69% and typically under 40%.
+<p>
+<pre>
+TRUE POSITIVES: 16 17 16 23 26 0 30 28 37 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+FALSE NEGATIVES: 7 31 34 32 39 68 45 101 274 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+RATE hali - 69.56521739130434782600
+RATE keli - 35.41666666666666666600
+RATE riley - 32.00000000000000000000
+RATE cat - 41.81818181818181818100
+RATE ian - 40.00000000000000000000
+RATE kitchen - 0
+RATE ellen - 40.00000000000000000000
+RATE david - 21.70542635658914728600
+RATE dog - 11.89710610932475884200
+</pre>
 <h4>Process Model</h4>
 <p>The script executes a number of steps sequentially based on the output of the <code>aah-classify</code> Web application.
 The curated images are organized in the file-system in a directory structure corresponding to <i>device</i> and <i>class</i>, e.g. <code>rough-fog/person</code>.
@@ -341,8 +360,18 @@ The curated images are organized in the file-system in a directory structure cor
 <li>QA/QC vs production
 <li>Promote to production
 </ul>
-
-
+<h3>nVidia DIGITS</h3>
+<p>
+There is an open source package called DIGITS that provides a graphical interface to numerous deep learning techniques using nVidia GPUs.
+<p>
+The curated image sets created using the Web application above are loaded into DIGITS and trained using the existing GoogLeNet pre-trained (i.e. weighted) Caffe network.
+<p>
+The results indicate significant performance on the TOP1 prediction (i.e. the algorithm got it right).  Below are the training graphs indicating ~ 66% accuracy for rough-fog and ~ 72% accuracy for damp-cloud.
+<figure>
+<img src="images/rough-fog-caffe.png" width="40%">
+<img src="images/damp-cloud-caffe.png" width="40%">
+<figcaption>Results from DIGITS using Caffe & GoogLeNet</figcaption>
+</figure>
 <h2>
 Analysis
 </h2>

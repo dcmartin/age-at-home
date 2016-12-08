@@ -1,5 +1,4 @@
 #!/bin/csh -fb
-setenv DEBUG true
 setenv APP "aah"
 setenv API "index"
 setenv WWW "www.dcmartin.com"
@@ -14,7 +13,6 @@ set DATE = `echo $SECONDS \/ $TTL \* $TTL | bc`
 echo `date` "$0 $$ -- START ($DATE)" >>! $TMP/LOG
 
 if ($?QUERY_STRING) then
-    echo `date` "$0 $$ -- query ($QUERY_STRING)" >>! $TMP/LOG
     set noglob
     set DB = `echo "$QUERY_STRING" | sed 's/.*db=\([^&]*\).*/\1/'`
     if ("$DB" == "$QUERY_STRING") set DB = rough-fog
@@ -57,14 +55,13 @@ else if ($?db) then
     setenv QUERY_STRING "db=$db"
 endif
 
-
-echo `date` "$0 $$ -- query string ($QUERY_STRING)" >>! $TMP/LOG
+if ($?DEBUG) echo `date` "$0 $$ -- query string ($QUERY_STRING)" >>! $TMP/LOG
 
 # handle image
 if ($?id) then
     set base = "$TMP/label/$db/$class"
     set images = ( `find "$base" -name "$id.jpg" -type f -print` )
-    echo `date` "$0 $$ -- IMAGE ($id) count ($#images) " >>! $TMP/LOG
+    if ($?DEBUG) echo `date` "$0 $$ -- IMAGE ($id) count ($#images) " >>! $TMP/LOG
     # should be singleton image
     echo "Access-Control-Allow-Origin: *"
     set AGE = `echo "$SECONDS - $DATE" | bc`
@@ -75,7 +72,7 @@ if ($?id) then
     if ($#images == 1) then
 	echo "Content-Type: image/jpeg"
 	echo ""
-	echo `date` "$0 $$ -- DD ($id) count ($images) " >>! $TMP/LOG
+	if ($?DEBUG) echo `date` "$0 $$ -- DD ($id) count ($images) " >>! $TMP/LOG
 	dd if="$images"
     else if ($#images > 1) then
 	echo "Content-Type: application/zip"
@@ -125,7 +122,7 @@ else
     set classes = ( `find "$base" -name "[^\.]*" -type d -print | sed "s@$base@@" | sed "s@/@@"` )
 endif
 
-echo `date` "$0 $$ -- $db $?id ($?images) $?class ($?classes)" >>! $TMP/LOG
+if ($?DEBUG) echo `date` "$0 $$ -- $db $?id ($?images) $?class ($?classes)" >>! $TMP/LOG
 
 if ($?class) then
     # should be a directory listing of images
@@ -136,7 +133,7 @@ if ($?class) then
       set file = '<a href="http://'"$WWW/CGI/$APP-$API"'.cgi?db='"$db"'&class='"$class"'&id='"$i"'.jpg">'"$i.jpg"'</a>' 
       set ctime = `date '+%d-%h-%Y %H:%M'`
       set fsize = `ls -l "$TMP/label/$db/$class/$i.jpg" | awk '{ print $5 }'`
-      echo "$file" "$ctime" "$fsize" >>! "$OUTPUT.$$"
+      echo "$file		$ctime		$fsize" >>! "$OUTPUT.$$"
     end
     echo '</pre><hr></body></html>' >>! "$OUTPUT.$$"
 else if ($?classes) then
@@ -147,8 +144,8 @@ else if ($?classes) then
     foreach i ( $classes )
       set class = '<a href="http://www.dcmartin.com/CGI/aah-index.cgi?db='"$db"'&class='"$i"'/">'"$i"'/</a>' >>! "$OUTPUT.$$"
       set ctime = `date '+%d-%h-%Y %H:%M'`
-      set fsize = "-"
-      echo "$class" "$ctime" "$fsize" >>! "$OUTPUT.$$"
+      set fsize = `du -sk "$TMP/label/$db/$i" | awk '{ print $1 }'`
+      echo "$class		$ctime		$fsize" >>! "$OUTPUT.$$"
     end
     echo '</pre><hr></body></html>' >>! "$OUTPUT.$$"
 endif
