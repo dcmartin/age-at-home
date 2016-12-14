@@ -136,7 +136,8 @@ again:
 	@ z--
 	# remove old
 	rm -f $zip $partial
-	goto again
+	if ($t <= $n) goto again
+	break
     endif
     set error = `jq '.status' "$partial"`
     if ($status == 0 && $error == "ERROR") then
@@ -151,6 +152,7 @@ again:
     if (-s "$json") then
 	echo ',' >> "$json"
     else
+	# start output
         echo '{"results":[' >! "$json"
     endif
     # Sometimes you get elements of the results like the following:
@@ -158,16 +160,14 @@ again:
     # We re-write the results to indicate a failure with null for results
     if (-s $zip) then
 	# we sent a ZIP file; remove it and elide the ZIP file pre-pended to image name
-	rm -f $zip
         jq '.' "$partial" | sed 's/"image": ".*\/\(.*\)\.jpg"/"id": "\1"/' >> "$json"
-	# jq '.images[]|{"id":.id,"results":.classifiers}' "$partial" | sed 's/"image": ".*\/\(.*\)\.jpg"/"id": "\1"/' >> "$json"
+	rm -f $zip
     else
 	# simply append partial to complete
 	jq '.' "$partial" >> "$json"
-	# jq '.images[]|{"id":.id,"results":.classifiers}' "$partial" >> "$json"
     endif
 
-    # output partial results
+    # debug top result
     if ($?DEBUG) jq -c '.images[]|{"image":.image,"classes":[.classifiers[]?.classes[]]|sort_by(.score)[-1]}' $partial >& /dev/stderr
 
     # remove partial
@@ -179,6 +179,7 @@ again:
     # increment to next set of images
     @ i = $t + 1
 end
+# add statistics (count, time, model id)
 if (-s "$json") echo '],"count":'$count',"time":'$total',"model":"'"$model"'"}' >> "$json"
 
 output:

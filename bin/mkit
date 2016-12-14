@@ -1,0 +1,126 @@
+#!/bin/csh
+
+if ($?TMP == 0) set TMP = /var/lib/age-at-home
+set APP=aah
+set API=matrix
+
+# don't update file information more than once per (in seconds)
+setenv TTL `echo "24 * 60 * 60" | bc`
+setenv SECONDS `/bin/date "+%s"`
+if ($?DATE == 0) setenv DATE `/bin/echo $SECONDS \/ $TTL \* $TTL | bc`
+
+if ($#argv > 0) then
+    set model = $argv[1]
+    set device = $argv[2]
+else
+    set model = "roughfog_1048204681"
+    set device = "rough-fog"
+endif
+
+echo `date` "$0 $$ -- START $model $device" >& /dev/stderr
+
+if (! -s "$model.json" && $?CLOUDANT_URL) then
+    echo `date` "$0 $$ -- getting $device-test/$model" >& /dev/stderr
+    curl -s -q -L -f "$CLOUDANT_URL/$device-test/$model" >! "$model.json"
+else if ($?CLOUDANT_URL == 0) then
+    echo `date` "$0 $$ -- set environment variable: CLOUDANT_URL" >& /dev/stderr
+    exit
+else if (-s "$model.json") then
+    echo `date` "$0 $$ -- EXISTING $model.json" >& /dev/stderr
+endif
+
+set sets = ( `jq -r '.sets[].set' "$model.json"` )
+if ($#sets == 0) then
+    echo "NO CLASSES"
+    rm -f "$model.json"
+    exit
+endif
+
+echo `date` "$0 $$ -- MAKING $model.csv" >& /dev/stderr
+
+rm -f "$model.csv"
+
+unset matrix
+set total = 0
+
+foreach this ( $sets )
+    echo -n `date` "$0 $$ -- $this [" >& /dev/stderr
+    if (! -s "$model.$this.json") then
+	jq -c '.sets[]|select(.set=="'"$this"'").results[]?' "$model.json" >! "$model.$this.json"
+    endif
+    # make matrix
+    if ($?matrix) then
+        set matrix = "$matrix"',{"set":"'$this'","truth":'
+    else
+	set names = ( `/usr/local/bin/jq '.sets[].set' "$model.json"` )
+	set tested_on = `/usr/local/bin/jq -r '.date' "$model.json"`
+	set names = `echo "$names" | sed 's/ /,/g'`
+	set matrix = '{"name":"'"$device"'","model":"'"$model"'","date":'"$tested_on"',"size":'$#sets',"sets":['"$names"'],"matrix":[{"set":"'$this'","truth":'
+	unset names
+    endif
+    unset truth
+    foreach class ( $sets )
+	echo -n "$class " >& /dev/stderr
+	if (! -s "$model.$this.$class.csv") then
+	    @ match = 0
+	    set noglob
+	    @ count = 0
+	    foreach line ( `cat "$model.$this.json"` )
+		set id = `echo "$line" | jq -r '.id'`
+		if ($id != "null") then
+		    set score = `echo "$line" | jq -r '.classes[]|select(.class=="'"$class"'").score'`
+		    set top = `echo "$line" | jq -r '.classes|sort_by(.score)[-1].class'`
+		    if ($class == $top) @ match++
+		    echo "$id,$score" >>! "$model.$this.$class.csv.$$"
+		    @ count++
+		endif
+	    end
+	    unset noglob
+	    echo "id,label,$class" >! "$model.$this.$class.csv"
+	    cat "$model.$this.$class.csv.$$" | sed "s/\(.*\),\(.*\)/\1,$this,\2/" >> "$model.$this.$class.csv"
+	    rm -f "$model.$this.$class.csv.$$"
+	    if ($?found) then
+	       set found = ( $found $class )
+	    else
+	       set found = ( $class )
+	    endif
+	    if ($?truth) then
+	        set truth = "$truth"','"$match"
+	    else
+	        set truth = '['"$match"
+	    endif
+	endif
+    end
+    if ($?truth) then
+	set matrix = "$matrix""$truth"'],"count":'"$count"'}'
+    else
+	set matrix = "$matrix"'null}'
+    endif
+    @ total += $count
+    if ($?found) then
+	set out = ( "$model.$this".*.csv )
+	set found = `echo "$found" | sed 's/ /,/g'`
+	csvjoin -c "id" $out | csvcut -c "id,label,$found" >! "$model.$this.csv"
+	unset found
+	rm -f $out
+    endif
+    rm "$model.$this.json"
+    echo "]" >& /dev/stderr
+end
+set matrix = "$matrix"'],"count":'$total'}'
+
+echo "$matrix" | jq . >! "$TMP/matrix/$model.json"
+echo `date` "$0 $$ -- MADE $TMP/matrix/$model.json" >& /dev/stderr
+
+set out = ( "$model".*.csv )
+if ($#out) then
+    head -1 $out[1] >! "$TMP/matrix/$model.csv"
+    tail +2 -q $out >> "$TMP/matrix/$model.csv"
+    echo `date` "$0 $$ -- MADE $TMP/matrix/$model.csv" >& /dev/stderr
+else
+    echo `date` "$0 $$ -- FAILURE $TMP/matrix/$model.csv" >& /dev/stderr
+endif
+
+rm -f $out
+
+rm -f "$model.json"
