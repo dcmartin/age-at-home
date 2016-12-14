@@ -84,7 +84,7 @@ echo '<select name="id">' >> "$HTML"
 echo '<option value="'"$id"'">'"$id"'</option>' >> "$HTML" # current class (dir) is first option
 if ($id != "all") echo '<option value="all">all</option>' >> "$HTML" # all classes is second option
 foreach c ( $allclasses )
-    if ($c != $id) echo '<option value="'"$c"'"">'"$c"'</option>' >> "$HTML" # don't include current class
+    if ($c != $id) echo '<option value="'"$c"'">'"$c"'</option>' >> "$HTML" # don't include current class
 end
 echo '</select>' >> "$HTML"
 echo '<input type="submit" style="background-color:#ff9933" value="CHANGE"></form>' >> "$HTML"
@@ -181,9 +181,9 @@ if (-d "$CDIR") then
 	    # current classification
 	    echo '<input type="text" size="5" name="add" value="'"$add"'">' >> "$HTML"
 	    # echo '<select name="new">' >> "$HTML"
-	    # if ($dir != "NO_TAGS") echo '<option value="'"$dir"'"">'"$dir"'</option>' >> "$HTML" # current class (dir) is first option
+	    # if ($dir != "NO_TAGS") echo '<option value="'"$dir"'">'"$dir"'</option>' >> "$HTML" # current class (dir) is first option
 	    # foreach c ( $allclasses )
-		# if ($c != $dir && $c != "NO_TAGS") echo '<option value="'"$c"'"">'"$c"'</option>' >> "$HTML" # don't include current class or NO_TAGS
+		# if ($c != $dir && $c != "NO_TAGS") echo '<option value="'"$c"'">'"$c"'</option>' >> "$HTML" # don't include current class or NO_TAGS
 	    # end
 	    # echo '</select>' >> "$HTML"
 	    echo '<input style="background-color:#6699ff" type="submit" value="CREATE">' >> "$HTML"

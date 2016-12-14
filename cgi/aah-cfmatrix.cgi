@@ -9,7 +9,7 @@ setenv DEBUG true
 if ($?TMP == 0) setenv TMP "/var/lib/age-at-home"
 
 # don't update statistics more than once per 15 minutes
-set TTL = `echo "0.25 * 60" | bc`
+set TTL = `echo "30 * 1" | bc`
 set SECONDS = `date "+%s"`
 set DATE = `echo $SECONDS \/ $TTL \* $TTL | bc`
 
@@ -17,12 +17,12 @@ echo `date` "$0 $$ -- START" >>& "$TMP/LOG"
 
 if ($?QUERY_STRING) then
     set db = `echo "$QUERY_STRING" | sed 's/.*db=\([^&]*\).*/\1/'`
-    if ($db == "$QUERY_STRING") unset db
+    if ($db == "$QUERY_STRING") then
+      set db = `echo "$QUERY_STRING" | sed 's/.*device=\([^&]*\).*/\1/'`
+      if ($db == "$QUERY_STRING") unset db
+    endif
     set model = `echo "$QUERY_STRING" | sed 's/.*model=\([^&]*\).*/\1/'`
-    if ($model == "$QUERY_STRING") set model = default
-else
-    set db = rough-fog
-    set model = default
+    if ($model == "$QUERY_STRING") unset model
 endif
 
 if ($?db && $?model) then
@@ -31,11 +31,7 @@ else if ($?model) then
     setenv QUERY_STRING "model=$model"
 else if ($?db) then
     setenv QUERY_STRING "db=$db"
-else
-    setenv QUERY_STRING ""
 endif
-
-echo `date` "$0 $$ -- QUERY_STRING ($QUERY_STRING)" >>& "$TMP/LOG"
 
 if (-s ~$USER/.cloudant_url) then
     set cc = ( `cat ~$USER/.cloudant_url` )
@@ -69,20 +65,26 @@ endif
 if ($?verid == 0) set verid = "v3"
 if ($?vdate == 0) set vdate = "2016-05-20"
 
-if ($model != "default") then
-    set classifiers = ( `curl -q -s -L "$TU/$verid/classifiers?api_key=$api_key&version=$vdate" | /usr/local/bin/jq -r '.classifiers[]|select(.classifier_id=="'"$model"'").classifier_id'` )
-else if ($?db) then
-    set classifiers = ( `curl -q -s -L "$TU/$verid/classifiers?api_key=$api_key&version=$vdate" | /usr/local/bin/jq -r '.classifiers[]|select(.name=="'"$db"'")|select(.status=="ready").classifier_id'` )
+# find models and dbs
+set tmp = ( `curl -q -s -L "$TU/$verid/classifiers?api_key=$api_key&version=$vdate" | /usr/local/bin/jq '.'` )
+if ($?db == 0 && $?model == 0) then
+    set classifiers = ( `echo "$tmp" | /usr/local/bin/jq -r '.classifiers[]|select(.status=="ready").classifier_id'` )
+else if ($?model) then
+    set classifiers = ( `echo "$tmp" | /usr/local/bin/jq -r '.classifiers[]|select(.classifier_id=="'"$model"'")|select(.status=="ready").classifier_id'` )
+else  if ($?db) then
+    set classifiers = ( `echo "$tmp" | /usr/local/bin/jq -r '.classifiers[]|select(.name=="'"$db"'")|select(.status=="ready").classifier_id'` )
 endif
 
-if ($#classifiers) then
-    set model = $classifiers[1]
-else
-    echo `date` "$0 $$ -- NO MODEL SPECIFIED" >>& "$TMP/LOG"
-endif
-
-set OUTPUT = "$TMP/matrix/$model.json"
-if (-s "$OUTPUT") then
+if ($#classifiers == 0) then
+  if ($?DEBUG) echo `date` "$0 $$ -- NO CLASSIFIERS FOUND ($TU/$verid,$vdate)" >>& "$TMP/LOG"
+  echo "Content-Type: application/json; charset=utf-8"
+  echo "Access-Control-Allow-Origin: *"
+  echo "Cache-Control: no-cache"
+  echo ""
+  echo '{"error":"not found"}'
+else if ($?model) then
+  set OUTPUT = "$TMP/matrix/$model.json"
+  if (-s "$OUTPUT") then
     echo "Content-Type: application/json; charset=utf-8"
     echo "Access-Control-Allow-Origin: *"
     set AGE = `echo "$SECONDS - $DATE" | bc`
@@ -91,13 +93,7 @@ if (-s "$OUTPUT") then
     echo "Last-Modified:" `date -r $DATE '+%a, %d %b %Y %H:%M:%S %Z'`
     echo ""
     cat "$OUTPUT"
-else
-    echo "Content-Type: application/json; charset=utf-8"
-    echo "Access-Control-Allow-Origin: *"
-    echo "Cache-Control: no-cache"
-    echo ""
-    echo '{"model":"'"$model"'","status":"notfound"}'
-else
+  else
     # return redirect
     set URL = "https://$CU/$db-$API/$model?include_docs=true"
     echo `date` "$0 $$ -- returning redirect ($URL)" >>! $TMP/LOG
@@ -108,6 +104,23 @@ else
     echo "Status: 302 Found"
     echo "Location: $URL"
     echo ""
+  endif
+else if ($#classifiers) then
+    echo "Content-Type: application/json; charset=utf-8"
+    echo "Access-Control-Allow-Origin: *"
+    echo "Cache-Control: no-cache"
+    echo ""
+    echo -n '{"models":['
+    unset j
+    foreach i ( $classifiers )
+      if ($?j) then
+        set j = "$j"',"'"$i"'"'
+      else
+        set j = '"'"$i"'"'
+      endif
+    end
+    echo -n "$j"'],"count":'$#classifiers
+    echo '}'
 endif
 
 done:
