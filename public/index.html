@@ -316,36 +316,28 @@ as an index to keep track of which images have been used for training purposes -
 script is still in process.  Evident in the 
 <a href="https://github.com/dcmartin/age-at-home/blob/master/bin/aah-train-rough-fog.1479139200.out">
 log</a> are failures of the Watson VR API call, e.g. <code>413 Request Entity Too Large</code>, and corresponding successful repetition.
-<pre>
-Mon Nov 14 10:43:14 PST 2016 ./train_vr 61457 -- RETRAIN roughfog_1288555148 (-F person_positive_examples=@/tmp/aah-train-rough-fog.1479139200.job/person.aa.1.zip)
-curl: (22) The requested URL returned error: 413 Request Entity Too Large
-Mon Nov 14 10:46:27 PST 2016 ./train_vr 61457 ** no output (/tmp/aah-train-rough-fog.1479139200.job/person.61457.json)
-Mon Nov 14 10:46:27 PST 2016 ./train_vr 61457 -- RETRAIN roughfog_1288555148 (-F person_positive_examples=@/tmp/aah-train-rough-fog.1479139200.job/person.aa.1.zip)
-Mon Nov 14 10:48:43 PST 2016 ./train_vr 61457 -- LEARNING (roughfog_1288555148) status (retraining)
-Mon Nov 14 10:48:43 PST 2016 ./train_vr 61457 -- WAITING ........ (222 seconds)
-</pre>
-<p>
-Once the process has successfully complete, the updated <a href="https://github.com/dcmartin/age-at-home/blob/master/bin/aah-train-rough-fog.1479139200.json">model</a> 
-definition and resulting details from the Watson VR system are stored into <a href="https://538e7925-b7f5-478b-bf75-2f292dcf642a-bluemix.cloudant.com/rough-fog-train/_all_docs?include_docs=true">Cloudant</a>.
 <h4>
 Results from Watson VR
 </h4>
 <p>
+Once the process has successfully complete, the updated model is recorded in Cloudant.
+<ul>
+<li><a href="https://538e7925-b7f5-478b-bf75-2f292dcf642a-bluemix.cloudant.com/rough-fog-train/_all_docs?include_docs=true">TRAIN</a>.
+<li><a href="https://538e7925-b7f5-478b-bf75-2f292dcf642a-bluemix.cloudant.com/rough-fog-test/_all_docs?include_docs=true">TEST</a>.
+<!-- <li><a href="https://538e7925-b7f5-478b-bf75-2f292dcf642a-bluemix.cloudant.com/rough-fog-matrix/_all_docs?include_docs=true">CONFUSION MATRIX</a>. -->
+<li><a href="http://www.dcmartin.com/CGI/aah-cfmatrix.cgi?model=roughfog_879989469">CONFUSION MATRIX</a>.
+</ul>
+<p>
+I copied a confusion matrix calculator and created a simple Web application to display the matrix for a given model and/or device (i.e. Watson VR <code>classifier_id</code>, and <code>name</code>);
+the prototype is <a href="http://www.dcmartin.com/AAH/cfmatrix.html?model=roughfog_879989469">here</a>.
+<p>
+<figure>
+<img src="images/confusion-matrix.png" width="75%">
+<figcaption>Simple Web application to view model confusion matrix</figcaption>
+</figure>
+<p>
 The results from training the Watson VR algorithm using the curated examples improved the results, but overall the recall was less than 69% and typically under 40%.
 <p>
-<pre>
-TRUE POSITIVES: 16 17 16 23 26 0 30 28 37 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-FALSE NEGATIVES: 7 31 34 32 39 68 45 101 274 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-RATE hali - 69.56521739130434782600
-RATE keli - 35.41666666666666666600
-RATE riley - 32.00000000000000000000
-RATE cat - 41.81818181818181818100
-RATE ian - 40.00000000000000000000
-RATE kitchen - 0
-RATE ellen - 40.00000000000000000000
-RATE david - 21.70542635658914728600
-RATE dog - 11.89710610932475884200
-</pre>
 <h4>Process Model</h4>
 <p>The script executes a number of steps sequentially based on the output of the <code>aah-classify</code> Web application.
 The curated images are organized in the file-system in a directory structure corresponding to <i>device</i> and <i>class</i>, e.g. <code>rough-fog/person</code>.
@@ -601,5 +593,7 @@ If you've read all the way to here and you still want more information, you can 
 <a href="http://www.linkedin.com/in/davidcharlesmartin/">LinkedIn</a>
 <a href="http://www.github.com/dcmartin">GitHub</a>
 <a href="http://www.twitter.com/dcmartin/">Twitter</a>
+<hr>
+<script type="text/javascript" id="clustrmaps" src="//cdn.clustrmaps.com/map_v2.js?d=Shbg_JkATX2fyNkoaJZSr_lIB_gPefMFNFGjwbJV3wc&cl=ffffff&w=a"></script>
 </body>
 </html>
