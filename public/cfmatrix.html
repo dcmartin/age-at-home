@@ -576,7 +576,6 @@ function get_classifiers(device) {
 
 function model_load() {
   console.log("model_load");
-
   if (this.status == 200 && this.responseText != null) {
     matrix = JSON.parse(this.responseText);
     if (matrix) {
@@ -673,7 +672,7 @@ function init() {
 <hr>
     <form action="cfmatrix.html">
       AVAILABLE MODELS <select name="model" id="model_options">
-	<option value="any">ANY</option>"
+	<option value="">LOADING ...</option>"
       </select>
       <input type="submit" value="CHOOSE" type="button">
     </form>

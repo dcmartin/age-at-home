@@ -66,13 +66,24 @@ if ($?verid == 0) set verid = "v3"
 if ($?vdate == 0) set vdate = "2016-05-20"
 
 # find models and dbs
-set tmp = ( `curl -q -s -L "$TU/$verid/classifiers?api_key=$api_key&version=$vdate" | /usr/local/bin/jq '.'` )
-if ($?db == 0 && $?model == 0) then
-    set classifiers = ( `echo "$tmp" | /usr/local/bin/jq -r '.classifiers[]|select(.status=="ready").classifier_id'` )
-else if ($?model) then
-    set classifiers = ( `echo "$tmp" | /usr/local/bin/jq -r '.classifiers[]|select(.classifier_id=="'"$model"'")|select(.status=="ready").classifier_id'` )
-else  if ($?db) then
-    set classifiers = ( `echo "$tmp" | /usr/local/bin/jq -r '.classifiers[]|select(.name=="'"$db"'")|select(.status=="ready").classifier_id'` )
+set CLASSIFIERS = "$TMP/$APP-$API-classifiers.$DATE.json"
+if (! -s "$CLASSIFIERS") then
+  rm -f "$TMP/$APP-$API-classifiers".*.json
+  curl -q -s -L "$TU/$verid/classifiers?api_key=$api_key&version=$vdate" >! "$CLASSIFIERS"
+endif
+
+if (-s "$CLASSIFIERS") then
+    set tmp = ( `cat "$CLASSIFIERS" | /usr/local/bin/jq '.'` )
+
+    if ($?db == 0 && $?model == 0) then
+	set classifiers = ( `echo "$tmp" | /usr/local/bin/jq -r '.classifiers[]|select(.status=="ready").classifier_id'` )
+    else if ($?model) then
+	set classifiers = ( `echo "$tmp" | /usr/local/bin/jq -r '.classifiers[]|select(.classifier_id=="'"$model"'")|select(.status=="ready").classifier_id'` )
+    else  if ($?db) then
+	set classifiers = ( `echo "$tmp" | /usr/local/bin/jq -r '.classifiers[]|select(.name=="'"$db"'")|select(.status=="ready").classifier_id'` )
+    endif
+else
+  set classifiers = ()
 endif
 
 if ($#classifiers == 0) then
