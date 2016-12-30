@@ -1,31 +1,64 @@
 #!/bin/csh -fb
 set class = "$1"
-set files = "$1.txt"
-set scores = "$1.json"
+set files = "$1-files.txt"
+set scores = "$1-scores.json"
+set results = "$1-results.json"
 
 if (! -s "$files") then
     set furl = "http://www.dcmartin.com/CGI/aah-scored.cgi?db=rough-fog&class=$class&mime=text"
     echo `date` "$0 $$ -- GETTING $files" >& /dev/stderr
     curl -s -q -L "$furl" >! "$files"
 endif
-if (! -s "$scores") then
+if (! -s "$scores" || ((-M "$files") > (-M "$scores"))) then
     set surl = "http://169.50.131.114:5001//models/images/classification/classify_many.json"
     set job_id = "20161226-234150-735c"
 
-    echo `date` "$0 $$ -- SCORING $files to make $scores" >& /dev/stderr
-    curl -s -q -L -X POST -F "image_list=@$files" -F "job_id=$job_id" "$surl" >! "$scores"
+    set lc = `wc -l "$files" | awk '{ print $1 }'`
+    echo `date` "$0 $$ -- creating $scores ($lc) using $job_id" >& /dev/stderr
+
+    @ a = 1
+    @ b = 0
+    @ z = 100
+    while ($a <= $lc)
+	@ b += $z
+	if ($b > $lc) set b = $lc
+
+	echo `date` "$0 $$ -- processing $a to $b" >& /dev/stderr
+
+	set t = "$class.$a.$b.$$.txt"
+	set s = "$class.$a.$b.$$.json"
+        tail +$a "$files" | head -$z >! "$t"
+	curl -s -q -L -X POST -F "image_list=@$t" -F "job_id=$job_id" "$surl" >! "$s"
+	rm -f "$t"
+	if (-s "$s") then
+	    set err = `jq '.error.message' "$s"`
+	    if ("$err" != "null") then
+		echo `date` "$0 $$ -- ERROR: $err" >& /dev/stderr
+	    else
+		cat "$s" >>! "$scores"
+	    endif
+	else
+	    echo `date` "$0 $$ -- NO RESULTS" >& /dev/stderr
+	endif
+	@ a = $b + 1
+	rm -f "$s"
+    end
 endif
-if (-s "$files" && -s "$scores") then
-    echo `date` "$0 $$ -- ITERATING overs $files and $scores" >& /dev/stderr
+if (-s "$files" && -s "$scores" && ((! -s "$results") || ((-M "$scores") > (-M "$results")))) then
+    echo `date` "$0 $$ -- ITERATING over $files and $scores" >& /dev/stderr
     foreach i ( `cat "$files"` )
 	set j = `echo "$i" | sed "s/.*db=\(.*\)&class=\(.*\)&id=\(.*\)/\1\/\2\/\3/"`
 	set noglob
 	set q = `jq -r '.classifications."'"$i"'"' "$scores"`
 	if ($#q > 1) then
+	    # get first class (TOP1)
 	    set h = `jq -r '.classifications."'"$i"'"[0][0]' "$scores" | sed "s/.*class=\(.*\)/\1/"`
+	    # get all scores (TOP5 is default)
 	    set k = `jq -r '.classifications."'"$i"'"[][1]' "$scores" | /usr/local/bin/gawk 'BEGIN { mx=0; mn=100; nz=0;c=0; s = 0;v=0 } { c++; if ($1 > mx) mx=$1; if ($1 < mn) mn=$1; if($1 > 0) { nz++; s += $1; m = s/nz; vs += ($1 - m)^2; v=vs/nz} } END { sd = sqrt(v); k = (mx - m)/sd; printf "\"count\":%d,\"non-zero\":%d,\"min\":%f,\"max\":%f,\"sum\":%f,\"mean\":%f,\"stdev\":%f,\"nsd\":%f", c, nz, mn, mx, s, m, sd, k }'`
 	    unset noglob
 	    echo '{"image":"'"$j"'","top1":"'"$h"'",'"$k"'}'
+	else
+	    echo `date` "$0 $$ -- NO RESULT: $i" >& /dev/stderr
         endif
     end
 endif
