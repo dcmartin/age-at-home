@@ -81,4 +81,8 @@ endif
 if (-s "$results") then
     echo `date` "$0 $$ -- LOWEST RANK: " `jq '.results|sort_by(.max)|sort_by(.nsd)' "$results" | jq '.[1]'`
     echo `date` "$0 $$ -- HIGHEST RANK: " `jq '.results|sort_by(.max)|sort_by(.nsd)' "$results" | jq '.[-1]'`
+    foreach c ( `jq -r '.results[].top1' "$results" | sort | uniq` )
+	echo -n `date` "$0 $$ -- CLASS ($c): " 
+	jq -c '[.results[]|select(.top1=="'"$c"'")]|sort_by(.max/.sum)[-10:]' "$results"
+    end
 endif
