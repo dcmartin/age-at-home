@@ -1,12 +1,16 @@
 #!/bin/csh -fb
 set job_id = "20161226-234150-735c"
 set class = "$1"
+if ($#argv > 1) then
+    set db = "$2"
+endif
+if ($?db == 0) set db = rough-fog
 set files = "$1-files.txt"
 set scores = "$1-scores.json"
 set results = "$1-results.json"
 
 if (! -s "$files") then
-    set furl = "http://www.dcmartin.com/CGI/aah-scored.cgi?db=rough-fog&class=$class&mime=text"
+    set furl = "http://www.dcmartin.com/CGI/aah-scored.cgi?db=$db&class=$class&mime=text"
     echo `date` "$0 $$ -- GETTING $files" >& /dev/stderr
     curl -s -q -L "$furl" >! "$files"
 endif
