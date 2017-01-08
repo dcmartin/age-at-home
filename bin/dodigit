@@ -46,7 +46,12 @@ if (! -s "$results" || ((-M "$files") > (-M "$results"))) then
     set surl = "$DIGITS/models/images/classification/classify_many.json"
 
     set lc = `wc -l "$files" | awk '{ print $1 }'`
-    echo `date` "$0 $$ -- creating scores from $files ($lc) using $model_id" >& /dev/stderr
+    if ($lc < 1) then
+	echo `date` "$0 $$ -- NO FILES $files" >& /dev/stderr
+	exit
+    else
+	echo `date` "$0 $$ -- creating scores from $files ($lc) using $model_id" >& /dev/stderr
+    endif
 
     @ a = 1
     @ b = 0
