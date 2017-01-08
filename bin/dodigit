@@ -30,9 +30,13 @@ else
 endif
 
 # what we're looking to create/find
-set files = "$TMP/digits/$db/$model_id/$class-files.txt"
-set scores = "$TMP/digits/$db/$model_id/$class-scores.json"
-set results = "$TMP/digits/$db/$model_id/$class-results.json"
+set dir = "$TMP/digits/$db/$model_id"
+set files = "$dir/$class-files.txt"
+set scores = "$dir/$class-scores.json"
+set results = "$dir/$class-results.json"
+
+# make sure we've a place to go
+mkdir -p "$dir"
 
 if (! -s "$files") then
     echo `date` "$0 $$ -- GETTING $files" >& /dev/stderr
