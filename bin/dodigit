@@ -32,7 +32,6 @@ endif
 # what we're looking to create/find
 set dir = "$TMP/digits/$db/$model_id"
 set files = "$dir/$class-files.txt"
-set scores = "$dir/$class-scores.json"
 set results = "$dir/$class-results.json"
 
 # make sure we've a place to go
@@ -42,11 +41,12 @@ if (! -s "$files") then
     echo `date` "$0 $$ -- GETTING $files" >& /dev/stderr
     curl -s -q -L "$CGI/aah-scored.cgi?db=$db&class=$class&mime=text" >! "$files"
 endif
-if (! -s "$scores" || ((-M "$files") > (-M "$scores"))) then
+
+if (! -s "$results" || ((-M "$files") > (-M "$results"))) then
     set surl = "$DIGITS/models/images/classification/classify_many.json"
 
     set lc = `wc -l "$files" | awk '{ print $1 }'`
-    echo `date` "$0 $$ -- creating $scores ($lc) using $model_id" >& /dev/stderr
+    echo `date` "$0 $$ -- creating scores from $files ($lc) using $model_id" >& /dev/stderr
 
     @ a = 1
     @ b = 0
@@ -67,46 +67,35 @@ if (! -s "$scores" || ((-M "$files") > (-M "$scores"))) then
 	    if ("$err" != "null") then
 		echo `date` "$0 $$ -- ERROR: $err" >& /dev/stderr
 	    else
-	        if ($?started) then
-		    echo "," >> "$scores"
-		else
-		    echo "[" >>! "$scores"
-		    set started = true
-		endif
-		cat "$s" >> "$scores"
+		echo `date` "$0 $$ -- ITERATING over $t and $s" >& /dev/stderr
+		foreach i ( `cat $t` )
+		    set j = `echo "$i" | sed "s/.*db=\(.*\)&class=\(.*\)&id=\(.*\)/\1\/\2\/\3/"`
+		    set noglob
+		    set q = `/usr/local/bin/jq '[.classifications."'"$i"'"[]?]' "$s"`
+		    if ($#q > 1) then
+			# get first class (TOP1)
+			set h = `echo "$q" | /usr/local/bin/jq -r '.[0][0]' | sed "s/.*class=\(.*\)/\1/"`
+			# get all scores (TOP5 is default)
+			set k = `echo "$q" | /usr/local/bin/jq -r '.[][1]' | awk 'BEGIN { mx=0; mn=100; nz=0;c=0; s = 0;v=0 } { c++; if ($1 > mx) mx=$1; if ($1 < mn) mn=$1; if($1 > 0) { nz++; s += $1; m = s/nz; vs += ($1 - m)^2; v=vs/nz} } END { sd = sqrt(v); k = (mx - m)/sd; printf "\"count\":%d,\"non-zero\":%d,\"min\":%f,\"max\":%f,\"sum\":%f,\"mean\":%f,\"stdev\":%f,\"nsd\":%f", c, nz, mn, mx, s, m, sd, k }'`
+			unset noglob
+			if ($?started) then
+			    echo "," >> "$results"
+			else
+			    echo '{"job":"'"$model_id"'","results":[' >! "$results"
+			    set started = true
+			endif
+			echo '{"image":"'"$j"'","top1":"'"$h"'",'"$k"'}' >> "$results"
+		    else
+			echo `date` "$0 $$ -- NO RESULT: $i" >& /dev/stderr
+		    endif
+		end
 	    endif
 	else
-	    echo `date` "$0 $$ -- NO RESULTS" >& /dev/stderr
+	    echo `date` "$0 $$ -- NO SCORES" >& /dev/stderr
 	endif
 	@ a = $b + 1
 	rm -f "$s"
 	rm -f "$t"
-    end
-    echo "]" >> "$scores"
-endif
-if (-s "$files" && -s "$scores" && ((! -s "$results") || ((-M "$scores") > (-M "$results")))) then
-    echo `date` "$0 $$ -- ITERATING over $files and $scores" >& /dev/stderr
-    unset started
-    foreach i ( `cat "$files"` )
-	set j = `echo "$i" | sed "s/.*db=\(.*\)&class=\(.*\)&id=\(.*\)/\1\/\2\/\3/"`
-	set noglob
-	set q = `/usr/local/bin/jq '[.[]|.classifications."'"$i"'"[]?]' "$scores"`
-	if ($#q > 1) then
-	    # get first class (TOP1)
-	    set h = `echo "$q" | /usr/local/bin/jq -r '.[0][0]' | sed "s/.*class=\(.*\)/\1/"`
-	    # get all scores (TOP5 is default)
-	    set k = `echo "$q" | /usr/local/bin/jq -r '.[][1]' | awk 'BEGIN { mx=0; mn=100; nz=0;c=0; s = 0;v=0 } { c++; if ($1 > mx) mx=$1; if ($1 < mn) mn=$1; if($1 > 0) { nz++; s += $1; m = s/nz; vs += ($1 - m)^2; v=vs/nz} } END { sd = sqrt(v); k = (mx - m)/sd; printf "\"count\":%d,\"non-zero\":%d,\"min\":%f,\"max\":%f,\"sum\":%f,\"mean\":%f,\"stdev\":%f,\"nsd\":%f", c, nz, mn, mx, s, m, sd, k }'`
-	    unset noglob
-	    if ($?started) then
-	        echo "," >> "$results"
-	    else
-	        echo '{"job":"'"$model_id"'","results":[' >! "$results"
-		set started = true
-	    endif
-	    echo '{"image":"'"$j"'","top1":"'"$h"'",'"$k"'}' >> "$results"
-	else
-	    echo `date` "$0 $$ -- NO RESULT: $i" >& /dev/stderr
-        endif
     end
     echo "]}" >> "$results"
 endif
