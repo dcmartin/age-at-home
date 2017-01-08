@@ -1,24 +1,48 @@
 #!/bin/csh -fb
-set job_id = "20161226-234150-735c"
-set class = "$1"
-if ($#argv > 1) then
-    set db = "$2"
+
+setenv DEBUG true
+
+if ($?CGI == 0) setenv CGI "http://www.dcmartin.com/CGI/"
+if ($?DIGITS == 0) setenv DIGITS "http://169.50.131.114:5001/"
+if ($?TMP == 0) setenv TMP /var/lib/age-at-home
+
+if ($#argv || $#argv > 3) then
+    set db = "$1"
+    if ($#argv > 1) set class = "$2"
+    if ($#argv > 2) set model_id = "$3"
 endif
+
 if ($?db == 0) set db = rough-fog
-set files = "$1-files.txt"
-set scores = "$1-scores.json"
-set results = "$1-results.json"
+if ($?class == 0) then
+    if ($db == "damp-cloud") set class = bathroom
+    if ($db == "rough-fog") set class = kitchen
+endif
+if ($?model_id == 0) then
+    if ($db == "damp-cloud") set model_id = "20170106-234042-3a7d"
+    if ($db == "rough-fog") set model_id = "20161226-234150-735c"
+endif
+
+if ($?db && $?class && $?model_id) then
+  if ($?DEBUG) echo `date` "$0 $$ -- PROCESSING DB=$db CLASS=$class MODEL_ID=$model_id" >& /dev/stderr
+else
+    echo "$0:t <db> <label> [<model_id>]"
+    exit
+endif
+
+# what we're looking to create/find
+set files = "$TMP/digits/$db/$model_id/$class-files.txt"
+set scores = "$TMP/digits/$db/$model_id/$class-scores.json"
+set results = "$TMP/digits/$db/$model_id/$class-results.json"
 
 if (! -s "$files") then
-    set furl = "http://www.dcmartin.com/CGI/aah-scored.cgi?db=$db&class=$class&mime=text"
     echo `date` "$0 $$ -- GETTING $files" >& /dev/stderr
-    curl -s -q -L "$furl" >! "$files"
+    curl -s -q -L "$CGI/aah-scored.cgi?db=$db&class=$class&mime=text" >! "$files"
 endif
 if (! -s "$scores" || ((-M "$files") > (-M "$scores"))) then
-    set surl = "http://169.50.131.114:5001//models/images/classification/classify_many.json"
+    set surl = "$DIGITS/models/images/classification/classify_many.json"
 
     set lc = `wc -l "$files" | awk '{ print $1 }'`
-    echo `date` "$0 $$ -- creating $scores ($lc) using $job_id" >& /dev/stderr
+    echo `date` "$0 $$ -- creating $scores ($lc) using $model_id" >& /dev/stderr
 
     @ a = 1
     @ b = 0
@@ -33,8 +57,7 @@ if (! -s "$scores" || ((-M "$files") > (-M "$scores"))) then
 	set t = "$class.$a.$b.$$.txt"
 	set s = "$class.$a.$b.$$.json"
         tail +$a "$files" | head -$z >! "$t"
-	curl -s -q -L -X POST -F "image_list=@$t" -F "job_id=$job_id" "$surl" >! "$s"
-	rm -f "$t"
+	curl -s -q -L -X POST -F "image_list=@$t" -F "job_id=$model_id" "$surl" >! "$s"
 	if (-s "$s") then
 	    set err = `/usr/local/bin/jq '.error.message' "$s"`
 	    if ("$err" != "null") then
@@ -53,6 +76,7 @@ if (! -s "$scores" || ((-M "$files") > (-M "$scores"))) then
 	endif
 	@ a = $b + 1
 	rm -f "$s"
+	rm -f "$t"
     end
     echo "]" >> "$scores"
 endif
@@ -72,7 +96,7 @@ if (-s "$files" && -s "$scores" && ((! -s "$results") || ((-M "$scores") > (-M "
 	    if ($?started) then
 	        echo "," >> "$results"
 	    else
-	        echo '{"job":"'"$job_id"'","results":[' >! "$results"
+	        echo '{"job":"'"$model_id"'","results":[' >! "$results"
 		set started = true
 	    endif
 	    echo '{"image":"'"$j"'","top1":"'"$h"'",'"$k"'}' >> "$results"
@@ -83,10 +107,13 @@ if (-s "$files" && -s "$scores" && ((! -s "$results") || ((-M "$scores") > (-M "
     echo "]}" >> "$results"
 endif
 if (-s "$results") then
+    set count = 1
     echo `date` "$0 $$ -- LOWEST RANK: " `jq '.results|sort_by(.max)|sort_by(.nsd)' "$results" | jq '.[1]'`
     echo `date` "$0 $$ -- HIGHEST RANK: " `jq '.results|sort_by(.max)|sort_by(.nsd)' "$results" | jq '.[-1]'`
     foreach c ( `jq -r '.results[].top1' "$results" | sort | uniq` )
-	echo -n `date` "$0 $$ -- CLASS ($c): " 
-	jq -c '[.results[]|select(.top1=="'"$c"'")]|sort_by(.max/.sum)[-10:]' "$results"
+	echo -n `date` "$0 $$ -- LEAST ($c): " 
+	jq -c '[.results[]|select(.top1=="'"$c"'")]|sort_by(.stdev)[0:'"$count"']' "$results"
+	echo -n `date` "$0 $$ -- MOST ($c): " 
+	jq -c '[.results[]|select(.top1=="'"$c"'")]|sort_by(.max/.sum)[-'"$count"':]' "$results"
     end
 endif
