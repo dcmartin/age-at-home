@@ -3,8 +3,20 @@
 setenv DEBUG true
 
 if ($?CGI == 0) setenv CGI "http://www.dcmartin.com/CGI/"
-if ($?DIGITS == 0) setenv DIGITS "http://169.50.131.114:5001/"
 if ($?TMP == 0) setenv TMP /var/lib/age-at-home
+
+set creds = ~$USER/.digits.json
+if (-e $creds) then
+    set username = ( `jq -r '.username' $creds` )
+    if ($?DEBUG) echo `date` "$0 $$ -- USERNAME $username" >& /dev/stderr
+    set url = ( `jq -r '.url' $creds` )
+    if ($?DEBUG) echo `date` "$0 $$ -- URL $url" >& /dev/stderr
+    # set base
+    set DIGITS = $url
+else if ($?DIGITS == 0) then
+    echo `date` "$0 $$ -- NO CREDENTIALS ($creds)" '; create { "username":"", "url":"http:.." }' >& /dev/stderr
+    goto done
+endif
 
 if ($#argv || $#argv > 3) then
     set db = "$1"
