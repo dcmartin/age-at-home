@@ -55,6 +55,8 @@ if ($DB == "rough-fog" && $?LANIP == 0) then
     setenv LANIP "192.168.1.34"
 else if ($DB == "damp-cloud" && $?LANIP == 0) then
     setenv LANIP "192.168.1.35"
+else if ($DB == "quiet-water" && $?LANIP == 0) then
+    setenv LANIP "192.168.1.36"
 else
     if ($?DEBUG) echo `date` "$0 $$ -- no LANIP" >>! $TMP/LOG
     goto done
