@@ -41,6 +41,15 @@ if ($?limit == 0) set limit = $IMAGE_LIMIT
 #
 if ($DB == "rough-fog") set location = "kitchen"
 if ($DB == "damp-cloud") set location = "bathroom"
+if ($DB == "quiet-water") set location = "road"
+if ($?DB && $?location) then
+  if (! -d "$TMP/label/$DB" ) then
+     mkdir -p "$TMP/label/$DB"
+  endif
+else
+    if ($?DEBUG) echo `date` "$0 $$ -- FAILURE: aah-review DB($?DB) location($?location)" >>! $TMP/LOG
+    exit
+endif
 
 # standardize QUERY_STRING to cache results
 setenv QUERY_STRING "db=$DB&id=$id&match=$match"
@@ -162,12 +171,15 @@ if (-d "$CDIR") then
 	    echo '<button style="background-color:#999999" type="submit" name="skip" value="'"$jpg"'">SKIP</button>' >> "$HTML"
 	    echo '<button style="background-color:#ff0033" type="submit" name="new" value="'"$location"'">'"$location"'</button>' >> "$HTML"
 	    echo '<button style="background-color:#33cc00" type="submit" name="new" value="person">person</button>' >> "$HTML"
-	    foreach i ( $TMP/label/$DB/* )
+	    set labeled_images = ( `find $TMP/label/$DB -type f -print` )
+	    if ($#labeled_images) then
+	      foreach i ( $TMP/label/$DB/* )
 	        set j = "$i:t"
 		if ($j != "$location" && $j != "person") then
 		    echo '<button style="background-color:#6699ff" type="submit" name="new" value="'"$j"'">'"$j"'</button>' >> "$HTML"
 		endif
-	    end
+	      end
+	    endif
 	    echo '</form>' >> "$HTML"
 	    echo '<a href="'"$cgi"'"><img width="'$width'%" alt="'$id/$image'" src="'"$img"'"></a>' >> "$HTML"
 	    echo '<figcaption><i>'"$dir"'</i>  '"$time"'</figcaption>' >> "$HTML" 
