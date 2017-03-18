@@ -20,7 +20,8 @@ mixpanel.init("8ce3a282a575094e41bbc4b4b0f4bf9e");
 mixpanel.track("home");
 </script>
 <!-- end Mixpanel -->
-<body>
+
+
 <!-- BEGIN FACEBOOK -->
 <script>
   window.fbAsyncInit = function() {
@@ -121,6 +122,8 @@ mixpanel.track("home");
 </script>
 <!-- END FACEBOOK -->
 
+<body>
+
 <a href="https://cognitivebuild.bluefundit.com/project/56ee0073f6ec6de43b0d6344">
 <img width="10%" src="images/age-at-home.jpg">
 </a>
@@ -142,6 +145,53 @@ Age-At-Home
 <h2>What is it?</h2>
 <p>
 Improve the elderlys' ability to age at home through understanding of daily activities inferred from passive sensor analysis.
+<p>
+<video width="50%" controls src="images/AgeAtHome.mp4" type="video/mp4">
+<p>
+<script>
+// Include the UserVoice JavaScript SDK (only needed once on a page)
+UserVoice=window.UserVoice||[];(function(){var uv=document.createElement('script');uv.type='text/javascript';uv.async=true;uv.src='//widget.uservoice.com/mZOfplY08hzrPzWhtMMIiA.js';var s=document.getElementsByTagName('script')[0];s.parentNode.insertBefore(uv,s)})();
+
+//
+// UserVoice Javascript SDK developer documentation:
+// https://www.uservoice.com/o/javascript-sdk
+//
+
+// Set colors
+UserVoice.push(['set', {
+  accent_color: '#448dd6',
+  trigger_color: 'white',
+  trigger_background_color: 'rgba(46, 49, 51, 0.6)'
+}]);
+
+// Identify the user and pass traits
+// To enable, replace sample data with actual user traits and uncomment the line
+UserVoice.push(['identify', {
+  //email:      'john.doe@example.com', // User’s email address
+  //name:       'John Doe', // User’s real name
+  //created_at: 1364406966, // Unix timestamp for the date the user signed up
+  //id:         123, // Optional: Unique id of the user (if set, this should not change)
+  //type:       'Owner', // Optional: segment your users by type
+  //account: { // Account traits are only available on some plans
+  //  id:           123, // Optional: associate multiple users with a single account
+  //  name:         'Acme, Co.', // Account name
+  //  created_at:   1364406966, // Unix timestamp for the date the account was created
+  //  monthly_rate: 9.99, // Decimal; monthly rate of the account
+  //  ltv:          1495.00, // Decimal; lifetime value of the account
+  //  plan:         'Enhanced' // Plan name for the account
+  //}
+}]);
+
+// Add default trigger to the bottom-right corner of the window:
+UserVoice.push(['addTrigger', {mode: 'contact', trigger_position: 'bottom-right' }]);
+
+// Or, use your own custom trigger:
+//UserVoice.push(['addTrigger', '#id', { mode: 'contact' }]);
+
+// Autoprompt for Satisfaction and SmartVote (only displayed under certain conditions)
+UserVoice.push(['autoprompt', {}]);
+</script>
+
 <h2>
 How it Works
 </h2>
@@ -417,12 +467,12 @@ Analysis of the underlying events which generated the classifications lead to an
 and then makes that output available for visualization and download as JSON.  The following graphics are "live" views of the rough-fog and damp-cloud events.
 <p>
 <figure>
-<figcaption>Count of VisualInsights Human Classifiers for "rough-fog" device</figcaption>
-<iframe src='https://ibmcds.looker.com/embed/public/M9B2vPX7RD9Sf4PwDyNWQ6dR46pCS5qd' width='1000' height='350' frameborder='0'></iframe>
+<figcaption>Analysis of activity seen by rough-fog for past week</figcaption>
+<iframe src='https://ibmcds.looker.com/embed/public/Yh9rxzkxzwMBKZdnWSBW7MrpyqYJCSyY' width='1000' height='350' frameborder='0'></iframe>
 </figure>
 <figure>
-<figcaption>Count of VisualInsights Human Classifiers for "damp-cloud" device</figcaption>
-<iframe src='https://ibmcds.looker.com/embed/public/gXpvq8ykFPkMv2xFF3Tzg3mrG3jVt4HJ' width='1000' height='350' frameborder='0'></iframe>
+<figcaption>Analysis of activity seen by damp-cloud for past week</figcaption>
+<iframe src='https://ibmcds.looker.com/embed/public/bnxqgR8HwcSgxJYqft4DbwRpD49hkNFR' width='1000' height='350' frameborder='0'></iframe>
 </figure>
 <p>
 As can be seen in the graphs below, the default classifier for the AlchemyAPI produces very little signal with the majority of events being classifed as "NO_TAGS" indicating nothing was recognized.
@@ -596,7 +646,10 @@ If you've read all the way to here and you still want more information, you can 
 <a href="http://www.github.com/dcmartin">GitHub</a>
 <a href="http://www.twitter.com/dcmartin/">Twitter</a>
 <hr>
-<script type="text/javascript" id="clustrmaps" src="//cdn.clustrmaps.com/map_v2.js?d=Shbg_JkATX2fyNkoaJZSr_lIB_gPefMFNFGjwbJV3wc&cl=ffffff&w=a"></script>
-<a href="http://clustrmaps.com/site/17cyl">ClustrMap</a>
+<a href="https://clustrmaps.com/site/17cyl" title="Visit tracker">
+<img width="0" src="//www.clustrmaps.com/map_v2.png?d=Shbg_JkATX2fyNkoaJZSr_lIB_gPefMFNFGjwbJV3wc&cl=ffffff">
+</a>
+
+
 </body>
 </html>
