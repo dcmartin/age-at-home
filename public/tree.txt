@@ -1,0 +1,1157 @@
+.
+├── acoustic\ device
+│   ├── bell
+│   ├── dinner\ bell
+│   └── whistle
+├── animal
+│   ├── amphibian
+│   │   └── salamander
+│   │       └── newt
+│   ├── aquatic\ bird
+│   │   ├── little\ blue\ heron
+│   │   ├── puffin\ (seabird)
+│   │   ├── rail\ (wading\ bird)
+│   │   │   └── mud\ hen
+│   │   ├── seabird
+│   │   │   ├── african\ penguin
+│   │   │   ├── emperor\ penguin
+│   │   │   ├── frigate\ bird
+│   │   │   └── razorbill
+│   │   ├── sphenisciform\ seabird
+│   │   └── waterfowl
+│   │       ├── duck
+│   │       │   └── mallard
+│   │       └── sea\ duck
+│   │           └── fish\ duck
+│   │               └── hooded\ merganser\ duck
+│   ├── aquatic\ mammal
+│   │   ├── dolphin
+│   │   │   └── white\ whale
+│   │   ├── dugong\ (sea\ mammal)
+│   │   ├── eared\ seal
+│   │   │   ├── South\ American\ sea\ lion
+│   │   │   ├── fur\ seal
+│   │   │   └── sea\ lion
+│   │   ├── manatee
+│   │   ├── pinniped\ mammal
+│   │   └── sea\ cow
+│   ├── aquatic\ vertebrate
+│   │   ├── angelfish
+│   │   ├── damselfish
+│   │   ├── fish
+│   │   │   ├── bass
+│   │   │   ├── cardinal\ tetra
+│   │   │   ├── conger\ eel
+│   │   │   ├── electric\ eel
+│   │   │   ├── lemon\ shark
+│   │   │   ├── mackerel
+│   │   │   ├── moray\ eel
+│   │   │   ├── ray
+│   │   │   │   └── manta
+│   │   │   ├── salmon
+│   │   │   │   ├── chinook
+│   │   │   │   ├── coho
+│   │   │   │   └── sockeye
+│   │   │   └── tuna
+│   │   ├── lungfish
+│   │   ├── pike\ fish
+│   │   │   ├── muskellunge\ (large\ fish)
+│   │   │   └── northern\ pike
+│   │   ├── robalo\ fish
+│   │   ├── sunfish
+│   │   │   ├── black\ bass
+│   │   │   └── largemouth
+│   │   └── whiting\ (coastal\ fish)
+│   ├── bird
+│   │   ├── Australian\ magpie
+│   │   ├── belted\ kingfisher
+│   │   ├── blue\ jay
+│   │   ├── cassowary
+│   │   ├── currawong
+│   │   ├── jay
+│   │   ├── kiwi
+│   │   ├── magpie
+│   │   ├── piping\ crow
+│   │   ├── red-breasted\ nuthatch
+│   │   ├── rook
+│   │   ├── water\ ouzel
+│   │   └── white-breasted\ nuthatch
+│   ├── bird\ of\ prey
+│   │   ├── New\ World\ vulture
+│   │   │   └── condor
+│   │   └── screech\ owl
+│   ├── creepy-crawly
+│   ├── crocodilian\ reptile
+│   │   ├── African\ crocodile
+│   │   ├── American\ alligator
+│   │   ├── alligator
+│   │   └── caiman\ reptile
+│   ├── equine\ (hoofed\ mammal)
+│   ├── gallinaceous\ bird
+│   │   ├── pigeon
+│   │   └── tumbler\ pigeon
+│   ├── game
+│   │   ├── California\ quail
+│   │   ├── European\ black\ grouse
+│   │   ├── black\ grouse
+│   │   └── pheasant
+│   │       └── peafowl
+│   │           └── peahen
+│   ├── gnawing\ mammal
+│   │   └── rabbit\ ears
+│   ├── invertebrate
+│   │   ├── fiddler\ crab
+│   │   ├── insect
+│   │   │   ├── banded\ purple\ butterfly
+│   │   │   ├── beetle
+│   │   │   │   ├── firefly
+│   │   │   │   └── glowworm
+│   │   │   ├── long-horned\ beetle
+│   │   │   └── tortoiseshell\ butterfly
+│   │   ├── nematode\ worm
+│   │   └── spider
+│   │       └── black\ widow
+│   ├── larva
+│   │   ├── caterpillar
+│   │   │   ├── fall\ webworm
+│   │   │   └── webworm
+│   │   └── tent\ caterpillar
+│   ├── mammal
+│   │   ├── Indian\ rhinoceros
+│   │   ├── Shetland\ pony
+│   │   ├── Tasmanian\ devil
+│   │   ├── Tennessee\ walking\ horse
+│   │   ├── aardvark
+│   │   ├── anteater
+│   │   ├── bat
+│   │   ├── brown\ bat
+│   │   ├── bull
+│   │   ├── capuchin\ monkey
+│   │   ├── carnivore
+│   │   │   ├── American\ badger
+│   │   │   ├── American\ black\ bear
+│   │   │   ├── Asiatic\ black\ bear
+│   │   │   ├── Eurasian\ badger
+│   │   │   ├── badger
+│   │   │   ├── bear
+│   │   │   │   └── grizzly
+│   │   │   ├── canine
+│   │   │   │   ├── hyena
+│   │   │   │   ├── red\ fox
+│   │   │   │   └── white\ wolf
+│   │   │   ├── common\ raccoon
+│   │   │   ├── coon\ cat
+│   │   │   ├── feline
+│   │   │   │   └── domestic\ cat
+│   │   │   │       ├── Abyssinian\ cat
+│   │   │   │       ├── Manx\ cat
+│   │   │   │       ├── alley\ cat
+│   │   │   │       ├── kitty-cat
+│   │   │   │       ├── mouser\ cat
+│   │   │   │       ├── tabby\ cat
+│   │   │   │       └── tortoiseshell-cat
+│   │   │   ├── ferret
+│   │   │   ├── genet
+│   │   │   ├── giant\ panda
+│   │   │   ├── glutton\ (wolverine)
+│   │   │   ├── honey\ bear
+│   │   │   ├── ice\ bear
+│   │   │   ├── marten\ cat
+│   │   │   │   └── pine\ marten
+│   │   │   ├── polecat
+│   │   │   ├── raccoon
+│   │   │   ├── ratel
+│   │   │   ├── river\ otter
+│   │   │   ├── skunk
+│   │   │   ├── sloth\ bear
+│   │   │   ├── striped\ skunk
+│   │   │   └── tayra
+│   │   ├── cave\ myotis\ bat
+│   │   ├── chinchilla\ rodent
+│   │   ├── collared\ peccary\ (hog)
+│   │   ├── colobus\ monkey
+│   │   ├── common\ opossum
+│   │   ├── duckbilled\ platypus\ (aquatic\ bird)
+│   │   ├── entellus\ monkey
+│   │   ├── fruit\ bat
+│   │   ├── gelding\ horse
+│   │   ├── hippopotamus
+│   │   ├── horse
+│   │   ├── langur\ monkey
+│   │   ├── lesser\ anteater
+│   │   ├── little\ brown\ bat
+│   │   ├── livestock
+│   │   ├── marmoset\ monkey
+│   │   ├── monkey
+│   │   ├── opossum
+│   │   ├── pachyderm\ (thick\ skinned\ hoofed)
+│   │   │   ├── African\ elephant
+│   │   │   ├── Indian\ elephant
+│   │   │   └── elephant
+│   │   ├── pallid\ bat
+│   │   ├── pipistrelle\ bat
+│   │   ├── possum
+│   │   ├── potto\ (primate)
+│   │   ├── rhinoceros
+│   │   ├── ring-tailed\ lemur\ (primate)
+│   │   ├── rodent
+│   │   │   ├── ground\ squirrel
+│   │   │   ├── guinea\ pig
+│   │   │   ├── hoary\ marmot
+│   │   │   ├── mantled\ ground\ squirrel
+│   │   │   ├── marmot
+│   │   │   ├── mole\ rat
+│   │   │   ├── rat
+│   │   │   ├── squirrel
+│   │   │   │   └── chipmunk
+│   │   │   └── tree\ squirrel
+│   │   │       └── black\ squirrel
+│   │   ├── ruminant
+│   │   │   ├── American\ bison
+│   │   │   ├── beef
+│   │   │   │   └── Aberdeen\ Angus\ cattle
+│   │   │   ├── bison
+│   │   │   ├── black\ sheep
+│   │   │   ├── dairy\ cattle
+│   │   │   ├── deer
+│   │   │   │   └── wapiti
+│   │   │   ├── goat\ antelope
+│   │   │   │   └── gnu\ goat
+│   │   │   ├── male\ sheep
+│   │   │   ├── roe\ deer
+│   │   │   ├── wild\ goat
+│   │   │   └── wild\ sheep
+│   │   │       └── bighorn\ sheep
+│   │   ├── sloth
+│   │   ├── spider\ monkey
+│   │   ├── swine
+│   │   │   ├── boar
+│   │   │   └── wild\ boar
+│   │   ├── three-toed\ sloth
+│   │   └── white\ rhinoceros
+│   ├── pet
+│   ├── prenatal
+│   ├── quadruped\ (4\ legged)
+│   ├── reptile
+│   │   ├── ceratosaur\ (dinosaur)
+│   │   ├── green\ mamba\ snake
+│   │   ├── night\ lizard
+│   │   ├── snake
+│   │   │   └── king\ cobra
+│   │   └── water\ snake
+│   ├── satin\ bowerbird
+│   └── young
+│       └── suckling\ (mammal)
+├── apparatus
+│   ├── Foucault\ pendulum
+│   ├── backlighting
+│   ├── heat\ pump
+│   ├── incubator
+│   ├── purifier
+│   └── reformer\ instrument
+├── appliance
+│   ├── clothes\ dryer
+│   ├── coffee\ maker
+│   ├── curling\ iron
+│   ├── dishwasher
+│   ├── electric\ range
+│   ├── electric\ refrigerator
+│   ├── ice\ maker
+│   ├── kitchen\ stove
+│   │   └── gas\ range
+│   └── refrigerator
+│       ├── cooler
+│       └── deep-freeze
+├── ball
+│   └── punching\ bag
+├── barrier
+│   ├── bannister\ (handrail)
+│   ├── car\ door
+│   ├── fence
+│   │   └── wall
+│   ├── gate
+│   │   └── turnstile
+│   ├── picket\ fence
+│   ├── portcullis\ (gate\ of\ castle)
+│   ├── revolving\ door
+│   ├── screen\ door
+│   ├── sliding\ door
+│   └── storm\ door
+├── basin
+│   └── birdbath
+├── bedroom
+│   ├── child's\ room
+│   ├── dormitory
+│   ├── motel\ room
+│   └── nursery
+├── blue\ color
+│   └── ultramarine\ color
+├── body\ armor
+│   ├── brigandine\ (armor)
+│   └── cuirass\ armor
+├── bottle
+│   └── water\ jug
+├── box
+│   ├── chest
+│   ├── coffer\ (chest)
+│   ├── coffin
+│   ├── safe
+│   ├── sarcophagus\ \ coffin
+│   ├── sea\ chest
+│   └── tea\ chest
+├── bridge
+│   └── overpass
+├── bubble
+│   ├── lather
+│   └── soapsuds
+├── building
+│   ├── alehouse\ (tavern)
+│   ├── bowling\ alley
+│   ├── cabin\ (house)
+│   ├── chalet
+│   ├── control\ center
+│   ├── day\ school
+│   ├── elegant\ hotel
+│   ├── funeral\ home
+│   ├── hall
+│   ├── hotel
+│   │   └── hostel
+│   │       └── caravan\ inn
+│   ├── pump\ room
+│   ├── research\ center
+│   ├── resort\ hotel
+│   ├── restaurant
+│   │   ├── automat\ (food\ vending\ machines)
+│   │   ├── brasserie
+│   │   ├── cafe
+│   │   ├── cafeteria
+│   │   ├── caff\ (caffe)
+│   │   ├── canteen
+│   │   ├── cybercafe
+│   │   ├── diner
+│   │   ├── espresso\ shop
+│   │   ├── estaminet\ (cafe)
+│   │   ├── lunchroom
+│   │   └── teashop
+│   ├── ruin
+│   └── villa
+├── cleaning\ implement
+│   ├── squeegee\ (cleaning\ equipment)
+│   └── swab
+├── coating
+│   ├── encaustic\ paint
+│   ├── finger\ paint
+│   ├── oil\ paint
+│   ├── paint
+│   │   └── couch
+│   ├── spray\ paint
+│   └── water-base\ paint
+│       ├── latex\ paint
+│       └── whitewash
+├── compartment
+│   ├── drawing\ room
+│   └── stateroom
+├── concave\ shape
+│   └── crevice
+├── convex\ shape
+│   └── belly
+├── courtyard
+│   └── atrium\ of\ building
+├── device
+│   ├── air\ filter
+│   ├── android
+│   ├── automated\ teller\ machine
+│   ├── ball\ and\ chain
+│   ├── bird\ feeder
+│   ├── brace
+│   │   └── rundle
+│   ├── claw
+│   │   └── anchor
+│   ├── cold\ cathode
+│   ├── controller
+│   │   ├── faucet
+│   │   └── water\ faucet
+│   ├── digital\ computer
+│   │   └── von\ Neumann\ machine
+│   ├── electric\ lamp
+│   │   └── flashlight
+│   ├── elevator
+│   ├── fan\ blade
+│   ├── fastener
+│   │   ├── lock
+│   │   ├── locker
+│   │   ├── nut\ and\ bolt
+│   │   ├── screw
+│   │   │   └── bolt
+│   │   └── shirt\ button
+│   ├── gallows
+│   ├── gas\ fixture
+│   ├── gas\ lamp
+│   ├── guillotine
+│   ├── hair\ curler
+│   ├── harpsichord\ (musical\ instrument)
+│   ├── hydrofoil
+│   ├── indicator
+│   │   └── level
+│   ├── lamp
+│   │   ├── spotlight
+│   │   └── streetlight
+│   ├── leash
+│   ├── light\ source
+│   │   ├── room\ light
+│   │   └── strip\ lighting
+│   ├── lighter
+│   ├── machine
+│   │   ├── computer
+│   │   ├── digital\ computer
+│   │   │   ├── personal\ computer
+│   │   │   │   └── portable\ computer
+│   │   │   │       └── laptop\ computer
+│   │   │   └── workstation
+│   │   ├── gear\ wheel
+│   │   │   └── pinion\ (gear)
+│   │   ├── inclined\ plane
+│   │   │   └── ramp
+│   │   ├── printer
+│   │   │   └── typewriter
+│   │   ├── roller\ (wheel)
+│   │   ├── server\ (computer)
+│   │   └── wheel
+│   │       └── caster
+│   ├── machine\ tool
+│   │   └── shaping\ machine
+│   │       └── lathe
+│   ├── machinery
+│   │   └── grinder
+│   ├── magnifier
+│   │   ├── microscope
+│   │   └── telescope
+│   ├── musical\ instrument
+│   │   └── grand\ piano
+│   ├── oil\ lamp
+│   ├── periscope
+│   ├── person\ in\ snorkel
+│   ├── propeller
+│   ├── radiator
+│   ├── rattan
+│   ├── reflector
+│   │   ├── car\ mirror
+│   │   ├── mirror
+│   │   └── outside\ mirror
+│   ├── robot
+│   ├── splint
+│   ├── sprinkler
+│   ├── stocks
+│   ├── stove
+│   ├── support
+│   │   ├── arm
+│   │   ├── armrest
+│   │   ├── backseat
+│   │   ├── beam
+│   │   ├── bollard\ (post)
+│   │   ├── bucket\ seat
+│   │   ├── column
+│   │   ├── doorjamb
+│   │   ├── doorsill
+│   │   ├── girder\ (beam)
+│   │   ├── hanger
+│   │   ├── headrest
+│   │   ├── jamb\ (of\ door\ or\ window)
+│   │   ├── lamppost
+│   │   ├── post
+│   │   ├── rack
+│   │   │   └── easel
+│   │   ├── seat
+│   │   ├── stair
+│   │   └── windowsill
+│   ├── support\ column
+│   ├── swing
+│   ├── tape\ measure
+│   ├── textile\ machine
+│   │   ├── loom
+│   │   └── serger\ (sewing)
+│   ├── timepiece
+│   │   └── hourglass
+│   ├── trap
+│   │   └── snare
+│   ├── trapeze
+│   ├── treadmill
+│   ├── ventilator
+│   ├── water\ cooler
+│   ├── water\ heater
+│   ├── weapon
+│   │   ├── bullet
+│   │   ├── cannonball
+│   │   ├── gun
+│   │   ├── knife
+│   │   ├── rapier\ sword
+│   │   ├── sword
+│   │   └── tear\ gas
+│   └── windshield\ wiper
+├── dining\ room
+│   ├── dining-hall
+│   ├── officer's\ mess
+│   └── refectory\ (dining\ hall)
+├── dish
+│   └── mixing\ bowl
+├── dispenser
+│   └── inhaler
+├── domestic\ animal
+│   ├── Airedale\ dog
+│   ├── Bernese\ mountain\ dog
+│   ├── Chesapeake\ Bay\ retriever\ dog
+│   ├── English\ cocker\ spaniel\ dog
+│   ├── French\ bulldog
+│   ├── Gordon\ setter\ dog
+│   ├── Irish\ setter\ dog
+│   ├── Irish\ terrier\ dog
+│   ├── Labrador\ retriever\ dog
+│   ├── Manchester\ terrier\ dog
+│   ├── Newfoundland\ dog
+│   ├── Rhodesian\ ridgeback\ dog
+│   ├── Saint\ Bernard\ dog
+│   ├── Scotch\ terrier\ dog
+│   ├── Scottish\ deerhound\ dog
+│   ├── Staffordshire\ bullterrier\ dog
+│   ├── Sussex\ spaniel\ dog
+│   ├── Tibetan\ mastiff\ dog
+│   ├── basenji\ dog
+│   ├── bloodhound\ dog
+│   ├── boxer\ dog
+│   ├── dog
+│   │   ├── Cardigan\ Welsh\ corgi
+│   │   └── puppy
+│   ├── flat-coated\ retriever\ dog
+│   ├── malamute\ dog
+│   ├── mastiff\ dog
+│   ├── police\ dog
+│   ├── pooch\ dog
+│   ├── sausage\ dog
+│   ├── setter\ dog
+│   ├── shepherd\ dog
+│   │   ├── Belgian\ sheepdog
+│   │   ├── Rottweiler\ dog
+│   │   ├── briard\ dog
+│   │   └── groenendael\ dog
+│   ├── vizsla\ dog
+│   └── watchdog
+│       ├── Doberman\ dog
+│       ├── miniature\ pinscher\ dog
+│       └── schipperke\ dog
+├── dress
+│   ├── blue\ jean
+│   └── eveningwear
+│       └── dinner\ jacket
+├── drinking\ glass
+│   ├── beer\ glass
+│   └── wineglass
+├── drinking\ vessel
+│   └── tankard
+├── electrical\ device
+│   ├── Segway\ Human\ Transporter
+│   ├── microphone
+│   └── spark\ plug
+├── electronic\ device
+│   ├── pentode\ (electrical\ tube)
+│   ├── vacuum\ tube
+│   └── video\ display
+│       ├── computer\ monitor
+│       └── monitor
+├── enclosure
+│   ├── bomb\ shelter
+│   ├── burial\ chamber
+│   ├── hyperbaric\ chamber\ (medical)
+│   ├── pigsty
+│   ├── playpen
+│   └── plenum\ (of\ engine)
+├── explosive\ device
+│   └── pipe\ bomb
+├── fabric
+│   ├── Turkish\ towel
+│   ├── burlap\ (gunny)
+│   ├── camel's\ hair
+│   ├── cashmere\ dress
+│   ├── drop\ cloth
+│   ├── khaki
+│   ├── muslin
+│   ├── paper\ towel
+│   ├── sacking
+│   └── trousering
+├── face\ mask
+│   └── ski\ mask
+├── factory
+│   ├── bell\ foundry
+│   ├── sawmill
+│   ├── steel\ mill
+│   └── textile\ mill
+├── farm\ building
+│   └── cowshed
+├── figure
+│   └── polygon
+│       ├── right\ triangle
+│       └── triangle
+├── flask
+│   └── thermos\ bottle
+├── floor
+│   ├── artist's\ loft
+│   ├── attic
+│   ├── basement
+│   └── mezzanine
+├── floor\ cover
+│   ├── doormat
+│   ├── mat
+│   └── rug
+│       └── stair-carpet
+├── food
+│   ├── beverage
+│   │   ├── brew
+│   │   │   └── beer
+│   │   │       └── ale
+│   │   │           └── Guinness
+│   │   ├── liquor
+│   │   │   ├── gin
+│   │   │   └── schnapps
+│   │   ├── raw\ milk
+│   │   └── white\ wine
+│   ├── branch\ water
+│   └── drinking\ water
+│       ├── bottled\ water
+│       └── mineral\ water
+├── food\ product
+│   ├── dairy\ product
+│   │   └── curd
+│   └── herb
+│       └── tea\ bag
+├── footwear
+│   ├── Hessian\ boot
+│   ├── arctic\ shoe
+│   ├── boot
+│   ├── bowling\ shoe
+│   ├── chopine\ (platform)\ shoe
+│   ├── cowboy\ boot
+│   ├── hip\ boot
+│   ├── hosiery
+│   │   ├── argyle\ (socks)
+│   │   ├── sock
+│   │   └── tights
+│   ├── riding\ boot
+│   ├── rubber\ boot
+│   ├── waders\ (waterproof\ boots)
+│   └── wooden\ shoe
+├── fortification
+│   └── escarpment
+├── framework
+│   ├── display\ window
+│   ├── doorframe
+│   ├── frame
+│   ├── ribbing\ (in\ cloths)
+│   ├── window
+│   │   └── clerestory\ (of\ building)
+│   ├── window\ frame
+│   └── window\ sash
+├── fruit
+│   ├── carambola
+│   └── citrus
+├── fungus
+│   ├── beard\ lichen
+│   ├── lichen
+│   │   ├── Iceland\ moss
+│   │   └── crottle
+│   └── mildew
+├── furniture
+│   ├── bench
+│   │   └── window\ seat
+│   ├── breakfast\ table
+│   ├── chest\ of\ drawers
+│   ├── coffee\ table
+│   ├── dining\ table
+│   │   └── dinner\ table
+│   ├── drafting\ table
+│   ├── hospital\ bed
+│   ├── kitchen\ table
+│   ├── medicine\ chest
+│   ├── minibar
+│   ├── seat
+│   │   ├── barber\ chair
+│   │   ├── church\ bench
+│   │   ├── footstool
+│   │   ├── park\ bench
+│   │   ├── rocking\ chair
+│   │   └── sofa
+│   ├── single\ bed
+│   ├── table
+│   │   ├── bar
+│   │   ├── checkout\ counter
+│   │   ├── counter
+│   │   ├── desk
+│   │   ├── laboratory\ bench
+│   │   ├── salad\ bar
+│   │   ├── snack\ bar
+│   │   ├── sushi\ bar
+│   │   └── wet\ bar
+│   ├── toilet\ seat
+│   └── worktable
+├── garment
+│   ├── bathrobe
+│   ├── cravat\ (neckwear)
+│   ├── fur
+│   ├── head\ covering
+│   │   └── face\ with\ veil
+│   ├── headscarf
+│   ├── hose
+│   ├── legging
+│   ├── long\ trousers
+│   ├── skirt
+│   │   └── sarong\ (dress)
+│   ├── suit\ of\ clothes
+│   │   ├── three-piece\ suit
+│   │   └── two-piece\ suit
+│   ├── sweater
+│   ├── trouser
+│   │   ├── slacks
+│   │   └── sweat\ pants
+│   └── wet\ suit
+├── green\ color
+│   └── emerald\ color
+├── handwear
+│   └── gauntlet\ (glove)
+├── headdress
+│   ├── cap
+│   │   └── balaclava\ helmet
+│   ├── hat
+│   │   └── dunce\ cap
+│   ├── shower\ cap
+│   ├── ski\ cap
+│   └── turban
+├── housing
+│   ├── apartment
+│   │   ├── bedsitting\ room
+│   │   ├── flatlet
+│   │   └── penthouse
+│   ├── cellblock
+│   ├── dwelling
+│   │   └── fixer-upper\ house
+│   ├── hospital\ ward
+│   ├── hostel
+│   ├── living\ quarters
+│   │   ├── accommodation
+│   │   │   ├── cabin\ class
+│   │   │   └── first\ class
+│   │   └── military\ quarters
+│   │       └── wardroom
+│   └── studio\ apartment
+├── institution
+│   ├── borstal\ (people)
+│   ├── penitentiary
+│   └── photo\ with\ bars
+├── junction
+│   ├── contact
+│   │   └── wiper
+│   ├── intersection
+│   ├── joint
+│   │   ├── hinge
+│   │   └── weld
+│   └── miter\ joint
+├── lamination
+│   └── laminate
+├── land\ dweller
+│   ├── grey\ sub\ sahara\ Africa\ dweller
+│   └── south\ eastern\ Asia\ dweller
+├── lever
+│   └── foot\ pedal
+│       └── accelerator\ pedal
+├── light
+│   ├── glint
+│   └── sunniness
+├── living\ room
+│   ├── common\ room
+│   └── morning\ room
+├── luggage
+│   ├── traveling\ bag
+│   └── trunk
+├── mammal
+│   ├── Malayan\ tapir\ (hoofed\ animal)
+│   └── tapir\ (hoofed\ animal)
+├── medical\ building
+│   ├── dispensary
+│   ├── hospital
+│   └── maternity\ hospital
+├── medical\ dressing
+│   ├── bandage
+│   │   ├── Band\ Aid
+│   │   └── plaster\ cast
+│   └── sling\ (bandage)
+├── medium
+│   └── telecommunication
+│       └── broadcasting
+│           ├── reception
+│           └── television
+├── memory\ device
+│   ├── LP
+│   ├── recording
+│   └── seventy-eight\ (record)
+├── microorganism
+│   └── algae
+│       ├── pond\ scum
+│       └── seagrass
+├── military\ uniform
+│   └── khakis
+├── mound
+│   └── embankment
+│       ├── battlement
+│       └── rampart
+├── nature
+│   ├── brae\ (slope
+│   │   └── hillside)
+│   ├── burrow
+│   ├── cavern
+│   ├── cirque\ (basin)
+│   ├── cove
+│   ├── crater
+│   ├── delta
+│   ├── geyser
+│   ├── grotto\ (small\ cave)
+│   ├── hillock
+│   ├── hole
+│   ├── hot\ spring
+│   ├── lunar\ crater
+│   ├── natural\ elevation
+│   ├── pothole\ (road)
+│   ├── ridge
+│   │   ├── berm
+│   │   └── bluff\ (steep\ sliff
+│   │       └── bank)
+│   ├── ridgeline
+│   ├── riverbed
+│   ├── shore
+│   │   └── lakeside
+│   ├── sinkhole
+│   ├── slope
+│   │   ├── ascent
+│   │   ├── descent
+│   │   ├── downhill
+│   │   ├── escarpment
+│   │   ├── hillside
+│   │   ├── mountainside
+│   │   ├── riverbank
+│   │   ├── steep
+│   │   ├── uphill
+│   │   └── waterside
+│   ├── streambed
+│   ├── valley
+│   │   ├── arroyo\ (stream)
+│   │   ├── dale
+│   │   ├── gorge
+│   │   ├── gully\ (deep\ ditch)
+│   │   └── ravine
+│   ├── volcanic\ crater
+│   └── volcano
+├── needlework
+│   └── garter\ stitch
+├── office
+│   └── newsroom
+├── optical\ device
+│   ├── contact\ lens
+│   └── sunglass
+├── overgarment
+│   ├── coat
+│   │   └── jerkin\ jacket
+│   ├── greatcoat
+│   ├── laboratory\ coat
+│   └── raincoat
+├── person
+│   ├── Pharaoh
+│   ├── animal\ trainer
+│   ├── baker
+│   ├── bartender
+│   ├── boy
+│   ├── calligrapher
+│   ├── carpenter
+│   ├── choreographer
+│   ├── coiffeur\ (hairdresser)
+│   ├── computer\ user
+│   │   └── computer\ programmer
+│   ├── contestant
+│   │   └── athlete
+│   │       ├── climber
+│   │       └── skateboarder
+│   ├── craftsman
+│   ├── dispatcher
+│   ├── entertainer
+│   │   └── organist\ (musician)
+│   ├── farmer
+│   │   └── animal\ competition\ show
+│   ├── female
+│   ├── fire
+│   ├── fishmonger
+│   ├── hairdresser
+│   ├── handyman
+│   ├── housekeeper
+│   ├── interior\ designer
+│   ├── kitchen\ help
+│   ├── maker
+│   │   ├── cobbler
+│   │   └── confectioner
+│   ├── man\ with\ shaven\ head
+│   ├── medical\ specialist
+│   │   ├── internist
+│   │   └── radiologist
+│   ├── military\ attache
+│   ├── nurse
+│   ├── painter
+│   ├── patient
+│   ├── people
+│   │   └── taster
+│   ├── plasterer
+│   ├── repairer
+│   ├── senior\ citizen\ 
+│   ├── serviceman
+│   │   └── soldier
+│   ├── shoe\ polisher
+│   ├── sleeper
+│   ├── sleuth
+│   ├── social\ gathering
+│   │   ├── beverage\ consumer
+│   │   └── boatbuilder
+│   ├── sweeper
+│   ├── teacher
+│   ├── technician
+│   ├── tiler
+│   ├── traveler
+│   │   ├── mover
+│   │   │   └── abseiler\ (rock\ climber)
+│   │   └── runner
+│   ├── waiter
+│   ├── wine\ merchant
+│   ├── woman\ in\ white
+│   ├── woman\ with\ bag
+│   └── workman
+│       └── laborer
+│           ├── cleaner
+│           └── coal\ miner
+├── photographic\ film
+│   └── orthochromatic\ film
+├── plant
+│   ├── English\ lavender
+│   ├── herb
+│   │   ├── canna
+│   │   ├── peach\ bells
+│   │   └── wild\ sage
+│   ├── kauri\ (timber)\ tree
+│   ├── logwood\ tree
+│   ├── plane\ tree
+│   │   ├── Arizona\ sycamore
+│   │   └── California\ sycamore
+│   ├── pondweed
+│   ├── silver\ sage
+│   ├── smoke\ bush
+│   ├── tree
+│   │   ├── California\ black\ oak
+│   │   ├── Japanese\ flowering\ cherry
+│   │   ├── New\ Zealand\ beech
+│   │   ├── Oregon\ ash
+│   │   ├── Oregon\ white\ oak
+│   │   ├── Spanish\ oak
+│   │   ├── blackwood
+│   │   ├── canyon\ oak
+│   │   ├── coast\ live\ oak
+│   │   ├── eucalyptus
+│   │   │   └── alpine\ ash
+│   │   ├── fuji\ cherry
+│   │   ├── jaracanda
+│   │   ├── live\ oak
+│   │   ├── native\ beech
+│   │   ├── palo\ verde
+│   │   ├── pinon\ pine
+│   │   ├── swamp\ birch
+│   │   ├── weeping\ willow
+│   │   └── willow
+│   ├── vine
+│   │   ├── American\ wistaria
+│   │   ├── Chinese\ wistaria
+│   │   └── Japanese\ wistaria
+│   ├── westland\ pine\ tree
+│   └── wilding
+│       └── wildflower
+│           └── prairie\ gentian
+├── plaster
+│   ├── finish\ coat
+│   └── stucco
+├── platform
+│   └── hurricane\ deck
+├── plug
+│   └── bottle\ cork
+├── porch
+│   ├── stoop
+│   └── veranda
+├── pot
+│   ├── kettle
+│   └── tea\ urn
+├── prosthetic\ device
+│   └── wooden\ leg
+├── radiogram
+│   └── arthrogram\ (x-ray)
+├── rail
+│   └── ledger\ board
+├── receptacle
+│   └── dustpan
+├── road
+│   └── street
+├── rod
+│   ├── pole
+│   │   └── yard
+│   ├── rotating\ shaft
+│   │   ├── camshaft
+│   │   ├── crankshaft
+│   │   └── transmission\ shaft
+│   ├── shaft
+│   │   └── axle
+│   └── wand
+├── room
+│   ├── Turkish\ bath
+│   ├── art\ gallery
+│   ├── canteen
+│   ├── closet
+│   │   ├── booth
+│   │   │   └── shower\ stall
+│   │   └── voting\ booth
+│   ├── cocktail\ lounge
+│   ├── compartment
+│   │   ├── cabinet
+│   │   ├── cable\ car
+│   │   ├── cockpit
+│   │   ├── couchette
+│   │   ├── stall
+│   │   └── wheelhouse
+│   ├── den
+│   ├── dungeon
+│   ├── great\ hall
+│   ├── hall
+│   ├── kitchen
+│   ├── lounge
+│   ├── manor\ hall
+│   ├── parlor
+│   ├── photo\ with\ bars
+│   ├── public\ toilet
+│   ├── saloon
+│   ├── sauna
+│   ├── scullery\ (of\ kitchen)
+│   ├── sickbay
+│   ├── study
+│   ├── study\ hall
+│   ├── sun\ parlor
+│   ├── surgery
+│   ├── toilet
+│   │   ├── latrine
+│   │   └── water\ closet
+│   ├── torture\ chamber
+│   └── vault
+├── rope
+│   └── bungee\ cord
+├── satellite
+│   └── space\ station
+├── screen
+│   ├── curtain
+│   ├── mosquito\ net
+│   ├── roller\ blind
+│   ├── shower\ curtain
+│   ├── window\ shade
+│   └── windshield
+├── shelter
+│   ├── backpacking\ tent
+│   ├── hut
+│   └── mountain\ tent
+├── shield
+│   ├── armor\ plate
+│   ├── breastplate
+│   └── plate
+│       └── fauld\ armor
+├── shop
+│   ├── beauty\ salon
+│   ├── boutique
+│   └── convenience\ store
+├── sport
+│   ├── acrobatics
+│   ├── gymnastics
+│   ├── luging\ (tobogganing)
+│   ├── motorcycling
+│   ├── rock\ climbing
+│   ├── roller\ skating
+│   ├── shuffleboard
+│   ├── skating
+│   │   └── rollerblading
+│   └── tightrope\ walking
+├── storage\ tank
+│   ├── reservoir
+│   │   ├── cesspool
+│   │   └── rain\ barrel
+│   └── septic\ tank
+├── support
+│   └── basement
+├── system
+│   ├── computer\ network
+│   │   └── ethernet
+│   └── production\ line
+├── telecommunication\ system
+│   └── television
+├── telephone
+│   ├── desk\ phone
+│   └── pay-phone
+├── toilet
+│   ├── ladies'\ room
+│   ├── men's\ room
+│   └── washroom
+├── toiletry
+│   ├── toilet\ powder
+│   └── toothbrush
+├── tool
+│   ├── blade
+│   ├── hacksaw
+│   ├── handsaw
+│   └── plunger
+├── tracked\ vehicle
+│   └── snowmobile
+├── undergarment
+│   ├── corset
+│   ├── underpants
+│   │   └── briefs\ (Jockey\ shorts)
+│   └── underwear
+│       └── long\ johns
+├── utensil
+│   ├── cookie\ cutter
+│   └── cookie\ sheet
+├── vegetable
+│   └── leek
+├── vehicle
+│   ├── aircraft
+│   │   ├── helicopter
+│   │   └── shuttle\ helicopter
+│   ├── car
+│   │   └── jeep
+│   ├── carriage
+│   │   └── four-wheeler
+│   ├── four-wheel\ drive
+│   ├── motorcycle
+│   │   └── trail\ bike
+│   ├── race\ car
+│   ├── railcar
+│   │   └── passenger\ car
+│   │       ├── dining\ car
+│   │       └── smoking\ carriage
+│   └── watercraft
+│       ├── shipwreck
+│       └── small\ boat
+│           └── kayak
+├── wall
+│   ├── attic
+│   └── wainscoting\ wood\ panels
+├── water\ sport
+│   └── swimming
+│       └── snorkeling
+├── workman
+│   └── laborer
+│       └── cleaning\ person
+└── wrapping
+    └── plastic\ wrap
+
+1154 directories
