@@ -138,19 +138,20 @@ if (-d "$CDIR") then
     # start table
     echo '<table border="1"><tr>' >> "$HTML"
 
+    set labeled_images = ( `find $TMP/label/$DB -type f -print` )
+
     @ k = 0
     foreach image ( `head -"$limit" "$IMAGES"` )
 	if ($k < $limit) then
 	    if ($?DEBUG) echo `date` "$0 $$ -- file ($image)" >>! $TMP/LOG
 
+	    set jpg = $image:t
 	    if ($id == all) then
 		set dir = $image:h # class of image is encoded as head of path
 		set dir = $dir:t # and tail, e.g. <path>/<class>/<jpeg>
-		set jpg = $image:t
 		set txt = "$dir"
 	    else
 		set dir = $id
-		set jpg = $image:t
 		set txt = "$id"
 	    endif
 
@@ -161,6 +162,8 @@ if (-d "$CDIR") then
 	    if ($k % $ncolumns == 0) echo '</tr><tr>' >> "$HTML"
 
 	    echo '<td><figure>' >> "$HTML"
+	    echo '<figcaption>'"$time"'</figcaption>' >> "$HTML" 
+	    echo '<table><tr><td>' >> "$HTML"
 	    echo '<form action="'"$act"'" method="get">' >> "$HTML"
 	    echo '<input type="hidden" name="db" value="'"$DB"'">' >> "$HTML"
 	    echo '<input type="hidden" name="id" value="'"$id"'">' >> "$HTML"
@@ -169,20 +172,8 @@ if (-d "$CDIR") then
 	    echo '<input type="hidden" name="match" value="'"$match"'">' >> "$HTML"
 	    echo '<input type="hidden" name="limit" value="'"$limit"'">' >> "$HTML"
 	    echo '<button style="background-color:#999999" type="submit" name="skip" value="'"$jpg"'">SKIP</button>' >> "$HTML"
-	    echo '<button style="background-color:#ff0033" type="submit" name="new" value="'"$location"'">'"$location"'</button>' >> "$HTML"
-	    echo '<button style="background-color:#33cc00" type="submit" name="new" value="person">person</button>' >> "$HTML"
-	    set labeled_images = ( `find $TMP/label/$DB -type f -print` )
-	    if ($#labeled_images) then
-	      foreach i ( $TMP/label/$DB/* )
-	        set j = "$i:t"
-		if ($j != "$location" && $j != "person") then
-		    echo '<button style="background-color:#6699ff" type="submit" name="new" value="'"$j"'">'"$j"'</button>' >> "$HTML"
-		endif
-	      end
-	    endif
 	    echo '</form>' >> "$HTML"
-	    echo '<a href="'"$cgi"'"><img width="'$width'%" alt="'$id/$image'" src="'"$img"'"></a>' >> "$HTML"
-	    echo '<figcaption><i>'"$dir"'</i>  '"$time"'</figcaption>' >> "$HTML" 
+	    echo '</td><td>' >> "$HTML"
 	    echo '<form action="'"$act"'" method="get">' >> "$HTML"
 	    echo '<input type="hidden" name="db" value="'"$DB"'">' >> "$HTML"
 	    echo '<input type="hidden" name="id" value="'"$id"'">' >> "$HTML"
@@ -190,16 +181,33 @@ if (-d "$CDIR") then
 	    echo '<input type="hidden" name="old" value="'"$dir"'">' >> "$HTML"
 	    echo '<input type="hidden" name="match" value="'"$match"'">' >> "$HTML"
 	    echo '<input type="hidden" name="limit" value="'"$limit"'">' >> "$HTML"
-	    # current classification
-	    echo '<input type="text" size="5" name="add" value="'"$add"'">' >> "$HTML"
-	    # echo '<select name="new">' >> "$HTML"
-	    # if ($dir != "NO_TAGS") echo '<option value="'"$dir"'">'"$dir"'</option>' >> "$HTML" # current class (dir) is first option
-	    # foreach c ( $allclasses )
-		# if ($c != $dir && $c != "NO_TAGS") echo '<option value="'"$c"'">'"$c"'</option>' >> "$HTML" # don't include current class or NO_TAGS
-	    # end
-	    # echo '</select>' >> "$HTML"
-	    echo '<input style="background-color:#6699ff" type="submit" value="CREATE">' >> "$HTML"
+	    echo '<select name="new" onchange="this.form.submit()">' >> "$HTML"
+	    echo '<option selected value="'"$dir"'">'"$dir"'</option>' >> "$HTML"
+	    echo '<option value="'"$location"'">'"$location"'</option>' >> "$HTML"
+	    if ($#labeled_images) then
+	      foreach i ( $TMP/label/$DB/* )
+	        set j = "$i:t"
+		if ($j != $dir) echo '<option value="'"$j"'">'"$j"'</option>' >> "$HTML"
+	      end
+	    endif
+	    echo '</select>' >> "$HTML"
 	    echo '</form>' >> "$HTML"
+	    echo '</td><td>' >> "$HTML"
+	    echo '<form action="'"$act"'" method="get">' >> "$HTML"
+	    echo '<input type="hidden" name="db" value="'"$DB"'">' >> "$HTML"
+	    echo '<input type="hidden" name="id" value="'"$id"'">' >> "$HTML"
+	    echo '<input type="hidden" name="image" value="'"$jpg"'">' >> "$HTML"
+	    echo '<input type="hidden" name="old" value="'"$dir"'">' >> "$HTML"
+	    echo '<input type="hidden" name="match" value="'"$match"'">' >> "$HTML"
+	    echo '<input type="hidden" name="limit" value="'"$limit"'">' >> "$HTML"
+	    echo '<input type="hidden" name="new" value="'"$dir"'">' >> "$HTML"
+	    echo '<input type="text" size="5" name="add" value="'"$add"'">' >> "$HTML"
+	    echo '<input type="submit" style="background-color:#ff9933" value="OK">' >> "$HTML"
+	    echo '</form>' >> "$HTML"
+	    echo '</td>' >> "$HTML"
+	    echo '</tr>' >> "$HTML"
+	    echo '</table>' >> "$HTML"
+	    echo '<a href="'"$cgi"'"><img width="'$width'%" alt="'$id/$image'" src="'"$img"'"></a>' >> "$HTML"
 	    echo '</figure></td>' >> "$HTML"
 	else
 	    break
