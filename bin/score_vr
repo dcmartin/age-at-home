@@ -1,4 +1,4 @@
-#!/bin/csh
+#!/bin/csh -fb
 setenv APP "aah"
 setenv API "test"
 if ($?TMP == 0) setenv TMP "/var/lib/age-at-home"
@@ -58,12 +58,12 @@ end
 if ($?device && $?model) then
     # find model
     if ($?DEBUG) /bin/echo `/bin/date` "$0 $$ -- FINDING MODEL ($model)" >& /dev/stderr
-    set trained = ( `curl -s -q -L "$CU/$device-train/$model" | /usr/local/bin/jq '.'` )
+    set trained = ( `/usr/local/bin/curl -s -q -L "$CU/$device-train/$model" | /usr/local/bin/jq '.'` )
     if ($?DEBUG) /bin/echo `/bin/date` "$0 $$ -- FOUND MODEL ($model)" >& /dev/stderr
     if ($#trained == 0) unset trained
 else if ($?device) then
     # find most recent model for device
-    set trained = ( `curl -s -q -L "$CU/$device-train/_all_docs?include_docs=true" | /usr/local/bin/jq '[.rows[]|select(.doc.name=="'"$device"'")]|sort_by(.rows.doc.date)[-1].doc'` )
+    set trained = ( `/usr/local/bin/curl -s -q -L "$CU/$device-train/_all_docs?include_docs=true" | /usr/local/bin/jq '[.rows[]|select(.doc.name=="'"$device"'")]|sort_by(.rows.doc.date)[-1].doc'` )
     # should find highest quality model
     if ($#trained == 0) unset trained 
 else
@@ -78,7 +78,7 @@ if ($?trained) then
     set trained_on = `echo "$trained" | /usr/local/bin/jq -r '.date'`
     if ($?DEBUG) /bin/echo `/bin/date` "$0 $$ -- model $model trained on " `date -j -f "%s" $trained_on` >& /dev/stderr
     # get tested model
-    set tested = ( `curl -s -q -L "$CU/$device-test/_all_docs?include_docs=true" | /usr/local/bin/jq '.rows[]|select(.doc.model=="'"$model"'").doc'` )
+    set tested = ( `/usr/local/bin/curl -s -q -L "$CU/$device-test/_all_docs?include_docs=true" | /usr/local/bin/jq '.rows[]|select(.doc.model=="'"$model"'").doc'` ) >& /dev/null
     if ($#tested) then
         set tested_on = `echo "$tested" | /usr/local/bin/jq -r '.date'`
 	if ($?DEBUG) /bin/echo `/bin/date` "$0 $$ -- model $model tested on " `date -j -f "%s" $tested_on` >& /dev/stderr
@@ -93,7 +93,8 @@ if ($?trained) then
 	echo "$tested" | jq '.' >! "$SCORES"
 	goto output
     else
-	if ($?DEBUG) /bin/echo `/bin/date` "$0 $$ -- RETEST $model " `date -j -f "%s"` >& /dev/stderr
+	if ($?DEBUG) /bin/echo `/bin/date` "$0 $$ -- RETEST $model " >& /dev/stderr
+	/bin/rm -f "$SCORES"
 	# get training classes
 	set classes = ( `/bin/echo "$trained" | /usr/local/bin/jq '.sets.jobs[].class' | /usr/bin/sed 's/"//g'` )
 	if ($#classes == 0) then
@@ -162,11 +163,11 @@ update:
 
 if ($?SCORES && $?CLOUDANT_OFF == 0 && $?CU && $?device) then
     if ($?DEBUG) /bin/echo `/bin/date` "$0 $$ -- test if device exists ($device-test)" >& /dev/stderr
-    set devdb = `curl -s -q -X GET "$CU/$device-test" | /usr/local/bin/jq '.db_name'`
+    set devdb = `/usr/local/bin/curl -s -q -X GET "$CU/$device-test" | /usr/local/bin/jq '.db_name'`
     if ( "$devdb" == "null" ) then
         if ($?DEBUG) /bin/echo `/bin/date` "$0 $$ -- creating device $device-test" >>& /dev/stderr
         # create device
-        set devdb = `curl -s -q -X PUT "$CU/$device-test" | /usr/local/bin/jq '.ok'`
+        set devdb = `/usr/local/bin/curl -s -q -X PUT "$CU/$device-test" | /usr/local/bin/jq '.ok'`
         # test for success
         if ( "$devdb" != "true" ) then
             # failure
@@ -177,20 +178,20 @@ if ($?SCORES && $?CLOUDANT_OFF == 0 && $?CU && $?device) then
         endif
     endif
     if ( $?CLOUDANT_OFF == 0 ) then
-        curl -s -q -o "$SCORES.$$" "$CU/$device-test/$model" >>&! "$TMP/LOG"
+        /usr/local/bin/curl -s -q -o "$SCORES.$$" "$CU/$device-test/$model" >>&! "$TMP/LOG"
         if (-s "$SCORES.$$") then
             set doc = ( `/bin/cat "$SCORES.$$" | /usr/local/bin/jq ._id,._rev | /usr/bin/sed 's/"//g'` )
             if ($#doc == 2 && $doc[1] == $model && $doc[2] != "") then
                 set rev = $doc[2]
                 if ($?DEBUG) /bin/echo `/bin/date` "$0 $$ -- deleting old output ($rev)" >& /dev/stderr
-                curl -s -q -X DELETE "$CU/$device-test/$model?rev=$rev" >& /dev/stderr
+                /usr/local/bin/curl -s -q -X DELETE "$CU/$device-test/$model?rev=$rev" >& /dev/stderr
             endif
         else
             if ($?DEBUG) /bin/echo `/bin/date` "$0 $$ -- no old output to delete" >& /dev/stderr
         endif
 	/bin/rm -f "$SCORES.$$"
         if ($?DEBUG) /bin/echo `/bin/date` "$0 $$ -- storing new output ($SCORES)" >& /dev/stderr
-        curl -s -q -H "Content-type: application/json" -X PUT "$CU/$device-test/$model" -d "@$SCORES" >& /dev/stderr
+        /usr/local/bin/curl -s -q -H "Content-type: application/json" -X PUT "$CU/$device-test/$model" -d "@$SCORES" >& /dev/stderr
         if ($status == 0) then
             if ($?DEBUG) /bin/echo `/bin/date` "$0 $$ -- success storing new output" >& /dev/stderr
         else
@@ -206,9 +207,9 @@ endif
 output:
 
 if ($?SCORES) then
-    /usr/local/bin/jq '.' "$SCORES" >! "$model-test.json"
+    /usr/local/bin/jq '.' "$SCORES" >! "$TMP/matrix/$model-test.json"
     if ($?DEBUG == 0) /bin/rm -f "$SCORES"
 endif
 
 done:
-/bin/rm -f $TMP/$0:t*.$$
+    /bin/rm -f $TMP/$0:t*.$$ >& /dev/null

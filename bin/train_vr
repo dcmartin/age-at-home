@@ -71,6 +71,7 @@ endif
 #
 # PROCESS COMMAND LINE ARGUMENTS
 #
+echo "$0 [ -n <maxfiles> -D(elete old) -m <model_id> -j <job_id> -N <negative_class> -d <tmp> ] <device>"
 
 @ i = 1
 while ($i <= $#argv)
@@ -117,6 +118,7 @@ else
     if ($?device == 0) set device="rough-fog"
     if ($device == "rough-fog" && $?notags == 0) set notags = "kitchen"
     if ($device == "damp-cloud" && $?notags == 0) set notags = "bathroom"
+    if ($device == "quiet-water" && $?notags == 0) set notags = "road"
 endif
 setenv QUERY_STRING "db=$device"
 
@@ -288,7 +290,7 @@ mkdir -p "$JOB"
 # Split into two or three sets: training, validation (for hyper-parameters) and testing (http://sebastianraschka.com/blog/2016/model-evaluation-selection-part3.html)
 #
 @ MAXIMAGES = 10000
-@ MAXZIPBYTES = 100 * 1000 * 1000
+@ MAXZIPBYTES = 1000 * 1000 * 90 # should be 100
 @ MINIMAGES = 10
 @ MAXSETBYTES = 256 * 1000 * 1000
 @ MINSETSIZE = 50

@@ -86,7 +86,6 @@ if (! -s "$results" || ((-M "$files") > (-M "$results"))) then
 	    else
 		echo `date` "$0 $$ -- ITERATING over $t and $s" >& /dev/stderr
 		foreach i ( `cat $t` )
-		    set j = `echo "$i" | sed "s/.*db=\(.*\)&class=\(.*\)&id=\(.*\)/\1\/\2\/\3/"`
 		    set noglob
 		    set q = `/usr/local/bin/jq '[.classifications."'"$i"'"[]?]' "$s"`
 		    if ($#q > 1) then
@@ -101,6 +100,10 @@ if (! -s "$results" || ((-M "$files") > (-M "$results"))) then
 			    echo '{"job":"'"$model_id"'","results":[' >! "$results"
 			    set started = true
 			endif
+			set _ii = `echo "$i" | sed "s/.*id=\(.*\).*/\1/"`
+			set _id = `echo "$i" | sed "s/.*db=\(.*\).*/\1/"`
+			set _ic = `echo "$i" | sed "s/.*class=\(.*\).*/\1/"`
+			echo '{"src":"'"$_id"'","prior":"'"$_ic"'","id":"'"$_ii"'","top1":"'"$h"'",'"$k"'}' >> "$results"
 			echo '{"image":"'"$j"'","top1":"'"$h"'",'"$k"'}' >> "$results"
 		    else
 			echo `date` "$0 $$ -- NO RESULT: $i" >& /dev/stderr

@@ -29,10 +29,10 @@ if ($?QUERY_STRING) then
 endif
 
 #
-# defaults (rough-fog; NO_TAGS; <this-month>*)
+# defaults (rough-fog; all; <this-month>*)
 #
 if ($?DB == 0) set DB = rough-fog
-if ($?id == 0) set id = NO_TAGS
+if ($?id == 0) set id = all
 if ($?match == 0) set match = `date '+%Y%m'`
 if ($?limit == 0) set limit = $IMAGE_LIMIT
 
@@ -69,7 +69,7 @@ endif
 # get date and seqid of results
 set date = `/usr/local/bin/jq -c '.date' "$REVIEW" | sed 's/"//g'`
 set seqid = `/usr/local/bin/jq -c '.seqid' "$REVIEW" | sed 's/"//g'`
-# get all classes in order of prevelance (small to large) from initial classification
+# get all classes in order of prevalence (small to large) from initial classification
 set allclasses = ( `/usr/local/bin/jq -c '.classes|sort_by(.count)[]|.name' "$REVIEW" | sed 's/"//g'` )
 
 rm -f "$REVIEW"
@@ -156,7 +156,8 @@ if (-d "$CDIR") then
 	    endif
 
 	    set img = "http://$WWW/$APP/$DB/$dir/$jpg"
-	    set cgi = "$act?db=$DB&id=$id&match=$match&limit=$limit&image=$jpg&old=$dir&new=person"
+	    set jpm = `echo "$jpg:r" | sed "s/\(.*\)-.*-.*/\1/"`
+	    set cgi = "http://$WWW/CGI/$APP-$API.cgi?db=$DB&id=$id&match=$jpm&limit=$limit"
 	    set time = `echo $jpg | sed "s/\(....\)\(..\)\(..\)\(..\)\(..\).*-.*/\1\/\2\/\3 \4:\5/"`
 
 	    if ($k % $ncolumns == 0) echo '</tr><tr>' >> "$HTML"

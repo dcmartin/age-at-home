@@ -4,6 +4,8 @@ setenv API "review"
 setenv LAN "192.168.1"
 if ($?TMP == 0) setenv TMP "/var/lib/age-at-home"
 
+setenv DEBUG true
+
 if ($?TTL == 0) set TTL = 900
 if ($?SECONDS == 0) set SECONDS = `date "+%s"`
 if ($?DATE == 0) set DATE = `echo $SECONDS \/ $TTL \* $TTL | bc`
@@ -30,10 +32,13 @@ endif
 if ($?QUERY_STRING) then
     set DB = `echo "$QUERY_STRING" | sed 's/.*db=\([^&]*\).*/\1/'`
     if ($DB == "$QUERY_STRING") unset DB
+    set class = `echo "$QUERY_STRING" | sed 's/.*class=\([^&]*\).*/\1/'`
+    if ($class == "$QUERY_STRING") unset class
 endif
 
 if ($?DB == 0) set DB = rough-fog
 if ($?class == 0) set class = all
+
 # standardize QUERY_STRING
 setenv QUERY_STRING "db=$DB&id=$class"
 
@@ -49,6 +54,15 @@ if ($#INPROGRESS) then
 else
     onintr done
     touch "$OUTPUT".$$
+endif
+
+#
+# get LANIP from resin service that returns JSON for device
+#
+
+set lanip = `/usr/bin/curl -s -q -f -L "http://$WWW/CGI/aah-resinDevice.cgi" | /usr/local/bin/jq -r '.|select(.name=="'"$DB"'")|.ip_address'`
+if ($#lanip) then
+    setenv LANIP "$lanip"
 endif
 
 if ($DB == "rough-fog" && $?LANIP == 0) then
@@ -209,11 +223,14 @@ if ($?FTP_GET == 0) then
 	    mkdir -p "$image:h"
 	    # test if image already exists
 	    if (! -s "$image") then
-		set ftp = "ftp://$LANIP/$file" 
-		/usr/bin/curl -s -q "$ftp" -o "$image"
-		if ($status != 0) then
+		set ftp = "ftp://ftp:ftp@$LANIP/$file" 
+		/usr/bin/curl -s -q "$ftp" -o "/tmp/$$.jpg"
+		if ($status != 0 || (! -s "/tmp/$$.jpg")) then
+		    rm -f /tmp/$$.jpg
 		    if ($?DEBUG) echo `date` "$0 $$ -- fail ($ftp)" >>! $TMP/LOG
 		    break
+		else
+		    mv /tmp/$$.jpg "$image"
 		endif
 		if (-s "$image") then
 		    if ($?DEBUG) echo `date` "$0 $$ -- success ($image)" >>! $TMP/LOG
@@ -223,8 +240,7 @@ if ($?FTP_GET == 0) then
 			/usr/bin/curl -s -q "ftp://$LANIP/" -Q "-DELE $file"
 		    endif
 	        else
-		    if ($?DEBUG) echo `date` "$0 $$ -- removing ZERO ($image)" >>! $TMP/LOG
-		    rm -f "$image"
+		    if ($?DEBUG) echo `date` "$0 $$ -- not found ($image)" >>! $TMP/LOG
 	        endif
 	    else
 		if ($?DEBUG) echo `date` "$0 $$ -- done; found existing image ($image)" >>! $TMP/LOG

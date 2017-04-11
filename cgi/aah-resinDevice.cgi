@@ -12,12 +12,9 @@ set DATE = `echo $SECONDS \/ $TTL \* $TTL | bc`
 
 echo `date` "$0 $$ -- START ($DATE)" >>! "$TMP/LOG"
 
+set JSON = "$TMP/$APP-$API.$DATE.json"
 if ($?QUERY_STRING) then
-  if ($#QUERY_STRING) then
     set JSON = "$TMP/$APP-$API-$QUERY_STRING.$DATE.json"
-  else
-    set JSON = "$TMP/$APP-$API.$DATE.json"
-  endif
 endif
 
 setenv RESIN_AUTH_TOKEN `cat ~$USER/.resin_auth`

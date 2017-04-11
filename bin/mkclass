@@ -179,7 +179,7 @@ foreach class ( $CLASSIFIERS )
     else
 	echo "STAT: $0 - No CLOUDANT defined $?CLOUDANT_OFF $CU $DB"
     endif
-    if ($#percent == 0) || ($percent < 0)) then
+    if (($#percent == 0) || ($percent < 0)) then
 	/bin/rm -f $DB-$class.csv $DB-$class.json
     endif
     if ($class != "person" && $classes != "all") then

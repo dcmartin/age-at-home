@@ -12,7 +12,7 @@ if ($?DATE == 0) setenv DATE `/bin/echo $SECONDS \/ $TTL \* $TTL | bc`
 set CU = "538e7925-b7f5-478b-bf75-2f292dcf642a-bluemix.cloudant.com"
 
 set classifiers = ( `curl -q -s -L -f "$TU/$verid/classifiers?api_key=$api_key&version=$vdate" | jq '.classifiers[]'` )
-set cids = ( `echo "$classifiers" | jq -r '.classifier_id'` )
+set cids = ( `echo "$classifiers" | jq -r '.classifier_id' | sort` )
 
 echo `date` "$0 $$ -- FOUND $#cids Watson VR classifiers ($cids)" >& /dev/stderr
 
@@ -24,9 +24,10 @@ again:
     set name = ( `echo "$classifier" | jq -r '.name'` )
 
     if ($ready == "ready") then
-      echo `date` "$0 $$ -- READY ($cid) for device ($name)" >& /dev/stderr
-
+      echo -n `date` "$0 $$ -- GETTING ($cid) for device ($name) ... " >& /dev/stderr
       set trained = ( `curl -s -q -L -f $CU/$name-train/$cid | jq '.'` )
+      echo "done" >& /dev/stderr
+      # NEED to check for this -- {"error":"unauthorized","reason":"_reader access is required for this request"}
       if ($#trained == 0) then
 	  set train = ( `curl -q -s -L -f "$CU/$cid"` )
 	  if ($#train) then
@@ -36,18 +37,19 @@ again:
 	      goto again
 	  else
 	      echo `date` "$0 $$ -- NOT CATALOGED - Watson VR classifier id ($cid)" >& /dev/stderr
-	      curl -s -q -X DELETE "$TU/$verid/classifiers/$cid?api_key=$api_key&version=$vdate"
+
+	      # curl -s -q -X DELETE "$TU/$verid/classifiers/$cid?api_key=$api_key&version=$vdate"
 	      continue
 	  endif
       else
 	  set date = ( `echo "$trained" | jq -r '.date'` )
-	  echo `date` "$0 $$ -- Model ($cid) was trained on date ($date)" >& /dev/stderr
+	  echo `date` "$0 $$ -- Model ($cid) was trained on date " `date -j -f "%s" $date` >& /dev/stderr
       endif
       set tested = ( `curl -s -q -L -f $CU/$name-test/$cid | jq '.'` )
       if ($#tested) then
 	  set date = ( `echo "$tested" | jq -r '.date'` )
 	  if ($#date && $date != "null") then
-	      echo `date` "$0 $$ -- Model ($cid) was tested on date ($date)" >& /dev/stderr
+	      echo `date` "$0 $$ -- Model ($cid) was tested on date " `date -j -f "%s" $date` >& /dev/stderr
 	  else
 	      echo `date` "$0 $$ -- Model ($cid) was tested (no date)" >& /dev/stderr
 	  endif
@@ -56,7 +58,7 @@ again:
 	  $0:h/score_vr -m "$cid" "$name"
       endif
       echo `date` "$0 $$ -- MAKING RESULTS model ($cid) $0:h/mkit $cid $name" >& /dev/stderr
-      $0:h/mkit "$cid" "$name"
+      $0:h/mkit "$cid" "$name" < /dev/null >& /dev/null &
     else
       echo `date` "$0 $$ -- STATUS ($ready): model ($cid) for device ($name)" >& /dev/stderr
     endif

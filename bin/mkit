@@ -19,41 +19,48 @@ endif
 
 echo `date` "$0 $$ -- START $model $device" >& /dev/stderr
 
-if (! -s "$model.json" && $?CLOUDANT_URL) then
-    echo `date` "$0 $$ -- getting $device-test/$model" >& /dev/stderr
-    curl -s -q -L -f "$CLOUDANT_URL/$device-test/$model" >! "$model.json"
+if (! -s "$TMP/matrix/$model-test.json" && $?CLOUDANT_URL) then
+    echo `date` "$0 $$ -- getting $device-test/$model from Cloudant into $TMP/matrix/$model-test.json" >& /dev/stderr
+    curl -s -q -L -f "$CLOUDANT_URL/$device-test/$model" >! "$TMP/matrix/$model-test.json"
+else if (-s "$TMP/matrix/$model.json") then
+    echo `date` "$0 $$ -- EXISTING $TMP/matrix/$model-test.json" >& /dev/stderr
 else if ($?CLOUDANT_URL == 0) then
     echo `date` "$0 $$ -- set environment variable: CLOUDANT_URL" >& /dev/stderr
     exit
-else if (-s "$model.json") then
-    echo `date` "$0 $$ -- EXISTING $model.json" >& /dev/stderr
 endif
 
-set sets = ( `jq -r '.sets[].set' "$model.json"` )
+set sets = ( `jq -r '.sets[].set' "$TMP/matrix/$model-test.json"` )
 if ($#sets == 0) then
     echo "NO CLASSES"
-    rm -f "$model.json"
     exit
 endif
 
-echo `date` "$0 $$ -- MAKING $model.csv" >& /dev/stderr
+if ((-M "$TMP/matrix/$model-test.json") > (-M "$TMP/matrix/$model.json")) then
+    echo `date` "$0 $$ -- test newer than matrix" >& /dev/stderr
+    rm -f "$TMP/matrix/$model.json"
+    rm -f "$TMP/matrix/$model.csv"
+endif
 
-rm -f "$model.csv"
+if ((-s "$TMP/matrix/$model.json") && (-s "$TMP/matrix/$model.csv")) then
+    echo `date` "$0 $$ -- EXISTING && UP-TO-DATE $TMP/matrix/$model" >& /dev/stderr
+    exit
+endif
 
 unset matrix
 set total = 0
 
+echo `date` "$0 $$ -- MAKING MATRIX $TMP/matrix/model.json" >& /dev/stderr
 foreach this ( $sets )
-    echo -n `date` "$0 $$ -- $this [" >& /dev/stderr
-    if (! -s "$model.$this.json") then
-	jq -c '.sets[]|select(.set=="'"$this"'").results[]?' "$model.json" >! "$model.$this.json"
+    echo -n `date` "$0 $$ -- $this [ " >& /dev/stderr
+    if (! -s "$TMP/matrix/$model.$this.json") then
+	jq -c '.sets[]|select(.set=="'"$this"'").results[]?' "$TMP/matrix/$model-test.json" >! "$TMP/matrix/$model.$this.json"
     endif
     # make matrix
     if ($?matrix) then
         set matrix = "$matrix"',{"set":"'$this'","truth":'
     else
-	set names = ( `/usr/local/bin/jq '.sets[].set' "$model.json"` )
-	set tested_on = `/usr/local/bin/jq -r '.date' "$model.json"`
+	set names = ( `/usr/local/bin/jq '.sets[].set' "$TMP/matrix/$model-test.json"` )
+	set tested_on = `/usr/local/bin/jq -r '.date' "$TMP/matrix/$model-test.json"`
 	set names = `echo "$names" | sed 's/ /,/g'`
 	set matrix = '{"name":"'"$device"'","model":"'"$model"'","date":'"$tested_on"',"size":'$#sets',"sets":['"$names"'],"matrix":[{"set":"'$this'","truth":'
 	unset names
@@ -61,24 +68,24 @@ foreach this ( $sets )
     unset truth
     foreach class ( $sets )
 	echo -n "$class " >& /dev/stderr
-	if (! -s "$model.$this.$class.csv") then
+	if (! -s "$TMP/matrix/$model.$this.$class.csv") then
 	    @ match = 0
 	    set noglob
 	    @ count = 0
-	    foreach line ( `cat "$model.$this.json"` )
+	    foreach line ( `cat "$TMP/matrix/$model.$this.json"` )
 		set id = `echo "$line" | jq -r '.id'`
 		if ($id != "null") then
 		    set score = `echo "$line" | jq -r '.classes[]|select(.class=="'"$class"'").score'`
 		    set top = `echo "$line" | jq -r '.classes|sort_by(.score)[-1].class'`
 		    if ($class == $top) @ match++
-		    echo "$id,$score" >>! "$model.$this.$class.csv.$$"
+		    echo "$id,$score" >>! "$TMP/matrix/$model.$this.$class.csv.$$"
 		    @ count++
 		endif
 	    end
 	    unset noglob
-	    echo "id,label,$class" >! "$model.$this.$class.csv"
-	    cat "$model.$this.$class.csv.$$" | sed "s/\(.*\),\(.*\)/\1,$this,\2/" >> "$model.$this.$class.csv"
-	    rm -f "$model.$this.$class.csv.$$"
+	    echo "id,label,$class" >! "$TMP/matrix/$model.$this.$class.csv"
+	    cat "$TMP/matrix/$model.$this.$class.csv.$$" | sed "s/\(.*\),\(.*\)/\1,$this,\2/" >> "$TMP/matrix/$model.$this.$class.csv"
+	    rm -f "$TMP/matrix/$model.$this.$class.csv.$$"
 	    if ($?found) then
 	       set found = ( $found $class )
 	    else
@@ -98,13 +105,13 @@ foreach this ( $sets )
     endif
     @ total += $count
     if ($?found) then
-	set out = ( "$model.$this".*.csv )
+	set out = ( "$TMP/matrix/$model.$this".*.csv )
 	set found = `echo "$found" | sed 's/ /,/g'`
-	csvjoin -c "id" $out | csvcut -c "id,label,$found" >! "$model.$this.csv"
+	csvjoin -c "id" $out | csvcut -c "id,label,$found" >! "$TMP/matrix/$model.$this.csv"
 	unset found
 	rm -f $out
     endif
-    rm "$model.$this.json"
+    rm "$TMP/matrix/$model.$this.json"
     echo "]" >& /dev/stderr
 end
 set matrix = "$matrix"'],"count":'$total'}'
@@ -112,7 +119,7 @@ set matrix = "$matrix"'],"count":'$total'}'
 echo "$matrix" | jq . >! "$TMP/matrix/$model.json"
 echo `date` "$0 $$ -- MADE $TMP/matrix/$model.json" >& /dev/stderr
 
-set out = ( "$model".*.csv )
+set out = ( "$TMP/matrix/$model".*.csv )
 if ($#out) then
     head -1 $out[1] >! "$TMP/matrix/$model.csv"
     tail +2 -q $out >> "$TMP/matrix/$model.csv"
@@ -123,4 +130,3 @@ endif
 
 rm -f $out
 
-rm -f "$model.json"
