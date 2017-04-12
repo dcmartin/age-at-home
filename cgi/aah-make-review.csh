@@ -2,6 +2,7 @@
 setenv APP "aah"
 setenv API "review"
 setenv LAN "192.168.1"
+setenv WWW "www.dcmartin.com"
 if ($?TMP == 0) setenv TMP "/var/lib/age-at-home"
 
 setenv DEBUG true
@@ -32,20 +33,24 @@ endif
 if ($?QUERY_STRING) then
     set DB = `echo "$QUERY_STRING" | sed 's/.*db=\([^&]*\).*/\1/'`
     if ($DB == "$QUERY_STRING") unset DB
-    set class = `echo "$QUERY_STRING" | sed 's/.*class=\([^&]*\).*/\1/'`
-    if ($class == "$QUERY_STRING") unset class
 endif
 
 if ($?DB == 0) set DB = rough-fog
 if ($?class == 0) set class = all
 
 # standardize QUERY_STRING
-setenv QUERY_STRING "db=$DB&id=$class"
+setenv QUERY_STRING "db=$DB"
 
 echo `date` "$0 $$ -- START ($QUERY_STRING)"  >>! $TMP/LOG
 
 # output target
 set OUTPUT = "$TMP/$APP-$API-$QUERY_STRING.$DATE.json"
+
+# check for OUTPUT
+if (-e "$OUTPUT") then
+    goto done
+endif
+
 set INPROGRESS = ( `echo "$OUTPUT".*` )
 # check OUTPUT in-progress for current interval
 if ($#INPROGRESS) then
@@ -62,6 +67,7 @@ endif
 
 set lanip = `/usr/bin/curl -s -q -f -L "http://$WWW/CGI/aah-resinDevice.cgi" | /usr/local/bin/jq -r '.|select(.name=="'"$DB"'")|.ip_address'`
 if ($#lanip) then
+    if ($?DEBUG) echo `date` "$0 $$ -- found LANIP ($lanip)" >>! $TMP/LOG
     setenv LANIP "$lanip"
 endif
 
@@ -71,13 +77,14 @@ else if ($DB == "damp-cloud" && $?LANIP == 0) then
     setenv LANIP "192.168.1.35"
 else if ($DB == "quiet-water" && $?LANIP == 0) then
     setenv LANIP "192.168.1.36"
-else
+else if ($?LANIP == 0) then
     if ($?DEBUG) echo `date` "$0 $$ -- no LANIP" >>! $TMP/LOG
     goto done
 endif
 
 # check for old OUTPUT
-set old = ( `find "$TMP/" -name "$APP-$API-$QUERY_STRING.*.json" -print | sort -t . -k 2,2 -n -r` )
+set old = ( `echo "$TMP/$APP-$API-$QUERY_STRING."*".json" | sort -t . -k 2,2 -n -r` )
+# set old = ( `find "$TMP/" -name "$APP-$API-$QUERY_STRING.*.json" -print 
 if ($#old > 0) then
     set OLD = $old[1]
     if ($?DEBUG) echo `date` "$0 $$ -- found old results ($OLD)" >>! $TMP/LOG
@@ -150,7 +157,8 @@ if ( ! -e "$CHANGES" ) then
          goto done
     endif
     # remove old changes
-    set old = ( `find "$TMP/" -name "$APP-$API-$QUERY_STRING-changes.*.json" -print | sort -t . -k 2,2 -n -r` )
+    set old = ( `echo "$TMP/$APP-$API-$QUERY_STRING-changes."*".json" | sort -t . -k 2,2 -n -r` )
+    # set old = ( `find "$TMP/" -name "$APP-$API-$QUERY_STRING-changes.*.json" -print | sort -t . -k 2,2 -n -r` )
     if ($#old > 1) then
 	if ($?DEBUG) echo `date` "$0 $$ -- removing old changes ($old[2-])" >>! $TMP/LOG
 	rm -f $old[2-]
@@ -182,15 +190,15 @@ if (-s "$CHANGES" && (! -s "$RESULTS" || ((-M "$CHANGES") > (-M "$RESULTS")))) t
     if ($?DEBUG) echo `date` "$0 $$ -- removing old results ($old)" >>! $TMP/LOG
     if ($#old > 0) rm -f $old
     if ($?DEBUG) echo `date` "$0 $$ -- creating results from changes" >>! $TMP/LOG
-    /usr/local/bin/jq -c '[.results[].doc|{file:.visual.image,tag:.alchemy.text,score:.alchemy.score,year:.year,month:.month,day:.day,hour:.hour,minute:.minute,second:.second}]' "$CHANGES" \
-	| /usr/local/bin/jq -c '{results:.[]|[.file,.tag,.score,.year,.month,.day,.hour,.minute,.second]}' \
+    /usr/local/bin/jq -c '[.results[].doc|{file:.visual.image,tag:.alchemy.text,score:.alchemy.score,year:.year,month:.month,day:.day,hour:.hour,minute:.minute,second:.second,crop:.imagebox}]' "$CHANGES" \
+	| /usr/local/bin/jq -c '{results:.[]|[.file,.tag,.score,.year,.month,.day,.hour,.minute,.second,.crop]}' \
 	| sed 's/"//g' \
 	| sed 's/{results:\[//' \
 	| sed 's/\]}//' \
 	| /usr/local/bin/gawk -F, \
 	  '{ m=($7*60+$8)/15; \
 	     t=mktime(sprintf("%4d %2d %2d %2d %2d %2d",$4,$5,$6,$7,$8,$9)); \
-	     printf("{\"file\":\"%s\",\"tag\":\"%s\",\"score\":%f,\"ampm\":\"%s\",\"day\":\"%s\",\"interval\":%d}\n",$1,$2,$3,strftime("%p",t),strftime("%A",t),m); \
+	     printf("{\"file\":\"%s\",\"tag\":\"%s\",\"score\":%f,\"crop\":\"%s\",\"ampm\":\"%s\",\"day\":\"%s\",\"interval\":%d}\n",$1,$2,$3,$10,strftime("%p",t),strftime("%A",t),m); \
 	   }' \
 	| sort -r >! "$RESULTS"
     if ($?DEBUG) echo `date` "$0 $$ -- completed ($RESULTS)" >>! $TMP/LOG
@@ -201,13 +209,13 @@ endif
 #
 # download images from RESULTS of CHANGES 
 #
-# { "file": "20160801182222-610-00.jpg", "tag": "NO_TAGS", "score": 0, "ampm": "PM", "day": "Monday", "interval": 73 }
+# { "file": "20160801182222-610-00.jpg", "tag": "NO_TAGS", "score": 0, "crop": "WxH+X+Y", "ampm": "PM", "day": "Monday", "interval": 73 }
 #
 
 if ($?FTP_GET == 0) then
     if ($?DEBUG) echo `date` "$0 $$ -- getting new images" >>! $TMP/LOG
     # create temporary output for processing sequentially; ignore "ampm"
-    foreach line ( `/usr/local/bin/jq -c '[.file,.tag,.score,.day,.interval]' "$RESULTS" | sed 's/\[//' | sed 's/\]//' | sed 's/ /_/g' | awk -F, '{ printf("%s,%s,%f,%s,%d\n", $1,$2,$3,$4,$5) }'` )
+    foreach line ( `/usr/local/bin/jq -c '[.file,.tag,.score,.day,.interval,.crop]' "$RESULTS" | sed 's/\[//' | sed 's/\]//' | sed 's/ /_/g' | awk -F, '{ printf("%s,%s,%f,%s,%d,%s\n", $1,$2,$3,$4,$5,$6) }'` )
 	set tuple = ( `echo "$line" | sed 's/,/ /g'` )
 	if ($#tuple < 2) then
 	    if ($?DEBUG) echo `date` "$0 $$ -- bad tuple ($tuple) ($line)" >>! $TMP/LOG
@@ -234,6 +242,14 @@ if ($?FTP_GET == 0) then
 		endif
 		if (-s "$image") then
 		    if ($?DEBUG) echo `date` "$0 $$ -- success ($image)" >>! $TMP/LOG
+		    # make crop
+		    set crop = `echo $tuple[6] | sed 's/"//g'`
+		    if ($#crop) then
+			if ($?DEBUG) echo `date` "$0 $$ -- cropping $image with $crop" >>! $TMP/LOG
+			/usr/local/bin/convert -crop "$crop" "$image" -background gray -resize 224x224 -gravity center "$image:r.jpeg" >>&! $TMP/LOG
+		    else
+			if ($?DEBUG) echo `date` "$0 $$ -- bad $crop on $image" >>! $TMP/LOG
+		    endif
 		    # optionally delete the source
 		    if ($?FTP_DELETE) then
 			if ($?DEBUG) echo `date` "$0 $$ -- deleting ($file)" >>! $TMP/LOG
