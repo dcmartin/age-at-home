@@ -5,13 +5,15 @@ setenv WWW "www.dcmartin.com"
 setenv LAN "192.168.1"
 if ($?TMP == 0) setenv TMP "/var/lib/age-at-home"
 
+setenv DEBUG true
+
 # don't update file information more than once per (in seconds)
 set TTL = 1800
 set SECONDS = `date "+%s"`
 set DATE = `echo $SECONDS \/ $TTL \* $TTL | bc`
 
 # default image limit
-if ($?IMAGE_LIMIT == 0) setenv IMAGE_LIMIT 20
+if ($?IMAGE_LIMIT == 0) setenv IMAGE_LIMIT 8
 
 if ($?QUERY_STRING) then
     set DB = `echo "$QUERY_STRING" | sed 's/.*db=\([^&]*\).*/\1/'`
@@ -60,19 +62,25 @@ set HTML = "$TMP/$APP-$API-$QUERY_STRING.$$.html"
 
 # get review status
 set REVIEW = "$TMP/$APP-$API-$QUERY_STRING.$DATE.json"
-curl -s -q -L "http://$WWW/CGI/aah-review.cgi?db=$DB" -o "$REVIEW"
-if ($status != 0) then
-    if ($?DEBUG) echo `date` "$0 $$ -- FAILURE: aah-review db=$DB" >>! $TMP/LOG
-    goto done
+if (! -s "$REVIEW") then
+    if ($?DEBUG) echo `date` "$0 $$ -- RETRIEVE: aah-review db=$DB" >>! $TMP/LOG
+    curl -s -q -L "http://$WWW/CGI/aah-review.cgi?db=$DB" -o "$REVIEW"
+    if ($status != 0) then
+	if ($?DEBUG) echo `date` "$0 $$ -- FAILURE: aah-review db=$DB" >>! $TMP/LOG
+	goto done
+    endif
 endif
 
 # get date and seqid of results
 set date = `/usr/local/bin/jq -c '.date' "$REVIEW" | sed 's/"//g'`
 set seqid = `/usr/local/bin/jq -c '.seqid' "$REVIEW" | sed 's/"//g'`
 # get all classes in order of prevalence (small to large) from initial classification
-set allclasses = ( `/usr/local/bin/jq -c '.classes|sort_by(.count)[]|.name' "$REVIEW" | sed 's/"//g'` )
-
-rm -f "$REVIEW"
+set allclasses = ( $TMP/$DB/* )
+@ i = 1
+while ($i <= $#allclasses)
+  set allclasses[$i] = $allclasses[$i]:t
+  @ i++
+end
 
 set MIXPANELJS = "http://$WWW/CGI/script/mixpanel-aah.js"
 
@@ -135,10 +143,13 @@ if (-d "$CDIR") then
     # action to label image
     set act = "http://$WWW/CGI/$APP-label.cgi"
 
+    # do magic
+    echo "<script> function hover(e,i) { e.setAttribute('src', i); } function unhover(e) { e.setAttribute('src', i); }</script>" >> "$HTML"
+
     # start table
     echo '<table border="1"><tr>' >> "$HTML"
 
-    set labeled_images = ( `find $TMP/label/$DB -type f -print` )
+    set label_dirs = ( $TMP/label/$DB/* )
 
     @ k = 0
     foreach image ( `head -"$limit" "$IMAGES"` )
@@ -156,6 +167,7 @@ if (-d "$CDIR") then
 	    endif
 
 	    set img = "http://$WWW/$APP/$DB/$dir/$jpg"
+	    set jpeg = "$img:r.jpeg"
 	    set jpm = `echo "$jpg:r" | sed "s/\(.*\)-.*-.*/\1/"`
 	    set cgi = "http://$WWW/CGI/$APP-$API.cgi?db=$DB&id=$id&match=$jpm&limit=$limit"
 	    set time = `echo $jpg | sed "s/\(....\)\(..\)\(..\)\(..\)\(..\).*-.*/\1\/\2\/\3 \4:\5/"`
@@ -185,10 +197,10 @@ if (-d "$CDIR") then
 	    echo '<select name="new" onchange="this.form.submit()">' >> "$HTML"
 	    echo '<option selected value="'"$dir"'">'"$dir"'</option>' >> "$HTML"
 	    echo '<option value="'"$location"'">'"$location"'</option>' >> "$HTML"
-	    if ($#labeled_images) then
-	      foreach i ( $TMP/label/$DB/* )
-	        set j = "$i:t"
-		if ($j != $dir) echo '<option value="'"$j"'">'"$j"'</option>' >> "$HTML"
+	    if ($#label_dirs) then
+	      foreach i ( $label_dirs )
+		set j = "$i:t"
+		if (($j != $dir) && ($j != $location)) echo '<option value="'"$j"'">'"$j"'</option>' >> "$HTML"
 	      end
 	    endif
 	    echo '</select>' >> "$HTML"
@@ -208,7 +220,9 @@ if (-d "$CDIR") then
 	    echo '</td>' >> "$HTML"
 	    echo '</tr>' >> "$HTML"
 	    echo '</table>' >> "$HTML"
-	    echo '<a href="'"$cgi"'"><img width="'$width'%" alt="'$id/$image'" src="'"$img"'"></a>' >> "$HTML"
+
+	    echo '<a href="'"$cgi"'"><img width="'$width'%" alt="'"$image:t:r"'" src="'"$img"'" onmouseover="this.src='"'""$jpeg""'"'" onmouseout="this.src='"'""$img""'"'"></a>' >> "$HTML"
+	    # echo '<a href="'"$cgi"'"><img width="'$width'%" alt="'$image:t:r'" src="'"$img"'"></a>' >> "$HTML"
 	    echo '</figure></td>' >> "$HTML"
 	else
 	    break

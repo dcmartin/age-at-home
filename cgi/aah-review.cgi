@@ -4,8 +4,10 @@ setenv API "review"
 setenv LAN "192.168.1"
 if ($?TMP == 0) setenv TMP "/var/lib/age-at-home"
 
+setenv DEBUG true
+
 # don't update statistics more than once per (in seconds)
-setenv TTL 900
+setenv TTL 1800
 setenv SECONDS `date "+%s"`
 setenv DATE `echo $SECONDS \/ $TTL \* $TTL | bc`
 
@@ -93,4 +95,4 @@ echo ""
 # done
 done:
 
-echo `date` "$0 $$ -- FINISH" >>! $TMP/LOG
+echo `date` "$0 $$ -- FINISH ($QUERY_STRING)" >>! $TMP/LOG

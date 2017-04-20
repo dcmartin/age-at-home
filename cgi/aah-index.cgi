@@ -20,6 +20,8 @@ if ($?QUERY_STRING) then
     if ("$class" == "$QUERY_STRING") unset class
     set id = `echo "$QUERY_STRING" | sed 's/.*id=\([^&]*\).*/\1/'`
     if ("$id" == "$QUERY_STRING") unset id
+    set type = `echo "$QUERY_STRING" | sed 's/.*type=\([^&]*\).*/\1/'`
+    if ("$type" == "$QUERY_STRING") unset type
     unset noglob
 endif
 
@@ -29,6 +31,12 @@ else
   set DB = rough-fog
   set db = $DB
 endif
+if ($?type) then
+    set type = $type:h
+else
+    set type = "jpg"
+endif
+
 set DBt = ( $DB:t )
 set dbt = ( $db:t ) 
 if ($#dbt && $dbt != $db && $?class == 0) then
@@ -47,12 +55,17 @@ if ($?id) then
   set id = $id:r
 endif
 
-if ($?db && $?class && $?id) then
-    setenv QUERY_STRING "db=$db&class=$class&id=$id"
-else if ($?db && $?class) then
-    setenv QUERY_STRING "db=$db&class=$class"
-else if ($?db) then
+if ($?db) then
     setenv QUERY_STRING "db=$db"
+endif
+if ($?type) then
+    setenv QUERY_STRING "$QUERY_STRING&type=$type"
+endif
+if ($?class) then
+    setenv QUERY_STRING "$QUERY_STRING&class=$class"
+endif
+if ($?id) then
+    setenv QUERY_STRING "$QUERY_STRING&id=$id"
 endif
 
 if ($?DEBUG) echo `date` "$0 $$ -- query string ($QUERY_STRING)" >>! $TMP/LOG
@@ -60,7 +73,7 @@ if ($?DEBUG) echo `date` "$0 $$ -- query string ($QUERY_STRING)" >>! $TMP/LOG
 # handle image
 if ($?id) then
     set base = "$TMP/label/$db/$class"
-    set images = ( `find "$base" -name "$id.jpg" -type f -print` )
+    set images = ( `find "$base" -name "$id.$type" -type f -print` )
     if ($?DEBUG) echo `date` "$0 $$ -- IMAGE ($id) count ($#images) " >>! $TMP/LOG
     # should be singleton image
     echo "Access-Control-Allow-Origin: *"
@@ -113,9 +126,9 @@ if ($#OLD > 1) rm -f $OLD[2-]
 if ($?class) then
     set base = "$TMP/label/$db/$class"
     if ($?id) then
-	set images = ( `find "$base" -name "$id.jpg" -type f -print` )
+	set images = ( `find "$base" -name "$id.$type" -type f -print` )
     else
-	set images = ( `find "$base" -name "*.jpg" -type f -print | sed "s@$base/\(.*\)\.jpg@\1@"` )
+	set images = ( `find "$base" -name "*.$type" -type f -print | sed "s@$base/\(.*\)\.$type@\1@"` )
     endif
 else 
     set base = "$TMP/label/$db"
@@ -131,11 +144,11 @@ if ($?class) then
     set dir = "$db/$class"
     echo '<html><head><title>Index of '"$dir"'</title></head>' >! "$OUTPUT.$$"
     echo '<script type="text/javascript" src="'$MIXPANELJS'"></script><script>mixpanel.track('"'"$APP-$API"'"',{"db":"'$db'","class":"'$class'"});</script>' >> "$OUTPUT.$$"
-    echo '<body bgcolor="white"><h1>Index of '"$dir"'</h1><hr><pre><a href="http://'"$WWW/CGI/$APP-$API.cgi?db=$db"'/">../</a>' >>! "$OUTPUT.$$"
+    echo '<body bgcolor="white"><h1>Index of '"$dir"'</h1><hr><pre><a href="http://'"$WWW/CGI/$APP-$API.cgi?db=$db&type=$type"'/">../</a>' >>! "$OUTPUT.$$"
     foreach i ( $images )
-      set file = '<a href="http://'"$WWW/CGI/$APP-$API"'.cgi?db='"$db"'&class='"$class"'&id='"$i"'.jpg">'"$i.jpg"'</a>' 
+      set file = '<a href="http://'"$WWW/CGI/$APP-$API"'.cgi?db='"$db"'&type='"$type"'&class='"$class"'&id='"$i"'.$type">'"$i.$type"'</a>' 
       set ctime = `date '+%d-%h-%Y %H:%M'`
-      set fsize = `ls -l "$TMP/label/$db/$class/$i.jpg" | awk '{ print $5 }'`
+      set fsize = `ls -l "$TMP/label/$db/$class/$i.$type" | awk '{ print $5 }'`
       echo "$file		$ctime		$fsize" >>! "$OUTPUT.$$"
     end
     echo '</pre><hr></body></html>' >>! "$OUTPUT.$$"
@@ -144,9 +157,9 @@ else if ($?classes) then
     set dir = "$db"
     echo '<html><head><title>Index of '"$dir"'/</title></head>' >! "$OUTPUT.$$"
     echo '<script type="text/javascript" src="'$MIXPANELJS'"></script><script>mixpanel.track('"'"$APP-$API"'"',{"db":"'$db'"});</script>' >> "$OUTPUT.$$"
-    echo '<body bgcolor="white"><h1>Index of '"$dir"'/</h1><hr><pre><a href="http://'"$WWW/CGI/$APP-$API.cgi?db=$db"'/">../</a>' >>! "$OUTPUT.$$"
+    echo '<body bgcolor="white"><h1>Index of '"$dir"'/</h1><hr><pre><a href="http://'"$WWW/CGI/$APP-$API.cgi?db=$db&type=$type"'/">../</a>' >>! "$OUTPUT.$$"
     foreach i ( $classes )
-      set class = '<a href="http://www.dcmartin.com/CGI/aah-index.cgi?db='"$db"'&class='"$i"'/">'"$i"'/</a>' >>! "$OUTPUT.$$"
+      set class = '<a href="http://www.dcmartin.com/CGI/aah-index.cgi?db='"$db"'&type='"$type"'&class='"$i"'/">'"$i"'/</a>' >>! "$OUTPUT.$$"
       set ctime = `date '+%d-%h-%Y %H:%M'`
       set fsize = `du -sk "$TMP/label/$db/$i" | awk '{ print $1 }'`
       echo "$class		$ctime		$fsize" >>! "$OUTPUT.$$"
