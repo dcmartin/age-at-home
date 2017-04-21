@@ -17,18 +17,35 @@ if ($?QUERY_STRING) then
     set JSON = "$TMP/$APP-$API-$QUERY_STRING.$DATE.json"
 endif
 
-setenv RESIN_AUTH_TOKEN `cat ~$USER/.resin_auth`
+set url = ~$USER/.resin_auth
+if (-e "$url") then
+  setenv RESIN_AUTH_TOKEN `cat "$url"`
+else
+  echo `date` "$0 $$ -- NO RESIN_AUTH_TOKEN ($url)" >>! "$TMP/LOG"
+  goto done
+endif
 
 if (! -e "$JSON") then
+  if ($?RESIN_AUTH_TOKEN) then
     rm -f "$JSON*"
+    set url = "https://api.resin.io/v1/device" 
 
     /usr/bin/curl -s -q -f -L \
-      "https://api.resin.io/v1/device" \
+      "$url" \
       -H "Content-Type: application/json" \
-      -H "Authorization: Bearer $RESIN_AUTH_TOKEN" > "$JSON.$$"
+      -H "Authorization: Bearer $RESIN_AUTH_TOKEN" -o "$JSON.$$"
 
-    /usr/local/bin/jq '.d[]|{"app_id":.application.__id,"id":.id,"name":.name,"is_online":.is_online,"ip_address":.ip_address,"lastseen":.last_seen_time}' "$JSON.$$" >! "$JSON"
+    if ($status == 22 || ! -s "$JSON.$$") then
+      echo `date` "$0 $$ -- RESIN API FAILURE ($url)" >>! "$TMP/LOG"
+      goto done
+    else
+      /usr/local/bin/jq '.d[]|{"app_id":.application.__id,"id":.id,"name":.name,"is_online":.is_online,"ip_address":.ip_address,"lastseen":.last_seen_time}' "$JSON.$$" >! "$JSON"
+    endif
     rm -f "$JSON.$$"
+    unset url
+  else
+    echo `date` "$0 $$ -- NO DEFINED RESIN_AUTH_TOKEN" >>! "$TMP/LOG"
+  endif
 endif
 
 #
@@ -43,5 +60,7 @@ echo "Last-Modified:" `date -r $DATE '+%a, %d %b %Y %H:%M:%S %Z'`
 echo ""
 
 /usr/local/bin/jq -c '.' "$JSON"
+
+done:
 
 echo `date` "$0 $$ -- FINISH ($DATE)" >>! "$TMP/LOG"
