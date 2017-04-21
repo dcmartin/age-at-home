@@ -20,8 +20,8 @@ if ($?QUERY_STRING) then
     if ("$class" == "$QUERY_STRING") unset class
     set id = `echo "$QUERY_STRING" | sed 's/.*id=\([^&]*\).*/\1/'`
     if ("$id" == "$QUERY_STRING") unset id
-    set type = `echo "$QUERY_STRING" | sed 's/.*type=\([^&]*\).*/\1/'`
-    if ("$type" == "$QUERY_STRING") unset type
+    set ext = `echo "$QUERY_STRING" | sed 's/.*ext=\([^&]*\).*/\1/'`
+    if ("$ext" == "$QUERY_STRING") unset ext
     unset noglob
 endif
 
@@ -31,9 +31,13 @@ else
   set DB = rough-fog
   set db = $DB
 endif
-if ($?type) then
-    set type = $type:h
+
+if ($?ext) then
+    set ext = $ext:h
+    if ($ext == "frame") set type = "jpg"
+    if ($ext == "sample") set type = "jpeg"
 else
+    set ext = "frame"
     set type = "jpg"
 endif
 
@@ -58,8 +62,8 @@ endif
 if ($?db) then
     setenv QUERY_STRING "db=$db"
 endif
-if ($?type) then
-    setenv QUERY_STRING "$QUERY_STRING&type=$type"
+if ($?ext) then
+    setenv QUERY_STRING "$QUERY_STRING&ext=$ext"
 endif
 if ($?class) then
     setenv QUERY_STRING "$QUERY_STRING&class=$class"
@@ -144,9 +148,9 @@ if ($?class) then
     set dir = "$db/$class"
     echo '<html><head><title>Index of '"$dir"'</title></head>' >! "$OUTPUT.$$"
     echo '<script type="text/javascript" src="'$MIXPANELJS'"></script><script>mixpanel.track('"'"$APP-$API"'"',{"db":"'$db'","class":"'$class'"});</script>' >> "$OUTPUT.$$"
-    echo '<body bgcolor="white"><h1>Index of '"$dir"'</h1><hr><pre><a href="http://'"$WWW/CGI/$APP-$API.cgi?db=$db&type=$type"'/">../</a>' >>! "$OUTPUT.$$"
+    echo '<body bgcolor="white"><h1>Index of '"$dir"'</h1><hr><pre><a href="http://'"$WWW/CGI/$APP-$API.cgi?db=$db&ext=$ext"'/">../</a>' >>! "$OUTPUT.$$"
     foreach i ( $images )
-      set file = '<a href="http://'"$WWW/CGI/$APP-$API"'.cgi?db='"$db"'&type='"$type"'&class='"$class"'&id='"$i"'.$type">'"$i.$type"'</a>' 
+      set file = '<a href="http://'"$WWW/CGI/$APP-$API"'.cgi?db='"$db"'&ext='"$ext"'&class='"$class"'&id='"$i"'.$type">'"$i.$type"'</a>' 
       set ctime = `date '+%d-%h-%Y %H:%M'`
       set fsize = `ls -l "$TMP/label/$db/$class/$i.$type" | awk '{ print $5 }'`
       echo "$file		$ctime		$fsize" >>! "$OUTPUT.$$"
@@ -157,9 +161,9 @@ else if ($?classes) then
     set dir = "$db"
     echo '<html><head><title>Index of '"$dir"'/</title></head>' >! "$OUTPUT.$$"
     echo '<script type="text/javascript" src="'$MIXPANELJS'"></script><script>mixpanel.track('"'"$APP-$API"'"',{"db":"'$db'"});</script>' >> "$OUTPUT.$$"
-    echo '<body bgcolor="white"><h1>Index of '"$dir"'/</h1><hr><pre><a href="http://'"$WWW/CGI/$APP-$API.cgi?db=$db&type=$type"'/">../</a>' >>! "$OUTPUT.$$"
+    echo '<body bgcolor="white"><h1>Index of '"$dir"'/</h1><hr><pre><a href="http://'"$WWW/CGI/$APP-$API.cgi?db=$db&ext=$ext"'/">../</a>' >>! "$OUTPUT.$$"
     foreach i ( $classes )
-      set class = '<a href="http://www.dcmartin.com/CGI/aah-index.cgi?db='"$db"'&type='"$type"'&class='"$i"'/">'"$i"'/</a>' >>! "$OUTPUT.$$"
+      set class = '<a href="http://www.dcmartin.com/CGI/aah-index.cgi?db='"$db"'&ext='"$ext"'&class='"$i"'/">'"$i"'/</a>' >>! "$OUTPUT.$$"
       set ctime = `date '+%d-%h-%Y %H:%M'`
       set fsize = `du -sk "$TMP/label/$db/$i" | awk '{ print $1 }'`
       echo "$class		$ctime		$fsize" >>! "$OUTPUT.$$"
