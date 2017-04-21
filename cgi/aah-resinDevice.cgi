@@ -39,7 +39,23 @@ if (! -e "$JSON") then
       echo `date` "$0 $$ -- RESIN API FAILURE ($url)" >>! "$TMP/LOG"
       goto done
     else
-      /usr/local/bin/jq '.d[]|{"app_id":.application.__id,"id":.id,"name":.name,"is_online":.is_online,"ip_address":.ip_address,"lastseen":.last_seen_time}' "$JSON.$$" >! "$JSON"
+      set dids = ( `/usr/local/bin/jq '.d[].id' "$JSON.$$"` )
+
+      foreach did ( $dids )
+	set url = 'https://api.resin.io/v1/device_environment_variable?$filter=device%20eq%20'"$did"
+
+	/usr/bin/curl -s -q -f -L "$url" \
+	  -H "Content-Type: application/json" \
+	  -H "Authorization: Bearer $RESIN_AUTH_TOKEN" \
+	  -o "$JSON.$$.$did.json"
+	if ($status != 22 && -s "$JSON.$$.$did.json") then
+	  set location = `/usr/local/bin/jq -r '.d[]|select(."env_var_name" == "AAH_LOCATION").value' "$JSON.$$.$did.json"`
+	else
+	  set location = "UNKNOWN"
+	endif
+	rm -f "$JSON.$$.$did.json"
+	/usr/local/bin/jq -c '.d[]|select(.id=='"$did"')|{"app_id":.application.__id,"id":.id,"name":.name,"is_online":.is_online,"ip_address":.ip_address,"lastseen":.last_seen_time,"location":"'"$location"'"}' "$JSON.$$" >>! "$JSON"
+      end
     endif
     rm -f "$JSON.$$"
     unset url
