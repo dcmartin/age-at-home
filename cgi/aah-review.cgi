@@ -47,18 +47,28 @@ if (-s "$OUTPUT") then
     if ($?DEBUG) echo `date` "$0 $$ -- existing ($OUTPUT)" >>! $TMP/LOG
     goto output
 else
-    if ($?DEBUG) echo `date` "$0 $$ ++ requesting ($OUTPUT)" >>! $TMP/LOG
+    # find old output
+    set ALL_OUTPUT = "$TMP/$APP-$API-$QUERY_STRING."*".json"
+    # initiate new output
+    if ($?DEBUG) echo `date` "$0 $$ ++ CALLING ./$APP-make-$API.bash to create ($OUTPUT)" >>! $TMP/LOG
     ./$APP-make-$API.bash
-    set old = ( `find "$TMP/" -name "$APP-$API-$QUERY_STRING.*.json" -print | sort -t . -k 2,2 -n -r` )
-    if ($#old > 0) then
-        set OUTPUT = $old[1]
+    # find newest output
+    if ($#ALL_OUTPUT > 0) then
+      @ d = 0
+      foreach i ( $ALL_OUTPUT )
+        if ($i:r:e > $d) then
+          @ d = $i:r:e
+	  if ($?old) rm -f "$old"
+          set old = $i
+        endif
+      end
+    endif
+    if ($?old) then
+        setenv DATE  "$old:r:e"
+        set OUTPUT = $old
         if ($?DEBUG) echo `date` "$0 $$ -- using old output ($OUTPUT)" >>! $TMP/LOG
-        setenv DATE `echo "$OUTPUT" | awk -F. '{ print $2 }'`
-	if ($#old > 1) then
-	    if ($?DEBUG) echo `date` "$0 $$ -- removing old output ($old[2-])" >>! $TMP/LOG
-	    rm -f $old[2-]
-	endif
         goto output
+      endif
     endif
     # return redirect
     set URL = "https://$CU/$DB-$API/$class"
@@ -83,9 +93,11 @@ output:
 #
 echo "Content-Type: application/json; charset=utf-8"
 echo "Access-Control-Allow-Origin: *"
-set age = `echo "$SECONDS - $DATE" | bc`
-set refresh = `echo "$TTL - $age" | bc`
+@ age = $SECONDS - $DATE
 echo "Age: $age"
+@ refresh = $TTL - $age
+# check back if using old
+if ($refresh < 0) @ refresh = 90
 echo "Refresh: $refresh"
 echo "Cache-Control: max-age=$TTL"
 echo "Last-Modified:" `date -r $DATE '+%a, %d %b %Y %H:%M:%S %Z'`

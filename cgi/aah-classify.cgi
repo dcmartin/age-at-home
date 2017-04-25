@@ -64,10 +64,12 @@ set HTML = "$TMP/$APP-$API-$QUERY_STRING.$$.html"
 set REVIEW = "$TMP/$APP-$API-$QUERY_STRING.$DATE.json"
 if (! -s "$REVIEW") then
     if ($?DEBUG) echo `date` "$0 $$ -- RETRIEVE: aah-review db=$DB" >>! $TMP/LOG
-    curl -s -q -L "http://$WWW/CGI/aah-review.cgi?db=$DB" -o "$REVIEW"
+    curl -s -q -L "http://$WWW/CGI/aah-review.cgi?db=$DB" -o "$REVIEW.$$"
     if ($status != 0) then
-	if ($?DEBUG) echo `date` "$0 $$ -- FAILURE: aah-review db=$DB" >>! $TMP/LOG
-	goto done
+      if ($?DEBUG) echo `date` "$0 $$ -- FAILURE: aah-review db=$DB" >>! $TMP/LOG
+      goto done
+    else
+      mv -f "$REVIEW.$$" "$REVIEW"
     endif
 endif
 

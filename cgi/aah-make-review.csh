@@ -47,7 +47,7 @@ setenv QUERY_STRING "db=$DB"
 set OUTPUT = "$TMP/$APP-$API-$QUERY_STRING.$DATE.json"
 
 # check for OUTPUT
-if (-e "$OUTPUT") then
+if (-s "$OUTPUT") then
     goto done
 endif
 

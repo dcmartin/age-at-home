@@ -9,6 +9,7 @@ if ($?TMP == 0) setenv TMP "/var/lib/age-at-home"
 set TTL = 1800
 set SECONDS = `date "+%s"`
 set DATE = `echo $SECONDS \/ $TTL \* $TTL | bc`
+set AGE = `echo "$SECONDS - $DATE" | bc`
 
 echo `date` "$0 $$ -- START ($DATE)" >>! $TMP/LOG
 
@@ -22,14 +23,16 @@ if ($?QUERY_STRING) then
     if ("$id" == "$QUERY_STRING") unset id
     set ext = `echo "$QUERY_STRING" | sed 's/.*ext=\([^&]*\).*/\1/'`
     if ("$ext" == "$QUERY_STRING") unset ext
+    set display = `echo "$QUERY_STRING" | sed 's/.*display=\([^&]*\).*/\1/'`
+    if ("$display" == "$QUERY_STRING") unset display
     unset noglob
 endif
 
 if ($?DB) then
-  set db = $DB:h
+  set db = "$DB:h"
 else
   set DB = rough-fog
-  set db = $DB
+  set db = "$DB"
 endif
 
 if ($?ext) then
@@ -41,22 +44,22 @@ else
     set type = "jpg"
 endif
 
-set DBt = ( $DB:t )
-set dbt = ( $db:t ) 
+set DBt = ( "$DB:t" )
+set dbt = ( "$db:t" ) 
 if ($#dbt && $dbt != $db && $?class == 0) then
-  set class = $db:t
-  set db = $db:h
+  set class = "$db:t"
+  set db = "$db:h"
 endif
 if ($#DBt && $#dbt && $?id == 0) then
-  set id = $DB:t
+  set id = "$DB:t"
   set ide = ( $id:e )
   if ($#ide == 0) unset id
 endif
 if ($?class) then
-  set class = $class:h
+  set class = "$class:h"
 endif
 if ($?id) then
-  set id = $id:r
+  set id = "$id:r"
 endif
 
 if ($?db) then
@@ -67,6 +70,9 @@ if ($?ext) then
 endif
 if ($?class) then
     setenv QUERY_STRING "$QUERY_STRING&class=$class"
+endif
+if ($?display) then
+    setenv QUERY_STRING "$QUERY_STRING&display=$display"
 endif
 if ($?id) then
     setenv QUERY_STRING "$QUERY_STRING&id=$id"
@@ -81,10 +87,11 @@ if ($?id) then
     if ($?DEBUG) echo `date` "$0 $$ -- IMAGE ($id) count ($#images) " >>! $TMP/LOG
     # should be singleton image
     echo "Access-Control-Allow-Origin: *"
-    set AGE = `echo "$SECONDS - $DATE" | bc`
     echo "Age: $AGE"
     echo "Cache-Control: max-age=$TTL"
     echo "Last-Modified:" `date -r $DATE '+%a, %d %b %Y %H:%M:%S %Z'`
+
+    echo "Content-Location: $WWW/CGI/$APP-$API.cgi?$QUERY_STRING"
 
     if ($#images == 1) then
 	echo "Content-Type: image/jpeg"
@@ -149,12 +156,20 @@ if ($?class) then
     echo '<html><head><title>Index of '"$dir"'</title></head>' >! "$OUTPUT.$$"
     echo '<script type="text/javascript" src="'$MIXPANELJS'"></script><script>mixpanel.track('"'"$APP-$API"'"',{"db":"'$db'","class":"'$class'"});</script>' >> "$OUTPUT.$$"
     echo '<body bgcolor="white"><h1>Index of '"$dir"'</h1><hr><pre><a href="http://'"$WWW/CGI/$APP-$API.cgi?db=$db&ext=$ext"'/">../</a>' >>! "$OUTPUT.$$"
+    if ($?display) echo '</pre>' >>! "$OUTPUT.$$"
     foreach i ( $images )
-      set file = '<a href="http://'"$WWW/CGI/$APP-$API"'.cgi?db='"$db"'&ext='"$ext"'&class='"$class"'&id='"$i"'.$type">'"$i.$type"'</a>' 
-      set ctime = `date '+%d-%h-%Y %H:%M'`
-      set fsize = `ls -l "$TMP/label/$db/$class/$i.$type" | awk '{ print $5 }'`
-      echo "$file		$ctime		$fsize" >>! "$OUTPUT.$$"
+      if ($?display) then
+	echo '<a href="http://'"$WWW/CGI/$APP-$API"'.cgi?db='"$db"'&ext='"$ext"'&class='"$class"'&id='"$i"'.'"$type"'">' >>! "$OUTPUT.$$"
+	echo '<img width="16%" alt="'"$i.$type"'" src="http://'"$WWW/CGI/$APP-$API"'.cgi?db='"$db"'&ext='"$ext"'&class='"$class"'&id='"$i"'.'"$type"'">' >>! "$OUTPUT.$$"
+	echo '</a>' >>! "$OUTPUT.$$"
+      else
+	set file = '<a href="http://'"$WWW/CGI/$APP-$API"'.cgi?db='"$db"'&ext='"$ext"'&class='"$class"'&id='"$i"'.'"$type"'">'"$i.$type"'</a>' 
+	set ctime = `date '+%d-%h-%Y %H:%M'`
+	set fsize = `ls -l "$TMP/label/$db/$class/$i.$type" | awk '{ print $5 }'`
+	echo "$file		$ctime		$fsize" >>! "$OUTPUT.$$"
+      endif
     end
+    if ($?display) echo '<pre>' >>! "$OUTPUT.$$"
     echo '</pre><hr></body></html>' >>! "$OUTPUT.$$"
 else if ($?classes) then
     # should be a directory listing of directories
@@ -176,7 +191,6 @@ mv "$OUTPUT.$$" "$OUTPUT"
 output:
 
 echo "Access-Control-Allow-Origin: *"
-set AGE = `echo "$SECONDS - $DATE" | bc`
 echo "Age: $AGE"
 echo "Cache-Control: max-age=$TTL"
 echo "Last-Modified:" `date -r $DATE '+%a, %d %b %Y %H:%M:%S %Z'`
