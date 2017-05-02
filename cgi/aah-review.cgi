@@ -48,7 +48,7 @@ if (-s "$OUTPUT") then
     goto output
 else
     # find old output
-    set ALL_OUTPUT = "$TMP/$APP-$API-$QUERY_STRING."*".json"
+    set ALL_OUTPUT = ( `echo "$TMP/$APP-$API-$QUERY_STRING."*".json"` )
     # initiate new output
     if ($?DEBUG) echo `date` "$0 $$ ++ CALLING ./$APP-make-$API.bash to create ($OUTPUT)" >>! $TMP/LOG
     ./$APP-make-$API.bash

@@ -1,6 +1,7 @@
 #!/bin/csh
 setenv APP "aah"
 setenv API "train"
+setenv WWW "www.dcmartin.com"
 if ($?TMP == 0) setenv TMP "/var/lib/age-at-home"
 
 # don't update file information more than once per (in seconds)
@@ -71,7 +72,7 @@ endif
 #
 # PROCESS COMMAND LINE ARGUMENTS
 #
-echo "$0 [ -n <maxfiles> -D(elete old) -m <model_id> -j <job_id> -N <negative_class> -d <tmp> ] <device>"
+echo "$0 [ -n <maxfiles> -D(elete old) -m <model_id> -j <job_id> -N <negative_class> -d <label_dir> -e {frame|sample}] <device-id>"
 
 @ i = 1
 while ($i <= $#argv)
@@ -83,6 +84,18 @@ while ($i <= $#argv)
 	else if ("$t" == "-D") then
 	    # delete existing model (must also specify -m <model>)
 	    set delete = true
+	else if ("$t" == "-e") then
+	    @ i++
+	    # full frame (jpg) or sample (jpeg)
+	    switch ($argv[$i])
+	    case "sample":
+		set ext = "jpeg"
+	        breaksw
+	    case "frame":
+	    default:
+		set ext = "jpg"
+	        breaksw
+	    endsw
 	else if ("$t" == "-m") then
 	    @ i++
 	    # model by <classifier_id>
@@ -110,17 +123,30 @@ end
 #
 # configure defaults
 #
-
 if ($?device == 0) set device = rough-fog
+if ($?ext == 0) set ext = jpg
+
+#
+# check arguments
+#
 if ($?device && $?model && $?notags) then
-    echo `date` "$0 $$ -- $device $model $notags" >& /dev/stderr
-else
-    if ($?device == 0) set device="rough-fog"
-    if ($device == "rough-fog" && $?notags == 0) set notags = "kitchen"
-    if ($device == "damp-cloud" && $?notags == 0) set notags = "bathroom"
-    if ($device == "quiet-water" && $?notags == 0) set notags = "road"
+    if ($?DEBUG) /bin/echo `/bin/date` "$0 $$ -- $device $model $notags" 
+    setenv QUERY_STRING "db=$device"
+else if ($?notags == 0) then
+    # get device informationfrom resin service that returns JSON for device
+    set location = `/usr/bin/curl -s -q -f -L "http://$WWW/CGI/aah-resinDevice.cgi" | /usr/local/bin/jq -r '.|select(.name=="'"$device"'")|.location'`
+    if ($#location) then
+	if ($?DEBUG) /bin/echo `/bin/date` "$0 $$ -- found AAH_LOCATION ($location)" 
+    else
+	if ($?DEBUG) /bin/echo `/bin/date` "$0 $$ -- not found AAH_LOCATION" 
+	unset location
+	exit
+    endif
+    if ($?DEBUG) /bin/echo `/bin/date` "$0 $$ -- using default ($location) for negative (notags)" 
+    set notags = "$location"
 endif
-setenv QUERY_STRING "db=$device"
+
+setenv QUERY_STRING "db=$device&ext=$ext"
 
 echo `date` "$0 $$ -- START ($QUERY_STRING)" >& /dev/stderr
 
@@ -225,7 +251,7 @@ foreach xdir ( "$TMP/label/$device/"* )
     echo '{"class":"'$set'","ids":[' >> "$INVENTORY.$$"
     @ count = 0
     @ bytes = 0
-    foreach file ( `find "$xdir" -name "*.jpg" -type f -print` )
+    foreach file ( `find "$xdir" -name "*.$ext" -type f -print` )
       if ($count > 0) echo ',' >> "$INVENTORY.$$"
       @ bytes += `ls -l $file | awk '{ print $5 }'`
       echo '"'"$file:t:r"'"' >> "$INVENTORY.$$"
@@ -349,7 +375,7 @@ while ($p < $#pairs)
 	    else
 		set splits = '['
 	    endif
-	    set ext = $s:e
+	    set sext = $s:e
 	    # create ZIP file name 
 	    set zip = "$JOB/$class.zip"
 	    if ($?DEBUG) echo `date` "$0 $$ -- creating ($zip) from split ($s)" >& /dev/stderr
@@ -360,7 +386,7 @@ while ($p < $#pairs)
 		    set ids = '["'"$id"'"'
 		endif
 		# slow but complete
-		find $TMP/label/$device -name "$id".jpg -print | xargs -I % zip -q -j -r -u "$zip" % >& /dev/stderr
+		find $TMP/label/$device -name "$id"."$ext" -print | xargs -I % zip -q -j -r -u "$zip" % >& /dev/stderr
 	    end
 	    set ids = "$ids"']'
 	    # if ($?DEBUG) echo `date` "$0 $$ -- IDS: $ids" >& /dev/stderr
@@ -379,7 +405,7 @@ while ($p < $#pairs)
 			if ($?DEBUG) echo `date` "$0 $$ -- split into $#zips ZIP files ($zips)" >& /dev/stderr
 			@ i = 1
 			foreach z ( $zips )
-			    set b = "$JOB/$class.$ext.$i.zip"
+			    set b = "$JOB/$class.$sext.$i.zip"
 			    if ($?DEBUG) echo `date` "$0 $$ -- creating batch entry ($b)" >& /dev/stderr
 			    mv "$z" "$b"
 			    if ($?batch) then

@@ -8,7 +8,7 @@ if ($?TMP == 0) setenv TMP "/var/lib/age-at-home"
 setenv DEBUG true
 
 # don't update file information more than once per (in seconds)
-set TTL = 1800
+set TTL = 900
 set SECONDS = `date "+%s"`
 set DATE = `echo $SECONDS \/ $TTL \* $TTL | bc`
 
@@ -61,21 +61,29 @@ echo `date` "$0 $$ -- START ($QUERY_STRING)" >>! $TMP/LOG
 set HTML = "$TMP/$APP-$API-$QUERY_STRING.$$.html"
 
 # get review status
-set REVIEW = "$TMP/$APP-$API-$QUERY_STRING.$DATE.json"
-if (! -s "$REVIEW") then
+set CLASSIFY = "$TMP/$APP-$API-$QUERY_STRING.$DATE.json"
+if (! -s "$CLASSIFY") then
     if ($?DEBUG) echo `date` "$0 $$ -- RETRIEVE: aah-review db=$DB" >>! $TMP/LOG
-    curl -s -q -L "http://$WWW/CGI/aah-review.cgi?db=$DB" -o "$REVIEW.$$"
+    curl -s -q -L "http://$WWW/CGI/aah-review.cgi?db=$DB" -o "$CLASSIFY.$$"
     if ($status != 0) then
       if ($?DEBUG) echo `date` "$0 $$ -- FAILURE: aah-review db=$DB" >>! $TMP/LOG
+      rm -f "$CLASSIFY.$$"
       goto done
     else
-      mv -f "$REVIEW.$$" "$REVIEW"
+      mv -f "$CLASSIFY.$$" "$CLASSIFY"
     endif
 endif
 
-# get date and seqid of results
-set date = `/usr/local/bin/jq -c '.date' "$REVIEW" | sed 's/"//g'`
-set seqid = `/usr/local/bin/jq -c '.seqid' "$REVIEW" | sed 's/"//g'`
+if (-s "$CLASSIFY") then
+    # get date and seqid of results
+    set date = `/usr/local/bin/jq -c '.date' "$CLASSIFY" | sed 's/"//g'`
+    set seqid = `/usr/local/bin/jq -c '.seqid' "$CLASSIFY" | sed 's/"//g'`
+    if ($?DEBUG) echo `date` "$0 $$ -- $date $seqid" >>! $TMP/LOG
+else
+    if ($?DEBUG) echo `date` "$0 $$ -- NO $CLASSIFY" >>! $TMP/LOG
+    goto done
+endif
+
 # get all classes in order of prevalence (small to large) from initial classification
 set allclasses = ( $TMP/$DB/* )
 @ i = 1
@@ -92,8 +100,12 @@ echo '{ "device":"'$DB'","id":"'$id'","match":"'$match'","limit":"'$limit'" }' >
 echo "</TITLE></HEAD>" >> "$HTML"
 echo '<script type="text/javascript" src="'$MIXPANELJS'"></script><script>mixpanel.track('"'"$APP-$API"');</script>" >> "$HTML"
 echo '<BODY><H1>LABEL IMAGES</H1>' >> "$HTML"
-if ($#date > 0) echo '<p style="font-size:50%;">Last updated: <i>' `date -r $date` "</i></p>" >> "$HTML"
-# if ($#seqid > 0) echo "<i>$seqid</i>" >> "$HTML"
+if ($#date > 0) then
+    echo '<p style="font-size:50%;">Last updated: <i>' `date -r $date` "</i></p>" >> "$HTML"
+else
+    echo '<p style="font-size:50%;">CLASSIFY DATE: <i>' `date -r $CLASSIFY:r:e` "</i></p>" >> "$HTML"
+endif
+if ($#seqid > 0) echo "<i>$seqid</i>" >> "$HTML"
 
 echo '<form action="http://'"$WWW/CGI/$APP-$API"'.cgi">' >> "$HTML"
 echo '<input type="hidden" name="db" value="'"$DB"'">' >> "$HTML"

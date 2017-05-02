@@ -1,0 +1,110 @@
+#!/bin/csh -fb
+#
+# DEFAULTS (should be resin.io environment variables)
+#
+if ($?CAMERA_IMAGE_WIDTH == 0) setenv CAMERA_IMAGE_WIDTH 640
+if ($?CAMERA_IMAGE_HEIGHT == 0) setenv CAMERA_IMAGE_HEIGHT 480
+if ($?MODEL_IMAGE_WIDTH == 0) setenv MODEL_IMAGE_WIDTH 224
+if ($?MODEL_IMAGE_HEIGHT == 0) setenv MODEL_IMAGE_HEIGHT 224
+if ($?CAMERA_MODEL_TRANSFORM == 0) setenv CAMERA_MODEL_TRANSFORM "CROP"
+
+if ($?TMP == 0) setenv TMP "/var/lib/age-at-home"
+
+setenv DEBUG true
+
+if ($?TTL == 0) set TTL = 900
+if ($?SECONDS == 0) set SECONDS = `/bin/date "+%s"`
+if ($?DATE == 0) set DATE = `/bin/echo $SECONDS \/ $TTL \* $TTL | /usr/bin/bc`
+
+if (-e ~$USER/.cloudant_url) then
+    set cc = ( `cat ~$USER/.cloudant_url` )
+    if ($#cc > 0) set CU = $cc[1]
+    if ($#cc > 1) set CN = $cc[2]
+    if ($#cc > 2) set CP = $cc[3]
+endif
+
+if ($?CLOUDANT_URL) then
+    set CU = $CLOUDANT_URL
+else if ($?CN && $?CP) then
+    set CU = "$CN":"$CP"@"$CN.cloudant.com"
+else
+    if ($?DEBUG) /bin/echo `/bin/date` "$0 $$ -- no Cloudant URL" 
+    goto done
+endif
+
+#
+# defaults to rough-fog (kitchen) and all classes
+#
+if ($?class == 0) set class = all
+
+setenv DB "$1:t"
+
+/bin/echo `/bin/date` "$0 $$ -- START ($DB)"  
+
+if (! -d "$TMP/$1") then
+    /bin/echo `/bin/date` "$0 $$ -- please provide directory (e.g. rough-fog or label/rough-fog)
+    exit
+endif
+
+foreach image ( `find "$TMP/$1/" -type f -name "*.jpg" -print` )
+    set json = "/tmp/$0:t.$$.$image:t:r.json"
+    /usr/bin/curl -q -s "http://$CU/$DB/$image:t:r" -o "$json"
+    set crop = `/usr/local/bin/jq -j '.imagebox' "$json"`
+    set tag = `/usr/local/bin/jq -j '.alchemy.text' "$json"`
+    /bin/rm -f "$json"
+    # if ($#crop && (! -s "$image:r.jpeg")) then
+    if ($#crop && (-s "$image")) then
+	# get extant
+	set c = `/bin/echo "$crop" | /usr/bin/sed "s/\([0-9]*\)x\([0-9]*\)\([+-]*[0-9]*\)\([+-]*[0-9]*\)/\1 \2 \3 \4/"`
+	if ($#c == 4) then
+	    set w = $c[1]
+	    set h = $c[2]
+	    set x = `/bin/echo "0 $c[3]" | /usr/bin/bc`
+	    set y = `/bin/echo "0 $c[4]" | /usr/bin/bc`
+	else
+	    if ($?DEBUG) /bin/echo `/bin/date` "$0 $$ -- bad crop size ($crop) -- skipping" 
+	    continue
+	endif
+	# check conditions
+	if ($x < 0) @ x = 0
+	if ($y < 0) @ y = 0
+	if ($w < 0 || $w > $CAMERA_IMAGE_WIDTH) @ w = $CAMERA_IMAGE_WIDTH
+	if ($h < 0 || $h > $CAMERA_IMAGE_HEIGHT) @ h = $CAMERA_IMAGE_HEIGHT
+
+	# calculate xform
+	if ($?CAMERA_MODEL_TRANSFORM) then
+	  switch ($CAMERA_MODEL_TRANSFORM)
+	    case "RESIZE":
+	      if ($?DEBUG) /bin/echo `/bin/date` "$0 $$ -- resizing $image ($MODEL_IMAGE_WIDTH,$MODEL_IMAGE_HEIGHT)" 
+	      /usr/local/bin/convert \
+		  -resize "$MODEL_IMAGE_WIDTH"x"$MODEL_IMAGE_HEIGHT" \
+		  -gravity center \
+		  -background gray \
+		  "$image:r.jpeg"
+	      breaksw
+	    case "CROP":
+	      # calculate centroid-based extant ($MODEL_IMAGE_WIDTHx$MODEL_IMAGE_WIDTH image)
+	      @ cx = $x + ( $w / 2 ) - ( $MODEL_IMAGE_WIDTH / 2 )
+	      @ cy = $y + ( $h / 2 ) - ( $MODEL_IMAGE_HEIGHT / 2 )
+	      if ($cx < 0) @ cx = 0
+	      if ($cy < 0) @ cy = 0
+	      if ($cx + $MODEL_IMAGE_WIDTH > $CAMERA_IMAGE_WIDTH) @ cx += $CAMERA_IMAGE_WIDTH - ($cx + $MODEL_IMAGE_WIDTH)
+	      if ($cy + $MODEL_IMAGE_HEIGHT > $CAMERA_IMAGE_HEIGHT) @ cy += $CAMERA_IMAGE_HEIGHT - ($cy + $MODEL_IMAGE_HEIGHT)
+	      set crop = "$MODEL_IMAGE_WIDTH"x"$MODEL_IMAGE_HEIGHT"+"$cx"+"$cy"
+
+	      if ($?DEBUG) /bin/echo `/bin/date` "$0 $$ -- cropping $image $crop" 
+	      /usr/local/bin/convert \
+		  -crop "$crop" "$image" \
+		  -gravity center \
+		  -background gray \
+		  "$image:r.jpeg"
+	      breaksw
+	    default:
+	      if ($?DEBUG) /bin/echo `/bin/date` "$0 $$ -- no transformation" 
+	      breaksw
+	  endsw
+	endif
+    else
+	if ($?DEBUG) /bin/echo `/bin/date` "$0 $$ -- skipping $image" 
+    endif
+end
