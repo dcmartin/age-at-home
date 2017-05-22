@@ -36,6 +36,9 @@ endif
 
 if ($?DEBUG) echo `date` "$0 $$ -- $?DB $?id $?image $?old $?new $?add $?skip" >>! $TMP/LOG
 
+#
+# handle skipping an image
+#
 if ($?DB && $?id && $?old && $?skip) then
     set image = "$skip"
     set jpg = "$TMP/$DB/$old/$image"
@@ -43,6 +46,9 @@ if ($?DB && $?id && $?old && $?skip) then
 
     mkdir -p "$dest"
     if (-s "$jpg") then
+	# remove any transformed image
+	if (-s "$jpg:r.jpeg") rm -f "$jpg:r.jpeg"
+	# destination is "label/<device>/.skipped"
 	set dest = "$dest/$jpg:t"
 	mv -n "$jpg" "$dest" >>& $TMP/LOG
 	if (-s "$dest" && ! -e "$jpg") then
@@ -65,7 +71,11 @@ if ($?DB && $?id && $?old && $?skip) then
     endif
     # all done
     goto output
-else if ($?DB && $?id && $?image && $?old && ($?new || $?add)) then
+
+#
+# handle labeling an image
+#
+if ($?DB && $?id && $?image && $?old && ($?new || $?add)) then
     if ($?add) then
 	set new = "$add"
     endif
@@ -86,9 +96,11 @@ else if ($?DB && $?id && $?image && $?old && ($?new || $?add)) then
 	else 
 	    if ($?DEBUG) echo `date` "$0 $$ -- moving and linking $jpg -> $link" >>! $TMP/LOG
 	    mv -n "$jpg" "$link" >>& $TMP/LOG
+	    mv -n "$jpg:r.jpeg" "$link:r.jpeg" >>& $TMP/LOG
 	    if (-s "$link") then
 		if ($?DEBUG) echo `date` "$0 $$ -- move succeeded" `ls -l "$link"` >>! $TMP/LOG
 		ln -s "$link" "$jpg" >>& $TMP/LOG
+		ln -s "$link:r.jpeg" "$jpg:r.jpeg"
 	    endif
 	    if (-e "$jpg") then
 		if ($?DEBUG) echo `date` "$0 $$ -- link succeeded" `ls -al "$jpg"` >>! $TMP/LOG

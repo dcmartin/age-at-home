@@ -14,13 +14,11 @@ setenv DATE `echo $SECONDS \/ $TTL \* $TTL | bc`
 if ($?QUERY_STRING) then
     set DB = `echo "$QUERY_STRING" | sed 's/.*db=\([^&]*\).*/\1/'`
     if ($DB == "$QUERY_STRING") unset DB
-    set class = `echo "$QUERY_STRING" | sed 's/.*id=\([^&]*\).*/\1/'`
-    if ($class == "$QUERY_STRING") unset class
 endif
 
 if ($?DB == 0) set DB = rough-fog
-if ($?class == 0) set class = all
-setenv QUERY_STRING "db=$DB&id=$class"
+
+setenv QUERY_STRING "db=$DB"
 
 echo `date` "$0 $$ -- START ($QUERY_STRING)" >>! $TMP/LOG
 
@@ -47,31 +45,25 @@ if (-s "$OUTPUT") then
     if ($?DEBUG) echo `date` "$0 $$ -- existing ($OUTPUT)" >>! $TMP/LOG
     goto output
 else
-    # find old output
-    set ALL_OUTPUT = ( `echo "$TMP/$APP-$API-$QUERY_STRING."*".json"` )
     # initiate new output
     if ($?DEBUG) echo `date` "$0 $$ ++ CALLING ./$APP-make-$API.bash to create ($OUTPUT)" >>! $TMP/LOG
     ./$APP-make-$API.bash
-    # find newest output
-    if ($#ALL_OUTPUT > 0) then
-      @ d = 0
-      foreach i ( $ALL_OUTPUT )
-        if ($i:r:e > $d) then
-          @ d = $i:r:e
-	  if ($?old) rm -f "$old"
-          set old = $i
-        endif
-      end
-    endif
+    # find old output
+    set old = ( `echo "$TMP/$APP-$API-$QUERY_STRING."*".json"` )
     if ($?old) then
-        setenv DATE  "$old:r:e"
-        set OUTPUT = $old
+      if ($#old) then
+        set oldest = $old[$#old]
+      endif
+    endif
+    if ($?oldest) then
+        setenv DATE "$oldest:r:e"
+        set OUTPUT = $oldest
         if ($?DEBUG) echo `date` "$0 $$ -- using old output ($OUTPUT)" >>! $TMP/LOG
         goto output
       endif
     endif
     # return redirect
-    set URL = "https://$CU/$DB-$API/$class"
+    set URL = "https://$CU/$DB-$API/all"
     if ($?DEBUG) echo `date` "$0 $$ -- returning redirect ($URL)" >>! $TMP/LOG
     set age = `echo "$SECONDS - $DATE" | bc`
     echo "Age: $age"

@@ -234,10 +234,10 @@ echo "] }" >> "$NEW_STATS"
 # update Cloudant
 #
 if ($?CLOUDANT_OFF == 0 && $?CU && $?DB) then
-    set DEVICE_DB = `curl -s -q -X GET "$CU/$DB-stats" | /usr/local/bin/jq '.db_name'`
+    set DEVICE_DB = `curl -s -q -X GET "$CU/$DB-$API" | /usr/local/bin/jq '.db_name'`
     if ( "$DEVICE_DB" == "null" ) then
 	# create DB
-	set DEVICE_DB = `curl -s -q -X PUT "$CU/$DB-stats" | /usr/local/bin/jq '.ok'`
+	set DEVICE_DB = `curl -s -q -X PUT "$CU/$DB-$API" | /usr/local/bin/jq '.ok'`
 	# test for success
 	if ( "$DEVICE_DB" != "true" ) then
 	    # failure
@@ -249,10 +249,10 @@ if ($?CLOUDANT_OFF == 0 && $?CU && $?DB) then
 	if ($#doc == 2 && $doc[1] == $class && $doc[2] != "") then
 	    set rev = $doc[2]
 	    echo `date` "$0 $$ -- DELETE $rev" >>! $TMP/LOG
-	    curl -s -q -X DELETE "$CU/$DB-stats/$class?rev=$rev" >>! $TMP/LOG
+	    curl -s -q -X DELETE "$CU/$DB-$API/$class?rev=$rev" >>! $TMP/LOG
 	endif
 	echo `date` "$0 $$ -- STORE $NEW_STATS" >>! $TMP/LOG
-	curl -s -q -H "Content-type: application/json" -X PUT "$CU/$DB-stats/$class" -d "@$NEW_STATS" >>! $TMP/LOG
+	curl -s -q -H "Content-type: application/json" -X PUT "$CU/$DB-$API/$class" -d "@$NEW_STATS" >>! $TMP/LOG
     endif
     echo `date` "$0 $$ -- SUCCESS : $JSON" >>! $TMP/LOG
     # update statistics

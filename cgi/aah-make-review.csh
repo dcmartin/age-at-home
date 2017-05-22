@@ -28,156 +28,102 @@ else
 endif
 
 #
-# defaults to rough-fog (kitchen) and all classes
+# DEFAULTS to rough-fog (kitchen) and all classes
 #
 if ($?QUERY_STRING) then
     set DB = `/bin/echo "$QUERY_STRING" | sed 's/.*db=\([^&]*\).*/\1/'`
     if ($DB == "$QUERY_STRING") unset DB
 endif
-
 if ($?DB == 0) set DB = rough-fog
-if ($?class == 0) set class = all
-
 # standardize QUERY_STRING
 setenv QUERY_STRING "db=$DB"
-
+# DEBUG
 /bin/echo `/bin/date` "$0 $$ -- START ($QUERY_STRING)"  >>! $TMP/LOG
 
-# output target
-set OUTPUT = "$TMP/$APP-$API-$QUERY_STRING.$DATE.json"
+#
+# CAMERA & TRANSFORMATION INFORMATION (should be a configuration read from DB corresponding to device and model)
+#
+if ($?CAMERA_IMAGE_WIDTH == 0) setenv CAMERA_IMAGE_WIDTH 640
+if ($?CAMERA_IMAGE_HEIGHT == 0) setenv CAMERA_IMAGE_HEIGHT 480
+if ($?MODEL_IMAGE_WIDTH == 0) setenv MODEL_IMAGE_WIDTH 224
+if ($?MODEL_IMAGE_HEIGHT == 0) setenv MODEL_IMAGE_HEIGHT 224
+if ($?CAMERA_MODEL_TRANSFORM == 0) setenv CAMERA_MODEL_TRANSFORM "CROP"
 
-# check for OUTPUT
+#
+# OUTPUT target
+#
+set OUTPUT = "$TMP/$APP-$API-$QUERY_STRING.$DATE.json"
 if (-s "$OUTPUT") then
-    goto done
+    goto output
 endif
 
+#
+# SINGLE THREADED (by QUERY_STRING)
+#
 set INPROGRESS = ( `/bin/echo "$OUTPUT".*` )
-# check OUTPUT in-progress for current interval
 if ($#INPROGRESS) then
     if ($?DEBUG) /bin/echo `/bin/date` "$0 $$ -- in-progress $DATE" >>! $TMP/LOG
     goto done
 else
-    onintr done
+    # cleanup if interrupted
+    onintr cleanup
     touch "$OUTPUT".$$
 endif
 
 #
-# get LANIP from resin service that returns JSON for device
+# determine if we discovered previous sequence_id
 #
-
-set lanip = `/usr/bin/curl -s -q -f -L "http://$WWW/CGI/aah-resinDevice.cgi" | /usr/local/bin/jq -r '.|select(.name=="'"$DB"'")|.ip_address'`
-if ($#lanip) then
-    if ($?DEBUG) /bin/echo `/bin/date` "$0 $$ -- found LANIP ($lanip)" >>! $TMP/LOG
-    setenv LANIP "$lanip"
-endif
-
-if ($DB == "rough-fog" && $?LANIP == 0) then
-    setenv LANIP "192.168.1.34"
-else if ($DB == "damp-cloud" && $?LANIP == 0) then
-    setenv LANIP "192.168.1.35"
-else if ($DB == "quiet-water" && $?LANIP == 0) then
-    setenv LANIP "192.168.1.36"
-else if ($?LANIP == 0) then
-    if ($?DEBUG) /bin/echo `/bin/date` "$0 $$ -- no LANIP" >>! $TMP/LOG
-    goto done
-endif
-
-# check for old OUTPUT
-# set old = ( `/bin/echo "$TMP/$APP-$API-$QUERY_STRING."*".json" | sort -t . -k 2,2 -n -r` )
-set old = ( `find "$TMP/" -name "$APP-$API-$QUERY_STRING.*.json" -print | sort -t . -k 2,2 -n -r` )
-if ($#old > 0) then
-    set OLD = $old[1]
-    if ($?DEBUG) /bin/echo `/bin/date` "$0 $$ -- found old results ($OLD)" >>! $TMP/LOG
-    if ($#old > 1) then
-	if ($?DEBUG) /bin/echo `/bin/date` "$0 $$ -- removing old results ($old[2-])" >>! $TMP/LOG
-	rm -f $old[2-]
+# need to download previous sequence ID ("http://$WWW/CGI/$APP-prev_seqid?db=$DB")
+set seqid = `/usr/bin/curl -q -s -L "$CU/$DB-$API/all" | /usr/local/bin/jq -r '.seqid'`
+if ($?seqid) then
+  if ($#seqid == 1) then
+    if ($?DEBUG) /bin/echo `/bin/date` "$0 $$ -- seqid ($seqid)" >>! $TMP/LOG
+    if ($seqid == "null") then
+       set seqid = 0
     endif
-    # test old
-    set class_id = `/usr/local/bin/jq '._id' "$OLD" | sed 's/"//g'`
-    if ($class_id != $class) then
-	if ($?DEBUG) /bin/echo `/bin/date` "$0 $$ -- bad results ($OLD)" >>! $TMP/LOG
-	rm -f "$OLD"
-	unset OLD
-    else
-	if ($?DEBUG) /bin/echo `/bin/date` "$0 $$ -- results match ($class_id == $class)" >>! $TMP/LOG
-    endif
+  else
+    set seqid = 0
+  endif
+else
+  set seqid = 0
 endif
-
-#
-set prev_seqid = 0
-# if we don't find it locally, download
-if ($?OLD == 0) then
-    # create temporary file
-    set OLD = "$TMP/$APP-$API-$class.$$.json"
-    if ($?DEBUG) /bin/echo `/bin/date` "$0 $$ -- get OLD ($CU/$DB-$API/$class)" >>! $TMP/LOG
-    /usr/bin/curl -s -q -o "$OLD" -X GET "$CU/$DB-$API/$class"
-    if ($status == 0 && (-s "$OLD")) then
-	if ($?DEBUG) /bin/echo `/bin/date` "$0 $$ -- got OLD ($OLD)" >>! $TMP/LOG
-	set class_id = `/usr/local/bin/jq '._id' "$OLD" | sed 's/"//g'`
-	if ($class_id != $class) then
-	    if ($?DEBUG) /bin/echo `/bin/date` "$0 $$ -- DB ($class_id) != ID ($class)" >>! $TMP/LOG
-	    rm -f "$OLD"
-	    set prev_seqid = 0
-	else
-	    # get prev_seqid
-	    if ($?DEBUG) /bin/echo `/bin/date` "$0 $$ -- match found ($class_id == $class)" >>! $TMP/LOG
-	    # get last sequence for old output
-	    set prev_seqid = `/usr/local/bin/jq '.seqid' "$OLD" | sed 's/"//g'`
-	    if ($status == 0) then
-		if ($?DEBUG) /bin/echo `/bin/date` "$0 $$ -- OLD seqid ($prev_seqid)" >>! $TMP/LOG
-		set date = `/usr/local/bin/jq '.date' "$OLD" | sed 's/"//g'`
-		mv "$OLD" "$TMP/$APP-$API-$QUERY_STRING.$date.json"
-	    else
-		if ($?DEBUG) /bin/echo `/bin/date` "$0 $$ -- invalid OLD ($OLD; $prev_seqid)" >>! $TMP/LOG
-	        rm -f "$OLD"
-		set prev_seqid = 0
-	    endif
-	endif
-    else
-	if ($?DEBUG) /bin/echo `/bin/date` "$0 $$ ** failure getting $CU/$DB-$API/$class" >>! $TMP/LOG
-	set prev_seqid = 0
-	rm -f "$OLD"
-        goto done
-    endif
-endif
-
-if ($?DEBUG) /bin/echo `/bin/date` "$0 $$ -- prev_seqid ($prev_seqid)" >>! $TMP/LOG
 
 #
 # get CHANGES records
 #
 set CHANGES = "$TMP/$APP-$API-$QUERY_STRING-changes.$DATE.json"
-set seqid = $prev_seqid
 if ( ! -e "$CHANGES" ) then
-    if ($?DEBUG) /bin/echo `/bin/date` "$0 $$ -- get changes ($CU/$DB/_changes?descending=true&include_docs=true&since=$prev_seqid" >>! $TMP/LOG
-    /usr/bin/curl -s -q -o "$CHANGES" "$CU/$DB/_changes?descending=true&include_docs=true&since=$prev_seqid" >>&! $TMP/LOG
+    # remove old
+    rm -f "$TMP/$APP-$API-$QUERY_STRING-changes."*".json" 
+    # get most recent
+    if ($?DEBUG) /bin/echo `/bin/date` "$0 $$ -- get changes ($CU/$DB/_changes?descending=true&include_docs=true&since=$seqid" >>! $TMP/LOG
+    /usr/bin/curl -s -q -f -L \
+	"$CU/$DB/_changes?descending=true&include_docs=true&since=$seqid" \
+	-o "$CHANGES" \
+	 >>&! $TMP/LOG
+    # check for failure
+    if ($status == 22 || (! -s "$CHANGES")) then
+     if ($?DEBUG) /bin/echo `/bin/date` "$0 $$ -- failure with $CHANGES" >>! $TMP/LOG
+     goto done
+    endif
     if ($?DEBUG) /bin/echo `/bin/date` "$0 $$ -- got ($CHANGES)" >>! $TMP/LOG
-    set seqid = ( `/usr/local/bin/jq .last_seq "$CHANGES" | sed 's/"//g'` )
-    if ($seqid == "null") then
-         if ($?DEBUG) /bin/echo `/bin/date` "$0 $$ -- failure processing changes" >>! $TMP/LOG
-         goto done
-    endif
-    # remove old changes
-    # set old = ( `echo "$TMP/$APP-$API-$QUERY_STRING-changes."*".json" | sort -t . -k 2,2 -n -r` )
-    set old = ( `find "$TMP/" -name "$APP-$API-$QUERY_STRING-changes.*.json" -print | sort -t . -k 2,2 -n -r` )
-    if ($#old > 1) then
-	if ($?DEBUG) /bin/echo `/bin/date` "$0 $$ -- removing old changes ($old[2-])" >>! $TMP/LOG
-	rm -f $old[2-]
-    endif
+    set last_seq = ( `/usr/local/bin/jq .last_seq "$CHANGES" | sed 's/"//g'` )
 else
-    if ($?DEBUG) /bin/echo `/bin/date` "$0 $$ -- changes are current ($TTL) update in " `echo "$SECONDS - $DATE" | /usr/bin/bc` >>! $TMP/LOG
+    if ($?DEBUG) /bin/echo `/bin/date` "$0 $$ -- cache current ($TTL) update in " `echo "$SECONDS - $DATE" | /usr/bin/bc` >>! $TMP/LOG
 endif
-set seqid = ( `/usr/local/bin/jq .last_seq "$CHANGES" | sed 's/"//g'` )
-if ($#seqid == 0 || $seqid == "null") then
+if ($?last_seq == 0) then
     if ($?DEBUG) /bin/echo `/bin/date` "$0 $$ -- invalid changes ($CHANGES)" >>! $TMP/LOG
     goto done
 else
-    if ($?DEBUG) /bin/echo `/bin/date` "$0 $$ -- last sequence ($seqid)" >>! $TMP/LOG
+    if ($?DEBUG) /bin/echo `/bin/date` "$0 $$ -- last sequence ($last_seq)" >>! $TMP/LOG
 endif
 
-if ($?seqid && $?prev_seqid) then
-    if ($#seqid > 0 && $#prev_seqid > 0 && $prev_seqid != 0 && $seqid != 0) then
-	if ("$seqid" == "$prev_seqid") then
+#
+# CHECK FOR NEW EVENTS BASED ON SEQUENCE ID
+#
+if ($?last_seq && $?seqid) then
+    if ($#last_seq > 0 && $#seqid > 0 && $seqid != 0 && $last_seq != 0) then
+	if ("$last_seq" == "$seqid") then
 	    if ($?DEBUG) /bin/echo `/bin/date` "$0 $$ !! NO NEW EVENTS ($seqid)" >>! $TMP/LOG
 	    goto done
 	endif
@@ -187,10 +133,8 @@ endif
 set RESULTS = "$TMP/$APP-$API-$QUERY_STRING-results.$DATE.json"
 if (-s "$CHANGES" && (! -s "$RESULTS" || ((-M "$CHANGES") > (-M "$RESULTS")))) then
     # remove old results
-    set old = ( `ls -1 "$TMP/$APP-$API-$QUERY_STRING-results".*.json` )
-    if ($?DEBUG) /bin/echo `/bin/date` "$0 $$ -- removing old results ($old)" >>! $TMP/LOG
-    if ($#old > 0) rm -f $old
-    if ($?DEBUG) /bin/echo `/bin/date` "$0 $$ -- creating results from changes" >>! $TMP/LOG
+    rm -f "$TMP/$APP-$API-$QUERY_STRING-results."*".json"
+    if ($?DEBUG) /bin/echo `/bin/date` "$0 $$ -- updating $RESULTS from $CHANGES" >>! $TMP/LOG
     /usr/local/bin/jq -c '[.results[].doc|{file:.visual.image,tag:.alchemy.text,score:.alchemy.score,year:.year,month:.month,day:.day,hour:.hour,minute:.minute,second:.second,crop:.imagebox}]' "$CHANGES" \
 	| /usr/local/bin/jq -c '{results:.[]|[.file,.tag,.score,.year,.month,.day,.hour,.minute,.second,.crop]}' \
 	| sed 's/"//g' \
@@ -215,15 +159,26 @@ endif
 
 if ($?FTP_GET == 0) then
     if ($?DEBUG) /bin/echo `/bin/date` "$0 $$ -- getting new images" >>! $TMP/LOG
+    #
+    # get LANIP from resin service that returns JSON for device
+    #
+    set lanip = `/usr/bin/curl -s -q -L "http://$WWW/CGI/aah-resinDevice.cgi" | /usr/local/bin/jq -r '.|select(.name=="'"$DB"'")|.ip_address'`
+    if ($#lanip && $lanip != "") then
+	if ($?DEBUG) /bin/echo `/bin/date` "$0 $$ -- found LANIP ($lanip)" >>! $TMP/LOG
+	setenv LANIP "$lanip"
+    else
+	if ($?DEBUG) /bin/echo `/bin/date` "$0 $$ -- no LANIP" >>! $TMP/LOG
+	goto done
+    endif
     # create temporary output for processing sequentially; ignore "ampm"
     foreach line ( `/usr/local/bin/jq -c '[.file,.tag,.score,.day,.interval,.crop]' "$RESULTS" | sed 's/\[//' | sed 's/\]//' | sed 's/ /_/g' | awk -F, '{ printf("%s,%s,%f,%s,%d,%s\n", $1,$2,$3,$4,$5,$6) }'` )
-	set tuple = ( `echo "$line" | sed 's/,/ /g'` )
+	set tuple = ( `/bin/echo "$line" | /usr/bin/sed 's/,/ /g'` )
 	if ($#tuple < 2) then
 	    if ($?DEBUG) /bin/echo `/bin/date` "$0 $$ -- bad tuple ($tuple) ($line)" >>! $TMP/LOG
 	    continue
 	endif
 	set tag = `echo $tuple[2] | sed 's/"//g'`
-	if (($tag == $class) || ($class == "all") && $tag != "null") then
+	if ($tag != "null") then
 	    # get filename
 	    set file = `echo $tuple[1] | sed 's/"//g'`
 	    # build image fullpath
@@ -233,7 +188,7 @@ if ($?FTP_GET == 0) then
 	    # test if image already exists
 	    if (! -s "$image") then
 		set ftp = "ftp://ftp:ftp@$LANIP/$file" 
-		/usr/bin/curl -s -q "$ftp" -o "/tmp/$$.jpg"
+		/usr/bin/curl -s -q -L "$ftp" -o "/tmp/$$.jpg"
 		if ($status != 0 || (! -s "/tmp/$$.jpg")) then
 		    rm -f /tmp/$$.jpg
 		    if ($?DEBUG) /bin/echo `/bin/date` "$0 $$ -- fail ($ftp)" >>! $TMP/LOG
@@ -243,47 +198,51 @@ if ($?FTP_GET == 0) then
 		endif
 		if (-s "$image") then
 		    if ($?DEBUG) /bin/echo `/bin/date` "$0 $$ -- success ($image)" >>! $TMP/LOG
-		    # make crop
 		    set crop = `echo $tuple[6] | sed 's/"//g'`
-		    if ($#crop) then
-			set c = `/bin/echo "$crop" | /usr/bin/sed "s/\([0-9]*\)x\([0-9]*\)\([+-]*[0-9]*\)\([+-]*[0-9]*\)/\1 \2 \3 \4/"`
-			# get extant
-			set w = $c[1]
-			set h = $c[2]
-			set x = `/bin/echo "0 $c[3]" | /usr/bin/bc`
-			set y = `/bin/echo "0 $c[4]" | /usr/bin/bc`
-			#
-			if ($w < 224) then
-			    @ x = ($x - ((224 - $w) / 2))
-			    if ($x < 0) set x = 0
-			else if ($w > 224) then
-			    @ x = ($x + (($w - 224) / 2))
-			    if ($x < 0) set x = 0
-			endif
-			set w = 224
-			if ($h < 224) then
-			    @ y = ($y - ((224 - $h) / 2))
-			    if ($y < 0) set y = 0
-			else if ($h > 224) then
-			    @ y = ($y - (($h - 224) / 2))
-			    if ($y < 0) set y = 0
-			endif
-			set h = 224
-			set crop = "$w"x"$h"+"$x"+"$y"
-			if ($?DEBUG) /bin/echo `/bin/date` "$0 $$ -- cropping $crop" >>! $TMP/LOG
-			/usr/local/bin/convert \
-			    -crop "$crop" "$image" \
-			    -gravity center \
-			    -resize 224x224 \
-			    -background gray \
-			    "$image:r.jpeg" >>&! $TMP/LOG
-		    else
-			if ($?DEBUG) /bin/echo `/bin/date` "$0 $$ -- bad $crop on $image" >>! $TMP/LOG
+		    if ($#crop && $?CAMERA_MODEL_TRANSFORM) then
+		      set c = `/bin/echo "$crop" | /usr/bin/sed "s/\([0-9]*\)x\([0-9]*\)\([+-]*[0-9]*\)\([+-]*[0-9]*\)/\1 \2 \3 \4/"`
+		      set w = $c[1]
+		      set h = $c[2]
+		      set x = `/bin/echo "0 $c[3]" | /usr/bin/bc`
+		      set y = `/bin/echo "0 $c[4]" | /usr/bin/bc`
+
+		      switch ($CAMERA_MODEL_TRANSFORM)
+			case "RESIZE":
+			  if ($?DEBUG) /bin/echo `/bin/date` "$0 $$ -- resizing $image ($MODEL_IMAGE_WIDTH,$MODEL_IMAGE_HEIGHT)" 
+			  /usr/local/bin/convert \
+			      -resize "$MODEL_IMAGE_WIDTH"x"$MODEL_IMAGE_HEIGHT" "$image" \
+			      -gravity center \
+			      -background gray \
+			      "$image:r.jpeg"
+			  breaksw
+			case "CROP":
+			  # calculate centroid-based extant ($MODEL_IMAGE_WIDTHx$MODEL_IMAGE_WIDTH image)
+			  @ cx = $x + ( $w / 2 ) - ( $MODEL_IMAGE_WIDTH / 2 )
+			  @ cy = $y + ( $h / 2 ) - ( $MODEL_IMAGE_HEIGHT / 2 )
+			  if ($cx < 0) @ cx = 0
+			  if ($cy < 0) @ cy = 0
+			  if ($cx + $MODEL_IMAGE_WIDTH > $CAMERA_IMAGE_WIDTH) @ cx = $CAMERA_IMAGE_WIDTH - $MODEL_IMAGE_WIDTH
+			  if ($cy + $MODEL_IMAGE_HEIGHT > $CAMERA_IMAGE_HEIGHT) @ cy = $CAMERA_IMAGE_HEIGHT - $MODEL_IMAGE_HEIGHT
+			  set crop = "$MODEL_IMAGE_WIDTH"x"$MODEL_IMAGE_HEIGHT"+"$cx"+"$cy"
+
+			  if ($?DEBUG) /bin/echo `/bin/date` "$0 $$ -- cropping $image $crop" 
+			  /usr/local/bin/convert \
+			      -crop "$crop" "$image" \
+			      -gravity center \
+			      -background gray \
+			      "$image:r.jpeg"
+			  breaksw
+			default:
+			  /bin/echo `/bin/date` "$0 $$ -- unknown transformation ($CAMERA_MODEL_TRANSFORM)" 
+			  breaksw
+		      endsw
+		    else	
+		      if ($?DEBUG) /bin/echo `/bin/date` "$0 $$ -- no transformation defined (CAMERA_MODEL_TRANSFORM)" 
 		    endif
 		    # optionally delete the source
 		    if ($?FTP_DELETE) then
 			if ($?DEBUG) /bin/echo `/bin/date` "$0 $$ -- deleting ($file)" >>! $TMP/LOG
-			/usr/bin/curl -s -q "ftp://$LANIP/" -Q "-DELE $file"
+			/usr/bin/curl -s -q -L "ftp://$LANIP/" -Q "-DELE $file"
 		    endif
 	        else
 		    if ($?DEBUG) /bin/echo `/bin/date` "$0 $$ -- not found ($image)" >>! $TMP/LOG
@@ -295,7 +254,7 @@ if ($?FTP_GET == 0) then
 	endif
     end
 else
-    if ($?DEBUG) /bin/echo `/bin/date` $0 $$ -- skipping new images" >>! $TMP/LOG
+    if ($?DEBUG) /bin/echo `/bin/date` $0 $$ -- skipping FTP retrieval; FTP_GET environment variable defined ($FTP_GET)" >>! $TMP/LOG
 endif
 
 #
@@ -339,11 +298,11 @@ mv -f "$NEW" "$OUTPUT"
 #
 if ($?CLOUDANT_OFF == 0 && $?CU && $?DB) then
     if ($?DEBUG) /bin/echo `/bin/date` "$0 $$ -- test if DB exists ($CU/$DB-$API)" >>! $TMP/LOG
-    set DEVICE_DB = `/usr/bin/curl -s -q -X GET "$CU/$DB-$API" | /usr/local/bin/jq '.db_name'`
-    if ( "$DEVICE_DB" == "null" ) then
+    set DEVICE_DB = `/usr/bin/curl -s -q -L -X GET "$CU/$DB-$API" | /usr/local/bin/jq '.db_name'`
+    if ( $DEVICE_DB == "" || "$DEVICE_DB" == "null" ) then
 	if ($?DEBUG) /bin/echo `/bin/date` "$0 $$ -- creating DB $CU/$DB-$API" >>! $TMP/LOG
         # create DB
-        set DEVICE_DB = `/usr/bin/curl -s -q -X PUT "$CU/$DB-$API" | /usr/local/bin/jq '.ok'`
+        set DEVICE_DB = `/usr/bin/curl -s -q -L -X PUT "$CU/$DB-$API" | /usr/local/bin/jq '.ok'`
         # test for success
         if ( "$DEVICE_DB" != "true" ) then
             # failure
@@ -354,19 +313,20 @@ if ($?CLOUDANT_OFF == 0 && $?CU && $?DB) then
         endif
     endif
     if ( $?CLOUDANT_OFF == 0 ) then
-	curl -s -q -o "$OLD" "$CU/$DB-$API/$class" >>&! $TMP/LOG
+	set OLD = "$OUTPUT.$$"
+	curl -s -q -L -o "$OLD" "$CU/$DB-$API/all" >>&! $TMP/LOG
 	if (-s "$OLD") then
 	    set doc = ( `cat "$OLD" | /usr/local/bin/jq ._id,._rev | sed 's/"//g'` )
-	    if ($#doc == 2 && $doc[1] == $class && $doc[2] != "") then
+	    if ($#doc == 2 && $doc[1] == "all" && $doc[2] != "") then
 		set rev = $doc[2]
 		if ($?DEBUG) /bin/echo `/bin/date` "$0 $$ -- deleting old output ($rev)" >>! $TMP/LOG
-		/usr/bin/curl -s -q -X DELETE "$CU/$DB-$API/$class?rev=$rev" >>&! $TMP/LOG
+		/usr/bin/curl -s -q -L -X DELETE "$CU/$DB-$API/all?rev=$rev" >>&! $TMP/LOG
 	    endif
 	else
             if ($?DEBUG) /bin/echo `/bin/date` "$0 $$ -- no old output to delete" >>! $TMP/LOG
         endif
         if ($?DEBUG) /bin/echo `/bin/date` "$0 $$ -- storing new output" >>! $TMP/LOG
-        /usr/bin/curl -s -q -H "Content-type: application/json" -X PUT "$CU/$DB-$API/$class" -d "@$OUTPUT" >>&! $TMP/LOG
+        /usr/bin/curl -s -q -L -H "Content-type: application/json" -X PUT "$CU/$DB-$API/all" -d "@$OUTPUT" >>&! $TMP/LOG
 	if ($status == 0) then
 	    if ($?DEBUG) /bin/echo `/bin/date` "$0 $$ -- success storing new output" >>! $TMP/LOG
 	else
@@ -379,5 +339,12 @@ else
     if ($?DEBUG) /bin/echo `/bin/date` "$0 $$ -- no Cloudant update" >>! $TMP/LOG
 endif
 
+output:
+  echo `/bin/date` "$0 $$ -- COMPLETED ($OUTPUT)"  >>! $TMP/LOG
+
 done:
-echo `/bin/date` "$0 $$ -- FINISH ($QUERY_STRING)"  >>! $TMP/LOG
+  echo `/bin/date` "$0 $$ -- FINISH ($QUERY_STRING)"  >>! $TMP/LOG
+
+cleanup:
+  rm -f "$OUTPUT".$$
+

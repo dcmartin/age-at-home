@@ -1,8 +1,6 @@
 #!/bin/csh -fb
 setenv APP "aah"
 setenv API "cfmatrix"
-setenv WWW "www.dcmartin.com"
-setenv LAN "192.168.1"
 
 setenv DEBUG true
 
