@@ -8,6 +8,9 @@ if ($?MODEL_IMAGE_WIDTH == 0) setenv MODEL_IMAGE_WIDTH 224
 if ($?MODEL_IMAGE_HEIGHT == 0) setenv MODEL_IMAGE_HEIGHT 224
 if ($?CAMERA_MODEL_TRANSFORM == 0) setenv CAMERA_MODEL_TRANSFORM "CROP"
 
+# comment out for normal operation (LOL)
+# setenv CROPIT_FORCE true
+
 if ($?TMP == 0) setenv TMP "/var/lib/age-at-home"
 
 setenv DEBUG true
@@ -37,23 +40,27 @@ endif
 #
 if ($?class == 0) set class = all
 
-setenv DB "$1:t"
+if ($#argv != 1) then
+  /bin/echo `/bin/date` "$0 $$ -- please provide device target (e.g. rough-fog or label/rough-fog)
+  exit
+else
+  setenv DB "$1:t"
+endif
 
-/bin/echo `/bin/date` "$0 $$ -- START ($DB)"  
+/bin/echo `/bin/date` "$0 $$ -- START ($1; device = $DB)"  
 
 if (! -d "$TMP/$1") then
-    /bin/echo `/bin/date` "$0 $$ -- please provide directory (e.g. rough-fog or label/rough-fog)
+    /bin/echo `/bin/date` "$0 $$ -- directory not found $TMP/$1"
     exit
 endif
 
-foreach image ( `find "$TMP/$1/" -type f -name "*.jpg" -print` )
+foreach image ( `find "$TMP/$1/"* -type f -name "*.jpg" -print` )
     set json = "/tmp/$0:t.$$.$image:t:r.json"
     /usr/bin/curl -q -s "http://$CU/$DB/$image:t:r" -o "$json"
     set crop = `/usr/local/bin/jq -j '.imagebox' "$json"`
     set tag = `/usr/local/bin/jq -j '.alchemy.text' "$json"`
     /bin/rm -f "$json"
-    # if ($#crop && (! -s "$image:r.jpeg")) then
-    if ($#crop && (-s "$image")) then
+    if ($#crop && (-s "$image") && ($?CROPIT_FORCE || (! -s "$image:r.jpeg"))) then
 	# get extant
 	set c = `/bin/echo "$crop" | /usr/bin/sed "s/\([0-9]*\)x\([0-9]*\)\([+-]*[0-9]*\)\([+-]*[0-9]*\)/\1 \2 \3 \4/"`
 	if ($#c == 4) then
@@ -88,8 +95,8 @@ foreach image ( `find "$TMP/$1/" -type f -name "*.jpg" -print` )
 	      @ cy = $y + ( $h / 2 ) - ( $MODEL_IMAGE_HEIGHT / 2 )
 	      if ($cx < 0) @ cx = 0
 	      if ($cy < 0) @ cy = 0
-	      if ($cx + $MODEL_IMAGE_WIDTH > $CAMERA_IMAGE_WIDTH) @ cx += $CAMERA_IMAGE_WIDTH - ($cx + $MODEL_IMAGE_WIDTH)
-	      if ($cy + $MODEL_IMAGE_HEIGHT > $CAMERA_IMAGE_HEIGHT) @ cy += $CAMERA_IMAGE_HEIGHT - ($cy + $MODEL_IMAGE_HEIGHT)
+	      if ($cx + $MODEL_IMAGE_WIDTH > $CAMERA_IMAGE_WIDTH) @ cx = $CAMERA_IMAGE_WIDTH - $MODEL_IMAGE_WIDTH
+	      if ($cy + $MODEL_IMAGE_HEIGHT > $CAMERA_IMAGE_HEIGHT) @ cy = $CAMERA_IMAGE_HEIGHT - $MODEL_IMAGE_HEIGHT
 	      set crop = "$MODEL_IMAGE_WIDTH"x"$MODEL_IMAGE_HEIGHT"+"$cx"+"$cy"
 
 	      if ($?DEBUG) /bin/echo `/bin/date` "$0 $$ -- cropping $image $crop" 
