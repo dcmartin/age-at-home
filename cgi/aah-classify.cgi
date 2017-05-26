@@ -3,6 +3,8 @@ setenv APP "aah"
 setenv API "classify"
 setenv LAN "192.168.1"
 setenv WWW "$LAN".32
+setenv DIGITS "$LAN".30
+setenv WAN "www.dcmartin.com"
 if ($?TMP == 0) setenv TMP "/var/lib/age-at-home"
 
 setenv DEBUG true
@@ -58,9 +60,27 @@ setenv QUERY_STRING "db=$DB&id=$id&match=$match&limit=$limit"
 echo `date` "$0 $$ -- START ($QUERY_STRING)" >>! $TMP/LOG
 
 #
+# get read-only access to cloudant
+#
+if (-e ~$USER/.cloudant_url) then
+    set cc = ( `cat ~$USER/.cloudant_url` )
+    if ($#cc > 0) set CU = $cc[1]
+    if ($#cc > 1) set CN = $cc[2]
+endif
+
+if ($?CLOUDANT_URL) then
+    setenv CU $CLOUDANT_URL
+else if ($?CN) then
+    set CU = "$CN.cloudant.com"
+else
+    echo `date` "$0 $$ -- no Cloudant URL" >>! $TMP/LOG
+    goto done
+endif
+
+#
 # location
 #
-set location = `/usr/bin/curl -s -q -L "http://$WWW/CGI/aah-resinDevice.cgi" | /usr/local/bin/jq -r '.|select(.name=="'"$DB"'")|.location'`
+set location = `/usr/bin/curl -s -q -L "http://$WAN/CGI/aah-resinDevice.cgi" | /usr/local/bin/jq -r '.|select(.name=="'"$DB"'")|.location'`
 if ($?location) then
   if ($#location && $location != "") then
     if ($?DEBUG) /bin/echo `/bin/date` "$0 $$ -- found LOCATION ($location)" >>! $TMP/LOG
@@ -77,7 +97,7 @@ if (! -s "$REVIEW") then
     if ($?old) then
       rm -f $old
     endif
-    set url = "http://$WWW/CGI/aah-review.cgi?db=$DB" 
+    set url = "http://$WAN/CGI/aah-review.cgi?db=$DB" 
     if ($?DEBUG) echo `date` "$0 $$ -- CALL aah-review for $DB" >>! $TMP/LOG
     curl -s -q -f -L \
 	"$url" \
@@ -127,7 +147,7 @@ else
   set allclasses = ( `cat "$CLASSES"` )
 endif
 
-set MIXPANELJS = "http://$WWW/CGI/script/mixpanel-aah.js"
+set MIXPANELJS = "http://$WAN/CGI/script/mixpanel-aah.js"
 
 set HTML = "$TMP/$APP-$API.$$.html"
 
@@ -154,7 +174,7 @@ else
   if ($?DEBUG) echo `date` "$0 $$ -- SLAVE_MODE" >>! $TMP/LOG
 endif
 
-echo '<form action="http://'"$WWW/CGI/$APP-$API"'.cgi">' >> "$HTML"
+echo '<form action="http://'"$WAN/CGI/$APP-$API"'.cgi">' >> "$HTML"
 echo '<input type="hidden" name="db" value="'"$DB"'">' >> "$HTML"
 echo '<input type="text" name="match" value="'"$match"'">' >> "$HTML"
 echo '<input type="range" name="limit" value="'"$limit"'" max="'$IMAGE_LIMIT'" min="1">' >> "$HTML"
@@ -201,7 +221,7 @@ if (-d "$CDIR") then
     @ width = 100
 
     # action to label image
-    set act = "http://$WWW/CGI/$APP-label.cgi"
+    set act = "http://$WAN/CGI/$APP-label.cgi"
 
     # do magic
     echo "<script> function hover(e,i) { e.setAttribute('src', i); } function unhover(e) { e.setAttribute('src', i); }</script>" >> "$HTML"
@@ -230,7 +250,7 @@ if (-d "$CDIR") then
 	    set jpeg = "$img:r.jpeg"
 	    set jpm = `echo "$jpg:r" | sed "s/\(.*\)-.*-.*/\1/"`
 	    # note change in limit to one (1) as we are inspecting single image (see width specification below)
-	    set cgi = "http://$WWW/CGI/$APP-$API.cgi?db=$DB&id=$id&match=$jpm&limit=1"
+	    set cgi = "http://$WAN/CGI/$APP-$API.cgi?db=$DB&id=$id&match=$jpm&limit=1"
 	    set time = `echo $jpg | sed "s/\(....\)\(..\)\(..\)\(..\)\(..\).*-.*/\1\/\2\/\3 \4:\5/"`
 
 	    if ($k % $ncolumns == 0) echo '</tr><tr>' >> "$HTML"
@@ -296,6 +316,89 @@ if (-d "$CDIR") then
 	    echo '<figcaption style="font-size:50%;">'"$time"'</figcaption>' >> "$HTML" 
 	    echo '</figure>' >> "$HTML"
 	    echo '</td>' >> "$HTML"
+	    if ($limit == 1) then
+	      set record = ( `/usr/bin/curl -s -q -L "$CU/$DB/$jpg:r" | /usr/local/bin/jq -r '.'` )
+	      set crop = `echo "$record" | /usr/local/bin/jq -r '.imagebox'`
+	      set scores = ( `/bin/echo "$record" | /usr/local/bin/jq -r '.visual.scores|sort_by(.score)'` )
+	      set top1 = ( `/bin/echo "$record" | /usr/local/bin/jq -r '.visual.scores|sort_by(.score)[-1]'` )
+
+	      if ($#crop && $?CAMERA_MODEL_TRANSFORM) then
+		set c = `/bin/echo "$crop" | /usr/bin/sed "s/\([0-9]*\)x\([0-9]*\)\([+-]*[0-9]*\)\([+-]*[0-9]*\)/\1 \2 \3 \4/"`
+		set w = $c[1]
+		set h = $c[2]
+		set x = `/bin/echo "0 $c[3]" | /usr/bin/bc`
+		set y = `/bin/echo "0 $c[4]" | /usr/bin/bc`
+
+		# calculate centroid-based extant ($MODEL_IMAGE_WIDTHx$MODEL_IMAGE_WIDTH image)
+		@ cx = $x + ( $w / 2 ) - ( $MODEL_IMAGE_WIDTH / 2 )
+		@ cy = $y + ( $h / 2 ) - ( $MODEL_IMAGE_HEIGHT / 2 )
+		if ($cx < 0) @ cx = 0
+		if ($cy < 0) @ cy = 0
+		if ($cx + $MODEL_IMAGE_WIDTH > $CAMERA_IMAGE_WIDTH) @ cx = $CAMERA_IMAGE_WIDTH - $MODEL_IMAGE_WIDTH
+		if ($cy + $MODEL_IMAGE_HEIGHT > $CAMERA_IMAGE_HEIGHT) @ cy = $CAMERA_IMAGE_HEIGHT - $MODEL_IMAGE_HEIGHT
+		set ncrop = "$MODEL_IMAGE_WIDTH"x"$MODEL_IMAGE_HEIGHT"+"$cx"+"$cy"
+	      endif
+	      echo '<p style="font-size:75%;">'"CROP: $crop " >> "$HTML"
+	      if ($?ncrop) then
+		echo "NEW: $ncrop " >> "$HTML"
+	      endif	
+              echo '</p>' >> "$HTML"
+
+	      /bin/echo "$scores" | /usr/local/bin/jq -c '.[]' >! /tmp/$0:t.$$
+	      set nscore = ( `cat /tmp/$0:t.$$ | /usr/bin/wc -l` )
+	      if ($nscore) then
+		echo '<td><table style="font-size:75%;"><tr><th>CLASS</th><th>SCORE</th><th>MODEL</th></tr>' >> "$HTML"
+		@ z = 0
+		while ($z < $nscore)
+		  echo '<tr>' >> "$HTML"
+		  @ y = $nscore - $z
+		  set class_id = `cat /tmp/$0:t.$$ | /usr/bin/head -$y | /usr/bin/tail -1 | /usr/local/bin/jq -r '.classifier_id'`
+		  set name = `cat /tmp/$0:t.$$ | /usr/bin/head -$y | /usr/bin/tail -1 | /usr/local/bin/jq -r '.name'`
+		  set score = `cat /tmp/$0:t.$$ | /usr/bin/head -$y | /usr/bin/tail -1 | /usr/local/bin/jq -r '.score'`
+		  if ($?name) then
+		    set type = ()
+		    set tf = ( `echo "$name" | sed 's/[0-9]*-[0-9]*-.*/DIGITS/'` )
+		    if ("$tf" == "DIGITS") set type = "DIGITS"
+		    set db = ( `echo "$DB" | sed "s/-//g"` )
+		    set tf = ( `echo "$name" | sed 's/'"$db"'_.*/CUSTOM/'` )
+		    if ("$tf" == "CUSTOM") set type = "CUSTOM"
+		    switch ($type)
+		      case "CUSTOM":
+			echo '<td>' >> "$HTML"
+			echo '<a target="'"$name"-"$class_id"'" href="http://www.dcmartin.com/CGI/aah-index.cgi?db='"$DB"'&class='"$class_id"'&display=icon">'"$class_id"'</a>' >> "$HTML"
+			echo '</td><td>'"$score"'</td><td>' >> "$HTML"
+			# http://www.dcmartin.com/AAH/cfmatrix.html?model=roughfog_292216250
+		        echo '<a target="cfmatrix" href="http://age-at-home.mybluemix.net/cfmatrix.html?model='"$name"'">'"$name"'</a>' >> "$HTML"
+			echo '</td>' >> "$HTML"
+			breaksw
+		      case "DIGITS":
+			set ds_id = ( `curl -s -q "http://age-at-home.dcmartin.com:5001/models/$name.json" | /usr/local/bin/jq -r '.dataset_id'` )
+			echo '<td>' >> "$HTML"
+			if ($#ds_id) then
+			  echo -n '<a target="'"$name"-"$class_id"'" href="' >> "$HTML"
+			  echo -n 'http://age-at-home.dcmartin.com:5001/datasets/'"$ds_id" >> "$HTML"
+			  echo '">'"$class_id"'</a>' >> "$HTML"
+			else
+			  echo "$class_id" >> "$HTML"
+			endif
+			echo '</td><td>'"$score"'</td><td>' >> "$HTML"
+			# http://192.168.1.30:5001/models/20170506-235510-f689
+		        echo '<a target="digits" href="http://age-at-home.dcmartin.com:5001/models/'"$name"'">'"$name"'</a>' >> "$HTML"
+			echo '</td>' >> "$HTML"
+			breaksw
+		      default:
+			echo '<td>'"$class_id"'</td><td>'"$score"'</td><td>'"$name"'</td>' >> "$HTML"
+			breaksw
+		    endsw
+		  endif
+		  echo '</tr>' >> "$HTML"
+		  @ z++
+		end
+		rm -f /tmp/$0:t.$$
+		echo '</table>' >> "$HTML"
+		echo '</td>' >> "$HTML"
+	      endif
+	    endif
 	else
 	    break
 	endif

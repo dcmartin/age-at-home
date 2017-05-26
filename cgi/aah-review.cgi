@@ -41,28 +41,41 @@ endif
 set OUTPUT = "$TMP/$APP-$API-$QUERY_STRING.$DATE.json"
 
 # check OUTPUT exists
-if (-s "$OUTPUT") then
-    if ($?DEBUG) echo `date` "$0 $$ -- existing ($OUTPUT)" >>! $TMP/LOG
-    goto output
-else
+if (! -s "$OUTPUT") then
     # initiate new output
     if ($?DEBUG) echo `date` "$0 $$ ++ CALLING ./$APP-make-$API.bash to create ($OUTPUT)" >>! $TMP/LOG
     ./$APP-make-$API.bash
     # find old output
-    set old = ( `echo "$TMP/$APP-$API-$QUERY_STRING."*".json"` )
+    set old = ( `echo "$TMP/$APP-$API-$QUERY_STRING".*.json` )
     if ($?old) then
-      if ($#old) then
-        set oldest = $old[$#old]
+      @ nold = $#old
+      if ($nold) then
+	set oldest = $old[$nold]
+	@ nold--
+	if ($nold) rm $old[1-$nold]
       endif
     endif
     if ($?oldest) then
-        setenv DATE "$oldest:r:e"
-        set OUTPUT = $oldest
-        if ($?DEBUG) echo `date` "$0 $$ -- using old output ($OUTPUT)" >>! $TMP/LOG
-        goto output
-      endif
+	setenv DATE "$oldest:r:e"
+	set OUTPUT = $oldest
+	if ($?DEBUG) echo `date` "$0 $$ -- using old output ($OUTPUT)" >>! $TMP/LOG
     endif
-    # return redirect
+endif
+
+if (-s "$OUTPUT") then
+    echo "Content-Type: application/json; charset=utf-8"
+    echo "Access-Control-Allow-Origin: *"
+    @ age = $SECONDS - $DATE
+    echo "Age: $age"
+    @ refresh = $TTL - $age
+    # check back if using old
+    if ($refresh < 0) @ refresh = 90
+    echo "Refresh: $refresh"
+    echo "Cache-Control: max-age=$TTL"
+    echo "Last-Modified:" `date -r $DATE '+%a, %d %b %Y %H:%M:%S %Z'`
+    echo ""
+    /usr/local/bin/jq -c '.' "$OUTPUT"
+else
     set URL = "https://$CU/$DB-$API/all"
     if ($?DEBUG) echo `date` "$0 $$ -- returning redirect ($URL)" >>! $TMP/LOG
     set age = `echo "$SECONDS - $DATE" | bc`
@@ -75,28 +88,10 @@ else
     echo "Status: 302 Found"
     echo "Location: $URL"
     echo ""
-    goto done
 endif
 
-output:
-
-#
-# prepare for output
-#
-echo "Content-Type: application/json; charset=utf-8"
-echo "Access-Control-Allow-Origin: *"
-@ age = $SECONDS - $DATE
-echo "Age: $age"
-@ refresh = $TTL - $age
-# check back if using old
-if ($refresh < 0) @ refresh = 90
-echo "Refresh: $refresh"
-echo "Cache-Control: max-age=$TTL"
-echo "Last-Modified:" `date -r $DATE '+%a, %d %b %Y %H:%M:%S %Z'`
-echo ""
-/usr/local/bin/jq -c '.' "$OUTPUT"
-
 # done
+
 done:
 
 echo `date` "$0 $$ -- FINISH ($QUERY_STRING)" >>! $TMP/LOG
