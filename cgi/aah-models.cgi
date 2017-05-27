@@ -47,7 +47,7 @@ endif
 
 set OUTPUT = "$TMP/$APP-$API-$QUERY_STRING.$DATE.json"
 if (! -s "$OUTPUT") then
-  set TRAIN = "$TMP/$APP-$API-$QUERY_STRING-train.$DATE.json" 
+  set TRAIN = "$TMP/$APP-$API-$db-train.$DATE.json" 
   if (! -s "$TRAIN") then
     set old = ( `echo "$TRAIN:r:r".*` )
     if ($?DEBUG) echo `date` "$0 $$ -- DEBUG: variable (old) is defined (0/1)? ($?old)" >>& "$TMP/LOG"
