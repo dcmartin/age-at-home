@@ -16,9 +16,19 @@ echo `date` "$0 $$ -- START" >>& "$TMP/LOG"
 if ($?QUERY_STRING) then
     set db = `echo "$QUERY_STRING" | sed 's/.*db=\([^&]*\).*/\1/'`
     if ($db == "$QUERY_STRING") unset db
+    set model = `echo "$QUERY_STRING" | sed 's/.*model=\([^&]*\).*/\1/'`
+    if ($model == "$QUERY_STRING") unset model
+    set include_ids = `echo "$QUERY_STRING" | sed 's/.*include_ids\([^&]*\).*/\1/'`
+    if ($include_ids == "$QUERY_STRING") unset include_ids
 endif
 if ($?db == 0) set db = "rough-fog"
 setenv QUERY_STRING "db=$db"
+if ($?model) then
+  setenv QUERY_STRING "$QUERY_STRING"'&model='"$model"
+endif
+if ($?include_ids) then
+  setenv QUERY_STRING "$QUERY_STRING"'&include_ids=true'
+endif
 
 if (-s ~$USER/.cloudant_url) then
     set cc = ( `cat ~$USER/.cloudant_url` )
@@ -78,14 +88,22 @@ if (! -s "$OUTPUT") then
       set models = ( `/usr/local/bin/jq -r '.rows[].id' "$TRAIN"` )
       if ($status == 0 && $#models) then
 	foreach m ( $models )
-	  /usr/local/bin/jq '.rows[]|select(.id=="'$m'")' "$TRAIN" | \
-	    /usr/local/bin/jq '{"model":.id,"date":.doc.date,"device":.doc.name,"labels":[.doc.images[]|{"class":.class,"bytes":.bytes,"count":.count}],"negative":.doc.negative,"classes":.doc.classes,"detail":.doc.detail}' >! "$OUTPUT.$$.$$"
-	    if ($status == 0 && -s "$OUTPUT.$$.$$") then
-	      /usr/local/bin/jq -c '.' "$OUTPUT.$$.$$" >>! "$OUTPUT.$$"
-	    else
-	      echo `date` "$0 $$ -- failure model ($m)" >>& "$TMP/LOG"
-	    endif
-	    rm -f "$OUTPUT.$$.$$"
+	  if ($?model) then
+	    if ("$m" != "$model") continue
+	  endif
+	  if ($?include_ids) then
+	    /usr/local/bin/jq '.rows[]|select(.id=="'$m'")' "$TRAIN" | \
+	      /usr/local/bin/jq '{"model":.id,"date":.doc.date,"device":.doc.name,"labels":[.doc.images[]|{"class":.class,"bytes":.bytes,"count":.count,"ids":.ids}],"negative":.doc.negative,"classes":.doc.classes,"detail":.doc.detail}' >! "$OUTPUT.$$.$$"
+	  else
+	    /usr/local/bin/jq '.rows[]|select(.id=="'$m'")' "$TRAIN" | \
+	      /usr/local/bin/jq '{"model":.id,"date":.doc.date,"device":.doc.name,"labels":[.doc.images[]|{"class":.class,"bytes":.bytes,"count":.count}],"negative":.doc.negative,"classes":.doc.classes,"detail":.doc.detail}' >! "$OUTPUT.$$.$$"
+	  endif
+	  if ($status == 0 && -s "$OUTPUT.$$.$$") then
+	    /usr/local/bin/jq -c '.' "$OUTPUT.$$.$$" >>! "$OUTPUT.$$"
+	  else
+	    echo `date` "$0 $$ -- failure model ($m)" >>& "$TMP/LOG"
+	  endif
+	  rm -f "$OUTPUT.$$.$$"
 	end
 	if (-s "$OUTPUT.$$") then
 	  /usr/local/bin/jq -c '.' "$OUTPUT.$$" >! "$OUTPUT"
