@@ -73,6 +73,7 @@ else
 	set ERROR = `/usr/local/bin/jq '.error' "$JSON" | sed 's/"//g'`
 	if ($ERROR == "not_found") then
 	    echo `date` "$0 $$ -- ERROR ($ERROR)" >>! $TMP/LOG
+            rm -f "$JSON"
 	    exit
         endif
     else if ($#OLD_JSON > 0) then

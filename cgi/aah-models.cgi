@@ -6,8 +6,8 @@ setenv DEBUG true
 
 if ($?TMP == 0) setenv TMP "/var/lib/age-at-home"
 
-# don't update cache more than once per (in seconds)
-set TTL = `echo "5 * 1 * 1  * 1" | bc`
+# don't update service cache(s) (and this service output) more than once per (in seconds)
+set TTL = `echo "60 * 1 * 1  * 1" | bc`
 set SECONDS = `date "+%s"`
 set DATE = `echo $SECONDS \/ $TTL \* $TTL | bc`
 
