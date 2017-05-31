@@ -39,9 +39,9 @@ if ($?DEBUG) echo `date` "$0 $$ -- Cloudant noSQL ($CU)" >& /dev/stderr
 set creds = ~$USER/.watson.visual-recognition.json
 if (-e $creds) then
     # this is to handle multiple entires
-    set keys = ( `jq '.[]|.credentials.api_key' $creds` )
+    set keys = ( `/usr/local/bin/jq '.[]|.credentials.api_key' $creds` )
     if ($#keys > 0) set api_key = `echo "$keys[1]" | sed 's/"//g'`
-    set urls = ( `jq '.[]|.credentials.url' $creds` )
+    set urls = ( `/usr/local/bin/jq '.[]|.credentials.url' $creds` )
     if ($#urls > 0) set TU = `echo "$urls[1]" | sed 's/"//g'`
 else 
     echo `date` "$0 $$ -- no VisualRecognition ($creds)" >& /dev/stderr
@@ -155,37 +155,37 @@ echo `date` "$0 $$ -- START ($QUERY_STRING)" >& /dev/stderr
 #
 
 if ($?CLOUDANT_OFF == 0) then
-    set db = ( `curl -s -q -L "$CU/$device-$API" | jq '.'` )
+    set db = ( `curl -s -q -L "$CU/$device-$API" | /usr/local/bin/jq '.'` )
     if ($#db) then
-      set error = ( `echo "$db" | jq '.error,.reason' | sed 's/"//g'` )
+      set error = ( `echo "$db" | /usr/local/bin/jq '.error,.reason' | sed 's/"//g'` )
       if ($#error > 0 && $error[1] == "not_found") then
         if ($?DEBUG) echo `date` "$0 $$ -- $error[2-] ($device-$API)" >& /dev/stderr
 	unset db
       endif
     endif
     if ($?db && $?model) then
-      set model = ( `curl -s -q -L "$CU/$device-$API/_all_docs?include_docs=true" | jq '.rows[]|select(.doc.model=="'"$model"'")'` )
+      set model = ( `curl -s -q -L "$CU/$device-$API/_all_docs?include_docs=true" | /usr/local/bin/jq '.rows[]|select(.doc.model=="'"$model"'")'` )
     else if ($?db) then
-      set device_models = ( `curl -s -q -L "$CU/$device-$API/_all_docs?include_docs=true" | jq '.rows[]|select(.doc.name=="'"$device"'")'` )
+      set device_models = ( `curl -s -q -L "$CU/$device-$API/_all_docs?include_docs=true" | /usr/local/bin/jq '.rows[]|select(.doc.name=="'"$device"'")'` )
     endif
     if ($?model) then
       if ($?DEBUG) echo `date` "$0 $$ -- FOUND MODEL ($#model)" >& /dev/stderr
       # CHECK INVENTORY AGAINST TRAINED SET
-      set w = ( `echo "$model" | jq '.date' | sed 's/"//g'` )
-      set s = ( `echo "$model" | jq '.images[].class' | sed 's/"//g'` )
-      set p = ( `echo "$model" | jq '.detail.classes[].class' | sed 's/"//g'` )
-      set n = ( `echo "$model" | jq '.negative' | sed 's/"//g'` )
+      set w = ( `echo "$model" | /usr/local/bin/jq '.date' | sed 's/"//g'` )
+      set s = ( `echo "$model" | /usr/local/bin/jq '.images[].class' | sed 's/"//g'` )
+      set p = ( `echo "$model" | /usr/local/bin/jq '.detail.classes[].class' | sed 's/"//g'` )
+      set n = ( `echo "$model" | /usr/local/bin/jq '.negative' | sed 's/"//g'` )
       if ($?DEBUG) echo `date` "$0 $$ -- EXISTING MODEL ($model) date ($w) sets ($s) negative ($n) positive ($p)" >& /dev/stderr
       exit
     else if ($?device_models) then
       if ($?DEBUG) echo `date` "$0 $$ -- DEVICE MODELS ($#device_models)" >& /dev/stderr
-      set classifier_ids = ( `echo "$device_models" | jq '.doc.detail.classifier_id' | sed 's/"//g'` )
-      set models = ( `echo "$device_models" | jq '.doc.model' | sed 's/"//g'` )
-      set dates = ( `echo "$device_models" | jq '.doc.date' | sed 's/"//g'` )
+      set classifier_ids = ( `echo "$device_models" | /usr/local/bin/jq '.doc.detail.classifier_id' | sed 's/"//g'` )
+      set models = ( `echo "$device_models" | /usr/local/bin/jq '.doc.model' | sed 's/"//g'` )
+      set dates = ( `echo "$device_models" | /usr/local/bin/jq '.doc.date' | sed 's/"//g'` )
       # get models by date
-      set date_model = ( `echo "$device_models" | jq '.|select(.doc.date=="'$DATE'")' ` )
+      set date_model = ( `echo "$device_models" | /usr/local/bin/jq '.|select(.doc.date=="'$DATE'")' ` )
       if ($#date_model) then
-        set model = `echo "$date_model" | jq '.doc.model' | sed 's/"//g'`
+        set model = `echo "$date_model" | /usr/local/bin/jq '.doc.model' | sed 's/"//g'`
 	if ($?DEBUG) echo `date` "$0 $$ -- model ($model) by date ($DATE) in Cloudant" >& /dev/stderr
       endif
       if ($?DEBUG) echo `date` "$0 $$ -- classifiers ($classifier_ids) models ($models)" >& /dev/stderr
@@ -207,7 +207,7 @@ endif
 inventory:
 
 if ($?previous && $?model) then
-  if ($?DEBUG) echo `date` "$0 $$ -- PREVIOUS MODEL ($model)" `jq '.' "$previous"` >& /dev/stderr
+  if ($?DEBUG) echo `date` "$0 $$ -- PREVIOUS MODEL ($model)" `/usr/local/bin/jq '.' "$previous"` >& /dev/stderr
 endif
 
 set INVENTORY = "$TMP/$APP-$API-$QUERY_STRING.$DATE.json"
@@ -261,7 +261,7 @@ foreach xdir ( "$TMP/label/$device/"* )
 end
 echo '],"classes":['"$classes"']}' >> "$INVENTORY.$$"
  
-jq '.' "$INVENTORY.$$" >! "$INVENTORY"
+/usr/local/bin/jq '.' "$INVENTORY.$$" >! "$INVENTORY"
 
 rm -f "$INVENTORY.$$"
 
@@ -325,11 +325,11 @@ mkdir -p "$JOB"
 @ SPLITSETS = 2
 
 # get all classes as pairs of class name and count (including negative)
-set allclass = ( `jq '[.images|sort_by(.count)[]|{"class":.class,"count":.count,"bytes":.bytes}]' "$INVENTORY"`)
+set allclass = ( `/usr/local/bin/jq '[.images|sort_by(.count)[]|{"class":.class,"count":.count,"bytes":.bytes}]' "$INVENTORY"`)
 if ($?DEBUG) echo `date` "$0 $$ -- batching images by counts ($allclass)" >& /dev/stderr
 
 # process all samples into training, validation and test sets
-set pairs = ( `echo "$allclass" | jq '.[]|.class,.count' | sed 's/"//g'` )
+set pairs = ( `echo "$allclass" | /usr/local/bin/jq '.[]|.class,.count' | sed 's/"//g'` )
 if ($#pairs == 0) then
     if ($?DEBUG) echo `date` "$0 $$ -- NO PAIRS" >& /dev/stderr
     exit
@@ -356,7 +356,7 @@ while ($p < $#pairs)
 	    if ($?DEBUG) echo `date` "$0 $$ -- split size ($split)" >& /dev/stderr
 	endif
 	set base = "$JOB/$class." 
-	jq '.images[]|select(.class=="'$class'").ids[]' "$INVENTORY" | sed 's/"//g' | split -l $split - $base 
+	/usr/local/bin/jq '.images[]|select(.class=="'$class'").ids[]' "$INVENTORY" | sed 's/"//g' | split -l $split - $base 
 	set split = ( `echo $base*` )
 	if ($?sets) then
 	    set sets = "$sets"'},{"class":"'"$class"'","sets":'
@@ -504,7 +504,7 @@ else
 endif
 
 # get parameters
-set device = ( `jq '.name' "$INVENTORY" | sed 's/"//g'` )
+set device = ( `/usr/local/bin/jq '.name' "$INVENTORY" | sed 's/"//g'` )
 
 if ($?DEBUG) echo `date` "$0 $$ -- device ($device)" >& /dev/stderr
 
@@ -514,12 +514,12 @@ if ($?DEBUG) echo `date` "$0 $$ -- device ($device)" >& /dev/stderr
 
 if ($?model) then
     if ($?DEBUG) echo `date` "$0 $$ -- searching for classifier by ID" >& /dev/stderr
-    set classifiers = ( `curl -q -s -L "$TU/$verid/classifiers?api_key=$api_key&version=$vdate" | jq '[.classifiers[]|select(.classifier_id=="'"$model"'")]'` )
+    set classifiers = ( `curl -q -s -L "$TU/$verid/classifiers?api_key=$api_key&version=$vdate" | /usr/local/bin/jq '[.classifiers[]|select(.classifier_id=="'"$model"'")]'` )
     if ($?DEBUG) echo `date` "$0 $$ -- got ($classifiers) for $model on $device" >& /dev/stderr
-else if ($?device && $?USE_MOST_RECENT) then
+else if ($?device) then
     if ($?DEBUG) echo `date` "$0 $$ -- searching for classifier by device" >& /dev/stderr
-    set classifiers = ( `curl -q -s -L "$TU/$verid/classifiers?api_key=$api_key&version=$vdate" | jq '[.classifiers[]|select(.name=="'"$device"'")]'` )
-    set model = ( `echo "$classifiers" | jq '.[].classifier_id' | sed 's/"//g'` )
+    set classifiers = ( `curl -q -s -L "$TU/$verid/classifiers?api_key=$api_key&version=$vdate" | /usr/local/bin/jq '[.classifiers[]|select(.name=="'"$device"'")]'` )
+    set model = ( `echo "$classifiers" | /usr/local/bin/jq '.[].classifier_id' | sed 's/"//g'` )
     if ($#model > 0) then
       if ($?DEBUG) echo `date` "$0 $$ -- using $model[1] from $device for classifier by device" >& /dev/stderr
       set model = $model[1]
@@ -536,12 +536,14 @@ else
 endif
 
 #
-# TEST CLASSIFIER STATUS (ready or training)
+# TEST IF MODEL READY FOR TRAINING
+#
+# Can only train a classifier in "ready" state
 #
 
 if ($#classifiers > 0 && $?model) then
-    set ready = ( `echo "$classifiers" | jq '[.[]|select(.status=="ready")]'` )
-    set cids = `echo "$classifiers" | jq '.[]|select(.classifier_id=="'"$model"'").classifier_id' | sed 's/"//g'`
+    set ready = ( `echo "$classifiers" | /usr/local/bin/jq '[.[]|select(.status=="ready")]'` )
+    set cids = `echo "$classifiers" | /usr/local/bin/jq '.[]|select(.classifier_id=="'"$model"'").classifier_id' | sed 's/"//g'`
     if ($#cids > 0) then
       foreach cid ( $cids )
 	if ($cid == "$model") then
@@ -552,7 +554,7 @@ if ($#classifiers > 0 && $?model) then
 		unset model
 	    else
 		if ($?DEBUG) echo `date` "$0 $$ -- getting details for classifier id ($cid)" >& /dev/stderr
-		set detail = ( `curl -s -q "$TU/$verid/classifiers/$cid?api_key=$api_key&version=$vdate" | jq '.'` )
+		set detail = ( `curl -s -q "$TU/$verid/classifiers/$cid?api_key=$api_key&version=$vdate" | /usr/local/bin/jq '.'` )
 	    endif
 	    break
 	endif
@@ -561,8 +563,8 @@ if ($#classifiers > 0 && $?model) then
       if ($?model) then
         if ($cid != "$model") then
 	  if ($?DEBUG) echo `date` "$0 $$ -- no classifier ($model) for device ($device) is ready" >& /dev/stderr
-	  set training = ( `echo "$classifiers" | jq '[.[]|select(.status=="training")]'` )
-	  set cids = ( `echo $training | jq '.[]|select(.name=="'"$model"'").classifier_id' | sed 's/"//g'` )
+	  set training = ( `echo "$classifiers" | /usr/local/bin/jq '[.[]|select(.status=="training")]'` )
+	  set cids = ( `echo $training | /usr/local/bin/jq '.[]|select(.name=="'"$model"'").classifier_id' | sed 's/"//g'` )
 	  if ($?DEBUG) echo `date` "$0 $$ -- classifiers ($cids) are in training" >& /dev/stderr
 	  foreach cid ( $cids )
 	      if ($cid == "$model") then
@@ -583,13 +585,13 @@ endif
 
 if ($?detail) then
     if ($?DEBUG) echo `date` "$0 $$ -- model details ($detail)" >& /dev/stderr
-    set oldclasses = ( `echo "$detail" | jq '.classes[].class' | sed 's/"//g'` )
+    set oldclasses = ( `echo "$detail" | /usr/local/bin/jq '.classes[].class' | sed 's/"//g'` )
 else
     unset oldclasses
 endif
 
-set newclasses = ( `jq '.images[].class' "$INVENTORY" | sed 's/"//g'` )
-set notags = ( `jq '.negative' "$INVENTORY" | sed 's/"//g'` )
+set newclasses = ( `/usr/local/bin/jq '.images[].class' "$INVENTORY" | sed 's/"//g'` )
+set notags = ( `/usr/local/bin/jq '.negative' "$INVENTORY" | sed 's/"//g'` )
 
 set net = ()
 foreach nc ( $newclasses )
@@ -611,13 +613,13 @@ if ($?DEBUG) echo `date` "$0 $$ -- OLD ($?oldclasses) NEW ($net) NEGATIVE ($nota
 # RUN TRAINING JOBS
 #
 
-set positive = ( `jq '.images|sort_by(.count)[]|select(.class!="'$notags'")|.class' "$INVENTORY" | sed 's/"//g'` )
-set negative = ( `jq '.images|sort_by(.count)[]|select(.class=="'$notags'")|.class' "$INVENTORY" | sed 's/"//g'` )
+set positive = ( `/usr/local/bin/jq '.images|sort_by(.count)[]|select(.class!="'$notags'")|.class' "$INVENTORY" | sed 's/"//g'` )
+set negative = ( `/usr/local/bin/jq '.images|sort_by(.count)[]|select(.class=="'$notags'")|.class' "$INVENTORY" | sed 's/"//g'` )
 
 if ($?DEBUG) echo `date` "$0 $$ -- POSITIVE ($positive) NEGATIVE ($negative) +++" >& /dev/stderr
 
 # the zero'th set is the training example ZIPs; corresponding +1 set are the IDs used in those ZIPs
-set negatives = ( `jq '.jobs[]|select(.class=="'"$notags"'").sets[0][]' "$JOB/job.json" | sed 's/"//g'` )
+set negatives = ( `/usr/local/bin/jq '.jobs[]|select(.class=="'"$notags"'").sets[0][]' "$JOB/job.json" | sed 's/"//g'` )
 
 @ ttime = 0
 @ h = 1
@@ -625,7 +627,7 @@ set negatives = ( `jq '.jobs[]|select(.class=="'"$notags"'").sets[0][]' "$JOB/jo
 while ($h <= $#positive) 
   set p = $positive[$h]
   # first (0) set is training
-  set positives = ( `jq '.jobs[]|select(.class=="'"$p"'").sets[0][]' "$JOB/job.json" | sed 's/"//g'` )
+  set positives = ( `/usr/local/bin/jq '.jobs[]|select(.class=="'"$p"'").sets[0][]' "$JOB/job.json" | sed 's/"//g'` )
   @ i = 1
   while ($i <= $#positives) 
     set job = "$JOB/$p.$$.json"
@@ -655,8 +657,8 @@ again:
       if (-s "$job") then
 	  echo `date` "$0 $$ ** " `cat "$job"` >& /dev/stderr
 	  # check result code
-	  set code = `jq '.code' "$job" | sed 's/"//g'` 
-	  set message = `jq '.error' "$job" | sed 's/"//g'`
+	  set code = `/usr/local/bin/jq '.code' "$job" | sed 's/"//g'` 
+	  set message = `/usr/local/bin/jq '.error' "$job" | sed 's/"//g'`
 	  if ($?DEBUG) echo `date` "$0 $$ -- FAILURE ($message)" >& /dev/stderr
       endif
       rm -f "$job"
@@ -666,15 +668,15 @@ again:
       goto again
     else 
       # check result code
-      set code = `jq '.code' "$job" | sed 's/"//g'` 
+      set code = `/usr/local/bin/jq '.code' "$job" | sed 's/"//g'` 
       if ($code == 400) then
-	set message = `jq '.error' "$job" | sed 's/"//g'`
+	set message = `/usr/local/bin/jq '.error' "$job" | sed 's/"//g'`
 	if ($?DEBUG) echo `date` "$0 $$ -- FAILURE ($message)" >& /dev/stderr
 	goto next
       endif
       # get classifier id to check on progress
-      set cid = `jq '.classifier_id' "$job" | sed 's/"//g'`
-      set sts = `jq '.status' "$job" | sed 's/"//g'`
+      set cid = `/usr/local/bin/jq '.classifier_id' "$job" | sed 's/"//g'`
+      set sts = `/usr/local/bin/jq '.status' "$job" | sed 's/"//g'`
       if ($#cid > 0 && $cid != "null" && $sts != "error") then
 	if ($?DEBUG) echo `date` "$0 $$ -- LEARNING ($cid) status ($sts)" >& /dev/stderr
 	set model = "$cid"
@@ -687,8 +689,8 @@ again:
     @ elapsed = `date +%s` - $start
     if ($?DEBUG) echo -n `date` "$0 $$ -- LOAD COMPLETE ($elapsed) WAITING "
     while ($sts != "ready") 
-	set detail = ( `curl -s -q -L "$TU/$verid/classifiers/$model?api_key=$api_key&version=$vdate" | jq '.'` )
-	set sts = ( `echo "$detail" | jq '.status' | sed 's/"//g'` )
+	set detail = ( `curl -s -q -L "$TU/$verid/classifiers/$model?api_key=$api_key&version=$vdate" | /usr/local/bin/jq '.'` )
+	set sts = ( `echo "$detail" | /usr/local/bin/jq '.status' | sed 's/"//g'` )
 	if ($sts != "null") then
 	  if ($?DEBUG) echo -n "."
 	else
@@ -717,15 +719,6 @@ end
 
 if ($?DEBUG) echo `date` "$0 $$ -- COMPLETE $DATE ($model) time ($ttime) ($detail)" >& /dev/stderr
 
-if ($?DEBUG) then
-  set nfiles = ( `jq '.jobs[]|select(.class=="'"$notags"'").sets[1][]' "$JOB/job.json" | sed 's/"//g'` )
-  echo `date` "$0 $$ -- $notags : ($#nfiles)"
-  foreach p ( $positive )
-    set pfiles = ( `jq '.jobs[]|select(.class=="'"$p"'").sets[1][]' "$JOB/job.json" | sed 's/"//g'` )
-    echo `date` "$0 $$ -- $p : ($#pfiles)"
-  end
-endif
-
 #
 # UPDATE INVENTORY INDICATING SUCCESS
 #
@@ -733,21 +726,21 @@ endif
 update:
 
 # get jobs batches
-set batches = ( `jq '.' "$JOB/job.json"` )
-set created = `echo "$detail" | jq '.created' | sed 's/"//g'`
+set batches = ( `/usr/local/bin/jq '.' "$JOB/job.json"` )
+set created = `echo "$detail" | /usr/local/bin/jq '.created' | sed 's/"//g'`
 set created = `date -j -f '%Y-%m-%dT%H:%M:%S' +%s $created:r`
-set retrained = `echo "$detail" | jq '.retrained' | sed 's/"//g'`
+set retrained = `echo "$detail" | /usr/local/bin/jq '.retrained' | sed 's/"//g'`
 set retrained = `date -j -f '%Y-%m-%dT%H:%M:%S' +%s $retrained:r`
-set classes = `echo "$batches" | jq '[.jobs[].class]'`
+set classes = `echo "$batches" | /usr/local/bin/jq '[.jobs[].class]'`
 # update INVENTORY with resulting model
 cat "$INVENTORY" \
-    | jq '.classes='"$classes" \
-    | jq '.created="'$created'"' \
-    | jq '.retrained="'$retrained'"' \
-    | jq '.sets='"$batches" \
-    | jq '.date="'"$DATE"'"' \
-    | jq '.model="'"$model"'"' \
-    | jq .detail="$detail" \
+    | /usr/local/bin/jq '.classes='"$classes" \
+    | /usr/local/bin/jq '.created="'$created'"' \
+    | /usr/local/bin/jq '.retrained="'$retrained'"' \
+    | /usr/local/bin/jq '.sets='"$batches" \
+    | /usr/local/bin/jq '.date="'"$DATE"'"' \
+    | /usr/local/bin/jq '.model="'"$model"'"' \
+    | /usr/local/bin/jq '.detail='"$detail" \
     >! "$INVENTORY.$$"
 if (-s "$INVENTORY.$$") then
   mv -f "$INVENTORY.$$" "$INVENTORY"
@@ -762,11 +755,11 @@ endif
 
 if ($?CLOUDANT_OFF == 0 && $?CU && $?device) then
     if ($?DEBUG) echo `date` "$0 $$ -- test if device exists ($device-$API)" >& /dev/stderr
-    set devdb = `curl -s -q -X GET "$CU/$device-$API" | jq '.db_name'`
+    set devdb = `curl -s -q -X GET "$CU/$device-$API" | /usr/local/bin/jq '.db_name'`
     if ( "$devdb" == "null" ) then
         if ($?DEBUG) echo `date` "$0 $$ -- creating device $CU/$device-$API" >>& /dev/stderr
         # create device
-        set devdb = `curl -s -q -X PUT "$CU/$device-$API" | jq '.ok'`
+        set devdb = `curl -s -q -X PUT "$CU/$device-$API" | /usr/local/bin/jq '.ok'`
         # test for success
         if ( "$devdb" != "true" ) then
             # failure
@@ -779,7 +772,7 @@ if ($?CLOUDANT_OFF == 0 && $?CU && $?device) then
     if ( $?CLOUDANT_OFF == 0 ) then
         curl -s -q -o "$INVENTORY.$$" "$CU/$device-$API/$model" >>&! /tmp/LOG
         if (-s "$INVENTORY.$$") then
-            set doc = ( `cat "$INVENTORY.$$" | jq ._id,._rev | sed 's/"//g'` )
+            set doc = ( `cat "$INVENTORY.$$" | /usr/local/bin/jq -r '._id,._rev'` )
             if ($#doc == 2 && $doc[1] == $model && $doc[2] != "") then
                 set rev = $doc[2]
                 if ($?DEBUG) echo `date` "$0 $$ -- deleting old output ($rev)" >& /dev/stderr
