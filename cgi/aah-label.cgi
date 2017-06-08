@@ -32,9 +32,14 @@ if ($?QUERY_STRING) then
     if ($limit == "$QUERY_STRING") unset limit
     set match = `echo "$QUERY_STRING" | sed 's/.*match=\([^&]*\).*/\1/'`
     if ($match == "$QUERY_STRING") unset match
+    set slave = `echo "$QUERY_STRING" | sed 's/.*slave=\([^&]*\).*/\1/'`
+    if ($slave == "$QUERY_STRING") unset slave
+else
+    echo `date` "$0 $$ -- no QUERY_STRING" >>! $TMP/LOG
+    goto done
 endif
 
-if ($?DEBUG) echo `date` "$0 $$ -- $?DB $?id $?image $?old $?new $?add $?skip" >>! $TMP/LOG
+if ($?DEBUG) echo `date` "$0 $$ -- $QUERY_STRING" >>! $TMP/LOG
 
 #
 # handle skipping an image
@@ -71,6 +76,7 @@ if ($?DB && $?id && $?old && $?skip) then
     endif
     # all done
     goto output
+endif
 
 #
 # handle labeling an image
