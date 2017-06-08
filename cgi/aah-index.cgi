@@ -80,69 +80,74 @@ endif
 
 if ($?DEBUG) echo `date` "$0 $$ -- query string ($QUERY_STRING)" >>! $TMP/LOG
 
-# handle image
+#
+# handle images (files)
+#
 if ($?id) then
+
     set base = "$TMP/label/$db/$class"
-    set images = ( `find "$base" -name "$id.$type" -type f -print` )
-    if ($?DEBUG) echo `date` "$0 $$ -- IMAGE ($id) count ($#images) " >>! $TMP/LOG
-    # should be singleton image
+    set images = ( `find "$base" -name "$id""*.$type" -type f -print` )
+
+    if ($?DEBUG) echo `date` "$0 $$ -- BASE ($base) ID ($id) images ($#images)" >>! $TMP/LOG
+
+    if ($#images == 0) then
+      echo "Status: 404 Not Found"
+      goto done
+    endif
+
     echo "Access-Control-Allow-Origin: *"
     echo "Age: $AGE"
     echo "Cache-Control: max-age=$TTL"
     echo "Last-Modified:" `date -r $DATE '+%a, %d %b %Y %H:%M:%S %Z'`
-
     echo "Content-Location: $WWW/CGI/$APP-$API.cgi?$QUERY_STRING"
 
+    #  singleton image
     if ($#images == 1) then
 	echo "Content-Type: image/jpeg"
 	echo ""
-	if ($?DEBUG) echo `date` "$0 $$ -- DD ($id) count ($images) " >>! $TMP/LOG
+	if ($?DEBUG) echo `date` "$0 $$ -- DD ($id) ($#images) " >>! $TMP/LOG
 	dd if="$images"
     else if ($#images > 1) then
+	#  trick is to use id to pass regexp base
 	echo "Content-Type: application/zip"
 	echo ""
+	if ($?DEBUG) echo `date` "$0 $$ -- ZIP ($#images) DD ($id) count ($images) " >>! $TMP/LOG
 	zip - $images | dd of=/dev/stdout
     endif
+
     goto done
 endif
 
 #
 # build HTML
 #
-set OUTPUT = "$TMP/$APP-$API-$QUERY_STRING.$DATE.html"
-if (-s "$OUTPUT") then
-    if ($?DEBUG) echo `date` "$0 $$ -- EXISTING $OUTPUT" >>! $TMP/LOG
-    goto output
-endif
+set OUTPUT = "$TMP/$APP-$API-$QUERY_STRING.html"
 set INPROGRESS = ( `echo "$OUTPUT".*` )
-set OLD = ( `echo "$TMP/$APP-$API-$QUERY_STRING".*.html` )
 if ($#INPROGRESS) then
-    if ($?DEBUG) echo `date` "$0 $$ -- IN-PROGRESS $INPROGRESS" >>! $TMP/LOG
-    if ($#OLD) then
-	if (-s "$OLD[1]") then
-	    set OUTPUT = $OLD[1]
-	    goto output
-	endif
+    set INPROGRESS = $INPROGRESS[$#INPROGRESS]
+    set pid = "$INPROGRESS:e"
+    set pid = `ps axw | egrep "pid" | egrep "$API" | awk '{ print $1 }'`
+    if ($#pid) then
+      if ($?DEBUG) echo `date` "$0 $$ -- IN-PROGRESS $INPROGRESS" >>! $TMP/LOG
+      goto done
     endif
-    if ($?DEBUG) echo `date` "$0 $$ -- NO OLD HTML" >>! $TMP/LOG
-    goto done
+    rm -f "$INPROGRESS:r".*
+else
+  # start work
+  touch "$OUTPUT.$$"
 endif
 
-# start work
-touch "$OUTPUT.$$"
-
-# cleanup old
-if ($#OLD > 1) rm -f $OLD[2-]
+#
+# test hierarchy level (label/device/class); class could be a UNIX directory hierarchy, e.g. "/vehicle/car/sedan" (AFAIK :-)
+#
 
 if ($?class) then
     set base = "$TMP/label/$db/$class"
-    if ($?id) then
-	set images = ( `find "$base" -name "$id.$type" -type f -print` )
-    else
-	set images = ( `find "$base" -name "*.$type" -type f -print | sed "s@$base/\(.*\)\.$type@\1@"` )
-    endif
+    # find all images in the $class directory
+    set images = ( `find "$base" -name "*.$type" -type f -print | sed "s@$base/\(.*\)\.$type@\1@"` )
 else 
     set base = "$TMP/label/$db"
+    # find all directories in the $db directory (not includes those beginning with ".", e.g. ".skipped")
     set classes = ( `find "$base" -name "[^\.]*" -type d -print | sed "s@$base@@" | sed "s@/@@"` )
 endif
 
