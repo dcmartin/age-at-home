@@ -1,0 +1,53 @@
+#!/bin/csh -fb
+
+#
+# SCRIPT TO FIX rough-fog database to force replication to include alchemy.name as new element and alchemy.score as DOUBLE rather than VARCHAR
+#
+
+# don't update file information more than once per (in seconds)
+set TTL = 1800
+set SECONDS = `date "+%s"`
+set DATE = `/bin/echo $SECONDS \/ $TTL \* $TTL | /usr/bin/bc`
+set ALLDOCS = "/tmp/alldocs".$DATE.json
+
+if (! -s "$ALLDOCS") then
+  /bin/rm -f "$ALLDOCS:r:r".*.json
+  /usr/bin/curl -s -q -f -L "http://$CLOUDANT_URL/rough-fog/_all_docs" -o "$ALLDOCS"
+  if ($status == 22 || ! -s "$ALLDOCS") then
+    /bin/echo "CANNOT RETRIEVE $ALLDOCS" >&! /dev/stderr
+    /bin/rm -f "$ALLDOCS"
+    exit
+  endif
+endif
+
+/bin/echo "GOT $ALLDOCS" >&! /dev/stderr
+
+foreach i ( `jq -r '.rows[].id' "$ALLDOCS"` )
+  set old = "/tmp/$i.json"
+  set new = "$old:r".js
+  /usr/bin/curl -s -q -f -L "http://$CLOUDANT_URL/rough-fog/$i" > "$old"
+  if ($status == 22 || ! -s "$old") then
+    /bin/echo "CANNOT RETRIEVE $i" >&! /dev/stderr
+    /bin/rm -f "$i".*
+    continue
+  endif
+  set rev = `/usr/local/bin/jq -r '._rev' "$old"`
+  set text = `/usr/local/bin/jq -r '.alchemy.text' "$old"`
+  set name = `/usr/local/bin/jq -r '.alchemy.name' "$old"`
+  set score = `/usr/local/bin/jq -r '.alchemy.score' "$old"`
+  if ($#rev == 0 || $rev == "null") then
+    /bin/echo "BAD: $i ($old)" >&! /dev/stderr
+    continue
+  endif
+  if ($#name == 0) set name = "NULL"
+  if ($#score == 0) set score = 0.0
+  /bin/echo "$i :: $text :: $name :: $score "
+  /bin/cat "$old" | /usr/local/bin/jq '.alchemy.name="'"$name"'"' | /usr/local/bin/jq '.alchemy.score='"$score" >! "$new"
+  if ($status == 0 && -s "$new") then
+    # /bin/echo "DELETE /rough-fog/$i?rev=$rev" >&! /dev/stderr
+    # /usr/bin/curl -s -q -f -X DELETE "$CLOUDANT_URL/rough-fog/$i?rev=$rev"
+    /bin/echo "PUT /rough-fog/$i" >&! /dev/stderr
+    /usr/bin/curl -s -q -f -H "Content-type: application/json" -X PUT "$CLOUDANT_URL/rough-fog/$i" -d "@$new"
+    /bin/rm -f "$new" "$old"
+  endif
+end
