@@ -1,4 +1,18 @@
-#!/bin/csh
+#!/bin/csh -fb
+
+##
+## PROCESS TEST RESULTS INTO QUALITY INFORMATION FOR DISPLAY IN CONFUSION MATRIX
+##
+## INPUTS
+##  - CLOUDANT/<device>-test/<model>
+##
+## CACHE
+##  - <TMP>/matrix/<model>-test.json
+##
+## OUTPUTS
+##  - <TMP>/matrix/<model>.json
+##  - <TMP>/matrix/<model>.csv
+##
 
 if ($?TMP == 0) set TMP = /var/lib/age-at-home
 set APP=aah
