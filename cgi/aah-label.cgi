@@ -1,31 +1,46 @@
 #!/bin/csh -fb
-setenv DEBUG true
 setenv APP "aah"
 setenv API "label"
-setenv WWW "www.dcmartin.com"
 setenv LAN "192.168.1"
-if ($?TMP == 0) setenv TMP "/var/lib/age-at-home"
+setenv WWW "$LAN".32
+setenv DIGITS "$LAN".30
+setenv WAN "www.dcmartin.com"
+setenv TMP "/var/lib/age-at-home"
 
 # don't update statistics more than once per (in seconds)
 set TTL = 15
 set SECONDS = `date "+%s"`
 set DATE = `echo $SECONDS \/ $TTL \* $TTL | bc`
+ 
+# setenv DEBUG true
 
 echo `date` "$0 $$ -- START ($QUERY_STRING) from $HTTP_REFERER" >>! $TMP/LOG
 
 if ($?QUERY_STRING) then
-    set DB = `echo "$QUERY_STRING" | sed 's/.*db=\([^&]*\).*/\1/'`
-    if ($DB == "$QUERY_STRING") unset DB
-    set id = `echo "$QUERY_STRING" | sed 's/.*id=\([^&]*\).*/\1/'`
-    if ($id == "$QUERY_STRING") unset id
+    set db = `echo "$QUERY_STRING" | sed 's/.*db=\([^&]*\).*/\1/'`
+    if ($db == "$QUERY_STRING") unset db
+    set class = `echo "$QUERY_STRING" | sed 's/.*class=\([^&]*\).*/\1/'`
+    if ($class == "$QUERY_STRING") unset class
     set image = `echo "$QUERY_STRING" | sed 's/.*image=\([^&]*\).*/\1/'`
     if ($image == "$QUERY_STRING") unset image
     set old = `echo "$QUERY_STRING" | sed 's/.*old=\([^&]*\).*/\1/'`
-    if ($old == "$QUERY_STRING") unset old
+    if ($old == "$QUERY_STRING") then
+      unset old
+    else
+      # set old = ( `echo "$old" | sed "s|%2[Ff]|/|g"` )
+    endif
     set new = `echo "$QUERY_STRING" | sed 's/.*new=\([^&]*\).*/\1/'`
-    if ($new == "$QUERY_STRING") unset new
+    if ($new == "$QUERY_STRING") then
+      unset new
+    else
+      # set new = ( `echo "$new" | sed "s|%2[Ff]|/|g"` )
+    endif
     set add = `echo "$QUERY_STRING" | sed 's/.*add=\([^&]*\).*/\1/'`
-    if ($add == "$QUERY_STRING" || $add == "") unset add
+    if ($add == "$QUERY_STRING" || $add == "") then
+      unset add
+    else
+      # set add = ( `echo "$add" | sed "s|%2[Ff]|/|g"` )
+    endif
     set skip = `echo "$QUERY_STRING" | sed 's/.*skip=\([^&]*\).*/\1/'`
     if ($skip == "$QUERY_STRING") unset skip
     set limit = `echo "$QUERY_STRING" | sed 's/.*limit=\([^&]*\).*/\1/'`
@@ -44,10 +59,10 @@ if ($?DEBUG) echo `date` "$0 $$ -- $QUERY_STRING" >>! $TMP/LOG
 #
 # handle skipping an image
 #
-if ($?DB && $?id && $?old && $?skip) then
+if ($?db && $?class && $?old && $?skip) then
     set image = "$skip"
-    set jpg = "$TMP/$DB/$old/$image"
-    set dest = "$TMP/$API/$DB/.skipped"
+    set jpg = "$TMP/$db/$old/$image"
+    set dest = "$TMP/$API/$db/.skipped"
 
     mkdir -p "$dest"
     if (-s "$jpg") then
@@ -73,6 +88,9 @@ if ($?DB && $?id && $?old && $?skip) then
 		set OUTPUT = '{"result":"fail-move","image":"'"$jpg"'","skip":"'"$skip"'"}'
 	    endif
 	endif
+    else
+	if ($?DEBUG) echo `date` "$0 $$ -- FAIL to move $jpg -> $dest" >>! $TMP/LOG
+	set OUTPUT = '{"result":"fail no image","image":"'"$jpg"'","skip":"'"$skip"'"}'
     endif
     # all done
     goto output
@@ -81,17 +99,17 @@ endif
 #
 # handle labeling an image
 #
-if ($?DB && $?id && $?image && $?old && ($?new || $?add)) then
+if ($?db && $?class && $?image && $?old && ($?new || $?add)) then
     if ($?add) then
 	set new = "$add"
     endif
 
-    set jpg = "$TMP/$DB/$old/$image"
-    set link = "$TMP/$API/$DB/$new/$image"
+    set jpg = "$TMP/$db/$old/$image"
+    set link = "$TMP/$API/$db/$new/$image"
 
-    if (! -d "$TMP/$API/$DB/$new") then
-        if ($?DEBUG) echo `date` "$0 $$ -- making directory $TMP/$API/$DB/$new" >>! $TMP/LOG
-	mkdir -p "$TMP/$API/$DB/$new"
+    if (! -d "$TMP/$API/$db/$new") then
+        if ($?DEBUG) echo `date` "$0 $$ -- making directory $TMP/$API/$db/$new" >>! $TMP/LOG
+	mkdir -p "$TMP/$API/$db/$new"
     endif
 
     if (-s "$jpg") then
@@ -135,22 +153,28 @@ echo "Cache-Control: no-cache"
 echo "Last-Modified:" `date -r $DATE '+%a, %d %b %Y %H:%M:%S %Z'`
 
 # test parameters
-if ($?HTTP_REFERER && $?DB && $?id) then
+if ($?HTTP_REFERER && $?db) then
     # get base
     set baseurl = `echo "$HTTP_REFERER" | sed 's/\([^?]*\).*/\1/'`
-    set referer = "$baseurl?db=$DB&id=$id"
+    if ($?class) then
+      set referer = "$baseurl?db=$db&class=$class"
+    endif
     if ($?match) then
 	set referer = "$referer&match=$match"
     endif
     if ($?limit) then
 	set referer = "$referer&limit=$limit"
     endif
+    if ($?slave) then
+	set slave = "$referer&slave=$slave"
     if ($?add) then
 	set referer = "$referer&add=$add"
     endif
     set referer = "$referer&assign=$old/$image"
     echo "Location: $referer"
     unset noglob
+else
+    if ($?DEBUG) echo `date` "$0 $$ -- no HTTP_REFERER" >>! $TMP/LOG
 endif
 
 echo ""

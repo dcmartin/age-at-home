@@ -2,7 +2,7 @@
 setenv APP "aah"
 setenv API "cfmatrix"
 
-setenv DEBUG true
+# setenv DEBUG true
 
 if ($?TMP == 0) setenv TMP "/var/lib/age-at-home"
 

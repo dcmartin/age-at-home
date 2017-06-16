@@ -22,43 +22,47 @@ setenv QUERY_STRING "db=$DB"
 
 echo `date` "$0 $$ -- START ($QUERY_STRING)" >>! $TMP/LOG
 
+# initiate new output
+if ($?DEBUG) echo `date` "$0 $$ ++ REQUESTING ./$APP-make-$API.bash" >>! $TMP/LOG
+./$APP-make-$API.bash
+
 if (-e ~$USER/.cloudant_url) then
     set cc = ( `cat ~$USER/.cloudant_url` )
     if ($#cc > 0) set CU = $cc[1]
-    if ($#cc > 1) set CN = $cc[2]
 endif
-
-if ($?CLOUDANT_URL) then
-    set CU = $CLOUDANT_URL
-else if ($?CN) then
-    set CU = "$CN"@"$CN.cloudant.com"
-else
+if ($?CU == 0) then
     if ($?DEBUG) echo `date` "$0 $$ -- no Cloudant URL" >>! $TMP/LOG
     goto done
 endif
 
-# output set
+#
+# find output
+#
 set OUTPUT = "$TMP/$APP-$API-$QUERY_STRING.$DATE.json"
-
 # check OUTPUT exists
+if (-s "$OUTPUT") then
+    set seqid = `/usr/local/bin/jq -f ".seqid' "$OUTPUT"`
+    if ($seqid == "null" || $seqid == 0) then
+      if ($?DEBUG) echo `date` "$0 $$ ++ bad $OUTPUT" >>! $TMP/LOG
+      rm -f "$OUTPUT"
+    endif
+endif
+
 if (! -s "$OUTPUT") then
-    # initiate new output
-    if ($?DEBUG) echo `date` "$0 $$ ++ CALLING ./$APP-make-$API.bash to create ($OUTPUT)" >>! $TMP/LOG
-    ./$APP-make-$API.bash
-    # find old output
+    # look for old output
     set old = ( `echo "$TMP/$APP-$API-$QUERY_STRING".*.json` )
     if ($?old) then
       @ nold = $#old
       if ($nold) then
 	set oldest = $old[$nold]
 	@ nold--
-	if ($nold) rm $old[1-$nold]
+	if ($nold) rm -f $old[1-$nold]
       endif
     endif
     if ($?oldest) then
-	setenv DATE "$oldest:r:e"
-	set OUTPUT = $oldest
-	if ($?DEBUG) echo `date` "$0 $$ -- using old output ($OUTPUT)" >>! $TMP/LOG
+	if ($?DEBUG) echo `date` "$0 $$ -- using old output ($oldest)" >>! $TMP/LOG
+	set OUTPUT = "$oldest"
+	set DATE = "$oldest:r:e"
     endif
 endif
 
@@ -69,18 +73,19 @@ if (-s "$OUTPUT") then
     echo "Age: $age"
     @ refresh = $TTL - $age
     # check back if using old
-    if ($refresh < 0) @ refresh = 90
+    if ($refresh < 0) @ refresh = $TTL
     echo "Refresh: $refresh"
     echo "Cache-Control: max-age=$TTL"
     echo "Last-Modified:" `date -r $DATE '+%a, %d %b %Y %H:%M:%S %Z'`
     echo ""
     /usr/local/bin/jq -c '.' "$OUTPUT"
+    if ($?DEBUG) echo `date` "$0 $$ -- output ($OUTPUT) Age: $age Refresh: $refresh" >>! $TMP/LOG
 else
     set URL = "https://$CU/$DB-$API/all"
     if ($?DEBUG) echo `date` "$0 $$ -- returning redirect ($URL)" >>! $TMP/LOG
     set age = `echo "$SECONDS - $DATE" | bc`
     echo "Age: $age"
-    set refresh = `echo "$TTL - $age | bc`
+    set refresh = `echo "$TTL - $age" | bc`
     if ($refresh < 0) set refresh = 0
     echo "Refresh: $refresh"
     echo "Cache-Control: max-age=$TTL"
