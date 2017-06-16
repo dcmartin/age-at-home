@@ -87,7 +87,7 @@ if (! -s "$results" || ((-M "$ids") > (-M "$results"))) then
 
 	set t = "$class.$a.$b.$$.txt"
 	set s = "$class.$a.$b.$$.json"
-        tail +$a "$ids" | head -$z | awk '{ printf("%s/%s\n", '"$TMP/$db/$class"',$1) }' >! "$t"
+        tail +$a "$ids" | head -$z | awk '{ printf("%s/%s.jpg\n", '"$TMP/$db/$class"',$1) }' >! "$t"
 	curl -s -q -L -X POST -F "image_list=@$t" -F "job_id=$model_id" "$surl" >! "$s"
 	if (-s "$s") then
 	    set err = `/usr/local/bin/jq '.error.message' "$s"`
