@@ -133,8 +133,7 @@ if ($?device && $?model && $?notags) then
     if ($?DEBUG) /bin/echo `/bin/date` "$0 $$ -- $device $model $notags" 
     setenv QUERY_STRING "db=$device"
 else if ($?notags == 0) then
-    # get device informationfrom resin service that returns JSON for device
-    set location = `/usr/bin/curl -s -q -f -L "http://$WWW/CGI/aah-resinDevice.cgi" | /usr/local/bin/jq -r '.|select(.name=="'"$device"'")|.location'`
+    set location = `/usr/bin/curl -s -q -f -L "http://$WWW/CGI/aah-devices.cgi" | /usr/local/bin/jq -r '.|select(.name=="'"$device"'")|.location'`
     if ($#location) then
 	if ($?DEBUG) /bin/echo `/bin/date` "$0 $$ -- found AAH_LOCATION ($location)" 
     else
