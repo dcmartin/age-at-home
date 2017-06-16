@@ -1,5 +1,15 @@
 #!/bin/csh -fb
 
+#
+# This script performs bulk inferencing by the DIGITS server for images identified by the aah-images.cgi service
+#
+# Submission of images is done via direct upload from internal file-system storage (i.e. /var/lib/age-at-home/<device>)
+#
+# This script needs to be cleaned and integrated into the aah-make-review.csh process for new images identified by aah-updates.cgi
+#
+#
+
+
 setenv DEBUG true
 
 if ($?CGI == 0) setenv CGI "http://www.dcmartin.com/CGI/"
@@ -43,26 +53,26 @@ endif
 
 # what we're looking to create/find
 set dir = "$TMP/digits/$db/$model_id"
-set files = "$dir/$class-files.txt"
+set ids = "$dir/$class-ids.txt"
 set results = "$dir/$class-results.json"
 
 # make sure we've a place to go
 mkdir -p "$dir"
 
-if (! -s "$files") then
-    echo `date` "$0 $$ -- GETTING $files" >& /dev/stderr
-    curl -s -q -L "$CGI/aah-scored.cgi?db=$db&class=$class&mime=text" >! "$files"
+if (! -s "$ids") then
+    echo `date` "$0 $$ -- GETTING $ids" >& /dev/stderr
+    curl -s -q -L "$CGI/aah-images.cgi?db=$db&class=$class" | /usr/local/bin/jq -r '.ids[]?.id' >! "$ids"
 endif
 
-if (! -s "$results" || ((-M "$files") > (-M "$results"))) then
+if (! -s "$results" || ((-M "$ids") > (-M "$results"))) then
     set surl = "$DIGITS/models/images/classification/classify_many.json"
 
-    set lc = `wc -l "$files" | awk '{ print $1 }'`
+    set lc = `wc -l "$ids" | awk '{ print $1 }'`
     if ($lc < 1) then
-	echo `date` "$0 $$ -- NO FILES $files" >& /dev/stderr
+	echo `date` "$0 $$ -- NO FILES $ids" >& /dev/stderr
 	exit
     else
-	echo `date` "$0 $$ -- creating scores from $files ($lc) using $model_id" >& /dev/stderr
+	echo `date` "$0 $$ -- creating scores from $ids ($lc) using $model_id" >& /dev/stderr
     endif
 
     @ a = 1
@@ -77,7 +87,7 @@ if (! -s "$results" || ((-M "$files") > (-M "$results"))) then
 
 	set t = "$class.$a.$b.$$.txt"
 	set s = "$class.$a.$b.$$.json"
-        tail +$a "$files" | head -$z >! "$t"
+        tail +$a "$ids" | head -$z | awk '{ printf("%s/%s\n", '"$TMP/$db/$class"',$1) }' >! "$t"
 	curl -s -q -L -X POST -F "image_list=@$t" -F "job_id=$model_id" "$surl" >! "$s"
 	if (-s "$s") then
 	    set err = `/usr/local/bin/jq '.error.message' "$s"`
