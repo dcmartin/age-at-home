@@ -2,7 +2,9 @@
 setenv APP "aah"
 setenv API "labels"
 setenv LAN "192.168.1"
-setenv WWW "www.dcmartin.com"
+setenv WWW "$LAN".32
+setenv DIGITS "$LAN".30
+setenv WAN "www.dcmartin.com"
 setenv TMP "/var/lib/age-at-home"
 
 if ($?TTL == 0) set TTL = 1800
@@ -38,7 +40,7 @@ set OUTPUT = "$TMP/$APP-$API-$QUERY_STRING.$DATE.json"
 #
 
 if (-s "$OUTPUT") then
-  if ($?VERBOSE) /bin/echo `/bin/date` "$0 $$ -- $OUTPUT exists" >>&! $TMP/LOG
+  if ($?DEBUG) /bin/echo `/bin/date` "$0 $$ -- $OUTPUT exists" >>&! $TMP/LOG
   goto done
 endif
 
@@ -51,7 +53,7 @@ if ($#INPROGRESS) then
     set pid = $ip:e
     set eid = `ps axw | awk '{ print $1 }' | egrep "$pid"`
     if ($pid == $eid) then
-      if ($?VERBOSE) /bin/echo `/bin/date` "$0 $$ -- in-progress ($pid)" >>&! $TMP/LOG
+      if ($?DEBUG) /bin/echo `/bin/date` "$0 $$ -- in-progress ($pid)" >>&! $TMP/LOG
       goto done
     endif
     rm -f $ip
@@ -74,7 +76,7 @@ if (-e ~$USER/.cloudant_url) then
     set CU = "$CN":"$CP"@"$CU"
   else
 else
-  if($?VERBOSE) /bin/echo `/bin/date` "$0 $$ -- NO ~$USER/.cloudant_url" >>&! $TMP/LOG
+  if($?DEBUG) /bin/echo `/bin/date` "$0 $$ -- NO ~$USER/.cloudant_url" >>&! $TMP/LOG
   goto done
 endif
 
@@ -82,18 +84,18 @@ endif
 # CREATE DATABASE 
 #
 if ($?CU && $?db) then
-  if ($?VERBOSE) /bin/echo `/bin/date` "$0 $$ -- test if db exists ($CU/$db-$API)" >>&! $TMP/LOG
+  if ($?DEBUG) /bin/echo `/bin/date` "$0 $$ -- test if db exists ($CU/$db-$API)" >>&! $TMP/LOG
   set DEVICE_db = `/usr/bin/curl -s -q -L -X GET "$CU/$db-$API" | /usr/local/bin/jq '.db_name'`
   if ( $DEVICE_db == "" || "$DEVICE_db" == "null" ) then
-    if ($?VERBOSE) /bin/echo `/bin/date` "$0 $$ -- creating db $CU/$db-$API" >>&! $TMP/LOG
+    if ($?DEBUG) /bin/echo `/bin/date` "$0 $$ -- creating db $CU/$db-$API" >>&! $TMP/LOG
     # create db
     set DEVICE_db = `/usr/bin/curl -s -q -L -X PUT "$CU/$db-$API" | /usr/local/bin/jq '.ok'`
     # test for success
     if ( "$DEVICE_db" != "true" ) then
       # failure
-      if ($?VERBOSE) /bin/echo `/bin/date` "$0 $$ -- failure creating Cloudant database ($db-$API)" >>&! $TMP/LOG
+      if ($?DEBUG) /bin/echo `/bin/date` "$0 $$ -- failure creating Cloudant database ($db-$API)" >>&! $TMP/LOG
     else
-      if ($?VERBOSE) /bin/echo `/bin/date` "$0 $$ -- success creating db $CU/$db-$API" >>&! $TMP/LOG
+      if ($?DEBUG) /bin/echo `/bin/date` "$0 $$ -- success creating db $CU/$db-$API" >>&! $TMP/LOG
     endif
   endif
 endif
@@ -108,10 +110,10 @@ set known = ()
 if ($status != 22 && -s "$ALL") then
   set last = ( `/usr/local/bin/jq -r '.date' "$ALL"` )
   if ($#last == 0 || $last == "null") then
-    if ($?VERBOSE) /bin/echo `/bin/date` "$0 $$ -- NO MODIFIED DATE ($i)" >>&! $TMP/LOG
+    if ($?DEBUG) /bin/echo `/bin/date` "$0 $$ -- NO MODIFIED DATE ($i)" >>&! $TMP/LOG
     set last = 0
   else
-    if ($?VERBOSE) /bin/echo `/bin/date` "$0 $$ -- ALL MODIFIED LAST ($last)" >>&! $TMP/LOG
+    if ($?DEBUG) /bin/echo `/bin/date` "$0 $$ -- ALL MODIFIED LAST ($last)" >>&! $TMP/LOG
   endif
 endif
 if ($last && -s "$ALL") then
@@ -119,27 +121,29 @@ if ($last && -s "$ALL") then
   set known = ( `/usr/local/bin/jq -r '.classes[]?.name' "$ALL"` )
 endif
 if ($#known == 0) then
+  if ($?DEBUG) /bin/echo `/bin/date` "$0 $$ -- NO EXISTING CLASSES (all)" >>&! $TMP/LOG
   # get known through inspection of all rows
   set known = ( `curl -s -q -f -L "$CU/$db-$API/_all_docs" | /usr/local/bin/jq -r '.rows[]?.id'` )
 endif
 if ($#known == 0 || "$known" == '[]' || "$known" == "null") then
-    if ($?VERBOSE) /bin/echo `/bin/date` "$0 $$ -- NO EXISTING CLASSES (all)" >>&! $TMP/LOG
+    if ($?DEBUG) /bin/echo `/bin/date` "$0 $$ -- DB: $db !! CANNOT FIND ANY KNOWN CLASSES OF $API" >>&! $TMP/LOG
     set known = ()
   endif
 else
-  if ($?VERBOSE) /bin/echo `/bin/date` "$0 $$ -- CANNOT RETRIEVE $db-$API/all ($ALL)" >>&! $TMP/LOG
+  if ($?DEBUG) /bin/echo `/bin/date` "$0 $$ -- CANNOT RETRIEVE $db-$API/all ($ALL)" >>&! $TMP/LOG
   set last = 0
 endif
+
 
 #
 # FIND CURRENT HIERARCHY
 #
 set dir = "$TMP/label/$db" 
 if (! -d "$dir") then
-  if ($?VERBOSE) echo `date` "$0 $$ -- create directory ($dir)" >>&! $TMP/LOG
+  if ($?DEBUG) echo `date` "$0 $$ -- create directory ($dir)" >>&! $TMP/LOG
   mkdir -p "$dir"
   if (! -d "$dir") then
-    if ($?VERBOSE) echo `date` "$0 $$ -- FAILURE -- no directory ($dir)" >>&! $TMP/LOG
+    if ($?DEBUG) echo `date` "$0 $$ -- FAILURE -- no directory ($dir)" >>&! $TMP/LOG
     goto done
   endif
 endif
@@ -149,7 +153,7 @@ if ($?NOFORCE == 0 || $stat > $last) then
   # search for any changes
   set classes = ( `find "$dir" -type d -print | egrep -v "/\." | sed "s@$dir@@g" | sed "s@^/@@" | sed "s@ /@ @g"` )
   if ($#classes == 0) then
-    if ($?VERBOSE) /bin/echo `/bin/date` "$0 $$ -- found NO classes" >>&! $TMP/LOG
+    if ($?DEBUG) /bin/echo `/bin/date` "$0 $$ -- found NO classes in $dir" >>&! $TMP/LOG
     goto done
   endif
 else if ($?known) then
@@ -158,7 +162,7 @@ else
   set classes = ( )
 endif
 
-if ($?VERBOSE) /bin/echo `/bin/date` "$0 $$ -- PROCESSING ($DATE, $db, $#classes)" >>&! $TMP/LOG
+if ($?DEBUG) /bin/echo `/bin/date` "$0 $$ -- PROCESSING ($DATE, $db, $#classes)" >>&! $TMP/LOG
 
 /bin/echo '{"date":'"$DATE"',"device":"'"$db"'","count":'$#classes',"classes":[' >! "$ALL.$$"
 
@@ -170,11 +174,11 @@ foreach i ( $classes )
 
   # SANITY
   if (! -d "$CDIR") then
-    if ($?VERBOSE) /bin/echo `/bin/date` "$0 $$ -- NO DIRECTORY ($CDIR)" >>&! $TMP/LOG
+    if ($?DEBUG) /bin/echo `/bin/date` "$0 $$ -- NO DIRECTORY ($CDIR)" >>&! $TMP/LOG
     continue
   endif
 
-  if ($?VERBOSE) /bin/echo `/bin/date` "$0 $$ -- PROCESSING CLASS $i ($CID)" >>&! $TMP/LOG
+  if ($?DEBUG) /bin/echo `/bin/date` "$0 $$ -- PROCESSING CLASS $db/$i ($k of $#classes)" >>&! $TMP/LOG
 
   set last = 0
   unset json
@@ -186,7 +190,7 @@ foreach i ( $classes )
       set last = ( `/bin/echo "$json" | /usr/local/bin/jq '.date'` )
       if ($#last == 0 || "$last" == "null") set last = 0
     else
-      if ($?VERBOSE) /bin/echo `/bin/date` "$0 $$ -- UNKNOWN CLASS $i ($CID)" >>&! $TMP/LOG
+      if ($?DEBUG) /bin/echo `/bin/date` "$0 $$ -- UNKNOWN CLASS $i ($CID)" >>&! $TMP/LOG
       set unknown = ( $unknown "$i" )
     endif
   endif
@@ -194,7 +198,7 @@ foreach i ( $classes )
   # get current date date (10th field)
   set stat = ( `/usr/bin/stat -r "$CDIR" | /usr/bin/awk '{ print $10 }'` )
   if ($#stat == 0) then
-    if ($?VERBOSE) /bin/echo `/bin/date` "$0 $$ -- NO STATS ($CDIR)" >>&! $TMP/LOG
+    if ($?DEBUG) /bin/echo `/bin/date` "$0 $$ -- NO STATS ($CDIR)" >>&! $TMP/LOG
     continue
   endif
 
@@ -203,17 +207,17 @@ foreach i ( $classes )
 
   # check if directory is updated
   if ($stat <= $last) then
-    if ($?VERBOSE) /bin/echo `/bin/date` "$0 $$ -- $CDIR UNCHANGED ($stat <= $last)" >>&! $TMP/LOG
+    if ($?DEBUG) /bin/echo `/bin/date` "$0 $$ -- $CDIR UNCHANGED ($stat <= $last)" >>&! $TMP/LOG
     if ($?json && $?NOFORCE) then
-      if ($?VERBOSE) /bin/echo `/bin/date` "$0 $$ -- using prior record: $json" >>&! $TMP/LOG
+      if ($?DEBUG) /bin/echo `/bin/date` "$0 $$ -- using prior record: $db/$i == $json" >>&! $TMP/LOG
       echo "$json" >>! "$ALL.$$"
       @ k++
       continue
     else
-      if ($?VERBOSE) /bin/echo `/bin/date` "$0 $$ -- making new record :: prior JSON ($?json) :: no-force ($?NOFORCE)" >>&! $TMP/LOG
+      if ($?DEBUG) /bin/echo `/bin/date` "$0 $$ -- making new record :: prior JSON ($?json) :: no-force ($?NOFORCE)" >>&! $TMP/LOG
     endif
   else
-    if ($?VERBOSE) /bin/echo `/bin/date` "$0 $$ -- $CDIR CHANGED ($stat > $last)" >>&! $TMP/LOG
+    if ($?DEBUG) /bin/echo `/bin/date` "$0 $$ -- $CDIR CHANGED ($stat > $last)" >>&! $TMP/LOG
   endif
 
   #
@@ -251,7 +255,7 @@ foreach i ( $classes )
       set date = $file[1]
       set imgid = $file[2]
 
-      if ($?VERBOSE) /bin/echo `/bin/date` "$0 $$ -- PROCESSING IMAGE $imgid ($date)" >>&! $TMP/LOG
+      if ($?DEBUG) /bin/echo `/bin/date` "$0 $$ -- IMAGE $j of $nfiles in CLASS $i; ID: $imgid DATE: ($date)" >>&! $TMP/LOG
       
       if ($j) /bin/echo -n ',' >>! "$CLASS"
       set file = '{ "id":"'"$file[2]"'","date":'"$file[1]"' }'
@@ -267,9 +271,13 @@ foreach i ( $classes )
   if ($#rev && "$rev" != "null") then
     /usr/bin/curl -s -q -L -X DELETE "$CU/$db-$API/$CID?rev=$rev"
   endif
-  if ($?VERBOSE) /bin/echo `/bin/date` "$0 $$ -- PUT NEW RECORD CLASS $i $nfiles ($CID)" >>&! $TMP/LOG
+  if ($?DEBUG) /bin/echo `/bin/date` "$0 $$ -- PUT NEW RECORD CLASS $i $nfiles ($CID)" >>&! $TMP/LOG
   /usr/bin/curl -s -q -L -H "Content-type: application/json" -X PUT "$CU/$db-$API/$CID" -d "@$CLASS" >>&! $TMP/LOG
-  if ($?VERBOSE) /bin/echo `/bin/date` "$0 $$ -- $db-$API/$CID returned $status" >>&! $TMP/LOG
+  if ($status != 0) then
+    if ($?DEBUG) /bin/echo `/bin/date` "$0 $$ -- $db-$API/$CID returned $status" `cat "$OUTPUT"` >>&! $TMP/LOG
+  else
+    if ($?DEBUG) /bin/echo `/bin/date` "$0 $$ -- PUT NEW RECORD $db-$API/$CID" >>&! $TMP/LOG
+  endif
   /bin/rm -f "$CLASS"
 
   # increment count of classes
@@ -290,13 +298,14 @@ if ($#rev && $rev != "null") then
   /usr/bin/curl -s -q -L -X DELETE "$CU/$db-$API/all?rev=$rev"
 endif
 /usr/bin/curl -s -q -L -H "Content-type: application/json" -X PUT "$CU/$db-$API/all" -d "@$OUTPUT" >>&! $TMP/LOG
-if ($?VERBOSE) /bin/echo `/bin/date` "$0 $$ -- $db-$API/all returned $status" >>&! $TMP/LOG
-
-cleanup:
-
-rm -f "$ALL" "$ALL.$$" "$OUTPUT.$$"
+if ($status != 0) then
+  if ($?DEBUG) /bin/echo `/bin/date` "$0 $$ -- $db-$API/all returned $status" `cat "$OUTPUT"` >>&! $TMP/LOG
+else
+  if ($?DEBUG) /bin/echo `/bin/date` "$0 $$ -- PUT NEW RECORD $db-$API/all" >>&! $TMP/LOG
+endif
 
 done:
+echo `/bin/date` "$0 $$ -- FINISH ($QUERY_STRING)" `cat "$OUTPUT"` >>&! $TMP/LOG
 
-echo `/bin/date` "$0 $$ -- FINISH ($QUERY_STRING)"  >>&! $TMP/LOG
-
+cleanup:
+rm -f "$ALL" "$ALL.$$" "$OUTPUT.$$"

@@ -7,7 +7,7 @@ setenv DIGITS "$LAN".30
 setenv WAN "www.dcmartin.com"
 setenv TMP "/var/lib/age-at-home"
 
-setenv DEBUG true
+# setenv DEBUG true
 
 # don't update statistics more than once per (in seconds)
 setenv TTL 1800
@@ -80,7 +80,7 @@ if (! -s "$OUTPUT") then
     foreach c ( $classes )
       set URL = "https://$CU/$db-$API/$c"
       set json = ( `curl -s -q -f -L "$URL" | /usr/local/bin/jq '{"name":"'"$c"'","date":.date,"count":.count }'` )
-      if ($#json && "$json" != "null") then
+      if ($#json) then
 	if ($k) set all = "$all"','
 	set all = "$all""$json"
 	@ k++

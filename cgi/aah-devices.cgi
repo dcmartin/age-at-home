@@ -1,6 +1,6 @@
 #!/bin/csh -fb
 setenv APP "aah"
-setenv API "resinDevice"
+setenv API "devices"
 setenv WWW "www.dcmartin.com"
 setenv LAN "192.168.1"
 if ($?TMP == 0) setenv TMP "/var/lib/age-at-home"
@@ -10,25 +10,44 @@ set TTL = `echo  "12 * 60 * 60" | bc`
 set SECONDS = `date "+%s"`
 set DATE = `echo $SECONDS \/ $TTL \* $TTL | bc`
 
-echo `date` "$0 $$ -- START ($DATE)" >>! "$TMP/LOG"
+if ($?DEBUG) echo `date` "$0 $$ -- START ($DATE)" >>! "$TMP/LOG"
 
 set JSON = "$TMP/$APP-$API.$DATE.json"
 
 if (! -e "$JSON") then
+  set old = ( `echo "$JSON:r:r".*.json` )
+  if ($#old) then
+     set oldest = $old[$#old]
+     @ nold = $#old - 1
+     if ($#nold) rm -f $old[1-$nold]
+  endif
+
+  set INPROGRESS = ( `echo "$JSON".*` )
+  if ($#INPROGRESS) then
+    set pid = "$INPROGRESS[$#INPROGRESS]:e"
+    set eid = `ps axw | awk '{ print $1 }' | egrep "$pid"` )
+    if ($pid == $eid) then
+      if ($?oldest) then
+	 set DATE = "$oldest:r:e"
+	 set JSON = "$oldest"
+      endif
+      goto output
+    endif
+    rm -f "$INPROGRESS"
+  endif  
+  onintr cleanup
+  touch "$JSON".$$
+
   set url = ~$USER/.resin_auth
   if (-e "$url") then
     setenv RESIN_AUTH_TOKEN `cat "$url"`
   else
-    echo `date` "$0 $$ -- NO RESIN_AUTH_TOKEN ($url)" >>! "$TMP/LOG"
+    if ($?DEBUG) echo `date` "$0 $$ -- NO RESIN_AUTH_TOKEN ($url)" >>! "$TMP/LOG"
     set failure = "RESIN_AUTH_TOKEN undefined"
     goto output
   endif
 
   if ($?RESIN_AUTH_TOKEN) then
-    set old = ( `echo "$JSON:r:r".*` )
-    if ($?old) then
-       rm -f $old
-    endif
     set url = "https://api.resin.io/v1/device" 
     # get RESIN device information
     /usr/bin/curl -s -q -f -L \
@@ -36,9 +55,10 @@ if (! -e "$JSON") then
       -H "Content-Type: application/json" \
       -H "Authorization: Bearer $RESIN_AUTH_TOKEN" -o "$JSON.$$"
     if ($status == 22 || ! -s "$JSON.$$") then
-      echo `date` "$0 $$ -- RESIN API FAILURE ($url)" >>! "$TMP/LOG"
+      if ($?DEBUG) echo `date` "$0 $$ -- RESIN API FAILURE ($url)" >>! "$TMP/LOG"
       rm -f "$JSON.$$"
-      goto done
+      set failure = "RESIN API"
+      goto output
     else
       set dids = ( `/usr/local/bin/jq '.d[].id' "$JSON.$$"` )
 
@@ -63,7 +83,7 @@ if (! -e "$JSON") then
     rm -f "$JSON.$$"
     unset url
   else
-    echo `date` "$0 $$ -- NO DEFINED RESIN_AUTH_TOKEN" >>! "$TMP/LOG"
+    if ($?DEBUG) echo `date` "$0 $$ -- NO DEFINED RESIN_AUTH_TOKEN" >>! "$TMP/LOG"
     set failure = "RESIN_AUTH_TOKEN undefined"
   endif
 endif
@@ -91,6 +111,9 @@ else
     echo '{ "error": "'"$failure"'" }'
 endif
 
+cleanup:
+rm -f "$JSON".*
+
 done:
 
-echo `date` "$0 $$ -- FINISH ($DATE) - status = $?failure" >>! "$TMP/LOG"
+if ($?DEBUG) echo `date` "$0 $$ -- FINISH ($DATE :: $?failure)" >>! "$TMP/LOG"

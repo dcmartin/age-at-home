@@ -9,7 +9,7 @@ if ($?TTL == 0) set TTL = 2700
 if ($?SECONDS == 0) set SECONDS = `/bin/date "+%s"`
 if ($?DATE == 0) set DATE = `/bin/echo $SECONDS \/ $TTL \* $TTL | /usr/bin/bc`
 
-setenv DEBUG true
+# setenv DEBUG true
 setenv NOFORCE true
 
 if ($?QUERY_STRING) then
