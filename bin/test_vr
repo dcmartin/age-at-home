@@ -34,6 +34,7 @@ end
 if ($?jpegfiles == 0) then
     if ($?DEBUG) echo `date` "$0 $$ -- USAGE: $0 [-m <model>] JPEG(s)" >& /dev/stderr
     goto done
+else
 endif
 
 set creds = ~$USER/.watson.visual-recognition.json
@@ -54,9 +55,14 @@ if ($?vdate == 0) set vdate = "2016-05-20"
 
 if ($?model) then
     set classifiers = ( `curl -q -s -L "$TU/$verid/classifiers?api_key=$api_key&version=$vdate" | jq '.classifiers[]|select(.classifier_id=="'"$model"'")'` )
-else
-    set classifiers = ( `curl -q -s -L "$TU/$verid/classifiers?api_key=$api_key&version=$vdate" | jq '.classifiers[]'` )
+else 
+    if ($model != "default") then
+      set classifiers = ( `curl -q -s -L "$TU/$verid/classifiers?api_key=$api_key&version=$vdate" | jq '.classifiers[]'` )
+    else
+      set classifiers = ()
+    endif
 endif
+
 if ($#classifiers > 0) then
     set classifier = `echo "$classifiers" | jq '.classifier_id' | sed 's/"//g'`
     if ($#classifier > 0) then
