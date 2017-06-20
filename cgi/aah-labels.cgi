@@ -58,22 +58,37 @@ if (! -s "$OUTPUT") then
   rm -f "$OUTPUT:r:r".*
 
   if ("$class" == "all") then
-    set classes = ()
     set url = "$db-$API/all"
     set out = "$OUTPUT:r:r".$$.json
-    /usr/bin/curl -s -q -f -L "$CU/$url" -o "$out"
-    if ($status != 22 && -s "$out") then
-       if ($?DEBUG) echo `date` "$0 $$ ++ SUCCESS ($url)" >>&! $TMP/LOG
-       mv -f "$out" "$OUTPUT"
-       goto output
+
+    /usr/bin/curl -m 5 -s -q -f -L "$CU/$url" -o "$out"
+    if ($status != 22 && $status != 28 && -s "$out") then
+      set classes = ( `/usr/local/bin/jq -r '.classes[]?.name' "$out"` )
+      if ($#classes) then
+        if ($?DEBUG) echo `date` "$0 $$ ++ SUCCESS ($url) -- classes ($classes)" >>&! $TMP/LOG
+	mv "$out" "$OUTPUT"
+        goto output
+      else
+        if ($?DEBUG) echo `date` "$0 $$ ++ FAILURE ($url)" >>&! $TMP/LOG
+        unset classes
+      endif
     else
+      if ($?DEBUG) echo `date` "$0 $$ ++ FAILURE ($url)" >>&! $TMP/LOG
+      rm -f "$out"
+    endif
+    # FAILURE -- above should suffice
+    if ($?classes == 0) then
       set url = "$db-$API/_all_docs"
-      /usr/bin/curl -s -q -f -L "$CU/$url" -o "$out"
-      if ($status != 22 && -s "$out") then
+      /usr/bin/curl -m 5 -s -q -f -L "$CU/$url" -o "$out"
+      if ($status != 22 && $status != 28 && -s "$out") then
 	set classes = ( `/usr/local/bin/jq -r '.rows[].id' "$out" | egrep -v "all"` )
 	if ($?DEBUG) echo `date` "$0 $$ ++ SUCCESS ($classes)" >>&! $TMP/LOG
+        rm -f "$out"
+      else
+	if ($?DEBUG) echo `date` "$0 $$ ++ FAILURE ($url)" >>&! $TMP/LOG
+	rm -f "$out"
+	goto output
       endif
-      rm -f "$out"
     endif
     @ k = 0
     set all = '{"date":'"$DATE"',"device":"'"$db"'","count":'$#classes',"classes":['
