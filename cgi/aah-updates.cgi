@@ -8,27 +8,50 @@ setenv WAN "www.dcmartin.com"
 setenv TMP "/var/lib/age-at-home"
 
 setenv DEBUG true
-# setenv VERBOSE true
 
 # don't update statistics more than once per (in seconds)
-setenv TTL 60
+setenv TTL 5
 setenv SECONDS `date "+%s"`
-setenv DATE `echo $SECONDS \/ $TTL \* $TTL | bc`
+setenv DATE `/bin/echo $SECONDS \/ $TTL \* $TTL | bc`
+# default image limit
+if ($?IMAGE_LIMIT == 0) setenv IMAGE_LIMIT 100
 
-#
-# PROCESS ARGUMENTS
-#
 if ($?QUERY_STRING) then
-    set db = `echo "$QUERY_STRING" | sed 's/.*db=\([^&]*\).*/\1/'`
+    set db = `/bin/echo "$QUERY_STRING" | sed 's/.*db=\([^&]*\).*/\1/'`
     if ($db == "$QUERY_STRING") unset db
+    set id = `/bin/echo "$QUERY_STRING" | sed 's/.*id=\([^&]*\).*/\1/'`
+    if ($id == "$QUERY_STRING") unset id
+    set force = `/bin/echo "$QUERY_STRING" | sed 's/.*force=\([^&]*\).*/\1/'`
+    if ($force == "$QUERY_STRING") unset force
+    set limit = `/bin/echo "$QUERY_STRING" | sed 's/.*limit=\([^&]*\).*/\1/'`
+    if ($limit == "$QUERY_STRING") unset limit
 endif
-if ($?db == 0) set db = all # do all devices by default
+
+if ($?db == 0) set db = all
+if ($?id && $db == "all") unset id
+if ($?limit && $db == "all") then
+  unset limit
+else if ($?limit) then
+  if ($limit > $IMAGE_LIMIT) set limit = $IMAGE_LIMIT
+else
+  set limit = $IMAGE_LIMIT
+endif
+
+# standardize QUERY_STRING (rendezvous w/ APP-make-API.csh script)
 setenv QUERY_STRING "db=$db"
 
-# START
-if ($?VERBOSE) echo `date` "$0 $$ -- START ($QUERY_STRING)" >>! $TMP/LOG
+if ($?DEBUG) /bin/echo `date` "$0 $$ -- START ($QUERY_STRING)" >>! $TMP/LOG
 
+# output target
+set OUTPUT = "$TMP/$APP-$API-$QUERY_STRING.$DATE.json"
+if (-s "$OUTPUT") then
+  goto output
+endif
+rm -f "$OUTPUT:r:r".*
+
+#
 # get read-only access to cloudant
+#
 if (-e ~$USER/.cloudant_url) then
     set cc = ( `cat ~$USER/.cloudant_url` )
     if ($#cc > 0) set CU = $cc[1]
@@ -37,89 +60,106 @@ if (-e ~$USER/.cloudant_url) then
     set CU = "$CN":"$CP"@"$CU"
 endif
 if ($?CU == 0) then
-    echo `date` "$0 $$ -- no Cloudant URL" >>! $TMP/LOG
+    /bin/echo `date` "$0 $$ -- no Cloudant URL" >>! $TMP/LOG
     goto done
 endif
 
-# find output
-set OUTPUT = "$TMP/$APP-$API-$QUERY_STRING.$DATE.json"
-if (-s "$OUTPUT") then
-  if ($?DEBUG) /bin/echo `/bin/date` "$0 $$ -- CACHED OUTPUT ($OUTPUT)" >>&! $TMP/LOG
+# handle singleton
+if ($db != "all" && $?id) then
+  set url = "$CU/$db-updates/$id"
+  set out = "/tmp/$0:t.$$.json"
+  /usr/bin/curl -s -q -f -m 1 -L "$url" -o "$out"
+  if ($status == 22 || $status == 28 || ! -s "$out") then
+    set output = '{"error":"not found","db":"'"$db"'","id":"'"$id"'"}'
+  else
+    set output = ( `/usr/local/bin/jq '.' "$out"` )
+  endif
+  rm -f "$out"
   goto output
+endif
+
+# handle singleton (deprecated)
+if ($db != "all" && $?id) then
+  set url = "$CU/$db/$id"
+  set out = "/tmp/$0:t.$$.json"
+  /usr/bin/curl -s -q -f -m 1 -L "$url" -o "$out"
+  if ($status == 22 || $status == 28 || ! -s "$out") then
+    set output = '{"error":"not found","db":"'"$db"'","id":"'"$id"'"}'
+  else
+    set epoch = ( `/usr/local/bin/jq -j '.year,",",.month,",",.day,",",.hour,",",.minute,",",.second' "$out" | /usr/local/bin/gawk '{ t=mktime(sprintf("%4d %2d %2d %2d %2d %2d", $1, $2, $3, $4, $5, $6)); printf "%d\n", strftime("%s",t) }'` )
+    set output = ( `/usr/local/bin/jq '{"id":._id,"date":'"$epoch"',"scores":[.visual.scores?|sort_by(.score)|reverse[]|{"class":.classifier_id?,"model":.name?,"score":.score?}]}' "$out"` )
+  endif
+  rm -f "$out"
+  goto output
+endif
+
+# find devices
+if ($db == "all") then
+  set devices = ( `curl "$WWW/CGI/aah-devices.cgi" | /usr/local/bin/jq -r '.name'` )
+  if ($#devices == 0) then
+    if ($?VERBOSE) /bin/echo `date` "$0 $$ ++ FAILURE ($url)" >>&! $TMP/LOG
+    goto done
+  endif
 else
-  rm -f "$OUTPUT:r:r".*.json
+  set devices = ($db)
 endif
 
-# MAKE updates for each device
-set devices = ( `/usr/bin/curl -s -q -s -f -L "$WWW/CGI/aah-devices.cgi" | /usr/local/bin/jq -r '.name'` )
-if ($#devices == 0 || "$devices" == "null") then
-  if ($?VERBOSE) /bin/echo `/bin/date` "$0 $$ -- NO DEVICES" >>&! $TMP/LOG
-  set failure = '{ "error": "not found", "detail":"'"$WWW/CGI/aah-devices.cgi"'"}'
-  goto done
-endif
-  
-foreach d ( $devices )
-    if ($d == "$db") set device = $d
-    if ($db == "all" || $d == "$db") then
-      setenv QUERY_STRING "device=$d"
-      if ($?VERBOSE) echo `date` "$0 $$ ++ REQUESTING ./$APP-make-$API.bash ($QUERY_STRING)" >>! $TMP/LOG
-      ./$APP-make-$API.bash # forks and runs asynchronously
-    endif
-end
-if ($?device == 0 && $db != "all") then
-  if ($?VERBOSE) echo `date` "$0 $$ -- no such device ($db)" >>! $TMP/LOG
-  set failure = '{ "error": "not found", "detail":"'"$db"'"}'
-  goto done
-endif
-
-# HANDLE DEVICES
+if ($?VERBOSE) /bin/echo `date` "$0 $$ ++ SUCCESS -- devices ($devices)" >>&! $TMP/LOG
 @ k = 0
-set all = "/tmp/$0:t.all.$$.json"
-echo '{"date":'"$DATE"',"count":'$#devices',"devices":[' >! "$all"
+set all = '{"date":'"$DATE"',"devices":['
 foreach d ( $devices )
+
+  if ($db == "all" || $d == "$db") then
+    # initiate new output
+    set qs = "$QUERY_STRING"
+    setenv QUERY_STRING "device=$d"
+    if ($?force) then
+      setenv QUERY_STRING "$QUERY_STRING&force=true"
+    endif
+    if ($?DEBUG) /bin/echo `date` "$0 $$ ++ REQUESTING ./$APP-make-$API.bash ($QUERY_STRING)" >>! $TMP/LOG
+    ./$APP-make-$API.bash
+    setenv QUERY_STRING "$qs"
+  endif
+
+  # get device entry
   set url = "device-$API/$d"
   set out = "/tmp/$0:t.$$.json"
-  @ timer = 5
-  @ try = 0
-  /usr/bin/curl -m $timer -s -q -f -L "$CU/$url" -o "$out"
+  curl -m 5 -s -q -f -L "$CU/$url" -o "$out"
   if ($status == 22 || $status == 28 || ! -s "$out") then
+    if ($?VERBOSE) /bin/echo `date` "$0 $$ ++ FAILURE ($url) ($status)" >>&! $TMP/LOG
     rm -f "$out"
-    if ($status == 28) then
-      if ($try < 3) then
-        @ try++
-        @ timer = $timer + $timer
-        goto again
-      else
-        if ($?DEBUG) echo `date` "$0 $$ ++ DEVICE ($d) TIMEOUT" >>&! $TMP/LOG
-        continue
-      endif
-    endif
-    if ($?DEBUG) echo `date` "$0 $$ ++ DEVICE ($d) NOT FOUND" >>&! $TMP/LOG
-    if ($d == $db) then
-      # singleton
-      echo '{"name":"'"$d"'","seqid":"","date":0,"count":0,"ids":[]}' >! "$OUTPUT"
-      goto output
+    continue
+  endif
+  set cd = `/usr/local/bin/jq -r '.date?' "$out"`; if ($cd == "null") set cd = 0
+  set cc = `/usr/local/bin/jq -r '.count?' "$out"`; if ($cc == "null") set cc = 0
+  set ct = `/usr/local/bin/jq -r '.total?' "$out"`; if ($ct == "null") set ct = 0
+  if ($db != "all" && $d == "$db") then
+    set url = "$db-updates/_all_docs?descending=true&limit=$limit"
+    curl -s -q -f -L "$CU/$url" -o "$out"
+    if ($status == 22 || $status == 28 || ! -s "$out") then
+      if ($?VERBOSE) /bin/echo `date` "$0 $$ ++ FAILURE ($url) ($status)" >>&! $TMP/LOG
+      echo '{"device":"'"$d"',","date":'"$cd"',"count":'"$cc"',"total":'"$ct"' }' >! "$OUTPUT"
     else
-      if ($k) echo ',' >> "$all"
-      echo '{"name":"'"$d"'","date":0,"count":0}' >> "$all"
+      set ids = ( `/usr/local/bin/jq '[.rows|(sort_by(.id)|reverse)[]?.id]' "$out"` )
+      echo '{"device":"'"$d"',","date":'"$cd"',"count":'"$cc"',"total":'"$ct"',"limit":'"$limit"',"ids":'"$ids"' }' >! "$OUTPUT"
     endif
-  else if ($d == $db) then
-    # singleton 
-    /usr/local/bin/jq -c '{"name":.name,"seqid":.seqid,"date":.date,"count":.count,"ids":.ids}' "$out" >! "$OUTPUT"
     rm -f "$out"
     goto output
-  else 
-    if ($k) echo ',' >> "$all"
-    /usr/local/bin/jq -c '{"name":"'"$d"'","date":.date,"count":.count}' "$out" >> "$all"
-    rm -f "$out"
+  else if ($db == "all") then
+    set json = '{"device":"'"$d"',","date":'"$cd"',"count":'"$cc"',"total":'"$ct"'}'
+  else
+    unset json
   endif
+  if ($k) set all = "$all"','
   @ k++
+  if ($?json) then
+    set json = '{ "name":"'"$d"'","date":'"$cd"',"count":'"$cc"',"total":'"$ct"'}'
+    set all = "$all""$json"
+  endif
 end
+set all = "$all"']}'
 
-# FINISH ALL
-echo ']}' >> "$all"
-/usr/local/bin/jq -c '.' "$all" >! "$OUTPUT"
-rm -f "$all"
+/bin/echo "$all" | /usr/local/bin/jq -c '.' >! "$OUTPUT"
 
 #
 # output
@@ -127,35 +167,34 @@ rm -f "$all"
 
 output:
 
-echo "Content-Type: application/json; charset=utf-8"
-echo "Access-Control-Allow-Origin: *"
+/bin/echo "Content-Type: application/json; charset=utf-8"
+/bin/echo "Access-Control-Allow-Origin: *"
 
-if (-s "$OUTPUT") then
-    @ age = $SECONDS - $DATE
-    echo "Age: $age"
-    @ refresh = $TTL - $age
-    # check back if using old
-    if ($refresh < 0) @ refresh = $TTL
-    echo "Refresh: $refresh"
-    echo "Cache-Control: max-age=$TTL"
-    echo "Last-Modified:" `date -r $DATE '+%a, %d %b %Y %H:%M:%S %Z'`
-    echo ""
-    /usr/local/bin/jq -c '.' "$OUTPUT"
+if ($?output == 0 && -s "$OUTPUT") then
+  @ age = $SECONDS - $DATE
+  /bin/echo "Age: $age"
+  @ refresh = $TTL - $age
+  # check back if using old
+  if ($refresh < 0) @ refresh = $TTL
+  /bin/echo "Refresh: $refresh"
+  /bin/echo "Cache-Control: max-age=$TTL"
+  /bin/echo "Last-Modified:" `date -r $DATE '+%a, %d %b %Y %H:%M:%S %Z'`
+  /bin/echo ""
+  /usr/local/bin/jq -c '.' "$OUTPUT"
+ " if ($?VERBOSE) /bin/echo `date` "$0 $$ -- output ($OUTPUT) Age: $age Refresh: $refresh" >>! $TMP/LOG
 else
-    echo "Cache-Control: no-cache"
-    echo "Last-Modified:" `date -r $SECONDS '+%a, %d %b %Y %H:%M:%S %Z'`
-    echo ""
-    if ($?failure) then
-      if ($?VERBOSE) echo `date` "$0 $$ -- FAILURE ($failure)" >>! $TMP/LOG
-      echo "$failure"
-    else
-      if ($?VERBOSE) echo `date` "$0 $$ -- FAILURE (NOT FOUND)" >>! $TMP/LOG
-      echo '{ "error": "NOT FOUND" }'
-    endif
+  /bin/echo "Cache-Control: no-cache"
+  /bin/echo "Last-Modified:" `date -r $SECONDS '+%a, %d %b %Y %H:%M:%S %Z'`
+  /bin/echo ""
+  if ($?output) then
+    /bin/echo "$output"
+  else
+    /bin/echo '{ "error": "not found" }'
+  endif
 endif
 
-cleanup:
-  rm -f "$OUTPUT".*
+# done
 
 done:
-  if ($?VERBOSE) echo `date` "$0 $$ -- FINISH (db=$db)" >>! $TMP/LOG
+
+if ($?DEBUG) /bin/echo `date` "$0 $$ -- FINISH ($QUERY_STRING)" >>! $TMP/LOG
