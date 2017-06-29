@@ -142,7 +142,9 @@ else
   endif
 else
   if ($?VERBOSE) /bin/echo `/bin/date` "$0 $$ -- fail ($url)" >>! $TMP/LOG
+  set date = 0
   set seqid = 0
+  set last_total = 0
 endif
 rm -f "$out"
 
@@ -318,16 +320,8 @@ while ($idx <= $total_changes)
   if (! -s "$stats.$$") exit
   /bin/mv -f "$stats.$$" "$stats"
   # get date in seconds since epoch
-  set epoch = ( `/bin/echo "$change" | /usr/local/bin/jq -j '.year,",",.month,",",.day,",",.hour,",",.minute,",",.second' | /usr/local/bin/gawk -F, '{ t=mktime(sprintf("%4d %2d %2d %2d %2d %2d -1", $1, $2, $3, $4, $5, $6)); printf "%d\n", strftime("%s",t) }'` )
-  /usr/bin/awk -F, '{printf"{\"date\":'"$epoch"',\"class\":\"%s\",\"model\":\"%s\",\"score\":%f,\"count\":%d,\"min\":%f,\"max\":%f,\"sum\":%f,\"mean\":%f,\"stdev\":%f,\"kurtosis\":%f}\n",$2,$3,$4,$5,$6,$7,$8,$9,$10,$11}' "$stats" >! "$id"
-
-#
-# EXPERIMENT 1: STEP 1: BEGIN
-#
-set model = ( `/usr/local/bin/jq -r '.model' "$id"` )
-#
-# EXPERIMENT 1: STEP 1: END
-#
+  set date = ( `/bin/echo "$change" | /usr/local/bin/jq -j '.year,",",.month,",",.day,",",.hour,",",.minute,",",.second' | /usr/local/bin/gawk -F, '{ t=mktime(sprintf("%4d %2d %2d %2d %2d %2d -1", $1, $2, $3, $4, $5, $6)); printf "%d\n", strftime("%s",t) }'` )
+  /usr/bin/awk -F, '{printf"{\"date\":'"$date"',\"class\":\"%s\",\"model\":\"%s\",\"score\":%f,\"count\":%d,\"min\":%f,\"max\":%f,\"sum\":%f,\"mean\":%f,\"stdev\":%f,\"kurtosis\":%f}\n",$2,$3,$4,$5,$6,$7,$8,$9,$10,$11}' "$stats" >! "$id"
 
   # store in <device>-updates/<id>
   set url = "$device-$API/$u"
@@ -345,82 +339,9 @@ set model = ( `/usr/local/bin/jq -r '.model' "$id"` )
     @ nchange++
   endif
   rm /tmp/curl.$$.json
-
   # cleanup
   rm -f "$event" "$stats" "$id"
-
-if ($?RETRIEVE_IMAGE) then
-  #
-  # RETRIEVE IMAGE
-  #
-  
-  # find destination
-  set image = "$TMP/$device/$class/$file"
-
-#
-# EXPERIMENT 1: STEP 2: BEGIN
-#
-set t = "$TMP/$device/.models/$model/$class"
-mkdir -p "$t"
-ln -s "$image" "$t/$u"
-#
-# EXPERIMENT 1: STEP 2: END
-#
-
-  mkdir -p "$image:h"
-  if (! -d "$image:h") then
-    /bin/echo `/bin/date` "$0 $$ -- FAILURE -- exit; no directory ($image:h)" >>! $TMP/LOG
-    goto done
-  endif
-  if (! -s "$image") then
-    # setenv CAMERA_IMAGE_RETRIEVE "FTP"
-    if ($?CAMERA_IMAGE_RETRIEVE) then
-      if ($?VERBOSE) /bin/echo `/bin/date` "$0 $$ -- retrieving ($file:r) type ($file:e) with $ipaddr using $CAMERA_IMAGE_RETRIEVE" >>! $TMP/LOG
-      switch ($CAMERA_IMAGE_RETRIEVE)
-        case "FTP":
-          if ($?VERBOSE) /bin/echo `/bin/date` "$0 $$ -- calling $APP-ftpImage to retrieve $image" >>! $TMP/LOG
-          ./$APP-ftpImage.csh "$file:r" "$file:e" "$ipaddr" "$image" >>! $TMP/LOG
-	  if (! -s "$image") then
-            if ($?VERBOSE) /bin/echo `/bin/date` "$0 $$ -- $APP-ftpImage FAILED to retrieve $image" >>! $TMP/LOG
-	  endif
-          breaksw
-        default:
-	  if ($?VERBOSE) /bin/echo `/bin/date` "$0 $$ -- unknown CAMERA_IMAGE_RETRIEVE ($CAMERA_IMAGE_RETRIEVE)" >>! $TMP/LOG
-          breaksw
-      endsw
-    else
-      set ext = "$file:e"
-      set ftp = "ftp://ftp:ftp@$ipaddr/$file" 
-      /usr/bin/curl -s -q -L "$ftp" -o "/tmp/$$.$ext"
-      if (! -s "/tmp/$$.$ext") then
-	rm -f "/tmp/$$.$ext"
-	if ($?VERBOSE) /bin/echo `/bin/date` "$0 $$ -- WARNING -- FTP FAILURE ($ftp)" >>! $TMP/LOG
-      else
-	mv -f "/tmp/$$.$ext" "$image"
-      endif
-      if ($?VERBOSE) /bin/echo `/bin/date` "$0 $$ -- GET image SUCCESS ($device/$class/$u)" >>! $TMP/LOG
-      # optionally delete the source
-      if ($?FTP_DELETE) then
-	  if ($?VERBOSE) /bin/echo `/bin/date` "$0 $$ -- deleting ($file)" >>! $TMP/LOG
-	  /usr/bin/curl -s -q -L "ftp://$ipaddr/" -Q "-DELE $file"
-      endif
-    endif
-  else
-    if ($?force == 0) then
-      if ($?VERBOSE) /bin/echo `/bin/date` "$0 $$ -- BREAKING ($device) CHANGES: $nchange INDEX: $idx COUNT: $total_changes -- existing image ($image)" >>! $TMP/LOG
-      rm -f "$out"
-      break
-    endif
-    if ($?VERBOSE) /bin/echo `/bin/date` "$0 $$ -- WARNING -- IMAGE EXISTS ($image)" >>! $TMP/LOG
-  endif
-  # optionally transform image
-  if (-s "$image" && $?CAMERA_MODEL_TRANSFORM) then
-    if ($?VERBOSE) /bin/echo `/bin/date` "$0 $$ -- transforming $image with $crop using $CAMERA_MODEL_TRANSFORM" >>! $TMP/LOG
-    ./$APP-transformImage.csh "$image" "$crop" >>! $TMP/LOG
-  endif
 end
-
-endif # RETRIEVE_IMAGE
 
 if ($?failures) then
   if ($?VERBOSE) /bin/echo `/bin/date` "$0 $$ -- WARNING -- FAILURES ($failures)" >>! $TMP/LOG
@@ -462,7 +383,7 @@ endif
 if ($?nchange) then
   set count = $nchange
 endif
-set dev = "$dev"',"count":'$count',"total":'$total',"date":'"$DATE"
+set dev = "$dev"',"count":'$count',"total":'$total',"date":'"$date"
 if ($?failures) then
   if ($#failures) then
     set dev = "$dev"',"fail":null'
