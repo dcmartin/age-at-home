@@ -247,7 +247,6 @@ while ($idx <= $total_changes)
 
   set file = ( `/bin/echo "$change" | /usr/local/bin/jq -r '.visual.image'` )
   set scores = ( `/bin/echo "$change" | /usr/local/bin/jq '.visual.scores|sort_by(.score)'` )
-  set top1 = ( `/bin/echo "$scores" | /usr/local/bin/jq -j '.[-1]'` )
   set class = ( `/bin/echo "$change" | /usr/local/bin/jq -r '.alchemy.text' | sed 's/ /_/g'` )
   set crop = ( `/bin/echo "$change" | /usr/local/bin/jq -r '.imagebox'` )
   set u = "$file:r"
@@ -301,7 +300,7 @@ while ($idx <= $total_changes)
   #   c (1:"id",2:"class",3:"model",4:score,5:count,6:min,7:max,8:sum,9:mean,10:stdev,11:kurtosis)
   # 3 sort by score
   # 4 choose top1
-  /bin/echo "$scores" | /usr/local/bin/jq -j '.[]|"'"$u"'",",",.classifier_id,",",.name,",",.score,"\n"' >! "$event"
+  /bin/echo "$scores" | /usr/local/bin/jq -j '.[]|"'"$u"'",",",.classifier_id,",",.name,",",.score,"\n"' | /usr/bin/sed 's/ /_/g' >! "$event"
   /usr/bin/awk -F, 'BEGIN { c=0;n=1;x=0;s=0; }{ if($4>0){if($4>x){x=$4};if($4<n){n=$4};c++;s+=$4}} END {m=s/c; printf("%s,%d,%f,%f,%f,%f\n",$1,c,n,x,s,m)}' "$event" >! "$stats"
   if (! -s "$stats") exit
   /usr/local/bin/csvjoin -H -c 1 "$event" "$stats" \
