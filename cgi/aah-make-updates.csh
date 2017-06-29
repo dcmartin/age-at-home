@@ -214,7 +214,7 @@ endif
 if ($total_changes == 0) then
   goto update
 else
-  if ($?DEBUG) /bin/echo `/bin/date` "$0 $$ -- $total_changes EVENTS FOR $device ($seqid)" >>! $TMP/LOG
+  if ($?VERBOSE) /bin/echo `/bin/date` "$0 $$ -- $total_changes EVENTS FOR $device ($seqid)" >>! $TMP/LOG
 endif
 
 # get IP address of device
@@ -258,7 +258,7 @@ while ($idx <= $total_changes)
     continue
   endif
 
-  if ($?DEBUG) /bin/echo `/bin/date` "$0 $$ -- PROCESSING CHANGE ($device @ $idx of $total_changes) is $u" >>! $TMP/LOG
+  if ($?VERBOSE) /bin/echo `/bin/date` "$0 $$ -- PROCESSING CHANGE ($device @ $idx of $total_changes) is $u" >>! $TMP/LOG
 
   @ idx++
 
@@ -274,7 +274,7 @@ while ($idx <= $total_changes)
     set idrev = ( `/usr/local/bin/jq -r '._rev' "$out"` )
     if ($#idrev && $idrev != "null") then
       if ($?force == 0) then
-        if ($?DEBUG) /bin/echo `/bin/date` "$0 $$ -- BREAKING ($device) CHANGES: $nchange INDEX: $idx COUNT: $total_changes -- existing $u update ($idrev)" >>! $TMP/LOG
+        if ($?VERBOSE) /bin/echo `/bin/date` "$0 $$ -- BREAKING ($device) CHANGES: $nchange INDEX: $idx COUNT: $total_changes -- existing $u update ($idrev)" >>! $TMP/LOG
         rm -f "$out"
         break
       endif
@@ -349,6 +349,7 @@ set model = ( `/usr/local/bin/jq -r '.model' "$id"` )
   # cleanup
   rm -f "$event" "$stats" "$id"
 
+if ($?RETRIEVE_IMAGE) then
   #
   # RETRIEVE IMAGE
   #
@@ -374,17 +375,17 @@ ln -s "$image" "$t/$u"
   if (! -s "$image") then
     # setenv CAMERA_IMAGE_RETRIEVE "FTP"
     if ($?CAMERA_IMAGE_RETRIEVE) then
-      if ($?DEBUG) /bin/echo `/bin/date` "$0 $$ -- retrieving ($file:r) type ($file:e) with $ipaddr using $CAMERA_IMAGE_RETRIEVE" >>! $TMP/LOG
+      if ($?VERBOSE) /bin/echo `/bin/date` "$0 $$ -- retrieving ($file:r) type ($file:e) with $ipaddr using $CAMERA_IMAGE_RETRIEVE" >>! $TMP/LOG
       switch ($CAMERA_IMAGE_RETRIEVE)
         case "FTP":
-          if ($?DEBUG) /bin/echo `/bin/date` "$0 $$ -- calling $APP-ftpImage to retrieve $image" >>! $TMP/LOG
+          if ($?VERBOSE) /bin/echo `/bin/date` "$0 $$ -- calling $APP-ftpImage to retrieve $image" >>! $TMP/LOG
           ./$APP-ftpImage.csh "$file:r" "$file:e" "$ipaddr" "$image" >>! $TMP/LOG
 	  if (! -s "$image") then
-            if ($?DEBUG) /bin/echo `/bin/date` "$0 $$ -- $APP-ftpImage FAILED to retrieve $image" >>! $TMP/LOG
+            if ($?VERBOSE) /bin/echo `/bin/date` "$0 $$ -- $APP-ftpImage FAILED to retrieve $image" >>! $TMP/LOG
 	  endif
           breaksw
         default:
-	  if ($?DEBUG) /bin/echo `/bin/date` "$0 $$ -- unknown CAMERA_IMAGE_RETRIEVE ($CAMERA_IMAGE_RETRIEVE)" >>! $TMP/LOG
+	  if ($?VERBOSE) /bin/echo `/bin/date` "$0 $$ -- unknown CAMERA_IMAGE_RETRIEVE ($CAMERA_IMAGE_RETRIEVE)" >>! $TMP/LOG
           breaksw
       endsw
     else
@@ -406,7 +407,7 @@ ln -s "$image" "$t/$u"
     endif
   else
     if ($?force == 0) then
-      if ($?DEBUG) /bin/echo `/bin/date` "$0 $$ -- BREAKING ($device) CHANGES: $nchange INDEX: $idx COUNT: $total_changes -- existing image ($image)" >>! $TMP/LOG
+      if ($?VERBOSE) /bin/echo `/bin/date` "$0 $$ -- BREAKING ($device) CHANGES: $nchange INDEX: $idx COUNT: $total_changes -- existing image ($image)" >>! $TMP/LOG
       rm -f "$out"
       break
     endif
@@ -419,8 +420,10 @@ ln -s "$image" "$t/$u"
   endif
 end
 
+endif # RETRIEVE_IMAGE
+
 if ($?failures) then
-  if ($?DEBUG) /bin/echo `/bin/date` "$0 $$ -- WARNING -- FAILURES ($failures)" >>! $TMP/LOG
+  if ($?VERBOSE) /bin/echo `/bin/date` "$0 $$ -- WARNING -- FAILURES ($failures)" >>! $TMP/LOG
 endif
 
 if ($?CHANGES) then
@@ -489,7 +492,7 @@ if ($?devrev) then
   set url = "$url?rev=$devrev"
 endif
 
-if ($?DEBUG) /bin/echo `/bin/date` "$0 $$ -- UPDATING $device ($url)" >>! $TMP/LOG
+if ($?VERBOSE) /bin/echo `/bin/date` "$0 $$ -- UPDATING $device ($url)" >>! $TMP/LOG
 
 # update record
 set put = ( `/usr/bin/curl -s -q -f -L -H "Content-type: application/json" -X PUT "$CU/$url" -d "@$OUTPUT" | /usr/local/bin/jq '.ok'` )
