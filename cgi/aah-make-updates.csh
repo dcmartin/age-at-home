@@ -11,7 +11,7 @@ if ($?TTL == 0) set TTL = 60
 if ($?SECONDS == 0) set SECONDS = `/bin/date "+%s"`
 if ($?DATE == 0) set DATE = `/bin/echo $SECONDS \/ $TTL \* $TTL | /usr/bin/bc`
 
-setenv DEBUG true
+# setenv DEBUG true
 
 # transform image
 setenv CAMERA_MODEL_TRANSFORM "CROP"
@@ -30,7 +30,7 @@ if ($?device == 0) set device = "quiet-water"
 # standardize QUERY_STRING
 setenv QUERY_STRING "device=$device"
 
-if ($?DEBUG) /bin/echo `/bin/date` "$0 $$ -- START ($QUERY_STRING)"  >>&! $TMP/LOG
+if ($?VERBOSE) /bin/echo `/bin/date` "$0 $$ -- START ($QUERY_STRING)"  >>&! $TMP/LOG
 
 # OUTPUT target
 set OUTPUT = "$TMP/$APP-$API-$QUERY_STRING.$DATE.json"
@@ -46,7 +46,7 @@ if ($#INPROGRESS) then
       set pid = $ip:e
       set eid = ( `ps axw | awk '{ print $1 }' | egrep "$pid"` )
       if ($pid == $eid) then
-        if ($?VERBOSE) /bin/echo `/bin/date` "$0 $$ -- PID $pid in-progress ($QUERY_STRING)" >>&! $TMP/LOG
+        if ($?DEBUG) /bin/echo `/bin/date` "$0 $$ -- PID $pid in-progress ($QUERY_STRING)" >>&! $TMP/LOG
         goto done
       else
         if ($?VERBOSE) /bin/echo `/bin/date` "$0 $$ -- removing $ip" >>&! $TMP/LOG
@@ -157,7 +157,7 @@ set CHANGES = "/tmp/$0:t.$$.$device.$DATE.json"
 set update_seq = ( `curl -s -q -f -m 1 "$CU/$device" | /usr/local/bin/jq -r '.update_seq'` )
 if ($#update_seq != 0 && $update_seq != "null") then
   if ($update_seq == $seqid) then
-    if ($?VERBOSE) /bin/echo `/bin/date` "$0 $$ -- up-to-date ($seqid)" >>! $TMP/LOG
+    if ($?DEBUG) /bin/echo `/bin/date` "$0 $$ -- up-to-date ($seqid)" >>! $TMP/LOG
     goto done
   endif
 endif
@@ -216,7 +216,7 @@ endif
 if ($total_changes == 0) then
   goto update
 else
-  if ($?VERBOSE) /bin/echo `/bin/date` "$0 $$ -- $total_changes EVENTS FOR $device ($seqid)" >>! $TMP/LOG
+  if ($?DEBUG) /bin/echo `/bin/date` "$0 $$ -- $total_changes EVENTS FOR $device ($seqid)" >>! $TMP/LOG
 endif
 
 # get IP address of device
@@ -334,7 +334,7 @@ while ($idx <= $total_changes)
     set failures = ( $failures $u )
   else
     # another successful change
-    if ($?VERBOSE) /bin/echo `/bin/date` "$0 $$ -- PUT stats SUCCESS ($device/$class/$u) ($idx/$total_changes)" >>&! $TMP/LOG
+    if ($?DEBUG) /bin/echo `/bin/date` "$0 $$ -- PUT stats SUCCESS ($device/$class/$u) ($idx/$total_changes)" >>&! $TMP/LOG
     set changes = ( $changes $u )
     @ nchange++
   endif
@@ -413,7 +413,7 @@ if ($?devrev) then
   set url = "$url?rev=$devrev"
 endif
 
-if ($?VERBOSE) /bin/echo `/bin/date` "$0 $$ -- UPDATING $device ($url)" >>! $TMP/LOG
+if ($?DEBUG) /bin/echo `/bin/date` "$0 $$ -- UPDATING $device ($url)" >>! $TMP/LOG
 
 # update record
 set put = ( `/usr/bin/curl -s -q -f -L -H "Content-type: application/json" -X PUT "$CU/$url" -d "@$OUTPUT" | /usr/local/bin/jq '.ok'` )
@@ -423,7 +423,7 @@ else
 endif
 
 done:
-if ($?DEBUG) /bin/echo `/bin/date` "$0 $$ -- FINISH ($QUERY_STRING)"  >>! $TMP/LOG
+if ($?VERBOSE) /bin/echo `/bin/date` "$0 $$ -- FINISH ($QUERY_STRING)"  >>! $TMP/LOG
 
 cleanup:
 rm -f "$OUTPUT.$$"
