@@ -13,7 +13,7 @@ if ($?CAMERA_IMAGE_HEIGHT == 0) setenv CAMERA_IMAGE_HEIGHT 480
 if ($?MODEL_IMAGE_WIDTH == 0) setenv MODEL_IMAGE_WIDTH 224
 if ($?MODEL_IMAGE_HEIGHT == 0) setenv MODEL_IMAGE_HEIGHT 224
 
-if ($?VERBOSE) echo `/bin/date` "$0 $$ -- START $*"  >>! $TMP/LOG
+if ($?VERBOSE) /bin/echo `/bin/date` "$0 $$ -- START $*"  >>! $TMP/LOG
 
 set image = "$argv[1]"
 set crop = "$argv[2]"
@@ -28,40 +28,45 @@ if (-s "$image" && "$image:e" != "jpeg" && $?CAMERA_MODEL_TRANSFORM) then
   set x = `/bin/echo "0 $c[3]" | /usr/bin/bc`
   set y = `/bin/echo "0 $c[4]" | /usr/bin/bc`
 
-  if ($?VERBOSE) echo `/bin/date` "$0 $$ -- IMAGE $image CROP $c $w $h $x $y"  >>! $TMP/LOG
+  if ($?VERBOSE) /bin/echo `/bin/date` "$0 $$ -- IMAGE $image CROP $c $w $h $x $y"  >>! $TMP/LOG
 
+  # the original 
+  set xform = `/usr/local/bin/identify "$image" | /usr/bin/awk '{ print $4 }'`
+
+  # switch on transformation requested
   switch ($CAMERA_MODEL_TRANSFORM)
     case "RESIZE":
-      if ($?VERBOSE) /bin/echo `/bin/date` "$0 $$ -- resizing $image ($MODEL_IMAGE_WIDTH,$MODEL_IMAGE_HEIGHT)" 
+      set xform = "$MODEL_IMAGE_WIDTH"x"$MODEL_IMAGE_HEIGHT" 
       /usr/local/bin/convert \
-	  -resize "$MODEL_IMAGE_WIDTH"x"$MODEL_IMAGE_HEIGHT" "$image" \
+	  -resize "$xform" "$image" \
 	  -gravity center \
 	  -background gray \
 	  "$image:r.jpeg"
       breakw
     case "CROP":
-      # calculate centroid-based extant ($MODEL_IMAGE_WIDTHx$MODEL_IMAGE_WIDTH image)
       @ cx = $x + ( $w / 2 ) - ( $MODEL_IMAGE_WIDTH / 2 )
       @ cy = $y + ( $h / 2 ) - ( $MODEL_IMAGE_HEIGHT / 2 )
       if ($cx < 0) @ cx = 0
       if ($cy < 0) @ cy = 0
       if ($cx + $MODEL_IMAGE_WIDTH > $CAMERA_IMAGE_WIDTH) @ cx = $CAMERA_IMAGE_WIDTH - $MODEL_IMAGE_WIDTH
       if ($cy + $MODEL_IMAGE_HEIGHT > $CAMERA_IMAGE_HEIGHT) @ cy = $CAMERA_IMAGE_HEIGHT - $MODEL_IMAGE_HEIGHT
-      set crop = "$MODEL_IMAGE_WIDTH"x"$MODEL_IMAGE_HEIGHT"+"$cx"+"$cy"
 
-      if ($?VERBOSE) /bin/echo `/bin/date` "$0 $$ -- cropping $image $crop" 
+      set xform = "$MODEL_IMAGE_WIDTH"x"$MODEL_IMAGE_HEIGHT"+"$cx"+"$cy"
       /usr/local/bin/convert \
-	  -crop "$crop" "$image" \
+	  -crop "$xform" "$image" \
 	  -gravity center \
 	  -background gray \
 	  "$image:r.jpeg"
       breaksw
     default:
-      if ($?VERBOSE) /bin/echo `/bin/date` "$0 $$ -- unknown transformation ($CAMERA_MODEL_TRANSFORM)" 
+      if ($?VERBOSE) /bin/echo `/bin/date` "$0 $$ -- unknown transformation ($CAMERA_MODEL_TRANSFORM)" >>&! $TMP/LOG
       breaksw
   endsw
+  if (-s "$image:r.jpeg") then
+    echo "$CAMERA_MODEL_TRANSFORM" "$xform" "$image:r.jpeg"
+  endif
 else	
-  if ($?VERBOSE) /bin/echo `/bin/date` "$0 $$ -- NO TRANSFORM APPLIED ($image, $crop, $CAMERA_MODEL_TRANSFORM)" 
+  if ($?VERBOSE) /bin/echo `/bin/date` "$0 $$ -- NO TRANSFORM APPLIED ($image, $crop, $CAMERA_MODEL_TRANSFORM)" >>&! $TMP/LOG
 endif
 
 done:
