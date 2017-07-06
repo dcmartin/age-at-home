@@ -6,23 +6,23 @@ setenv LAN "192.168.1"
 if ($?TMP == 0) setenv TMP "/var/lib/age-at-home"
 
 # don't update more than once per (in seconds)
-set TTL = `echo  "12 * 60 * 60" | bc`
+set TTL = `/bin/echo  "12 * 60 * 60" | bc`
 set SECONDS = `date "+%s"`
-set DATE = `echo $SECONDS \/ $TTL \* $TTL | bc`
+set DATE = `/bin/echo $SECONDS \/ $TTL \* $TTL | bc`
 
-if ($?DEBUG) echo `date` "$0 $$ -- START ($DATE)" >>! "$TMP/LOG"
+if ($?DEBUG) /bin/echo `date` "$0 $$ -- START ($DATE)" >>! "$TMP/LOG"
 
 set JSON = "$TMP/$APP-$API.$DATE.json"
 
 if (! -e "$JSON") then
-  set old = ( `echo "$JSON:r:r".*.json` )
+  set old = ( `/bin/echo "$JSON:r:r".*.json` )
   if ($#old) then
      set oldest = $old[$#old]
      @ nold = $#old - 1
      if ($#nold) rm -f $old[1-$nold]
   endif
 
-  set INPROGRESS = ( `echo "$JSON".*` )
+  set INPROGRESS = ( `/bin/echo "$JSON".*` )
   if ($#INPROGRESS) then
     set pid = "$INPROGRESS[$#INPROGRESS]:e"
     set eid = `ps axw | awk '{ print $1 }' | egrep "$pid"` )
@@ -42,7 +42,7 @@ if (! -e "$JSON") then
   if (-e "$url") then
     setenv RESIN_AUTH_TOKEN `cat "$url"`
   else
-    if ($?DEBUG) echo `date` "$0 $$ -- NO RESIN_AUTH_TOKEN ($url)" >>! "$TMP/LOG"
+    if ($?DEBUG) /bin/echo `date` "$0 $$ -- NO RESIN_AUTH_TOKEN ($url)" >>! "$TMP/LOG"
     set failure = "RESIN_AUTH_TOKEN undefined"
     goto output
   endif
@@ -55,7 +55,7 @@ if (! -e "$JSON") then
       -H "Content-Type: application/json" \
       -H "Authorization: Bearer $RESIN_AUTH_TOKEN" -o "$JSON.$$"
     if ($status == 22 || ! -s "$JSON.$$") then
-      if ($?DEBUG) echo `date` "$0 $$ -- RESIN API FAILURE ($url)" >>! "$TMP/LOG"
+      if ($?DEBUG) /bin/echo `date` "$0 $$ -- RESIN API FAILURE ($url)" >>! "$TMP/LOG"
       rm -f "$JSON.$$"
       set failure = "RESIN API"
       goto output
@@ -83,7 +83,7 @@ if (! -e "$JSON") then
     rm -f "$JSON.$$"
     unset url
   else
-    if ($?DEBUG) echo `date` "$0 $$ -- NO DEFINED RESIN_AUTH_TOKEN" >>! "$TMP/LOG"
+    if ($?DEBUG) /bin/echo `date` "$0 $$ -- NO DEFINED RESIN_AUTH_TOKEN" >>! "$TMP/LOG"
     set failure = "RESIN_AUTH_TOKEN undefined"
   endif
 endif
@@ -93,22 +93,22 @@ output:
 #
 # prepare for output
 #
-echo "Content-Type: application/json; charset=utf-8"
-echo "Access-Control-Allow-Origin: *"
+/bin/echo "Content-Type: application/json; charset=utf-8"
+/bin/echo "Access-Control-Allow-Origin: *"
 if (-s "$JSON") then
-    set AGE = `echo "$SECONDS - $DATE" | bc`
-    echo "Age: $AGE"
-    echo "Cache-Control: max-age=$TTL"
-    echo "Last-Modified:" `date -r $DATE '+%a, %d %b %Y %H:%M:%S %Z'`
-    echo ""
+    set AGE = `/bin/echo "$SECONDS - $DATE" | bc`
+    /bin/echo "Age: $AGE"
+    /bin/echo "Cache-Control: max-age=$TTL"
+    /bin/echo "Last-Modified:" `date -r $DATE '+%a, %d %b %Y %H:%M:%S %Z'`
+    /bin/echo ""
     /usr/local/bin/jq -c '.' "$JSON"
 else
-    echo "Age: 0"
-    echo "Cache-Control: max-age=0"
-    echo "Last-Modified:" `date -r $SECONDS '+%a, %d %b %Y %H:%M:%S %Z'`
-    echo ""
+    /bin/echo "Age: 0"
+    /bin/echo "Cache-Control: max-age=0"
+    /bin/echo "Last-Modified:" `date -r $SECONDS '+%a, %d %b %Y %H:%M:%S %Z'`
+    /bin/echo ""
     if ($?failure == 0) set failure = "UNKNOWN"
-    echo '{ "error": "'"$failure"'" }'
+    /bin/echo '{ "error": "'"$failure"'" }'
 endif
 
 cleanup:
@@ -116,4 +116,4 @@ rm -f "$JSON".*
 
 done:
 
-if ($?DEBUG) echo `date` "$0 $$ -- FINISH ($DATE :: $?failure)" >>! "$TMP/LOG"
+if ($?DEBUG) /bin/echo `date` "$0 $$ -- FINISH ($DATE :: $?failure)" >>! "$TMP/LOG"
