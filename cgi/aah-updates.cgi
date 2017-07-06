@@ -99,18 +99,17 @@ if ($db != "all" && $?id) then
 	  # special case for Watson VR default classifier
           foreach m ( $models )
             # handle hierarchies (/*) as special case for Watson default classifier
-            if ($m =~ "/*") continue
-	    if ($?mid) set output = "$output"','
+            if ($m =~ "/*") continue # only type hierarchies have spaces in "name" field
+	    if ($?classes) set output = "$output"','
             set output = "$output"'{"model":"'"$m"'","classes":'
-            set mid = ( `/bin/echo "$m" | sed 's/_/ /g'` )
-            set classes = ( `/bin/echo "$event" | /usr/local/bin/jq -r '.visual.scores[]|select(.name=="'"$mid"'").classifier_id' | /usr/bin/sed 's/ /_/g'` )
+            set classes = ( `/bin/echo "$event" | /usr/local/bin/jq -r '.visual.scores[]|select(.name=="'"$m"'").classifier_id' | /usr/bin/sed 's/ /_/g'` )
 	    if ($#classes) then
 	      set output = "$output"'['
 	      unset val
 	      foreach c ( $classes )
 		if ($?val) set output = "$output"','
 	        set cid = ( `/bin/echo "$c" | /usr/bin/sed 's/_/ /g'` )
-	        set val = ( `/bin/echo "$event" | /usr/local/bin/jq -r '.visual.scores[]|select(.name=="'"$mid"'")|select(.classifier_id=="'"$cid"'").score'` )
+	        set val = ( `/bin/echo "$event" | /usr/local/bin/jq -r '.visual.scores[]|select(.name=="'"$m"'")|select(.classifier_id=="'"$cid"'").score'` )
 		set output = "$output"'{"class":"'"$c"'","score":'"$val"'}'
               end
 	      if ($m == "default") then
