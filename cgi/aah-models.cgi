@@ -7,18 +7,18 @@ setenv DEBUG true
 if ($?TMP == 0) setenv TMP "/var/lib/age-at-home"
 
 # don't update service cache(s) (and this service output) more than once per (in seconds)
-set TTL = `echo "60 * 1 * 1  * 1" | bc`
+set TTL = `/bin/echo "60 * 1 * 1  * 1" | bc`
 set SECONDS = `date "+%s"`
-set DATE = `echo $SECONDS \/ $TTL \* $TTL | bc`
+set DATE = `/bin/echo $SECONDS \/ $TTL \* $TTL | bc`
 
-echo `date` "$0 $$ -- START" >>& "$TMP/LOG"
+/bin/echo `date` "$0 $$ -- START" >>& "$TMP/LOG"
 
 if ($?QUERY_STRING) then
-    set db = `echo "$QUERY_STRING" | sed 's/.*db=\([^&]*\).*/\1/'`
+    set db = `/bin/echo "$QUERY_STRING" | sed 's/.*db=\([^&]*\).*/\1/'`
     if ($db == "$QUERY_STRING") unset db
-    set model = `echo "$QUERY_STRING" | sed 's/.*model=\([^&]*\).*/\1/'`
+    set model = `/bin/echo "$QUERY_STRING" | sed 's/.*model=\([^&]*\).*/\1/'`
     if ($model == "$QUERY_STRING") unset model
-    set include_ids = `echo "$QUERY_STRING" | sed 's/.*include_ids\([^&]*\).*/\1/'`
+    set include_ids = `/bin/echo "$QUERY_STRING" | sed 's/.*include_ids\([^&]*\).*/\1/'`
     if ($include_ids == "$QUERY_STRING") unset include_ids
 endif
 if ($?db == 0) set db = "rough-fog"
@@ -41,7 +41,7 @@ if ($?CLOUDANT_URL) then
 else if ($?CN) then
     set CU = "$CN.cloudant.com"
 else
-    echo `date` "$0 $$ -- no Cloudant URL" >>& $TMP/LOG
+    /bin/echo `date` "$0 $$ -- no Cloudant URL" >>& $TMP/LOG
     goto done
 endif
 
@@ -49,33 +49,33 @@ set OUTPUT = "$TMP/$APP-$API-$QUERY_STRING.$DATE.json"
 if (! -s "$OUTPUT") then
   set TRAIN = "$TMP/$APP-$API-$db-train.$DATE.json" 
   if (! -s "$TRAIN") then
-    set old = ( `echo "$TRAIN:r:r".*` )
-    if ($?DEBUG) echo `date` "$0 $$ -- DEBUG: variable (old) is defined (0/1)? ($?old)" >>& "$TMP/LOG"
+    set old = ( `/bin/echo "$TRAIN:r:r".*` )
+    if ($?DEBUG) /bin/echo `date` "$0 $$ -- DEBUG: variable (old) is defined (0/1)? ($?old)" >>& "$TMP/LOG"
 
-    echo `date` "$0 $$ -- retrieving from Cloudant: $TRAIN" >>& "$TMP/LOG"
+    /bin/echo `date` "$0 $$ -- retrieving from Cloudant: $TRAIN" >>& "$TMP/LOG"
     curl -s -q -f -L "$CU/$db-train/_all_docs?include_docs=true" -o "$TRAIN.$$"
     if ($status == 22 || ! -s "$TRAIN.$$") then
-      echo `date` "$0 $$ -- cannot retrieve $TRAIN from $CU/$db-train" >>& "$TMP/LOG"
+      /bin/echo `date` "$0 $$ -- cannot retrieve $TRAIN from $CU/$db-train" >>& "$TMP/LOG"
       if ($?old) then
         if ($#old) then
 	  if (-s "$old[$#old]") then
 	    set TRAIN = "$old[$#old]"
 	  else
-	    echo `date` "$0 $$ -- no existing $old[$#old] for $TRAIN" >>& "$TMP/LOG"
+	    /bin/echo `date` "$0 $$ -- no existing $old[$#old] for $TRAIN" >>& "$TMP/LOG"
 	    unset TRAIN
 	  endif
 	endif
       else
-	echo `date` "$0 $$ -- no old for $TRAIN" >>& "$TMP/LOG"
+	/bin/echo `date` "$0 $$ -- no old for $TRAIN" >>& "$TMP/LOG"
 	unset TRAIN
       endif
     else
-      echo `date` "$0 $$ -- success retrieving from Cloudant $TRAIN.$$" >>& "$TMP/LOG"
+      /bin/echo `date` "$0 $$ -- success retrieving from Cloudant $TRAIN.$$" >>& "$TMP/LOG"
       mv -f "$TRAIN.$$" "$TRAIN"
       if ($?old) then
 	@ i = 1
 	while ($i <= $#old) 
-	  if ($?DEBUG) echo `date` "$0 $$ -- DEBUG: removing $i/$#old from $old" >>& "$TMP/LOG"
+	  if ($?DEBUG) /bin/echo `date` "$0 $$ -- DEBUG: removing $i/$#old from $old" >>& "$TMP/LOG"
 	  rm -f "$old[$i]"
 	  @ i++
 	end
@@ -101,7 +101,7 @@ if (! -s "$OUTPUT") then
 	  if ($status == 0 && -s "$OUTPUT.$$.$$") then
 	    /usr/local/bin/jq -c '.' "$OUTPUT.$$.$$" >>! "$OUTPUT.$$"
 	  else
-	    echo `date` "$0 $$ -- failure model ($m)" >>& "$TMP/LOG"
+	    /bin/echo `date` "$0 $$ -- failure model ($m)" >>& "$TMP/LOG"
 	  endif
 	  rm -f "$OUTPUT.$$.$$"
 	end
@@ -109,45 +109,45 @@ if (! -s "$OUTPUT") then
 	  /usr/local/bin/jq -c '.' "$OUTPUT.$$" >! "$OUTPUT"
 	endif
 	if ($status != 0) then
-	  echo `date` "$0 $$ -- bad JSON ($OUTPUT.$$)" >>& "$TMP/LOG"
+	  /bin/echo `date` "$0 $$ -- bad JSON ($OUTPUT.$$)" >>& "$TMP/LOG"
 	  rm -f "$OUTPUT"
 	endif
 	rm -f "$OUTPUT.$$"
       else
-	echo `date` "$0 $$ -- no models in $TRAIN" >>& "$TMP/LOG"
+	/bin/echo `date` "$0 $$ -- no models in $TRAIN" >>& "$TMP/LOG"
 	rm -f "$OUTPUT".*
 	goto output
       endif
     else
-      echo `date` "$0 $$ -- no training cache $TRAIN" >>& "$TMP/LOG"
+      /bin/echo `date` "$0 $$ -- no training cache $TRAIN" >>& "$TMP/LOG"
     endif
   else
-    echo `date` "$0 $$ -- no model data" >>& "$TMP/LOG"
+    /bin/echo `date` "$0 $$ -- no model data" >>& "$TMP/LOG"
   endif
 else
-  echo `date` "$0 $$ -- $OUTPUT is up-to-date ($DATE)" >>& "$TMP/LOG"
+  /bin/echo `date` "$0 $$ -- $OUTPUT is up-to-date ($DATE)" >>& "$TMP/LOG"
 endif
 
 output:
 
 if (! -s "$OUTPUT") then
-  if ($?DEBUG) echo `date` "$0 $$ -- no models found ($db)" >>& "$TMP/LOG"
-  echo "Content-Type: application/json; charset=utf-8"
-  echo "Access-Control-Allow-Origin: *"
-  echo "Cache-Control: no-cache"
-  echo ""
-  echo '{"error":"not found"}'
+  if ($?DEBUG) /bin/echo `date` "$0 $$ -- no models found ($db)" >>& "$TMP/LOG"
+  /bin/echo "Content-Type: application/json; charset=utf-8"
+  /bin/echo "Access-Control-Allow-Origin: *"
+  /bin/echo "Cache-Control: no-cache"
+  /bin/echo ""
+  /bin/echo '{"error":"not found"}'
 else 
-  echo "Content-Type: application/json; charset=utf-8"
-  echo "Access-Control-Allow-Origin: *"
-  set AGE = `echo "$SECONDS - $DATE" | bc`
-  echo "Age: $AGE"
-  echo "Cache-Control: max-age=$TTL"
-  echo "Last-Modified:" `date -r $DATE '+%a, %d %b %Y %H:%M:%S %Z'`
-  echo ""
+  /bin/echo "Content-Type: application/json; charset=utf-8"
+  /bin/echo "Access-Control-Allow-Origin: *"
+  set AGE = `/bin/echo "$SECONDS - $DATE" | bc`
+  /bin/echo "Age: $AGE"
+  /bin/echo "Cache-Control: max-age=$TTL"
+  /bin/echo "Last-Modified:" `date -r $DATE '+%a, %d %b %Y %H:%M:%S %Z'`
+  /bin/echo ""
   /usr/local/bin/jq -c '.' "$OUTPUT"
 endif
 
 done:
 
-echo `date` "$0 $$ -- FINISH" >>& $TMP/LOG
+/bin/echo `date` "$0 $$ -- FINISH" >>& $TMP/LOG
