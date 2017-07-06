@@ -17,13 +17,10 @@ setenv NOFORCE true
 if ($?QUERY_STRING) then
     set db = `/bin/echo "$QUERY_STRING" | sed 's/.*db=\([^&]*\).*/\1/'`
     if ($db == "$QUERY_STRING") unset db
-    set class = `/bin/echo "$QUERY_STRING" | sed 's/.*class=\([^&]*\).*/\1/'`
-    if ($class == "$QUERY_STRING") unset class
 endif
 
 # DEFAULTS to rough-fog (kitchen) and all classes
 if ($?db == 0) set db = rough-fog
-if ($?class == 0) set class = all
 
 # standardize QUERY_STRING
 setenv QUERY_STRING "db=$db"
@@ -47,7 +44,7 @@ endif
 #
 # SINGLE THREADED (by QUERY_STRING)
 #
-set INPROGRESS = ( `/bin/echo "$OUTPUT:r:r".*.json.*` )
+set INPROGRESS = ( `/bin/echo "$OUTPUT:r:r".*` )
 if ($#INPROGRESS) then
   foreach ip ( $INPROGRESS )
     set pid = $ip:e
@@ -85,11 +82,11 @@ endif
 #
 if ($?CU && $?db) then
   if ($?DEBUG) /bin/echo `/bin/date` "$0 $$ -- test if db exists ($CU/$db-$API)" >>&! $TMP/LOG
-  set DEVICE_db = `/usr/bin/curl -s -q -L -X GET "$CU/$db-$API" | /usr/local/bin/jq '.db_name'`
+  set DEVICE_db = `/usr/bin/curl -s -q -f -L -X GET "$CU/$db-$API" | /usr/local/bin/jq '.db_name'`
   if ( $DEVICE_db == "" || "$DEVICE_db" == "null" ) then
     if ($?DEBUG) /bin/echo `/bin/date` "$0 $$ -- creating db $CU/$db-$API" >>&! $TMP/LOG
     # create db
-    set DEVICE_db = `/usr/bin/curl -s -q -L -X PUT "$CU/$db-$API" | /usr/local/bin/jq '.ok'`
+    set DEVICE_db = `/usr/bin/curl -s -q -f -L -X PUT "$CU/$db-$API" | /usr/local/bin/jq '.ok'`
     # test for success
     if ( "$DEVICE_db" != "true" ) then
       # failure
@@ -123,10 +120,10 @@ endif
 if ($#known == 0) then
   if ($?DEBUG) /bin/echo `/bin/date` "$0 $$ -- NO EXISTING CLASSES (all)" >>&! $TMP/LOG
   # get known through inspection of all rows
-  set known = ( `curl -s -q -f -L "$CU/$db-$API/_all_docs" | /usr/local/bin/jq -r '.rows[]?.id'` )
+  set known = ( `curl -s -q -f -L "$CU/$db-$API/_all_docs" | /usr/local/bin/jq -r '.rows[]?|select(.id!="all").id'` )
 endif
 if ($#known == 0 || "$known" == '[]' || "$known" == "null") then
-    if ($?DEBUG) /bin/echo `/bin/date` "$0 $$ -- DB: $db !! CANNOT FIND ANY KNOWN CLASSES OF $API" >>&! $TMP/LOG
+    if ($?DEBUG) /bin/echo `/bin/date` "$0 $$ -- DB: $db -- CANNOT FIND ANY KNOWN CLASSES OF $API" >>&! $TMP/LOG
     set known = ()
   endif
 else
@@ -134,19 +131,19 @@ else
   set last = 0
 endif
 
-
 #
 # FIND CURRENT HIERARCHY
 #
 set dir = "$TMP/label/$db" 
 if (! -d "$dir") then
-  if ($?DEBUG) echo `date` "$0 $$ -- create directory ($dir)" >>&! $TMP/LOG
+  if ($?DEBUG) /bin/echo `date` "$0 $$ -- create directory ($dir)" >>&! $TMP/LOG
   mkdir -p "$dir"
   if (! -d "$dir") then
-    if ($?DEBUG) echo `date` "$0 $$ -- FAILURE -- no directory ($dir)" >>&! $TMP/LOG
+    if ($?DEBUG) /bin/echo `date` "$0 $$ -- FAILURE -- no directory ($dir)" >>&! $TMP/LOG
     goto done
   endif
 endif
+
 # stat directory
 set stat = ( `stat -r "$dir" | awk '{ print $10 }'` )
 if ($?NOFORCE == 0 || $stat > $last) then
@@ -157,14 +154,14 @@ if ($?NOFORCE == 0 || $stat > $last) then
     goto done
   endif
 else if ($?known) then
-  set classes = ( "$known" )
+  set classes = ( $known )
 else
   set classes = ( )
 endif
 
-if ($?DEBUG) /bin/echo `/bin/date` "$0 $$ -- PROCESSING ($DATE, $db, $#classes)" >>&! $TMP/LOG
+if ($?DEBUG) /bin/echo `/bin/date` "$0 $$ -- PROCESSING ($DATE, $db, $#classes ( $classes ))" >>&! $TMP/LOG
 
-/bin/echo '{"date":'"$DATE"',"device":"'"$db"'","count":'$#classes',"classes":[' >! "$ALL.$$"
+/bin/echo '{"date":'"$DATE"',"device":"'"$db"'","classes":[' >! "$ALL.$$"
 
 @ k = 0
 set unknown = ()
@@ -178,16 +175,16 @@ foreach i ( $classes )
     continue
   endif
 
-  if ($?DEBUG) /bin/echo `/bin/date` "$0 $$ -- PROCESSING CLASS $db/$i ($k of $#classes)" >>&! $TMP/LOG
+  if ($?DEBUG) /bin/echo `/bin/date` "$0 $$ -- PROCESSING DIR: $CDIR CID: $CID ($k of $#classes)" >>&! $TMP/LOG
 
   set last = 0
   unset json
   # get json for this class
   if (-s "$ALL") then
-    set json = `/usr/local/bin/jq '.classes[]?|select(.name=="'"$i"'")' "$ALL"` >&! /dev/null
+    set json = `/usr/local/bin/jq '.classes[]?|select(.name=="'"$i"'")' "$ALL"`
     if ($#json && "$json" != "null") then
       # get last date
-      set last = ( `/bin/echo "$json" | /usr/local/bin/jq '.date'` )
+      set last = ( `/bin/echo "$json" | /usr/local/bin/jq -r '.date'` )
       if ($#last == 0 || "$last" == "null") set last = 0
     else
       if ($?DEBUG) /bin/echo `/bin/date` "$0 $$ -- UNKNOWN CLASS $i ($CID)" >>&! $TMP/LOG
@@ -195,7 +192,7 @@ foreach i ( $classes )
     endif
   endif
 
-  # get current date date (10th field)
+  # get last modified time (10th field) in seconds since epoch
   set stat = ( `/usr/bin/stat -r "$CDIR" | /usr/bin/awk '{ print $10 }'` )
   if ($#stat == 0) then
     if ($?DEBUG) /bin/echo `/bin/date` "$0 $$ -- NO STATS ($CDIR)" >>&! $TMP/LOG
@@ -203,15 +200,15 @@ foreach i ( $classes )
   endif
 
   # record separator
-  if ($k) echo ',' >>! "$ALL.$$"
+  if ($k) /bin/echo ',' >>! "$ALL.$$"
+  @ k++
 
   # check if directory is updated
   if ($stat <= $last) then
     if ($?DEBUG) /bin/echo `/bin/date` "$0 $$ -- $CDIR UNCHANGED ($stat <= $last)" >>&! $TMP/LOG
     if ($?json && $?NOFORCE) then
       if ($?DEBUG) /bin/echo `/bin/date` "$0 $$ -- using prior record: $db/$i == $json" >>&! $TMP/LOG
-      echo "$json" >>! "$ALL.$$"
-      @ k++
+      /bin/echo "$json" >>! "$ALL.$$"
       continue
     else
       if ($?DEBUG) /bin/echo `/bin/date` "$0 $$ -- making new record :: prior JSON ($?json) :: no-force ($?NOFORCE)" >>&! $TMP/LOG
@@ -224,11 +221,11 @@ foreach i ( $classes )
   # NOW CHECK INVENTORY OF IMAGES
   #
   set FILES = "$OUTPUT:r:r"-files.$$.json
-  set nimages = ( `echo "$CDIR"/*.jp* | wc -w` )
+  set nimages = ( `/bin/echo "$CDIR"/*.jp* | wc -w` )
   if ($nimages) then
-    echo "$CDIR"/*.jpg | xargs stat -r | awk '{ print $10, $16 }' | sort -k 1,1 -n | sed 's@\([0-9]*\).*/\([^/]*\).jpg@\1,\2@' >! "$FILES"
+    /bin/echo "$CDIR"/*.jpg | xargs stat -r | awk '{ print $10, $16 }' | sort -k 1,1 -n | sed 's@\([0-9]*\).*/\([^/]*\).jpg@\1,\2@' >! "$FILES"
   else
-    set subdirs = ( `echo "$CDIR"/*` )
+    set subdirs = ( `/bin/echo "$CDIR"/*` )
     rm -f "$FILES"
     foreach s ( $subdirs )
       find "$s" -name "*.jpg" -type f -print | xargs -I % stat -r % | awk '{ print $10, $16 }' | sort -k 1,1 -n | sed 's@\([0-9]*\).*/\([^/]*\).jpg@\1,\2@' >>! "$FILES"
@@ -241,7 +238,7 @@ foreach i ( $classes )
   # MAKE NEW ENTRY FOR ALL CLASSES RECORD - "all"
   set json = '{"name":"'"$i"'","date":'"$stat"',"count":'"$nfiles"'}'
   # concatenante
-  echo "$json" >> "$ALL.$$"
+  /bin/echo "$json" >> "$ALL.$$"
 
   #
   # CREATE CLASS RECORD
@@ -251,7 +248,7 @@ foreach i ( $classes )
   if ($nfiles > 0 && -s "$FILES") then
     @ j = 0
     foreach file ( `/bin/cat "$FILES"` )
-      set file = ( `echo "$file" | sed "s/,/ /"` )
+      set file = ( `/bin/echo "$file" | sed "s/,/ /"` )
       set date = $file[1]
       set imgid = $file[2]
 
@@ -280,22 +277,22 @@ foreach i ( $classes )
   endif
   /bin/rm -f "$CLASS"
 
-  # increment count of classes
-  @ k++
 end
 
+rm -f "$ALL"
 cat "$ALL.$$" >! "$OUTPUT.$$"
+rm -f "$ALL.$$"
 
-echo ']}' >> "$OUTPUT.$$"
+/bin/echo '],"count":'$k'}' >> "$OUTPUT.$$"
 
 /usr/local/bin/jq -c '.' "$OUTPUT.$$" >! "$OUTPUT"
 
 #
-# update ALL record
+# update all record
 #
 set rev = ( `/usr/bin/curl -s -q -L "$CU/$db-$API/all" | /usr/local/bin/jq -r '._rev'` )
 if ($#rev && $rev != "null") then
-  /usr/bin/curl -s -q -L -X DELETE "$CU/$db-$API/all?rev=$rev"
+  /usr/bin/curl -s -q -L -X DELETE "$CU/$db-$API/all?rev=$rev" >>&! $TMP/LOG
 endif
 /usr/bin/curl -s -q -L -H "Content-type: application/json" -X PUT "$CU/$db-$API/all" -d "@$OUTPUT" >>&! $TMP/LOG
 if ($status != 0) then
@@ -305,7 +302,7 @@ else
 endif
 
 done:
-echo `/bin/date` "$0 $$ -- FINISH ($QUERY_STRING)" `cat "$OUTPUT"` >>&! $TMP/LOG
+/bin/echo `/bin/date` "$0 $$ -- FINISH ($QUERY_STRING)" >>&! $TMP/LOG
 
 cleanup:
-rm -f "$ALL" "$ALL.$$" "$OUTPUT.$$"
+rm -f "$OUTPUT.$$"
