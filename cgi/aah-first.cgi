@@ -4,14 +4,14 @@ setenv API "first"
 setenv LAN "192.168.1"
 if ($?TMP == 0) setenv TMP "/var/lib/age-at-home"
 # don't update statistics more than once per 15 minutes
-set TTL = `echo "30 * 60" | bc`
+set TTL = `/bin/echo "30 * 60" | bc`
 set SECONDS = `date "+%s"`
-set DATE = `echo $SECONDS \/ $TTL \* $TTL | bc`
+set DATE = `/bin/echo $SECONDS \/ $TTL \* $TTL | bc`
 
-echo `date` "$0 $$ -- START" >>! $TMP/LOG
+/bin/echo `date` "$0 $$ -- START" >>! $TMP/LOG
 
 if ($?QUERY_STRING) then
-    set DB = `echo "$QUERY_STRING" | sed "s/.*db=\([^&]*\).*/\1/"`
+    set DB = `/bin/echo "$QUERY_STRING" | sed "s/.*db=\([^&]*\).*/\1/"`
     if ($#DB == 0) set DB = rough-fog
 else
     set DB = rough-fog
@@ -37,15 +37,15 @@ endif
 
 output:
 
-echo "Content-Type: application/json; charset=utf-8"
-echo "Access-Control-Allow-Origin: *"
-set AGE = `echo "$SECONDS - $DATE" | bc`
-echo "Age: $AGE"
-echo "Cache-Control: max-age=$TTL"
-echo "Last-Modified:" `date -r $DATE '+%a, %d %b %Y %H:%M:%S %Z'`
-echo ""
-echo '{"device":"'$DB'", "datetime":'$DATETIME' }'
+/bin/echo "Content-Type: application/json; charset=utf-8"
+/bin/echo "Access-Control-Allow-Origin: *"
+set AGE = `/bin/echo "$SECONDS - $DATE" | bc`
+/bin/echo "Age: $AGE"
+/bin/echo "Cache-Control: max-age=$TTL"
+/bin/echo "Last-Modified:" `date -r $DATE '+%a, %d %b %Y %H:%M:%S %Z'`
+/bin/echo ""
+/bin/echo '{"device":"'$DB'", "datetime":'$DATETIME' }'
 
 done:
 
-echo `date` "$0 $$ -- FINISH" >>! $TMP/LOG
+/bin/echo `date` "$0 $$ -- FINISH" >>! $TMP/LOG
