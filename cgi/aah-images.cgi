@@ -10,12 +10,12 @@ setenv TMP "/var/lib/age-at-home"
 setenv DEBUG true
 
 # don't update statistics more than once per (in seconds)
-setenv TTL 1800
+setenv TTL 60
 setenv SECONDS `/bin/date "+%s"`
 setenv DATE `/bin/echo $SECONDS \/ $TTL \* $TTL | bc`
 
 # default image limit
-if ($?IMAGE_LIMIT == 0) setenv IMAGE_LIMIT 1000000
+if ($?IMAGE_LIMIT == 0) setenv IMAGE_LIMIT 10000
 if ($?IMAGE_SET_LIMIT == 0) setenv IMAGE_SET_LIMIT 100
 
 if ($?QUERY_STRING) then
@@ -43,14 +43,12 @@ if ($?limit && $db == "all") then
   unset limit
 else if ($?limit) then
   if ($limit > $IMAGE_LIMIT) set limit = $IMAGE_LIMIT
-else
-  set limit = $IMAGE_SET_LIMIT
 endif
 
 # standardize QUERY_STRING for cache
 setenv QUERY_STRING "db=$db"
 
-if ($?VERBOSE) /bin/echo `/bin/date` "$0 $$ -- START ($QUERY_STRING)" >>! $TMP/LOG
+if ($?DEBUG) /bin/echo `/bin/date` "$0 $$ -- START ($QUERY_STRING)" >>! $TMP/LOG
 
 # TARGET 
 set OUTPUT = "$TMP/$APP-$API-$QUERY_STRING.$DATE.json"
@@ -71,39 +69,69 @@ if ($?CU == 0) then
 endif
 
 # handle singleton (json)
-if ($db != "all" && $?since == 0 && $?id) then
-  set url = "$db-images/$id"
+if ($db != "all" && ( $?id || $?limit ) && $?ext == 0) then
+  if ($?id) then
+    set url = "$db-images/$id"
+  else if ($?limit) then
+    set url = "$db-images/_all_docs?include_docs=true&descending=true&limit=1"
+  endif
   set out = "/tmp/$0:t.$$.json"
   /usr/bin/curl -s -q -f -L "$CU/$url" -o "$out"
   if ($status == 22 || $status == 28 || ! -s "$out") then
+    if ($?id) then
     set output = '{"error":"not found","db":"'"$db"'","id":"'"$id"'"}'
+    else if ($?limit)
+    set output = '{"error":"not found","db":"'"$db"'","limit":"'"$limit"'"}'
+    else
+    set output = '{"error":"not found","db":"'"$db"'"}'
+    endif
   else
-    set output = ( `/usr/local/bin/jq '{"id":._id,"date":.date,"type":.type,"size":.size,"crop":.crop,"depth":.depth,"color":.color}' "$out"` )
+    if ($?limit) then
+      set id = ( `/usr/local/bin/jq -r '.rows[].doc._id' "$out"` )
+    endif
+    set class = ( `/usr/bin/curl -s -q -f -L "$WWW/CGI/aah-updates.cgi?db=$db&id=$id" | /usr/local/bin/jq -r '.class?'` )
+    if ($#class && $class != "null") then
+      if ($?limit) then
+        set output = ( `/usr/local/bin/jq '.rows[]?.doc|{"id":._id,"class":"'"$class"'","date":.date,"type":.type,"size":.size,"crop":.crop,"depth":.depth,"color":.color}' "$out"` )
+      else
+        set output = ( `/usr/local/bin/jq '{"id":._id,"class":"'"$class"'","date":.date,"type":.type,"size":.size,"crop":.crop,"depth":.depth,"color":.color}' "$out"` )
+      endif
+    else
+      set output = '{"error":"not found","db":"'"$db"'","id":"'"$id"'"}'
+    endif
   endif
   rm -f "$out"
   goto output
 endif
 
 # handle singleton (image)
-if ($db != "all" && $?id && $?ext) then
-  set url = "$CU/$db-images/$id"
+if ($db != "all" && ( $?id || $?limit ) && $?ext) then
+  if ($?id) then
+    set url = "$db-images/$id"
+  else if ($?limit) then
+    set url = "$db-images/_all_docs?include_docs=true&descending=true&limit=1"
+  endif
   set out = "/tmp/$0:t.$$.json"
-  @ try = 0
-  @ rtt = 1
-  while ($try < 3)
-    /usr/bin/curl -s -q -f  -L "$url" -o "$out"
-    if ($status != 22 && $status != 28 && -s "$out") then
-      if ($?class == 0) set class = ( `/usr/local/bin/jq -r '.class?' "$out"` )
-      if ($#class && $class != "null") then
+  /usr/bin/curl -s -q -f -L "$CU/$url" -o "$out"
+  if ($status == 22 || $status == 28 || ! -s "$out") then
+    if ($?id) then
+	set output = '{"error":"not found","db":"'"$db"'","id":"'"$id"'"}'
+    else if ($?limit) then
+	set output = '{"error":"not found","db":"'"$db"'","limit":"'"$limit"'"}'
+    endif
+  else
+    set id = ( `/usr/local/bin/jq -r '.rows[].doc._id' "$out"` )
+    set class = ( `/usr/bin/curl -s -q -f -L "$WWW/CGI/aah-updates.cgi?db=$db&id=$id" | /usr/local/bin/jq -r '.class?'` )
+    if ($#class && $class != "null") then
 	if ($ext == "full") set path = "$TMP/$db/$class/$id.jpg"
 	if ($ext == "crop") set path = "$TMP/$db/$class/$id.jpeg"
 	if (-s "$path") then
-	  if ($?VERBOSE) /bin/echo `/bin/date` "$0 $$ -- SINGLETON ($id)" >>! $TMP/LOG
+	  if ($?DEBUG) /bin/echo `/bin/date` "$0 $$ -- SINGLETON ($path)" >>! $TMP/LOG
 
-	  set stat = ( `/usr/bin/stat -r "$path" | awk '{ print $10 }'` )
+	  #set stat = ( `/usr/bin/stat -r "$path" | awk '{ print $10 }'` )
+	  /bin/echo "Cache-Control: max-age=$TTL"
+	  /bin/echo "Last-Modified:" `/bin/date -r $DATE '+%a, %d %b %Y %H:%M:%S %Z'`
 	  /bin/echo "Access-Control-Allow-Origin: *"
-	  /bin/echo "Cache-Control: max-age=14400"
-	  /bin/echo "Last-Modified:" `/bin/date -r $stat '+%a, %d %b %Y %H:%M:%S %Z'`
 	  /bin/echo "Content-Location: $WWW/CGI/$APP-$API.cgi?db=$db&class=$class&id=$id&ext=$ext"
 	  /bin/echo "Content-Type: image/jpeg"
 	  /bin/echo ""
@@ -115,10 +143,7 @@ if ($db != "all" && $?id && $?ext) then
       endif
       set output = '{"error":"not found","db":"'"$db"'","id":"'"$id"'"}'
       goto output
-    endif
-    @ try++
-    @ rtt += $rtt
-  end
+  endif
   /bin/rm -f "$out"
   set output = '{"error":"not found","db":"'"$db"'","id":"'"$id"'"}'
   goto output
@@ -126,7 +151,7 @@ endif
 
 # find updates
 set url = "$WWW/CGI/aah-updates.cgi"
-set updates = ( `curl "$url" | /usr/local/bin/jq '.'` )
+set updates = ( `/usr/bin/curl -s -q -f -L "$url" | /usr/local/bin/jq '.'` )
 if ($#updates == 0) then
   if ($?VERBOSE) /bin/echo `date` "$0 $$ ++ FAILURE ($url)" >>&! $TMP/LOG
   set output = '{"error":"NO UPDATES -- '"$url"'"}'
@@ -141,12 +166,22 @@ if ($#devices == 0) then
 endif
 # get last check time (seconds since epoch)
 set last_update_check = ( `/bin/echo "$updates" | /usr/local/bin/jq -r '.date'`)
-# check that device exists (iff not all)
+# check all devices
+foreach d ( $devices )
+  # initiate new output
+  set qs = "$QUERY_STRING"
+  setenv QUERY_STRING "device=$d"
+  if ($?force) then
+    setenv QUERY_STRING "$QUERY_STRING&force=true"
+  endif
+  if ($?DEBUG) /bin/echo `date` "$0 $$ ++ REQUESTING ./$APP-make-$API.bash ($QUERY_STRING)" >>! $TMP/LOG
+  ./$APP-make-$API.bash
+  setenv QUERY_STRING "$qs"
+  # indicate success
+  if ($db == "$d") set found = 1
+end
 if ($db != "all") then
-  foreach d ( $devices )
-    if ($db == "$d") set found = 1
-  end
-  if ($?found == 0) then
+  if  ($?found == 0) then
     if ($?VERBOSE) /bin/echo `date` "$0 $$ ++ NO MATCHING DEVICE ($db)" >>&! $TMP/LOG
     set output = '{"error":"not found","db":"'"$db"'"}'
     goto output
@@ -164,16 +199,6 @@ foreach d ( $devices )
   # get last check time (seconds since epoch)
   set luc = ( `/bin/echo "$updates" | /usr/local/bin/jq -r '.devices?[]|select(.name=="'"$d"'")|.date'` )
   if ($#luc == 0) set luc = 0
-
-  # initiate new output
-  set qs = "$QUERY_STRING"
-  setenv QUERY_STRING "device=$d"
-  if ($?force) then
-    setenv QUERY_STRING "$QUERY_STRING&force=true"
-  endif
-  if ($?DEBUG) /bin/echo `date` "$0 $$ ++ REQUESTING ./$APP-make-$API.bash ($QUERY_STRING)" >>! $TMP/LOG
-  ./$APP-make-$API.bash
-  setenv QUERY_STRING "$qs"
 
   # get db data
   set url = "$CU/$d-images/_all_docs?include_docs=true&limit=1&descending=true"
@@ -193,7 +218,7 @@ foreach d ( $devices )
   # process this db
   if ($db != "all" && $d == "$db") then
     # get recent rows
-    set url = "$CU/$d-images/_all_docs?include_docs=true&limit=$limit&descending=true"
+    set url = "$CU/$d-images/_all_docs?include_docs=true&&descending=true&limit=1000"
     set out = "/tmp/$0:t.$$.json"
     @ try = 0
     @ rtt = 5
@@ -285,4 +310,4 @@ endif
 
 done:
 
-if ($?VERBOSE) /bin/echo `/bin/date` "$0 $$ -- FINISH ($QUERY_STRING)" >>! $TMP/LOG
+if ($?DEBUG) /bin/echo `/bin/date` "$0 $$ -- FINISH ($QUERY_STRING)" >>! $TMP/LOG
