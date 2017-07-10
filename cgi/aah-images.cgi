@@ -68,11 +68,23 @@ if ($?CU == 0) then
     goto done
 endif
 
-# handle singleton (json)
-if ($db != "all" && ( $?id || $?limit ) && $?ext == 0) then
+# test if singleton requested
+if ($db != "all" && ( $?id || $?limit )) then
+  if ($?id) then
+    set singleton = true
+  else if ($?limit) then
+    if ($limit == 1) set singleton = true
+  else
+    # not a singleton request
+    unset singleton
+  endif
+endif
+
+# test if singleton && non-image (i.e. json) requested
+if ($?singleton && $?ext == 0) then
   if ($?id) then
     set url = "$db-images/$id"
-  else if ($?limit) then
+  else
     set url = "$db-images/_all_docs?include_docs=true&descending=true&limit=1"
   endif
   set out = "/tmp/$0:t.$$.json"
@@ -105,7 +117,7 @@ if ($db != "all" && ( $?id || $?limit ) && $?ext == 0) then
 endif
 
 # handle singleton (image)
-if ($db != "all" && ( $?id || $?limit ) && $?ext) then
+if ($?singleton && $?ext) then
   if ($?id) then
     set url = "$db-images/$id"
   else if ($?limit) then
@@ -120,7 +132,11 @@ if ($db != "all" && ( $?id || $?limit ) && $?ext) then
 	set output = '{"error":"not found","db":"'"$db"'","limit":"'"$limit"'"}'
     endif
   else
-    set id = ( `/usr/local/bin/jq -r '.rows[].doc._id' "$out"` )
+    if ($?limit) then
+      set id = ( `/usr/local/bin/jq -r '.rows[].doc._id' "$out"` )
+    else
+      set id = ( `/usr/local/bin/jq -r '._id' "$out"` )
+    endif
     set class = ( `/usr/bin/curl -s -q -f -L "$WWW/CGI/aah-updates.cgi?db=$db&id=$id" | /usr/local/bin/jq -r '.class?'` )
     if ($#class && $class != "null") then
 	if ($ext == "full") set path = "$TMP/$db/$class/$id.jpg"
@@ -149,6 +165,10 @@ if ($db != "all" && ( $?id || $?limit ) && $?ext) then
   goto output
 endif
 
+#
+# NOT A SINGLETON
+#
+
 # find updates
 set url = "$WWW/CGI/aah-updates.cgi"
 set updates = ( `/usr/bin/curl -s -q -f -L "$url" | /usr/local/bin/jq '.'` )
@@ -157,6 +177,7 @@ if ($#updates == 0) then
   set output = '{"error":"NO UPDATES -- '"$url"'"}'
   goto output
 endif
+
 # get devices
 set devices = ( `/bin/echo "$updates" | /usr/local/bin/jq -r '.devices[]?.name'` )
 if ($#devices == 0) then
@@ -166,6 +187,9 @@ if ($#devices == 0) then
 endif
 # get last check time (seconds since epoch)
 set last_update_check = ( `/bin/echo "$updates" | /usr/local/bin/jq -r '.date'`)
+
+if ($?DEBUG) /bin/echo `date` "$0 $$ ++ SUCCESS -- devices ($devices) -- last check" `/bin/date -j -f %s "$last_update_check"` >>&! $TMP/LOG
+
 # check all devices
 foreach d ( $devices )
   # initiate new output
@@ -178,47 +202,64 @@ foreach d ( $devices )
   ./$APP-make-$API.bash
   setenv QUERY_STRING "$qs"
   # indicate success
-  if ($db == "$d") set found = 1
+  if ($db == "$d") set found = "$d"
 end
+
 if ($db != "all") then
   if  ($?found == 0) then
-    if ($?VERBOSE) /bin/echo `date` "$0 $$ ++ NO MATCHING DEVICE ($db)" >>&! $TMP/LOG
     set output = '{"error":"not found","db":"'"$db"'"}'
     goto output
   endif
   set devices = ( $db )
 endif
 
-if ($?DEBUG) /bin/echo `date` "$0 $$ ++ SUCCESS -- devices ($devices) -- last check" `/bin/date -j -f %s "$last_update_check"` >>&! $TMP/LOG
+
+#
+# PROCESS REQUESTED DEVICES
+#
 
 @ k = 0
 set all = '{"date":'"$DATE"',"devices":['
 # handle all (json)
 foreach d ( $devices )
-
-  # get last check time (seconds since epoch)
-  set luc = ( `/bin/echo "$updates" | /usr/local/bin/jq -r '.devices?[]|select(.name=="'"$d"'")|.date'` )
-  if ($#luc == 0) set luc = 0
+  set lud = ( `/bin/echo "$updates" | /usr/local/bin/jq -r '.devices?[]|select(.name=="'"$d"'")|.date'` )
+  if ($?DEBUG) /bin/echo `date` "$0 $$ ++ UPDATES ($d) -- last check" `/bin/date -j -f %s "$lud"` >>&! $TMP/LOG
 
   # get db data
   set url = "$CU/$d-images/_all_docs?include_docs=true&limit=1&descending=true"
   set out = "/tmp/$0:t.$$.json"
   /usr/bin/curl -s -q -f -L "$url" -o "$out"
   if ($status != 22 && -s "$out") then
-    set date = ( `/usr/local/bin/jq '.rows[].doc.date' "$out"` )
+    set lid = ( `/usr/local/bin/jq '.rows[].doc.date' "$out"` )
     set total_rows = ( `/usr/local/bin/jq '.total_rows' "$out"` )
-    if ($#date == 0 || $date == "null")  set date = 0
+    if ($#lid == 0 || $lid == "null")  set lid = 0
     if ($#total_rows == 0 || $total_rows == "null")  set total_rows = 0
   else
-    set date = 0
-    set total_rows = 0
+    if ($?DEBUG) /bin/echo `date` "$0 $$ ++ NO UPDATES ($d" >>&! $TMP/LOG
+    /bin/rm -f "$out"
+    goto done
   endif
   /bin/rm -f "$out"
+
+  # get estimated number of images
+  if ($?since) then
+    @ delay = $lud - $since
+  else
+    @ delay = $lud - $lid
+  endif
+  @ estimate = $delay / 60
+  if ($estimate > $IMAGE_LIMIT) set estimate = $IMAGE_LIMIT
+
+  if ($?DEBUG) then
+    set LUD = `/bin/date -j -f %s "$lud"` 
+    set LID = `/bin/date -j -f %s "$lid"` 
+    /bin/echo `date` "$0 $$ ++ UPDATES ($d) -- delay ($delay) -- estimate ($estimate) -- image: $LID -- update: $LUD" >>&! $TMP/LOG
+  endif
 
   # process this db
   if ($db != "all" && $d == "$db") then
     # get recent rows
-    set url = "$CU/$d-images/_all_docs?include_docs=true&&descending=true&limit=1000"
+    set url = "$CU/$d-images/_all_docs?include_docs=true&&descending=true&limit=$estimate"
     set out = "/tmp/$0:t.$$.json"
     @ try = 0
     @ rtt = 5
@@ -234,15 +275,16 @@ foreach d ( $devices )
     end
     if (! -s "$out") then
       /bin/rm -f "$out"
-      set output = '{"error":"failure","db":"'"$d-images"'","limit":'"$limit"'}'
+      set output = '{"error":"failure","db":"'"$d-images"'}'
       goto output
     endif
+    if ($?limit == 0) set limit = $IMAGE_SET_LIMIT
     if ($?since == 0) then
-      set ids = ( `/usr/local/bin/jq '[limit('"$limit"';.rows?|sort_by(.id)|reverse[].doc|select(.date<='"$date"')._id)]' "$out"` )
+      set ids = ( `/usr/local/bin/jq '[limit('"$limit"';.rows?|sort_by(.id)|reverse[].doc|select(.date<='"$lid"')._id)]' "$out"` )
       set len = ( `/bin/echo "$ids" | /usr/local/bin/jq '.|length'` )
-      echo '{"name":"'"$d"'","date":'"$date"',"count":'"$len"',"total":'"$total_rows"',"limit":'"$limit"',"ids":'"$ids"' }' >! "$OUTPUT"
+      echo '{"name":"'"$d"'","date":'"$lid"',"count":'"$len"',"total":'"$total_rows"',"limit":'"$limit"',"ids":'"$ids"' }' >! "$OUTPUT"
     else
-      set all = ( `/usr/local/bin/jq -r '.rows[]?.doc|select(.date<='"$date"')|select(.date>'"$since"')._id' "$out"` )
+      set all = ( `/usr/local/bin/jq -r '.rows[]?.doc|select(.date<='"$lid"')|select(.date>'"$since"')._id' "$out"` )
       set len = $#all
       if ($limit > $len) then
 	set ids = ( $all[1-$len] )
@@ -255,12 +297,12 @@ foreach d ( $devices )
       else
 	set all = ""
       endif
-      echo '{"name":"'"$d"'","date":'"$date"',"count":'"$num"',"total":'"$len"',"limit":'"$limit"',"ids":['"$all"']}' >! "$OUTPUT"
+      echo '{"name":"'"$d"'","date":'"$lid"',"count":'"$num"',"total":'"$len"',"limit":'"$limit"',"ids":['"$all"']}' >! "$OUTPUT"
     endif
     rm -f "$out"
     goto output
   else if ($db == "all") then
-    set json = '{"name":"'"$d"'","date":'"$date"',"total":'"$total_rows"'}'
+    set json = '{"name":"'"$d"'","date":'"$lid"',"total":'"$total_rows"'}'
   else
     unset json
   endif
