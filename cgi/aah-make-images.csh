@@ -62,13 +62,13 @@ if ($#INPROGRESS) then
         if ($?DEBUG) /bin/echo `/bin/date` "$0 $$ -- PID $pid in-progress ($QUERY_STRING)"  >>&! $TMP/LOG
         goto done
       else
-        if ($?DEBUG) /bin/echo `/bin/date` "$0 $$ -- removing $ip"  >>&! $TMP/LOG
+        if ($?VERBOSE) /bin/echo `/bin/date` "$0 $$ -- removing $ip"  >>&! $TMP/LOG
         rm -f "$ip"
       endif
     end
-    if ($?DEBUG) /bin/echo `/bin/date` "$0 $$ -- NO PROCESSES FOUND ($QUERY_STRING)"  >>&! $TMP/LOG
+    if ($?VERBOSE) /bin/echo `/bin/date` "$0 $$ -- NO PROCESSES FOUND ($QUERY_STRING)"  >>&! $TMP/LOG
 else
-    if ($?DEBUG) /bin/echo `/bin/date` "$0 $$ -- NO EXISTING $0 ($QUERY_STRING)"  >>&! $TMP/LOG
+    if ($?VERBOSE) /bin/echo `/bin/date` "$0 $$ -- NO EXISTING $0 ($QUERY_STRING)"  >>&! $TMP/LOG
 endif
 
 # cleanup if interrupted
@@ -96,19 +96,19 @@ endif
 # CREATE <device>-images DATABASE 
 #
 if ($?CU && $?device) then
-  if ($?DEBUG) /bin/echo `/bin/date` "$0 $$ -- test if device exists ($CU/$device-$API)"  >>&! $TMP/LOG
+  if ($?VERBOSE) /bin/echo `/bin/date` "$0 $$ -- test if device exists ($CU/$device-$API)"  >>&! $TMP/LOG
   set dd = `/usr/bin/curl -s -q -f -L -X GET "$CU/$device-$API" | /usr/local/bin/jq -r '.db_name'`
   if ( $#dd == 0 || $dd == "null" ) then
-    if ($?DEBUG) /bin/echo `/bin/date` "$0 $$ -- creating device $CU/$device-$API"  >>&! $TMP/LOG
+    if ($?VERBOSE) /bin/echo `/bin/date` "$0 $$ -- creating device $CU/$device-$API"  >>&! $TMP/LOG
     # create device
     set dd = `/usr/bin/curl -s -q -f -L -X PUT "$CU/$device-$API" | /usr/local/bin/jq '.ok'`
     # test for success
     if ( "$dd" != "true" ) then
       # failure
-      if ($?DEBUG) /bin/echo `/bin/date` "$0 $$ -- failure creating Cloudant database ($device-$API)"  >>&! $TMP/LOG
+      if ($?VERBOSE) /bin/echo `/bin/date` "$0 $$ -- failure creating Cloudant database ($device-$API)"  >>&! $TMP/LOG
       goto done
     else
-      if ($?DEBUG) /bin/echo `/bin/date` "$0 $$ -- success creating device $CU/$device-$API"  >>&! $TMP/LOG
+      if ($?VERBOSE) /bin/echo `/bin/date` "$0 $$ -- success creating device $CU/$device-$API"  >>&! $TMP/LOG
     endif
   endif
 endif
@@ -119,7 +119,7 @@ set url = "$CU/$device-images/_all_docs?include_docs=true&descending=true&limit=
 set out = "/tmp/$0:t.$$.json"
 /usr/bin/curl -s -q -f -L "$url" -o "$out"
 if ($status == 22 || ! -s "$out") then
-  if ($?DEBUG) /bin/echo `/bin/date` "$0 $$ -- failed to retrieve ($url)" >>! $TMP/LOG
+  if ($?VERBOSE) /bin/echo `/bin/date` "$0 $$ -- failed to retrieve ($url)" >>! $TMP/LOG
 else
   set total_images = ( `/usr/local/bin/jq -r '.total_rows' "$out"` )
   set since = ( `/usr/local/bin/jq -r '.rows[].doc.date' "$out"` )
@@ -135,7 +135,7 @@ set url = "$WWW/CGI/aah-updates.cgi?db=$device"
 set out = "/tmp/$0:t.$$.json"
 /usr/bin/curl -s -q -f -L "$url" -o "$out"
 if ($status == 22 || ! -s "$out") then
-  if ($?DEBUG) /bin/echo `/bin/date` "$0 $$ -- failed to retrieve ($url)" >>! $TMP/LOG
+  if ($?VERBOSE) /bin/echo `/bin/date` "$0 $$ -- failed to retrieve ($url)" >>! $TMP/LOG
   goto done
 else
   set total_updates = ( `/usr/local/bin/jq -r '.total?' "$out"` )
@@ -176,7 +176,7 @@ while ($try < 3)
   break
 end
 if (! -s "$out") then
-  if ($?DEBUG) /bin/echo `/bin/date` "$0 $$ -- failed to retrieve ($url)" >>! $TMP/LOG
+  if ($?VERBOSE) /bin/echo `/bin/date` "$0 $$ -- failed to retrieve ($url)" >>! $TMP/LOG
   goto done
 endif
 
@@ -199,9 +199,9 @@ endif
 # get IP address of device
 set ipaddr = ( `/usr/bin/curl -s -q -f -L "$WWW/CGI/aah-devices.cgi" | /usr/local/bin/jq -r '.|select(.name=="'"$device"'")' | /usr/local/bin/jq -r ".ip_address"` )
 if ($#ipaddr) then
-  if ($?DEBUG) /bin/echo `/bin/date` "$0 $$ -- FOUND $device :: $ipaddr" >>! $TMP/LOG
+  if ($?VERBOSE) /bin/echo `/bin/date` "$0 $$ -- FOUND $device :: $ipaddr" >>! $TMP/LOG
 else
-  if ($?DEBUG) /bin/echo `/bin/date` "$0 $$ -- NOT FOUND $device" >>! $TMP/LOG
+  if ($?VERBOSE) /bin/echo `/bin/date` "$0 $$ -- NOT FOUND $device" >>! $TMP/LOG
   goto done
 endif
 
@@ -218,9 +218,9 @@ foreach u ( $updates )
   /bin/rm -f "$out"
   /usr/bin/curl -s -q -f -L "$url" -o "$out"
   if ($status == 22 || ! -s "$out") then
-    if ($?DEBUG) /bin/echo `/bin/date` "$0 $$ -- FAILURE -- curl ($url) for update ($u)"  >>&! $TMP/LOG
+    if ($?VERBOSE) /bin/echo `/bin/date` "$0 $$ -- FAILURE -- curl ($url) for update ($u)"  >>&! $TMP/LOG
   else if (`/usr/local/bin/jq -r '.error?' "$out"` != "null") then
-    if ($?DEBUG) /bin/echo `/bin/date` "$0 $$ -- NOT FOUND ($device,$u)"  >>&! $TMP/LOG
+    if ($?VERBOSE) /bin/echo `/bin/date` "$0 $$ -- NOT FOUND ($device,$u)"  >>&! $TMP/LOG
     rm -f "$out"
     continue 
   else
@@ -228,7 +228,7 @@ foreach u ( $updates )
   endif
   rm -f "$out"
 
-  if ($?DEBUG) /bin/echo `/bin/date` "$0 $$ -- FOUND -- existing update ($update)" >>! $TMP/LOG
+  if ($?VERBOSE) /bin/echo `/bin/date` "$0 $$ -- FOUND -- existing update ($update)" >>! $TMP/LOG
 
   # get relevant update attributes 
   set id = ( `/bin/echo "$update" | /usr/local/bin/jq -r '.id'` )
@@ -239,9 +239,9 @@ foreach u ( $updates )
   # CHEAT
   set crop = ( `/usr/bin/curl -s -q -f -L "$CU/$device/$u" | /usr/local/bin/jq -r '.imagebox'` )
   if ($#crop && $crop != "null") then
-    if ($?DEBUG) /bin/echo `/bin/date` "$0 $$ -- got ($crop) for $u" >>! $TMP/LOG
+    if ($?VERBOSE) /bin/echo `/bin/date` "$0 $$ -- got ($crop) for $u" >>! $TMP/LOG
   else
-    if ($?DEBUG) /bin/echo `/bin/date` "$0 $$ -- no crop for $u" >>! $TMP/LOG
+    if ($?VERBOSE) /bin/echo `/bin/date` "$0 $$ -- no crop for $u" >>! $TMP/LOG
     set crop = ""
   endif
 
@@ -260,7 +260,7 @@ foreach u ( $updates )
 	if ($?DEBUG) /bin/echo `/bin/date` "$0 $$ -- BREAKING ($device) UPDATES: $nimage INDEX: $nimage COUNT: $count -- existing ($exists)" >>! $TMP/LOG
 	break
       endif
-      if ($?DEBUG) /bin/echo `/bin/date` "$0 $$ -- WARNING -- IMAGE EXISTS ($exists)" >>! $TMP/LOG
+      if ($?VERBOSE) /bin/echo `/bin/date` "$0 $$ -- WARNING -- IMAGE EXISTS ($exists)" >>! $TMP/LOG
       set exists = "$exists[2]"
     else
       unset exists
@@ -269,7 +269,7 @@ foreach u ( $updates )
     unset exists
   endif
   if ($?exists == 0) then
-    if ($?DEBUG) /bin/echo `/bin/date` "$0 $$ -- NEW IMAGE ($u)" >>! $TMP/LOG
+    if ($?VERBOSE) /bin/echo `/bin/date` "$0 $$ -- NEW IMAGE ($u)" >>! $TMP/LOG
   endif
 
   # propose destination
@@ -285,26 +285,26 @@ foreach u ( $updates )
 
   # try to retreive iff DNE
   if (! -s "$image" && ! -l "$image") then
-    if ($?DEBUG) /bin/echo `/bin/date` "$0 $$ -- retrieving ($id) with $ipaddr using $CAMERA_IMAGE_RETRIEVE" >>! $TMP/LOG
+    if ($?VERBOSE) /bin/echo `/bin/date` "$0 $$ -- retrieving ($id) with $ipaddr using $CAMERA_IMAGE_RETRIEVE" >>! $TMP/LOG
     switch ($CAMERA_IMAGE_RETRIEVE)
       case "FTP":
-        if ($?DEBUG) /bin/echo `/bin/date` "$0 $$ -- calling $APP-ftpImage to retrieve $image" >>! $TMP/LOG
+        if ($?VERBOSE) /bin/echo `/bin/date` "$0 $$ -- calling $APP-ftpImage to retrieve $image" >>! $TMP/LOG
         ./$APP-ftpImage.csh "$id" "jpg" "$ipaddr" "$image" >>! $TMP/LOG
         if (! -s "$image") then
-          if ($?DEBUG) /bin/echo `/bin/date` "$0 $$ -- $APP-ftpImage FAILED to retrieve $image" >>! $TMP/LOG
+          if ($?VERBOSE) /bin/echo `/bin/date` "$0 $$ -- $APP-ftpImage FAILED to retrieve $image" >>! $TMP/LOG
         endif
         breaksw
       default:
-        if ($?DEBUG) /bin/echo `/bin/date` "$0 $$ -- unknown CAMERA_IMAGE_RETRIEVE ($CAMERA_IMAGE_RETRIEVE)" >>! $TMP/LOG
+        if ($?VERBOSE) /bin/echo `/bin/date` "$0 $$ -- unknown CAMERA_IMAGE_RETRIEVE ($CAMERA_IMAGE_RETRIEVE)" >>! $TMP/LOG
         breaksw
     endsw
   endif
 
   # optionally transform image
   if (-s "$image" && ! -s "$image:r.jpeg" && $?CAMERA_MODEL_TRANSFORM) then
-    if ($?DEBUG) /bin/echo `/bin/date` "$0 $$ -- transforming $image with $crop using $CAMERA_MODEL_TRANSFORM" >>! $TMP/LOG
+    if ($?VERBOSE) /bin/echo `/bin/date` "$0 $$ -- transforming $image with $crop using $CAMERA_MODEL_TRANSFORM" >>! $TMP/LOG
     set xform = ( `./$APP-transformImage.csh "$image" "$crop"` )
-    if ($?DEBUG) /bin/echo `/bin/date` "$0 $$ -- TRANSFORMED ($u) $xform" >>! $TMP/LOG
+    if ($?VERBOSE) /bin/echo `/bin/date` "$0 $$ -- TRANSFORMED ($u) $xform" >>! $TMP/LOG
   endif
   
   # get image characteristics
@@ -329,7 +329,7 @@ foreach u ( $updates )
       rm -f "$out"
     endif
   else
-    if ($?DEBUG) /bin/echo `/bin/date` "$0 $$ -- WARNING ($u) -- no image ($image)" >>&! $TMP/LOG
+    if ($?VERBOSE) /bin/echo `/bin/date` "$0 $$ -- WARNING ($u) -- no image ($image)" >>&! $TMP/LOG
   endif
 
   #
