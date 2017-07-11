@@ -1,0 +1,520 @@
+# internet
+
+comcastgw:
+  name: comcastgw
+  mac: 6C:3B:6B:70:92:8A
+  icon: mdi:web
+  picture: https://www.netgear.com/images/Products/Networking/CableModemsandRouters/CM600/CM600_Hero_Transparent.png
+  track: true
+  hide_if_away: false
+  vendor: Routerboard.com
+
+DSL_GW:
+  hide_if_away: false
+  mac: 0:C3:4:48:15:22
+  name: DSL_GW
+  track: false
+  vendor: DD-WRT
+
+# power
+
+dlicontroller:
+  hide_if_away: false
+  mac: 00:0B:78:66:DD:1E
+  name: dlicontroller
+  icon: mdi:power-settings
+  track: true
+  vendor: TAIFATECH INC.
+
+# solar
+
+envoy:
+  mac: 00:1D:C0:01:59:0B
+  name: envoy
+  icon: mdi:weather-sunset
+  picture: https://enphase.com/sites/default/files/products_envoy.png
+  track: true
+  hide_if_away: false
+  vendor: Enphase Energy
+
+# microcells
+
+microcell_garage:
+  name: microcell_garage
+  mac: 84:8D:C7:EC:54:C4
+  icon: mdi:cellphone-link
+  picture: http://www.cisco.com/c/dam/assets/sol/images/service-provider/att-microsell200x250.jpg
+  track: true
+  hide_if_away: false
+  vendor: Cisco SPVTG
+
+microcell_cabin:
+  name: microcell_cabin
+  mac: 74:54:7D:01:29:B2
+  icon: mdi:cellphone-link
+  picture: http://www.cisco.com/c/dam/assets/sol/images/service-provider/att-microsell200x250.jpg
+  track: true
+  hide_if_away: false
+  vendor: Cisco SPVTG
+
+microcell_poolhouse:
+  name: microcell_poolhouse
+  mac: 74:54:7D:FE:B4:C6
+  icon: mdi:cellphone-link
+  picture: http://www.cisco.com/c/dam/assets/sol/images/service-provider/att-microsell200x250.jpg
+  track: true
+  hide_if_away: false
+  vendor: Cisco SPVTG
+
+# access points
+
+airport_equipmentpad:
+  hide_if_away: false
+  mac: 7C:D1:C3:C7:27:5F
+  name: airport_equipmentpad
+  icon: mdi:access-point-network
+  track: true
+  vendor: Apple, Inc.
+
+airport_cabin:
+  hide_if_away: false
+  mac: 98:01:A7:E4:2A:CB
+  name: airport_cabin
+  icon: mdi:access-point-network
+  track: true
+  vendor: Apple, Inc.
+
+airport_window:
+  hide_if_away: false
+  mac: 0C:51:01:ED:90:E8
+  name: airport_window
+  icon: mdi:access-point-network
+  track: true
+  vendor: Apple, Inc.
+
+airport_bedroom:
+  hide_if_away: false
+  mac: 74:1B:B2:D1:30:A2
+  name: airport_bedroom
+  icon: mdi:access-point-network
+  track: true
+  vendor: Apple, Inc.
+
+airport_dogshed:
+  hide_if_away: false
+  mac: 28:37:37:42:FA:5F
+  name: airport_dogshed
+  icon: mdi:access-point-network
+  track: true
+  vendor: Apple, Inc.
+
+airport_kitchen:
+  hide_if_away: false
+  mac: 28:37:37:42:FA:06
+  name: airport_kitchen
+  icon: mdi:access-point-network
+  track: true
+  vendor: Apple, Inc.
+
+airport_poolhouse:
+  hide_if_away: false
+  mac: 88:1F:A1:2A:45:20
+  name: airport_poolhouse
+  icon: mdi:access-point-network
+  picture: https://images.apple.com/v/compare-wifi-models/a/images/airport_extreme.jpg
+  track: true
+  vendor: Apple, Inc.
+
+airport_woodshed:
+  hide_if_away: false
+  mac: 28:37:37:3F:E5:BD
+  name: airport_woodshed
+  icon: mdi:access-point-network
+  track: true
+  vendor: Apple, Inc.
+
+airport_lowerpath:
+  name: airport_lowerpath
+  mac: '28:37:37:40:27:00'
+  icon: mdi:access-point-network
+  track: true
+  vendor: Apple, Inc.
+
+airport_powerpole:
+  mac: D0:03:4B:5E:BF:C9
+  name: airport_powerpole
+  icon: mdi:access-point-network
+  track: true
+  hide_if_away: false
+  vendor: Apple, Inc.
+
+# tivos
+
+tivo_poolhouse_premier:
+  hide_if_away: false
+  mac: 00:11:D9:32:58:0B
+  name: tivo_poolhouse_premier
+  picture: http://www3-stg.tivo.com/assets/images/shared/icon/app_launch_icon_100x100.png
+  track: true
+  vendor: TiVo
+
+tivo_cabin_series3:
+  hide_if_away: false
+  mac: 00:11:D9:25:AD:BD
+  name: tivo_cabin_series3
+  picture: http://www3-stg.tivo.com/assets/images/shared/icon/app_launch_icon_100x100.png
+  icon: mdi:television
+  track: true
+  vendor: TiVo
+
+tivo_poohouse_series3:
+  hide_if_away: false
+  mac: 00:11:D9:0B:91:35
+  name: tivo_poohouse_series3
+  picture: http://www3-stg.tivo.com/assets/images/shared/icon/app_launch_icon_100x100.png
+  icon: mdi:television
+  track: true
+  vendor: TiVo
+
+tivo_stream:
+  hide_if_away: false
+  mac: 00:11:D9:3E:2C:EF
+  name: tivo_stream
+  picture: https://www-cdn01.tivo.com/cdn/farfuture/umqgSY1yi833CocnMGa8DPWWvkFxSjxq4cxVdstAwgs/mtime:1490857376/assets/Stream_lrg.jpg
+  icon: mdi:television
+  track: true
+  vendor: TiVo
+
+tivo_bedroom_series3:
+  hide_if_away: false
+  mac: 00:11:D9:0C:04:96
+  name: tivo_bedroom_series3
+  picture: http://www3-stg.tivo.com/assets/images/shared/icon/app_launch_icon_100x100.png
+  icon: mdi:television
+  track: true
+  vendor: TiVo
+
+tivo_cabin_premiere:
+  hide_if_away: false
+  mac: 00:11:D9:34:C8:83
+  name: tivo_cabin_premiere
+  picture: http://www3-stg.tivo.com/assets/images/shared/icon/app_launch_icon_100x100.png
+  icon: mdi:television
+  track: true
+  vendor: TiVo
+
+# ageathome
+
+roughfog:
+  mac: B8:27:EB:D0:95:AD
+  name: roughfog
+  hide_if_away: false
+  icon: mdi:webcam
+  picture: http://farm5.static.flickr.com/4100/4930862762_4abbd2b5b3_m.jpg
+  track: true
+  vendor: Raspberry Pi Foundation
+
+quietwater:
+  mac: B8:27:EB:90:6F:4A
+  name: quietwater
+  hide_if_away: false
+  icon: mdi:webcam
+  picture: http://farm5.static.flickr.com/4100/4930862762_4abbd2b5b3_m.jpg
+  track: true
+  vendor: Raspberry Pi Foundation
+
+dampcloud:
+  mac: B8:27:EB:01:E6:05
+  name: dampcloud
+  hide_if_away: false
+  icon: mdi:webcam
+  picture: http://farm5.static.flickr.com/4100/4930862762_4abbd2b5b3_m.jpg
+  track: true
+  vendor: Raspberry Pi Foundation
+
+roughwind:
+  mac: B8:27:EB:BD:1D:F3
+  name: roughwind
+  hide_if_away: false
+  icon: mdi:webcam
+  picture: http://farm5.static.flickr.com/4100/4930862762_4abbd2b5b3_m.jpg
+  track: true
+  vendor: Raspberry Pi Foundation
+
+# NVIDIA TX2
+
+nvidia_tx2_eth0:
+  name: nvidia_tx2_eth0
+  mac: 00:04:4B:8C:62:30
+  icon: mdi:server
+  picture: http://devblogs.nvidia.com/parallelforall/wp-content/uploads/2015/11/JTX1_devkit.png
+  track: true
+  hide_if_away: false
+  vendor: NVIDIA
+
+nvidia_tx2_wlan0:
+  name: nvidia_tx2_wlan0
+  mac: 00:04:4B:8C:62:2E 
+  icon: mdi:server
+  track: true
+  hide_if_away: false
+  vendor: NVIDIA
+
+# BLUE HORIZON
+
+my_mtn:
+  name: my_mtn
+  mac: B8:27:EB:7B:F9:FB
+  picture: https://bluehorizon.network/images/brand.svg
+  track: true
+  hide_if_away: false
+  vendor: Raspberry Pi Foundation
+
+# LAN SERVERS
+
+cabinmac_en0:
+  name: cabinmac_en0
+  mac: 3C:07:54:67:17:E9
+  icon: mdi:server
+  picture: https://support.apple.com/content/dam/edam/applecare/images/en_US/macmini/psp-mini-hero-macmini_2x.png
+  track: true
+  hide_if_away: false
+  vendor: Apple, Inc.
+
+cabinmac_wf0:
+  name: cabinmac_wf0
+  mac: 7C:C3:A1:72:1C:CB
+  icon: mdi:server-network
+  picture: https://support.apple.com/content/dam/edam/applecare/images/en_US/macmini/psp-mini-hero-macmini_2x.png
+  track: true
+  hide_if_away: false
+  vendor: Apple, Inc.
+
+davidmac_en0:
+  hide_if_away: false
+  icon: mdi:server
+  mac: 00:23:32:30:20:59
+  name: davidmac_en0
+  picture: https://images.apple.com/support/_images/hero_macpro.jpg
+  track: true
+  vendor: Apple, Inc.
+
+davidmac_en1:
+  hide_if_away: false
+  icon: mdi:server
+  mac: 00:23:32:30:20:58
+  name: davidmac_en1
+  picture: https://images.apple.com/support/_images/hero_macpro.jpg
+  track: true
+  vendor: Apple, Inc.
+
+amazon_firetv:
+  hide_if_away: false
+  icon:
+  mac: 0:BB:3A:77:92:CB
+  name: amazon_firetv
+  picture:
+  track: false
+  vendor: Private
+
+photosmart_7510:
+  hide_if_away: false
+  icon:
+  mac: 2C:76:8A:E9:6B:E4
+  name: photosmart_7510
+  picture:
+  track: false
+  vendor: Hewlett Packard
+
+phaser_8650:
+  hide_if_away: true
+  icon:
+  mac: 0:0:AA:D1:EE:F2
+  name: phaser_8650
+  picture:
+  track: false
+  vendor: XEROX CORPORATION
+
+shenzhen:
+  hide_if_away: false
+  icon:
+  mac: 8:D8:33:B6:CE:CC
+  name: shenzhen
+  picture:
+  track: false
+  vendor: Shenzhen RF Technology Co., Ltd
+
+kelimac:
+  hide_if_away: false
+  icon:
+  mac: AC:BC:32:9C:8E:1B
+  name: kelimac
+  picture:
+  track: false
+  vendor: Apple, Inc.
+
+playstation_4:
+  hide_if_away: true
+  mac: B0:5:94:2F:1C:87
+  name: playstation_4
+  picture: https://cdn4.iconfinder.com/data/icons/miu-flat-social/60/playstation-128.png
+  track: false
+  vendor: Liteon Techfalselogy Corporation
+
+# ipads
+
+ipad_masterbath:
+  hide_if_away: false
+  icon:
+  mac: D8:A2:5E:1D:54:1F
+  name: ipad-masterbath
+  picture:
+  track: false
+  vendor: Apple, Inc.
+
+ipad_mini_david:
+  hide_if_away: false
+  icon:
+  mac: 1C:AB:A7:ED:B9:A8
+  name: ipad_mini_david
+  picture:
+  track: false
+  vendor: Apple, Inc.
+
+ipad_poolhouse:
+  hide_if_away: false
+  icon:
+  mac: 7C:6D:62:BB:CC:C0
+  name: ipad_poolhouse
+  picture:
+  track: false
+  vendor: Apple, Inc.
+
+ipad_kitchen:
+  hide_if_away: false
+  icon:
+  mac: 1C:AB:A7:EE:FC:52
+  name: ipad_kitchen
+  picture:
+  track: false
+  vendor: Apple, Inc.
+
+# webcams
+
+poolcamera:
+  name: poolcamera
+  mac: 00:80:F0:C1:FF:50
+  icon: mdi:cctv
+  picture: https://security.panasonic.com/files/products/wv-s2130/product_image_1.png
+  track: true
+  hide_if_away: false
+  vendor: Panasonic Communications Co., Ltd.
+
+wcv80n_upperpath:
+  mac: 58:6D:8F:E5:1B:08
+  name: wcv80n_upperpath
+  icon: mdi:webcam
+  picture: http://www.linksys.com/images/productmt/834045/372.jpg
+  track: true
+  hide_if_away: false
+  vendor: Cisco-Linksys, LLC
+
+wcv80n_woodshed:
+  mac: 00:22:6B:F0:92:60
+  name: wcv80n_woodshed
+  icon: mdi:webcam
+  picture: http://www.linksys.com/images/productmt/834045/372.jpg
+  track: true
+  hide_if_away: false
+  vendor: Cisco-Linksys, LLC
+
+wcv80n_poolhouse_fridge:
+  mac: 00:22:6B:FF:2B:DF
+  name: wcv80n_poolhouse_fridge
+  icon: mdi:webcam
+  picture: http://www.linksys.com/images/productmt/834045/372.jpg
+  track: true
+  hide_if_away: false
+  vendor: Cisco-Linksys, LLC
+
+wcv80n_interior_gate:
+  mac: 00:22:6B:F2:5F:AF
+  name: wcv80n_interior_gate
+  icon: mdi:webcam
+  picture: http://www.linksys.com/images/productmt/834045/372.jpg
+  track: true
+  hide_if_away: false
+  vendor: Cisco-Linksys, LLC
+
+wcv80n_kitchen:
+  mac: 00:22:6B:F2:5A:6D
+  name: wcv80n_kitchen
+  icon: mdi:webcam
+  picture: http://www.linksys.com/images/productmt/834045/372.jpg
+  track: true
+  hide_if_away: false
+  vendor: Cisco-Linksys, LLC
+
+wcv80n_poolhouse_exterior:
+  mac: 00:25:9C:82:59:54
+  name: wcv80n_poolhouse_exterior
+  icon: mdi:webcam
+  picture: http://www.linksys.com/images/productmt/834045/372.jpg
+  track: true
+  hide_if_away: false
+  vendor: Cisco-Linksys, LLC
+
+wcv80n_dogyard:
+  mac: 98:FC:11:A1:1E:DE
+  name: wcv80n_dogyard
+  icon: mdi:webcam
+  picture: http://www.linksys.com/images/productmt/834045/372.jpg
+  track: true
+  hide_if_away: false
+  vendor: Cisco-Linksys, LLC
+
+wcv80n_dogshed_interior:
+  icon: mdi:webcam
+  picture: http://www.linksys.com/images/productmt/834045/372.jpg
+  hide_if_away: false
+  mac: 00:25:9C:83:34:E7
+  name: wcv80n_dogshed_interior
+  track: true
+  vendor: Cisco-Linksys, LLC
+
+wcv80n_pondview:
+  icon: mdi:webcam
+  picture: http://www.linksys.com/images/productmt/834045/372.jpg
+  hide_if_away: false
+  mac: 00:22:6B:F2:5A:9B
+  name: wcv80n_pondview
+  track: true
+  vendor: Cisco-Linksys, LLC
+
+wcv80n_gravelpad:
+  hide_if_away: false
+  mac: 00:22:6B:FB:98:34
+  name: wcv80n_gravelpad
+  icon: mdi:webcam
+  picture: http://www.linksys.com/images/productmt/834045/372.jpg
+  track: true
+  vendor: Cisco-Linksys, LLC
+
+# iPhones
+
+davids_iphone:
+  mac: D0:C5:F3:82:F1:ED
+  name: davids_iphone
+  icon: mdi:cellphone-iphone
+  hide_if_away: false
+  track: true
+  vendor: Apple, Inc.
+
+kelis_iphone:
+  mac: 20:AB:37:E2:B9:9C
+  name: kelis_iphone
+  icon: mdi:cellphone-iphone
+  hide_if_away: false
+  track: true
+  vendor: Apple, Inc.
+
