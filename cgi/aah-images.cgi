@@ -248,7 +248,11 @@ foreach d ( $devices )
     @ delay = $lud - $lid
   endif
   @ estimate = $delay / 60
-  if ($estimate > $IMAGE_LIMIT) set estimate = $IMAGE_LIMIT
+  if ($estimate > $IMAGE_LIMIT) then
+    set estimate = $IMAGE_LIMIT
+  else if ($estimate == 0) then
+    @ estimate = 1
+  endif
 
   if ($?DEBUG) then
     set LUD = `/bin/date -j -f %s "$lud"` 
