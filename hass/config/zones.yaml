@@ -1,0 +1,95 @@
+zone fazenda:
+  name: home
+  icon: mdi:home
+  latitude: 37.174389
+  longitude: -121.816530
+  radius: 100
+  track_ios: true
+
+zone roadbelow:
+  name: zoneroadbelow
+  icon: mdi:cctv
+  radius: 10
+  latitude: 37.174957
+  longitude: -121.817140
+  track_ios: true
+
+zone poolhouse:
+  name: zonepoolhouse
+  radius: 25
+  latitude: 37.174277
+  longitude: -121.815931
+  icon: mdi:account-location
+  track_ios: true
+
+zone cabin:
+  name: zonecabin
+  radius: 10
+  latitude: 37.174962
+  longitude: -121.816351
+  icon: mdi:account-location
+  track_ios: true
+
+zone kitchen:
+  name: zonekitchen
+  icon: mdi:cctv
+  radius: 5
+  latitude: 37.174997
+  longitude: -121.816442
+  track_ios: true
+
+zone bathroom:
+  name: zonebathroom
+  icon: mdi:cctv
+  radius: 5
+  latitude: 37.175068
+  longitude: -121.816223
+  track_ios: true
+
+zone frontdoor:
+  name: zonefrontdoor
+  icon: mdi:cctv
+  radius: 5
+  latitude: 37.174934
+  longitude: -121.816306
+  track_ios: true
+
+zone leland:
+  name: zoneleland
+  icon: mdi:school
+  radius: 250
+  latitude: 37.217712
+  longitude: -121.844413
+  track_ios: true
+
+zone presentation:
+  name: zonepresentation
+  icon: mdi:school
+  radius: 250
+  latitude: 37.283350
+  longitude: -121.900422
+  track_ios: true
+
+zone arc:
+  name: zonearc
+  icon: mdi:domain
+  radius: 250
+  latitude: 37.211072
+  longitude: -121.807391
+  track_ios: true
+
+zone svl:
+  name: zonesvl
+  icon: mdi:domain
+  radius: 250
+  latitude: 37.196352
+  longitude: -121.748551
+  track_ios: true
+
+zone safeway:
+  name: zonesafeway
+  icon: mdi:store
+  radius: 100
+  latitude: 37.219579
+  longitude: -121.861451
+  track_ios: true
