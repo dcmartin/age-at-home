@@ -133,25 +133,31 @@ if ($?singleton && $?ext) then
     endif
   else
     if ($?limit) then
+      set json = ( `/usr/local/bin/jq '.rows[].doc' "$out"` )
       set id = ( `/usr/local/bin/jq -r '.rows[].doc._id' "$out"` )
     else
-      set id = ( `/usr/local/bin/jq -r '._id' "$out"` )
+      set json = ( `/usr/local/bin/jq '.' "$out"` )
     endif
-    set class = ( `/usr/bin/curl -s -q -f -L "$WWW/CGI/aah-updates.cgi?db=$db&id=$id" | /usr/local/bin/jq -r '.class?'` )
+    set id = ( `/bin/echo "$json" | /usr/local/bin/jq -r '._id'` )
+    set crop = ( `/bin/echo "$json" | /usr/local/bin/jq -r '.crop'` )
+    set class = ( `/usr/bin/curl -s -q -f -L "$WWW/CGI/aah-updates.cgi?db=$db&id=$id" | /usr/local/bin/jq -r '.class?' | /usr/bin/sed 's/ /_/g'` )
+    rm -f "$out"
     if ($#class && $class != "null") then
 	if ($ext == "full") set path = "$TMP/$db/$class/$id.jpg"
 	if ($ext == "crop") set path = "$TMP/$db/$class/$id.jpeg"
 	if (-s "$path") then
 	  if ($?DEBUG) /bin/echo `/bin/date` "$0 $$ -- SINGLETON ($path)" >>! $TMP/LOG
 
-	  #set stat = ( `/usr/bin/stat -r "$path" | awk '{ print $10 }'` )
+          set stat = ( `/usr/bin/stat -r "$path" | /usr/bin/awk '{ print $10 }'` )
+
 	  /bin/echo "Cache-Control: max-age=$TTL"
-	  /bin/echo "Last-Modified:" `/bin/date -r $DATE '+%a, %d %b %Y %H:%M:%S %Z'`
+	  /bin/echo "Last-Modified:" `/bin/date -r $stat '+%a, %d %b %Y %H:%M:%S %Z'`
 	  /bin/echo "Access-Control-Allow-Origin: *"
 	  /bin/echo "Content-Location: $WWW/CGI/$APP-$API.cgi?db=$db&class=$class&id=$id&ext=$ext"
 	  /bin/echo "Content-Type: image/jpeg"
 	  /bin/echo ""
-	  /bin/dd if="$path"
+
+          ./aah-images-label.csh "$path" "$class" "$crop"
 	  goto done
 	endif
         set output = '{"error":"does not exist","db":"'"$db"'","class":"'"$class"'","id":"'"$id"'"}'
