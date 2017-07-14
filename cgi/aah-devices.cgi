@@ -25,7 +25,7 @@ if (! -e "$JSON") then
   set INPROGRESS = ( `/bin/echo "$JSON".*` )
   if ($#INPROGRESS) then
     set pid = "$INPROGRESS[$#INPROGRESS]:e"
-    set eid = `ps axw | awk '{ print $1 }' | egrep "$pid"` )
+    set eid = ( `ps axw | awk '{ print $1 }' | egrep "$pid"` )
     if ($pid == $eid) then
       if ($?oldest) then
 	 set DATE = "$oldest:r:e"
