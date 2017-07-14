@@ -131,7 +131,7 @@ else
 endif
 
 # get updates for this device
-set url = "$WWW/CGI/aah-updates.cgi?db=$device"
+set url = "$WWW/CGI/aah-updates.cgi?db=$device&since=$since"
 set out = "/tmp/$0:t.$$.json"
 /usr/bin/curl -s -q -f -L "$url" -o "$out"
 if ($status == 22 || ! -s "$out") then
@@ -197,7 +197,7 @@ else
 endif
 
 # get IP address of device
-set ipaddr = ( `/usr/bin/curl -s -q -f -L "$WWW/CGI/aah-devices.cgi" | /usr/local/bin/jq -r '.|select(.name=="'"$device"'")' | /usr/local/bin/jq -r ".ip_address"` )
+set ipaddr = ( `/usr/bin/curl -s -q -f -L "$WWW/CGI/aah-devices.cgi?db=$device" | /usr/local/bin/jq -r ".ip_address"` )
 if ($#ipaddr) then
   if ($?VERBOSE) /bin/echo `/bin/date` "$0 $$ -- FOUND $device :: $ipaddr" >>! $TMP/LOG
 else

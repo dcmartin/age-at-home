@@ -219,15 +219,6 @@ else
   if ($?DEBUG) /bin/echo `/bin/date` "$0 $$ -- $total_changes EVENTS FOR $device ($seqid)" >>! $TMP/LOG
 endif
 
-# get IP address of device
-set ipaddr = ( `/usr/bin/curl -s -q -f -L "$WWW/CGI/aah-devices.cgi" | /usr/local/bin/jq -r '.|select(.name=="'"$device"'")' | /usr/local/bin/jq -r ".ip_address"` )
-if ($#ipaddr) then
-  if ($?VERBOSE) /bin/echo `/bin/date` "$0 $$ -- FOUND $device :: $ipaddr" >>! $TMP/LOG
-else
-  if ($?VERBOSE) /bin/echo `/bin/date` "$0 $$ -- NOT FOUND $device" >>! $TMP/LOG
-  goto done
-endif
-
 #
 # PROCESS ALL CHANGES
 #
