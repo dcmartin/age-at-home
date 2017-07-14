@@ -37,9 +37,7 @@ if ($?id && $db == "all") unset id
 if ($?since && $?id) unset id
 if ($?id == 0 && $?include_scores) unset include_scores
 
-if ($?limit && $db == "all") then
-  unset limit
-else if ($?limit) then
+if ($?limit) then
   if ($limit > $UPDATE_LIMIT) set limit = $UPDATE_LIMIT
 else
   set limit = $UPDATE_SET_LIMIT
@@ -141,7 +139,7 @@ endif
 
 # find devices
 if ($db == "all") then
-  set devices = ( `curl "$WWW/CGI/aah-devices.cgi" | /usr/local/bin/jq -r '.name'` )
+  set devices = ( `curl "$WWW/CGI/aah-devices.cgi" | /usr/local/bin/jq -r '.devices[].name'` )
   if ($#devices == 0) then
     if ($?VERBOSE) /bin/echo `date` "$0 $$ ++ FAILURE ($url)" >>&! $TMP/LOG
     goto done
