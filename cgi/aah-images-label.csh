@@ -16,7 +16,22 @@ switch ($path:e)
 endsw
 
 set out = "$path:r.$$.$path:e"
-set x = ( `/bin/echo "$crop" | /usr/bin/sed "s/\(.*\)x\(.*\)\([+-]\)\(.*\)\([+-]\)\(.*\)/\3\4 \5\6 \1 \2/"` )
+set xywh = ( `/bin/echo "$crop" | /usr/bin/sed "s/\(.*\)x\(.*\)\([+-]\)\(.*\)\([+-]\)\(.*\)/\3\4 \5\6 \1 \2/"` )
+
+if ($path:e == "jpg") then
+  set w = `/bin/echo "$xywh[3] / 2" | /usr/bin/bc`
+  set h = `/bin/echo "$xywh[4] / 2" | /usr/bin/bc`
+  set x = `/bin/echo "$w $xywh[1] - 112" | /usr/bin/bc`
+  set y = `/bin/echo "$h $xywh[2] - 112" | /usr/bin/bc`
+  if ($x < 0) set x = 0
+  if ($y < 0) set y = 0
+  set w = `/bin/echo "$x + 224" | /usr/bin/bc`
+  set h = `/bin/echo "$y + 224" | /usr/bin/bc`
+  
+  set rect = ( $x $y $w $h )
+else
+  set rect = ( 0 0 224 224 )
+endif
 
 /usr/local/bin/convert \
     -pointsize "$psize" -size "$csize" \
@@ -29,7 +44,7 @@ set x = ( `/bin/echo "$crop" | /usr/bin/sed "s/\(.*\)x\(.*\)\([+-]\)\(.*\)\([+-]
     -fill none \
     -stroke white \
     -strokewidth 3 \
-    -draw "rectangle $x[1],$x[2] $x[3],$x[4]" "$out"
+    -draw "rectangle $rect" "$out"
 
 if (-s "$out") then
   /bin/dd if="$out"

@@ -10,7 +10,7 @@ setenv TMP "/var/lib/age-at-home"
 setenv DEBUG true
 
 # don't update statistics more than once per (in seconds)
-setenv TTL 60
+setenv TTL 15
 setenv SECONDS `/bin/date "+%s"`
 setenv DATE `/bin/echo $SECONDS \/ $TTL \* $TTL | bc`
 
