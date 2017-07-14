@@ -16,12 +16,17 @@ RUN apt-get update && apt-get install -q -y --no-install-recommends \
     ssh \
     curl \
     python2.7-dev \
-    python-pip
-
+    python-pip \
+    python-dev \
+    python-pip \
+    python-setuptools \
+    build-essential
 #
 # update pip
 #
 RUN pip install --upgrade pip
+RUN pip install --upgrade setuptools
+# pip install --upgrade csvkit
 #
 # install CSVKIT
 #
