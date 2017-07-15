@@ -10,7 +10,7 @@ setenv TMP "/var/lib/age-at-home"
 setenv DEBUG true
 
 # don't update statistics more than once per (in seconds)
-setenv TTL 15
+setenv TTL 60
 setenv SECONDS `/bin/date "+%s"`
 setenv DATE `/bin/echo $SECONDS \/ $TTL \* $TTL | bc`
 
@@ -45,13 +45,7 @@ else if ($?limit) then
   if ($limit > $IMAGE_LIMIT) set limit = $IMAGE_LIMIT
 endif
 
-# standardize QUERY_STRING for cache
-setenv QUERY_STRING "db=$db"
-
 if ($?DEBUG) /bin/echo `/bin/date` "$0 $$ -- START ($QUERY_STRING)" >>! $TMP/LOG
-
-# TARGET 
-set OUTPUT = "$TMP/$APP-$API-$QUERY_STRING.$DATE.json"
 
 #
 # get read-only access to cloudant
@@ -66,6 +60,62 @@ endif
 if ($?CU == 0) then
     /bin/echo `/bin/date` "$0 $$ -- no Cloudant URL" >>! $TMP/LOG
     goto done
+endif
+
+# TARGET 
+set OUTPUT = "$TMP/$APP-$API-$QUERY_STRING.$DATE.json"
+
+# find updates
+set url = "$WWW/CGI/aah-updates.cgi"
+set updates = ( `/usr/bin/curl -s -q -f -L "$url" | /usr/local/bin/jq '.'` )
+if ($#updates == 0) then
+  if ($?VERBOSE) /bin/echo `date` "$0 $$ ++ FAILURE ($url)" >>&! $TMP/LOG
+  set output = '{"error":"NO UPDATES -- '"$url"'"}'
+  goto output
+endif
+
+# get last check time (seconds since epoch)
+set last_update_check = ( `/bin/echo "$updates" | /usr/local/bin/jq -r '.date'`)
+
+# get devices
+set devices = ( `/bin/echo "$updates" | /usr/local/bin/jq -r '.devices[]?.name'` )
+if ($#devices == 0) then
+  if ($?VERBOSE) /bin/echo `date` "$0 $$ ++ FAILURE ($url)" >>&! $TMP/LOG
+  set output = '{"error":"NO DEVICES"}'
+  goto output
+endif
+
+if ($?DEBUG) /bin/echo `date` "$0 $$ ++ SUCCESS -- devices ($devices) -- last check" `/bin/date -j -f %s "$last_update_check"` >>&! $TMP/LOG
+
+# check all devices
+foreach d ( $devices )
+  # indicate success
+  if ($db == "$d") then
+    set last_update_check = ( `/bin/echo "$updates" | /usr/local/bin/jq -r '.devices[]|select(.name=="'"$d"'").date'`)
+    set last_image_check = ( `/usr/bin/curl -s -q -f -L "$CU/$db-images/_all_docs?include_docs=true&descending=true&limit=1" | /usr/local/bin/jq -r '.rows[].doc.date'` )
+    @ delay = $last_update_check - $last_image_check
+    if ($delay > $TTL) then
+      # initiate new output
+      set qs = "$QUERY_STRING"
+      setenv QUERY_STRING "device=$d"
+      if ($?force) then
+        setenv QUERY_STRING "$QUERY_STRING&force=true"
+      endif
+      if ($?DEBUG) /bin/echo `date` "$0 $$ ++ DELAY ($delay) -- REQUESTING ./$APP-make-$API.bash ($QUERY_STRING)" >>! $TMP/LOG
+      ./$APP-make-$API.bash
+      setenv QUERY_STRING "$qs"
+    endif
+    set found = "$d"
+    break
+  endif
+end
+
+if ($db != "all") then
+  if  ($?found == 0) then
+    set output = '{"error":"not found","db":"'"$db"'"}'
+    goto output
+  endif
+  set devices = ( $db )
 endif
 
 # test if singleton requested
@@ -150,10 +200,9 @@ if ($?singleton && $?ext) then
 
           set stat = ( `/usr/bin/stat -r "$path" | /usr/bin/awk '{ print $10 }'` )
 
-	  /bin/echo "Cache-Control: max-age=$TTL"
 	  /bin/echo "Last-Modified:" `/bin/date -r $stat '+%a, %d %b %Y %H:%M:%S %Z'`
 	  /bin/echo "Access-Control-Allow-Origin: *"
-	  /bin/echo "Content-Location: $WWW/CGI/$APP-$API.cgi?db=$db&class=$class&id=$id&ext=$ext"
+	  /bin/echo "Content-Location: $WWW/CGI/$APP-$API.cgi?db=$db&id=$id&ext=$ext"
 	  /bin/echo "Content-Type: image/jpeg"
 	  /bin/echo ""
 
@@ -174,51 +223,6 @@ endif
 #
 # NOT A SINGLETON
 #
-
-# find updates
-set url = "$WWW/CGI/aah-updates.cgi"
-set updates = ( `/usr/bin/curl -s -q -f -L "$url" | /usr/local/bin/jq '.'` )
-if ($#updates == 0) then
-  if ($?VERBOSE) /bin/echo `date` "$0 $$ ++ FAILURE ($url)" >>&! $TMP/LOG
-  set output = '{"error":"NO UPDATES -- '"$url"'"}'
-  goto output
-endif
-
-# get devices
-set devices = ( `/bin/echo "$updates" | /usr/local/bin/jq -r '.devices[]?.name'` )
-if ($#devices == 0) then
-  if ($?VERBOSE) /bin/echo `date` "$0 $$ ++ FAILURE ($url)" >>&! $TMP/LOG
-  set output = '{"error":"NO DEVICES -- '"$updates"'"}'
-  goto output
-endif
-# get last check time (seconds since epoch)
-set last_update_check = ( `/bin/echo "$updates" | /usr/local/bin/jq -r '.date'`)
-
-if ($?DEBUG) /bin/echo `date` "$0 $$ ++ SUCCESS -- devices ($devices) -- last check" `/bin/date -j -f %s "$last_update_check"` >>&! $TMP/LOG
-
-# check all devices
-foreach d ( $devices )
-  # initiate new output
-  set qs = "$QUERY_STRING"
-  setenv QUERY_STRING "device=$d"
-  if ($?force) then
-    setenv QUERY_STRING "$QUERY_STRING&force=true"
-  endif
-  if ($?DEBUG) /bin/echo `date` "$0 $$ ++ REQUESTING ./$APP-make-$API.bash ($QUERY_STRING)" >>! $TMP/LOG
-  ./$APP-make-$API.bash
-  setenv QUERY_STRING "$qs"
-  # indicate success
-  if ($db == "$d") set found = "$d"
-end
-
-if ($db != "all") then
-  if  ($?found == 0) then
-    set output = '{"error":"not found","db":"'"$db"'"}'
-    goto output
-  endif
-  set devices = ( $db )
-endif
-
 
 #
 # PROCESS REQUESTED DEVICES
