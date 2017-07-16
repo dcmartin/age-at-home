@@ -241,14 +241,14 @@ roughwind:
   track: true
   vendor: Raspberry Pi Foundation
 
-# NVIDIA TX2
+# NVIDIA TX2 (HOME-ASSISTANT HOST)
 
 nvidia_tx2_eth0:
   name: nvidia_tx2_eth0
   mac: 00:04:4B:8C:62:30
   icon: mdi:server
   picture: http://devblogs.nvidia.com/parallelforall/wp-content/uploads/2015/11/JTX1_devkit.png
-  track: true
+  track: false
   hide_if_away: false
   vendor: NVIDIA
 
@@ -256,7 +256,7 @@ nvidia_tx2_wlan0:
   name: nvidia_tx2_wlan0
   mac: 00:04:4B:8C:62:2E 
   icon: mdi:server
-  track: true
+  track: false
   hide_if_away: false
   vendor: NVIDIA
 
@@ -410,15 +410,7 @@ poolcamera:
   hide_if_away: false
   vendor: Panasonic Communications Co., Ltd.
 
-wcv80n_upperpath:
-  mac: 58:6D:8F:E5:1B:08
-  name: wcv80n_upperpath
-  icon: mdi:webcam
-  picture: http://www.linksys.com/images/productmt/834045/372.jpg
-  track: true
-  hide_if_away: false
-  vendor: Cisco-Linksys, LLC
-
+# 192.168.1.163 00:22:6B:F0:92:60 (Cisco-Linksys)
 wcv80n_woodshed:
   mac: 00:22:6B:F0:92:60
   name: wcv80n_woodshed
@@ -428,6 +420,17 @@ wcv80n_woodshed:
   hide_if_away: false
   vendor: Cisco-Linksys, LLC
 
+# 192.168.1.164 58:6D:8F:E5:1B:08 (Cisco-Linksys)
+wcv80n_livingroom:
+  mac: 58:6D:8F:E5:1B:08
+  name: wcv80n_livingroom
+  icon: mdi:webcam
+  picture: http://www.linksys.com/images/productmt/834045/372.jpg
+  track: true
+  hide_if_away: false
+  vendor: Cisco-Linksys, LLC
+
+# 192.168.1.165 00:22:6B:FF:2B:DF (Cisco-Linksys)
 wcv80n_poolhouse_fridge:
   mac: 00:22:6B:FF:2B:DF
   name: wcv80n_poolhouse_fridge
@@ -437,6 +440,7 @@ wcv80n_poolhouse_fridge:
   hide_if_away: false
   vendor: Cisco-Linksys, LLC
 
+# 192.168.1.166 00:22:6B:F2:5F:AF (Cisco-Linksys)
 wcv80n_interior_gate:
   mac: 00:22:6B:F2:5F:AF
   name: wcv80n_interior_gate
@@ -446,6 +450,7 @@ wcv80n_interior_gate:
   hide_if_away: false
   vendor: Cisco-Linksys, LLC
 
+# 192.168.1.167 00:22:6B:F2:5A:6D (Cisco-Linksys)
 wcv80n_kitchen:
   mac: 00:22:6B:F2:5A:6D
   name: wcv80n_kitchen
@@ -455,6 +460,7 @@ wcv80n_kitchen:
   hide_if_away: false
   vendor: Cisco-Linksys, LLC
 
+# 192.168.1.168 00:25:9C:82:59:54 (Cisco-Linksys)
 wcv80n_poolhouse_exterior:
   mac: 00:25:9C:82:59:54
   name: wcv80n_poolhouse_exterior
@@ -464,6 +470,7 @@ wcv80n_poolhouse_exterior:
   hide_if_away: false
   vendor: Cisco-Linksys, LLC
 
+# 192.168.1.169 98:FC:11:A1:1E:DE (Cisco-Linksys)
 wcv80n_dogyard:
   mac: 98:FC:11:A1:1E:DE
   name: wcv80n_dogyard
@@ -473,6 +480,27 @@ wcv80n_dogyard:
   hide_if_away: false
   vendor: Cisco-Linksys, LLC
 
+# 192.168.1.170 00:22:6B:F2:57:9B (Cisco-Linksys)
+wcv80n_dogshedmiddle:
+  mac: 00:22:6B:F2:57:9B
+  name: wcv80n_dogshedmiddle
+  icon: mdi:webcam
+  picture: http://www.linksys.com/images/productmt/834045/372.jpg
+  track: true
+  hide_if_away: false
+  vendor: Cisco-Linksys, LLC
+
+# 192.168.1.172 00:22:6B:F2:5D:81 (Cisco-Linksys)
+wcv80n_dogshedfront:
+  mac: 00:22:6B:F2:5D:81
+  name: wcv80n_dogshedfront
+  icon: mdi:webcam
+  picture: http://www.linksys.com/images/productmt/834045/372.jpg
+  track: true
+  hide_if_away: false
+  vendor: Cisco-Linksys, LLC
+
+# 192.168.1.173 00:25:9C:83:34:E7 (Cisco-Linksys)
 wcv80n_dogshed_interior:
   icon: mdi:webcam
   picture: http://www.linksys.com/images/productmt/834045/372.jpg
@@ -482,6 +510,7 @@ wcv80n_dogshed_interior:
   track: true
   vendor: Cisco-Linksys, LLC
 
+# 192.168.1.174 00:22:6B:F2:5A:9B (Cisco-Linksys)
 wcv80n_pondview:
   icon: mdi:webcam
   picture: http://www.linksys.com/images/productmt/834045/372.jpg
@@ -491,6 +520,7 @@ wcv80n_pondview:
   track: true
   vendor: Cisco-Linksys, LLC
 
+# 192.168.1.175 00:22:6B:FB:98:34 (Cisco-Linksys)
 wcv80n_gravelpad:
   hide_if_away: false
   mac: 00:22:6B:FB:98:34
@@ -498,6 +528,86 @@ wcv80n_gravelpad:
   icon: mdi:webcam
   picture: http://www.linksys.com/images/productmt/834045/372.jpg
   track: true
+  vendor: Cisco-Linksys, LLC
+
+# 192.168.1.176 58:6D:8F:EA:C3:79 (Cisco-Linksys)
+wcv80n_upperpath:
+  mac: 58:6D:8F:EA:C3:79
+  name: wcv80n_upperpath
+  icon: mdi:webcam
+  picture: http://www.linksys.com/images/productmt/834045/372.jpg
+  track: true
+  hide_if_away: false
+  vendor: Cisco-Linksys, LLC
+
+# 192.168.1.177 00:25:9C:83:35:D6 (Cisco-Linksys)
+wcv80n_laundry:
+  mac: 00:25:9C:83:35:D6
+  name: wcv80n_laundry
+  icon: mdi:webcam
+  picture: http://www.linksys.com/images/productmt/834045/372.jpg
+  track: true
+  hide_if_away: false
+  vendor: Cisco-Linksys, LLC
+
+# 192.168.1.178 C8:D7:19:B9:5F:0A (Cisco-Linksys)
+wcv80n_foyer:
+  mac: C8:D7:19:B9:5F:0A
+  name: wcv80n_foyer
+  icon: mdi:webcam
+  picture: http://www.linksys.com/images/productmt/834045/372.jpg
+  track: true
+  hide_if_away: false
+  vendor: Cisco-Linksys, LLC
+
+# 192.168.1.179 C8:D7:19:BD:38:46 (Cisco-Linksys)
+wcv80n_frontwalk:
+  mac: C8:D7:19:BD:38:46
+  name: wcv80n_frontwalk
+  icon: mdi:webcam
+  picture: http://www.linksys.com/images/productmt/834045/372.jpg
+  track: true
+  hide_if_away: false
+  vendor: Cisco-Linksys, LLC
+
+# 192.168.1.180 C8:D7:19:BD:37:93 (Cisco-Linksys)
+wcv80n_dogpond:
+  mac: C8:D7:19:BD:37:93
+  name: wcv80n_dogpond
+  icon: mdi:webcam
+  picture: http://www.linksys.com/images/productmt/834045/372.jpg
+  track: true
+  hide_if_away: false
+  vendor: Cisco-Linksys, LLC
+
+# 192.168.1.181 00:22:6B:F2:5C:A5 (Cisco-Linksys)
+wcv80n_poolhousestereo:
+  mac: 00:22:6B:F2:5C:A5
+  name: wcv80n_poolhousestereo
+  icon: mdi:webcam
+  picture: http://www.linksys.com/images/productmt/834045/372.jpg
+  track: true
+  hide_if_away: false
+  vendor: Cisco-Linksys, LLC
+
+# 192.168.1.182 C8:D7:19:BD:31:FE (Cisco-Linksys)
+wcv80n_diningroom:
+  mac: C8:D7:19:BD:31:FE
+  name: wcv80n_diningroom
+  icon: mdi:webcam
+  picture: http://www.linksys.com/images/productmt/834045/372.jpg
+  track: true
+  hide_if_away: false
+  vendor: Cisco-Linksys, LLC
+
+# 192.168.1.183 98:FC:11:9D:E5:85 (Cisco-Linksys)
+wcv80n_backyard:
+  mac: 98:FC:11:9D:E5:85
+  name: wcv80n_backyard
+  icon: mdi:webcam
+  picture: http://www.linksys.com/images/productmt/834045/372.jpg
+  track: true
+  hide_if_away: false
   vendor: Cisco-Linksys, LLC
 
 # iPhones
@@ -511,8 +621,16 @@ davids_iphone:
   vendor: Apple, Inc.
 
 kelis_iphone:
-  mac: 20:AB:37:E2:B9:9C
   name: kelis_iphone
+  mac: 20:AB:37:E2:B9:9C
+  icon: mdi:cellphone-iphone
+  hide_if_away: false
+  track: true
+  vendor: Apple, Inc.
+
+ellens_iphone:
+  name: ellens_iphone
+  mac: D8:CF:9C:1B:54:98
   icon: mdi:cellphone-iphone
   hide_if_away: false
   track: true
