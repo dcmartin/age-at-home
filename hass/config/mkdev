@@ -1,0 +1,144 @@
+#!/bin/csh -fb
+
+onintr cleanup
+
+if ($#argv > 0) then
+  set vendor = $argv[1]
+else
+  set vendor = "Cisco-Linksys"
+endif
+
+if ($#argv > 1) then
+  set lan = $argv[2]
+else
+  set lan = "192.168.1.0/24"
+endif
+
+if ($#argv > 2) then
+  set config = $argv[3]
+endif
+
+if ($#argv > 3) then
+  set device = $argv[4]
+endif
+
+# find devices on the LAN
+set out = "/tmp/$0:t.$$.txt"
+/usr/bin/sudo /usr/bin/nmap -sn -T5 "$lan" >! "$out"
+
+if (! -s "$out") then
+  /bin/echo 'No nmap(8) output for '"$lan" >& /dev/stderr
+  exit
+endif
+
+if ($vendor == "all") then
+  set vendors = ( `/bin/cat "$out" | /usr/bin/awk '/Nmap scan report for/ { printf("%s ", $5) ; getline; getline; printf("%s %s\n", $3, $4)}' | /usr/bin/awk '{ print $3 }' | /bin/egrep "^\(" | /bin/sed 's/(//g' | /bin/sed 's/)//g' | /usr/bin/sort | /usr/bin/uniq` )
+endif
+
+set names = ( \
+    wcv80n_woodshed \
+    wcv80n_livingroom \
+    wcv80n_poolhouse_fridge \
+    wcv80n_interior_gate \
+    wcv80n_kitchen \
+    wcv80n_poolhouse_exterior \
+    wcv80n_dogyard \
+    wcv80n_dogshedmiddle \
+    wcv80n_dogshedfront \
+    wcv80n_dogshed_interior \
+    wcv80n_pondview \
+    wcv80n_gravelpad \
+    wcv80n_upperpath \
+    wcv80n_laundry \
+    wcv80n_foyer \
+    wcv80n_frontwalk \
+    wcv80n_dogpond \
+    wcv80n_poolhousestereo \
+    wcv80n_diningroom \
+    wcv80n_backyard \
+  )
+
+if ($?vendors == 0) then
+  set vendors = ( $vendor )
+endif
+
+set config = "auto-config-$vendor.yaml"
+set device = "auto-device-$vendor.yaml"
+
+rm -f "$config" "$device"
+
+/bin/echo '++ Processing '$#vendors' vendors' >& /dev/stderr
+
+@ total = 0
+
+foreach vendor ( $vendors )
+
+  set ips = ( `/bin/cat "$out" | /usr/bin/awk '/Nmap scan report for/ { printf("%s ", $5) ; getline; getline; printf("%s %s\n", $3, $4)}' | egrep "$vendor" | /usr/bin/awk '{ print $1 }'` )
+  set macs = ( `/bin/cat "$out" | /usr/bin/awk '/Nmap scan report for/ { printf("%s ", $5) ; getline; getline; printf("%s %s\n", $3, $4)}' | egrep "$vendor" | /usr/bin/awk '{ print $2 }'` )
+
+  /bin/echo '---- Vendor: '"$vendor"' ('"$#ips"')' >& /dev/stderr
+
+  @ i = 1
+  while ($i <= $#ips)
+    set ip = "$ips[$i]"
+    set mac = "$macs[$i]"
+
+    set name = ( `/bin/echo "$vendor" "$i" | /usr/bin/awk '{ printf("%s_%04d", $1, $2) }'` )
+
+    switch ($vendor)
+      case "camera":
+      case "Cisco-Linksys":
+        set name = "$names[$i]"
+        /bin/echo '# '"$name"' '"$ip"' '"$mac" >>! "$config"
+        /bin/echo 'camera '"$name"':' >>! "$config"
+        /bin/echo '  - platform: mjpeg' >>! "$config"
+        /bin/echo '    mjpeg_url: http://'"$ip"'/img/video.mjpeg' >>! "$config"
+        /bin/echo '    still_image_url: http://'"$ip"'/img/snapshot.cgi' >>! "$config"
+        /bin/echo '    name: '"$name" >>! "$config"
+        /bin/echo '    username: \!secret wcv80n_username' >>! "$config"
+        /bin/echo '    password: \!secret wcv80n_password' >>! "$config"
+        /bin/echo '' >>! "$config"
+        breaksw
+      default:
+        breaksw
+    endsw
+
+    /bin/echo '# '"$name"' '"$ip"' '"$mac" >>! "$device"
+    /bin/echo "$name"':' >>! "$device"
+    /bin/echo '  mac: '"$mac" >>! "$device"
+    /bin/echo '  name: '"$name" >>! "$device"
+    switch ($vendor)
+      case "camera":
+      case "Cisco-Linksys":
+        set icon = "mdi:webcam"
+        set picture = "http://www.linksys.com/images/productmt/834045/372.jpg"
+        breaksw
+      case "Apple":
+        set icon = "mdi:tablet-ipad"
+        set icon = "mdi:cellphone-iphone"
+        set picture = ""
+        breaksw
+        breaksw
+      default:
+        set icon = "mdi:network"
+        set picture = ""
+        breaksw
+    endsw 
+    /bin/echo '  icon: '"$icon" >>! "$device"
+    /bin/echo '  picture: '"$picture" >>! "$device"
+
+    /bin/echo '  track: true' >>! "$device"
+    /bin/echo '  hide_if_away: false' >>! "$device"
+    /bin/echo '  vendor: '"$vendor" >>! "$device"
+    /bin/echo '' >>! "$device"
+
+    @ i++
+    @ total++
+  end
+end
+
+cleanup:
+
+/bin/rm -f "$out"
+
+/bin/echo '++ Produced YAML for '"$total"' devices: '"$config"' & '"$device" >& /dev/stderr

@@ -262,9 +262,17 @@ nvidia_tx2_wlan0:
 
 # BLUE HORIZON
 
-my_mtn:
-  name: my_mtn
+mtn_rpi2:
+  name: mtn_rpi2
   mac: B8:27:EB:7B:F9:FB
+  picture: https://bluehorizon.network/images/brand.svg
+  track: true
+  hide_if_away: false
+  vendor: Raspberry Pi Foundation
+
+mtn_rpi2_wifi:
+  name: mtn_rpi2_wifi
+  mac: 00:0F:60:08:00:1B
   picture: https://bluehorizon.network/images/brand.svg
   track: true
   hide_if_away: false

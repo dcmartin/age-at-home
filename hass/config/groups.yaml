@@ -1,0 +1,265 @@
+#
+# GROUPS
+#
+
+default_view:
+  view: yes
+  name: Default View
+  icon: mdi:home-variant
+  entities:
+    - group.iphones
+    - group.ageathome_lastin
+
+today_view:
+  view: yes
+  name: Today
+  icon: mdi:calendar-today
+  entities:
+    - group.weather_today
+    - camera.wuradar
+
+ageathome_view:
+  view: yes
+  name: AgeAtHome View
+  icon: mdi:human-male-female
+  entities:
+    - camera.imageannotated
+    - group.ageathome_lastin
+    - group.ageathome_whoin
+    - group.ageathome_empty
+
+ageathome_images:
+  view: true
+  name: AgeAtHome Images
+  icon: mdi:image
+  entities:
+    - camera.imageroad
+    - camera.imagefrontdoor
+    - camera.imagekitchen
+    - camera.imagebathroom
+
+ageathome_camera_view:
+  view: true
+  name: AgeAtHome Cameras
+  icon: mdi:cctv
+  entities:
+    - camera.cameraroad
+    - camera.camerafrontdoor
+    - camera.camerakitchen
+    - camera.camerabathroom
+
+weather_view:
+  view: yes
+  name: Weather View
+  icon: mdi:weather-cloudy
+  entities:
+    - sensor.pws_elevation
+    - camera.weatherforecast
+    - group.daily_forecast
+
+webcams_view:
+  view: yes
+  name: Webcams View
+  icon: mdi:webcam
+  entities:
+    - camera.wcv80n_woodshed
+    - camera.wcv80n_livingroom
+    - camera.wcv80n_poolhouse_fridge
+    - camera.wcv80n_interior_gate
+    - camera.wcv80n_kitchen
+    - camera.wcv80n_poolhouse_exterior
+    - camera.wcv80n_dogyard
+    - camera.wcv80n_dogshedmiddle
+    - camera.wcv80n_dogshedfront
+    - camera.wcv80n_dogshed_interior
+    - camera.wcv80n_pondview
+    - camera.wcv80n_gravelpad
+    - camera.wcv80n_upperpath
+    - camera.wcv80n_laundry
+    - camera.wcv80n_foyer
+    - camera.wcv80n_frontwalk
+    - camera.wcv80n_dogpond
+    - camera.wcv80n_poolhousestereo
+    - camera.wcv80n_diningroom
+    - camera.wcv80n_backyard
+
+mediaplayers_view:
+  view: yes
+  name: Mediaplayers View
+  icon: mdi:television
+  entities:
+    - media_player.apple_tv
+    - media_player.dcms_iphone
+    - media_player.fire_tv
+    - media_player.kitchen
+    - media_player.poolhouse
+    - media_player.poolhouse_2
+
+status_view:
+  view: yes
+  name: Status View
+  icon: mdi:sitemap
+  entities:
+    - group.ageathome_devices
+    - group.ageathome_updates
+    - group.system_status
+    - group.network_status
+    - group.tivo_status
+    - group.webcam_status
+
+system_status:
+  name: System Status
+  entities:
+    - device_tracker.comcastgw
+    - sensor.externalip
+    - device_tracker.davidmac_en0
+    - device_tracker.davidmac_en1
+    - device_tracker.cabinmac_en0
+    - device_tracker.cabinmac_wf0
+    - device_tracker.microcell_poolhouse
+    - device_tracker.microcell_garage
+    - device_tracker.microcell_cabin
+    - device_tracker.dlicontroller
+    - device_tracker.envoy
+    - device_tracker.mtn_rpi2
+    - device_tracker.mtn_rpi2_wifi
+
+network_status:
+  name: Network Status
+  entities:
+    - device_tracker.airport_equipmentpad
+    - device_tracker.airport_cabin
+    - device_tracker.airport_window
+    - device_tracker.airport_bedroom
+    - device_tracker.airport_dogshed
+    - device_tracker.airport_kitchen
+    - device_tracker.airport_poolhouse
+    - device_tracker.airport_woodshed
+    - device_tracker.airport_lowerpath
+    - device_tracker.airport_powerpole
+
+tivo_status:
+  name: TiVo Status
+  entities:
+    - device_tracker.tivo_poolhouse_premier
+    - device_tracker.tivo_cabin_series3
+    - device_tracker.tivo_poohouse_series3
+    - device_tracker.tivo_stream
+    - device_tracker.tivo_bedroom_series3
+    - device_tracker.tivo_cabin_premiere
+
+daily_forecast:
+  name: Daily Forecast
+  entities:
+    - sensor.pws_weather_1d
+    - sensor.pws_weather_1n
+    - sensor.pws_weather_2d
+    - sensor.pws_weather_2n
+    - sensor.pws_weather_3d
+    - sensor.pws_weather_3n
+    - sensor.pws_weather_4d
+    - sensor.pws_weather_4n
+
+weather_today:
+  name: Weather Today
+  entities:
+    - sun.sun
+    - sensor.pws_weather
+    - sensor.pws_feelslike_f
+    - sensor.pws_precip_today_in
+    - sensor.pws_relative_humidity
+    - sensor.pws_visibility_mi
+    - sensor.pws_wind_dir
+    - sensor.pws_wind_gust_mph
+    - sensor.pws_wind_mph
+
+ageathome_devices:
+  name: 'AgeAtHome Devices'
+  icon: mdi:lan-connect
+  entities:
+    - device_tracker.roughfog
+    - device_tracker.quietwater
+    - device_tracker.dampcloud
+    - device_tracker.roughwind
+
+ageathome_lastin:
+  name: 'AgeAtHome LastIn'
+  icon: mdi:home
+  entities:
+    - sensor.lastinkitchen
+    - sensor.lastinbathroom
+    - sensor.lastinroad
+    - sensor.lastinfrontdoor
+
+ageathome_empty:
+  name: 'AgeAtHome Empty'
+  icon: mdi:home
+  entities:
+    - sensor.emptykitchen
+    - sensor.emptybathroom
+    - sensor.emptyroad
+    - sensor.emptyfrontdoor
+
+
+ageathome_whoin:
+  name: 'AgeAtHome WhoIn'
+  icon: mdi:home
+  entities:
+    - sensor.whoinkitchen
+    - sensor.whoinbathroom
+    - sensor.whoinroad
+    - sensor.whoinfrontdoor
+
+ageathome_updates:
+  name: 'AgeAtHome Updates'
+  icon: mdi:home
+  entities:
+    - sensor.countkitchen
+    - sensor.countbathroom
+    - sensor.countfrontdoor
+    - sensor.countroad
+    - sensor.datekitchen
+    - sensor.datebathroom
+    - sensor.datefrontdoor
+    - sensor.dateroad
+    - sensor.imagecountkitchen
+    - sensor.imagedatekitchen
+    - sensor.imageidkitchen
+    - sensor.imageclasskitchen
+    - sensor.imagecountbathroom
+    - sensor.imagecountfrontdoor
+    - sensor.imagecountroad
+    - sensor.imagedatefrontdoor
+    - sensor.imagedateroad
+
+webcam_status:
+  name: WebCam Status
+  entities:
+    - device_tracker.poolcamera
+    - device_tracker.wcv80n_backyard
+    - device_tracker.wcv80n_diningroom
+    - device_tracker.wcv80n_dogpond
+    - device_tracker.wcv80n_dogshedfront
+    - device_tracker.wcv80n_dogshed_interior
+    - device_tracker.wcv80n_dogshedmiddle
+    - device_tracker.wcv80n_dogyard
+    - device_tracker.wcv80n_foyer
+    - device_tracker.wcv80n_frontwalk
+    - device_tracker.wcv80n_gravelpad
+    - device_tracker.wcv80n_interior_gate
+    - device_tracker.wcv80n_kitchen
+    - device_tracker.wcv80n_laundry
+    - device_tracker.wcv80n_livingroom
+    - device_tracker.wcv80n_pondview
+    - device_tracker.wcv80n_poolhouse_exterior
+    - device_tracker.wcv80n_poolhouse_fridge
+    - device_tracker.wcv80n_poolhousestereo
+    - device_tracker.wcv80n_upperpath
+    - device_tracker.wcv80n_woodshed
+
+iphones:
+  name: iPhones
+  entities:
+    - device_tracker.kelis_iphone
+    - device_tracker.davids_iphone
+    - device_tracker.ellens_iphone

@@ -1,0 +1,5 @@
+#!/bin/csh -f
+set ttl = 1500
+set d = `date +%s`
+set d = `echo "$d - $ttl" | bc`
+sudo docker logs -t --since `date +%Y-%m-%dT%T` homeassistant
