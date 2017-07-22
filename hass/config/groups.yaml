@@ -23,7 +23,8 @@ ageathome_view:
   name: AgeAtHome View
   icon: mdi:human-male-female
   entities:
-    - camera.imageannotated
+    - group.ageathome_mqtt
+    - group.ageathome_notin_kitchen
     - group.ageathome_lastin
     - group.ageathome_whoin
     - group.ageathome_empty
@@ -200,6 +201,16 @@ ageathome_empty:
     - sensor.emptyroad
     - sensor.emptyfrontdoor
 
+ageathome_mqtt:
+  name: 'AgeAtHome MQTT'
+  icon: mdi:home
+  entities:
+    - camera.mqttimage
+    - sensor.mqttwho
+    - sensor.mqttwhat
+    - sensor.mqttwhere
+    - sensor.mqttwhen
+    - sensor.mqttscore
 
 ageathome_whoin:
   name: 'AgeAtHome WhoIn'
@@ -209,6 +220,17 @@ ageathome_whoin:
     - sensor.whoinbathroom
     - sensor.whoinroad
     - sensor.whoinfrontdoor
+
+ageathome_notin_kitchen:
+  name: 'AgeAtHome NotIn Kitchen'
+  icon: mdi:cancel
+  entities:
+    - binary_sensor.david_notin_kitchen
+    - binary_sensor.keli_notin_kitchen
+    - binary_sensor.hali_notin_kitchen
+    - binary_sensor.ian_notin_kitchen
+    - binary_sensor.riley_notin_kitchen
+    - binary_sensor.ellen_notin_kitchen
 
 ageathome_updates:
   name: 'AgeAtHome Updates'
@@ -263,3 +285,6 @@ iphones:
     - device_tracker.kelis_iphone
     - device_tracker.davids_iphone
     - device_tracker.ellens_iphone
+    - device_tracker.halisiphone
+    - device_tracker.ianmartinsiphone
+    - device_tracker.rileysiphone5
