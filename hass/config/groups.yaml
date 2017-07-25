@@ -285,6 +285,11 @@ iphones:
     - device_tracker.kelis_iphone
     - device_tracker.davids_iphone
     - device_tracker.ellens_iphone
+    - device_tracker.davidsipadmini
+    - device_tracker.davidcsapple_watch
+    - device_tracker.kelisiphone7
+    - device_tracker.dcmsiphone
+    - device_tracker.ellensiphone5
     - device_tracker.halisiphone
     - device_tracker.ianmartinsiphone
     - device_tracker.rileysiphone5
