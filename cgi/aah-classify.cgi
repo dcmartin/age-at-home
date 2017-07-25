@@ -7,7 +7,7 @@ setenv DIGITS "$LAN".30
 setenv WAN "www.dcmartin.com"
 setenv TMP "/var/lib/age-at-home"
 
-# setenv DEBUG true
+setenv DEBUG true
 
 # don't update file information more than once per (in seconds)
 set TTL = 1800
@@ -103,17 +103,6 @@ set HTML = "$TMP/$APP-$API.$$.html"
 /bin/echo '<script type="text/javascript" src="'$MIXPANELJS'"></script><script>mixpanel.track('"'"$APP-$API"');</script>" >> "$HTML"
 /bin/echo '<BODY>' >> "$HTML"
 
-if ($?DEBUG) then
-  /bin/echo -n '<p style="font-size:50%;">' >> "$HTML"
-  /bin/echo -n 'Refreshed: <i>' `date` '</i>' >> "$HTML"
-  if ($?date) then
-    /bin/echo -n 'Last updated: <i>' `date -r $date` >> "$HTML"
-  else
-    /bin/echo -n 'Cache stored: <i>' `date -r $REVIEW:r:e` >> "$HTML"
-  endif
-  /bin/echo "</i>($?seqid)</p>" >> "$HTML"
-endif
-
 if ($?slave == 0) /bin/echo '<p>'"$db"' : match date by <i>regexp</i>; slide image count (max = '$IMAGE_LIMIT'); select all or <i>class</i>; then press <b>CHANGE</b>' >> "$HTML"
 
 /bin/echo '<form action="http://'"$WWW/CGI/$APP-$API"'.cgi">' >> "$HTML"
@@ -137,48 +126,8 @@ else
     set CDIR = "$TMP/$db/$class"
 endif
 
-#
-# setenv LOCATION from aah-devices.cgi service (nb. setenv DEVICE too)
-#
-set url = "http://$WWW/CGI/aah-devices.cgi?db=$db"
-set out = "/tmp/$0:t.$$.json"
-/usr/bin/curl -m 2 -s -q -L "$url" -o "$out"
-if ($status != 22 && $status != 28 && -s "$out") then
-  set dev = ( `/usr/local/bin/jq -r '.' "$out"` )
-  if ($#dev && "$dev" != "null") then
-    set atr = ".location"
-    set val = ( `/bin/echo "$dev" | /usr/local/bin/jq -r "$atr"` )
-    if ($#val && $val != "") then
-      if ($?DEBUG) /bin/echo `/bin/date` "$0 $$ -- found $db ($atr :: $val)" >>! $TMP/LOG
-      setenv LOCATION "$val"
-    else
-      if ($?DEBUG) /bin/echo `/bin/date` "$0 $$ -- cannot find $atr in $dev" >>! $TMP/LOG
-      goto done
-    endif
-    unset atr
-    unset val
-  else
-    if ($?DEBUG) /bin/echo `/bin/date` "$0 $$ -- no .name ($db) in $out" >>! $TMP/LOG
-    goto done
-  endif
-  # keep track of device
-  setenv DEVICE "$dev"
-  unset dev
-  # cleanup
-  rm -f "$out"
-else if (-s "$out") then
-  if ($?DEBUG) /bin/echo `/bin/date` "$0 $$ -- error ($status) :: " `cat "$out"` >>! $TMP/LOG
-  rm -f "$out"
-  goto done
-else
-  if ($?DEBUG) /bin/echo `/bin/date` "$0 $$ -- error ($status) :: no output returned ($url)" >>! $TMP/LOG
-  goto done
-endif
-rm -f "$out"
-if ($?LOCATION == 0) then
-  if ($?DEBUG) /bin/echo `/bin/date` "$0 $$ -- unknown LOCATION (NEGATIVE)" >>! $TMP/LOG
-  setenv LOCATION "NEGATIVE"
-endif
+# get location
+set location = ( `/usr/bin/curl -s -q "http://$WWW/CGI/aah-devices.cgi?db=$db" | /usr/local/bin/jq -r '.location'` )
 
 #
 # get images
@@ -305,11 +254,11 @@ foreach image ( `head -"$limit" "$IMAGES"` )
   if ($?slave) /bin/echo '<input type="hidden" name="slave" value="true">' >> "$HTML"
   /bin/echo '<select name="new" onchange="this.form.submit()">' >> "$HTML"
   /bin/echo '<option selected value="'"$dir"'">'"$dir"'</option>' >> "$HTML"
-  /bin/echo '<option value="'"$LOCATION"'">'"$LOCATION"'</option>' >> "$HTML"
+  /bin/echo '<option value="'"$location"'">'"$location"'</option>' >> "$HTML"
   if ($?label_classes) then
     foreach i ( $label_classes )
       set j = "$i:t"
-      if (($j != $dir) && ($j != $LOCATION)) /bin/echo '<option value="'"$i"'">'"$i"'</option>' >> "$HTML"
+      if (($j != $dir) && ($j != $location)) /bin/echo '<option value="'"$i"'">'"$i"'</option>' >> "$HTML"
     end
   endif
   /bin/echo '</select>' >> "$HTML"
@@ -355,29 +304,6 @@ foreach image ( `head -"$limit" "$IMAGES"` )
   set crop = `/bin/echo "$record" | /usr/local/bin/jq -r '.imagebox'`
   set scores = ( `/bin/echo "$record" | /usr/local/bin/jq -r '.visual.scores|sort_by(.score)'` )
   set top1 = ( `/bin/echo "$record" | /usr/local/bin/jq -r '.visual.scores|sort_by(.score)[-1]'` )
-
-  if ($#crop && $?CAMERA_MODEL_TRANSFORM) then
-    set c = `/bin/echo "$crop" | /usr/bin/sed "s/\([0-9]*\)x\([0-9]*\)\([+-]*[0-9]*\)\([+-]*[0-9]*\)/\1 \2 \3 \4/"`
-    set w = $c[1]
-    set h = $c[2]
-    set x = `/bin/echo "0 $c[3]" | /usr/bin/bc`
-    set y = `/bin/echo "0 $c[4]" | /usr/bin/bc`
-
-    # calculate centroid-based extant ($MODEL_IMAGE_WIDTHx$MODEL_IMAGE_WIDTH image)
-    @ cx = $x + ( $w / 2 ) - ( $MODEL_IMAGE_WIDTH / 2 )
-    @ cy = $y + ( $h / 2 ) - ( $MODEL_IMAGE_HEIGHT / 2 )
-    if ($cx < 0) @ cx = 0
-    if ($cy < 0) @ cy = 0
-    if ($cx + $MODEL_IMAGE_WIDTH > $CAMERA_IMAGE_WIDTH) @ cx = $CAMERA_IMAGE_WIDTH - $MODEL_IMAGE_WIDTH
-    if ($cy + $MODEL_IMAGE_HEIGHT > $CAMERA_IMAGE_HEIGHT) @ cy = $CAMERA_IMAGE_HEIGHT - $MODEL_IMAGE_HEIGHT
-    set ncrop = "$MODEL_IMAGE_WIDTH"x"$MODEL_IMAGE_HEIGHT"+"$cx"+"$cy"
-  endif
-  # report on crop
-  /bin/echo '<p style="font-size:75%;">'"CROP: $crop " >> "$HTML"
-  if ($?ncrop) then
-    /bin/echo "NEW: $ncrop " >> "$HTML"
-  endif	
-  /bin/echo '</p>' >> "$HTML"
 
   # # get the scores
   /bin/echo "$scores" | /usr/local/bin/jq -c '.[]' >! /tmp/$0:t.$$
