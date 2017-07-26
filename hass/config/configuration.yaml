@@ -1,0 +1,1045 @@
+homeassistant:
+  # Name of the location where Home Assistant is running
+  name: Fazenda da Saudade
+  # Location required to calculate the time the sun rises and sets
+  latitude: 37.174956
+  longitude: -121.816344
+  # Impacts weather/sunrise data (altitude above sea level in meters)
+  elevation: 827
+  # metric for Metric, imperial for Imperial
+  unit_system: imperial
+  # Pick yours from here: http://en.wikipedia.org/wiki/List_of_tz_database_time_zones
+  time_zone: America/Los_Angeles
+
+hassio:
+
+discovery:
+
+frontend:
+
+config:
+
+# PANEL IFRAME(S)
+
+panel_iframe:
+  docsis:
+    title: 'Mikrotik'
+    icon: mdi:router-wireless
+    url: 'http://dcmartin.dyndns.org'
+  classify:
+    title: 'CLASSIFY'
+    icon: mdi:image-filter
+    url: 'http://192.168.1.32/classify.html'
+  digits:
+    title: 'DIGITS'
+    icon: mdi:format-list-numbers
+    url: 'http://age-at-home.dcmartin.com:5001'
+
+# WORKING ON PRESENCE
+
+sensor score:
+  - platform: mqtt
+    icon: mdi:numeric
+    state_topic: 'presence/+'
+    name: mqttscore
+    friendly_name: 'Score Last'
+    value_template: '{{ value_json.score }}'
+
+sensor mqttwhere:
+  - platform: mqtt
+    icon: mdi:house
+    state_topic: 'presence/+'
+    name: mqttwhere
+    friendly_name: 'Where Last'
+    value_template: '{{ value_json.location }}'
+
+sensor mqttwhat:
+  - platform: mqtt
+    icon: mdi:human
+    state_topic: 'presence/+'
+    name: mqttwhat
+    friendly_name: 'What Last'
+    value_template: '{{ value_json.class }}'
+
+sensor mqttwho:
+  - platform: mqtt
+    icon: mdi:comment-question-outline
+    state_topic: 'presence/+'
+    name: mqttwho
+    friendly_name: 'Who Last'
+    value_template: '{{ value_json.model }}'
+
+sensor mqttwhen:
+  - platform: mqtt
+    icon: mdi:clock
+    state_topic: 'presence/+'
+    name: mqttwhen
+    friendly_name: 'When Last'
+    value_template: '{{ value_json.date | timestamp_custom("%H:%M") }}'
+
+# IOS
+
+ios:
+  push:
+    categories:
+      - name: Alarm
+        identifier: 'ALARM'
+        actions:
+          - identifier: 'SOUND_ALARM'
+            title: 'Sound Alarm'
+            activationMode: 'background'
+            authenticationRequired: no
+            destructive: yes
+            behavior: 'default'
+          - identifier: 'SILENCE_ALARM'
+            title: 'Silence Alarm'
+            activationMode: 'foreground'
+            authenticationRequired: yes
+            destructive: no
+            behavior: 'textInput'
+            textInputButtonTitle: 'Silencio!'
+            textInputPlaceholder: 'Placeholder'
+
+
+# DEVICE TRACKER IN ICLOUD
+
+device_tracker:
+  - platform: icloud
+    username: !secret icloud_username
+    password: !secret icloud_password
+    account_name: DCMARTIN
+
+notify:
+  - platform: ios
+    name: davids_iphone
+    target: !secret notify_target
+
+zeroconf:
+
+# ATTEMPTED AUTOMATION
+
+#automation test1:
+#  alias: davidishome
+#  hide_entity: true
+#  initial_state: "off"
+#  trigger:
+#    platform: zone
+#    entity_id: device_tracker.davids_iphone
+#    zone: zone.home
+#    event: enter
+#  condition:
+#    - platform: time
+#      after: '06:00'
+#      before: '22:00'
+#  action:
+#    - service: notify.notify
+#      data:
+#        message: David coming or going
+#    - delay: 0:35
+#    - service: notify.notify
+#      data:
+#        message: David is here or gone
+#
+#automation test2:
+#  alias: notify_davids_iphone
+#  hide_entity: true
+#  initial_state: "off"
+#  trigger:
+#    platform: state
+#    entity_id: group.ageathome_notin_kitchen
+#    from: 'off'
+#    to: 'on'
+#  condition:
+#    - platform: time
+#      after: '06:00'
+#      before: '22:00'
+#  action:
+#    service: notify.ios_robbies_iphone_7_plus
+#    data:
+#      message: "Something happened at home!"
+#      data:
+#        push:
+#          badge: 5
+#          # sound: <SOUND FILE HERE>
+#          category: "ALARM" # Needs to match the top level identifier you used in the ios configuration
+#        action_data: # Anything passed in action_data will get echoed back to Home Assistant.
+#          entity_id: light.test
+#          my_custom_data: foo_bar
+#
+# automation test:
+#  trigger: 
+#    - platform: template
+#      value_template: "{% if is_state('device_tracker.davids_iphone', 'home') %}true{% endif %}"
+
+# ZONES
+
+zone southsanjose:
+  name: southsanjose
+  friendly_name: 'South San Jose'
+  icon: mdi:home
+  latitude: 37.242386
+  longitude: -121.874724
+  radius: 10000
+  track_ios: true
+
+zone chicagoland:
+  name: chicagoland
+  friendly_name: 'Chicago-Land'
+  icon: mdi:home
+  latitude: 42.013780
+  longitude: -87.063821
+  radius: 100000
+  track_ios: true
+
+zone westernspring:
+  name: westernsprings
+  friendly_name: 'Western Springs, IL'
+  icon: mdi:home
+  latitude: 41.811889
+  longitude: -87.901608
+  radius: 5000
+  track_ios: true
+
+zone magicianlake:
+  name: magicianlake
+  friendly_name: 'Magician Lake'
+  icon: mdi:home
+  latitude: 42.071890
+  longitude: -86.152227
+  radius: 10000
+  track_ios: true
+
+zone newzealand:
+  name: newzealand
+  friendly_name: 'New Zealand'
+  icon: mdi:home
+  latitude: -37.89431844841493
+  longitude: 175.4656750337923
+  radius: 10000
+  track_ios: true
+
+zone fortcollins:
+  name: fortcollins
+  friendly_name: 'Fort Collins, CO'
+  icon: mdi:home
+  latitude: 40.5786172734845
+  longitude: -105.0849671207992
+  radius: 10000
+  track_ios: true
+
+zone fazenda:
+  name: home
+  friendly_name: 'Fazenda da Saudades'
+  icon: mdi:home
+  latitude: 37.174815
+  longitude: -121.816325
+  radius: 100
+  track_ios: true
+
+# school zones
+
+zone leland:
+  name: zoneleland
+  friendly_name: 'Leland High School'
+  icon: mdi:school
+  radius: 250
+  latitude: 37.217712
+  longitude: -121.844413
+  track_ios: true
+
+zone presentation:
+  name: zonepresentation
+  friendly_name: 'Presentation High School'
+  icon: mdi:school
+  radius: 250
+  latitude: 37.283350
+  longitude: -121.900422
+  track_ios: true
+
+# work zones
+
+zone arc:
+  name: zonearc
+  friendly_name: 'IBM Almaden'
+  icon: mdi:domain
+  radius: 250
+  latitude: 37.211072
+  longitude: -121.807391
+  track_ios: true
+
+zone svl:
+  name: zonesvl
+  friendly_name: 'IBM Silicon Valley'
+  icon: mdi:domain
+  radius: 250
+  latitude: 37.196352
+  longitude: -121.748551
+  track_ios: true
+
+# well known locations
+
+zone safeway:
+  name: zonesafeway
+  friendly_name: 'Safeway Shopping Center'
+  icon: mdi:store
+  radius: 100
+  latitude: 37.219579
+  longitude: -121.861451
+  track_ios: true
+
+# plex
+
+media_player:
+  - platform: plex
+    ip_address: 192.168.1.32
+    port: 32400
+    token: !secret plex_token
+
+http:
+  api_password: !secret http_api_password
+  trusted_networks: 192.168.1.0/24
+  cors_allowed_origins: 
+    - https://google.com
+    - https://home-assistant.io
+    - http://dcmartin.com
+  base_url: age-at-home.dcmartin.com:8123
+
+# https://home-assistant.io/blog/2016/10/25/explaining-the-updater/
+updater:
+  include_used_components: true
+
+# Allows you to issue voice commands from the frontend in enabled browsers
+conversation:
+
+# Track the sun
+sun:
+  elevation: 827
+
+# Enables support for tracking state changes over time.
+history:
+  exclude:
+    domains:
+      - pws
+      - media_player
+      - weather
+      - updater
+      - camera
+      - rest
+      - mqtt
+  include:
+    entities:
+      - group.ageathome_notin_kitchen
+      - binary_sensor.backyardmotion
+      - binary_sensor.keli_in_kitchen
+      - binary_sensor.david_in_kitchen
+      - binary_sensor.people_in_kitchen
+      - binary_sensor.david_notin_kitchen
+      - binary_sensor.ellen_notin_kitchen
+      - sensor.peopleinkitchen
+      - sensor.mqttscore
+      - sensor.whoinkitchen
+      - sensor.whoinbathroom
+      - sensor.whoinfrontdoor
+      - sensor.whoinroad
+      - sensor.emptykitchen
+      - sensor.emptybathroom
+      - sensor.emptyfrontdoor
+      - sensor.emptyroad
+      - device_tracker.davids_iphone
+      - device_tracker.kelis_iphone
+      - device_tracker.dcmsiphone
+      - device_tracker.davidcsapple_watch
+      - device_tracker.kelisiphone7
+      - device_tracker.ellensiphone5
+      - device_tracker.halisiphone
+      - device_tracker.ianmartinsiphone
+      - device_tracker.rileysiphone5
+
+# View all events in a logbook
+logbook:
+
+# Text to speech
+tts:
+  - platform: google
+
+ifttt:
+  key: dXbhgiite3T81apShQpCfW
+
+#
+# CAMERAS
+#
+
+camera weatherforecast:
+  - platform: generic
+    name: weatherforecast
+    still_image_url: 'https://www.yr.no/sted/USA/California/San_Francisco/meteogram.svg'
+    content_type: 'image/svg+xml'
+
+camera wuradar:
+  - platform: generic
+    still_image_url: 'https://icons.wxug.com/data/weather-maps/radar/united-states/bakersfield-california-region-current-radar-animation.gif'
+    name: wuradar
+
+# AAH cameras (still image should be last motion; mjpeg should be live)
+
+camera camerakitchen:
+  - platform: mjpeg
+    name: camerakitchen
+    mjpeg_url: http://192.168.1.34:8081/
+
+camera camerabathroom:
+  - platform: mjpeg
+    name: camerabathroom
+    mjpeg_url: http://192.168.1.35:8081/
+
+camera cameraroad:
+  - platform: mjpeg
+    name: cameraroad
+    mjpeg_url: http://192.168.1.36:8081/
+
+camera camerafrontdoor:   
+  - platform: mjpeg
+    name: camerafrontdoor
+    mjpeg_url: http://192.168.1.37:8081/
+
+#
+# ANNOTATED IMAGES
+#
+
+camera imagekitchen:
+  - platform: generic
+    name: imagekitchen
+    icon: mdi:image
+    still_image_url: 'http://192.168.1.32/CGI/aah-images.cgi?db=rough-fog&limit=1&ext=full'
+
+camera imagebathroom:
+  - platform: generic
+    icon: mdi:image
+    name: imagebathroom
+    still_image_url: 'http://192.168.1.32/CGI/aah-images.cgi?db=damp-cloud&limit=1&ext=full'
+
+camera imageroad:
+  - platform: generic
+    icon: mdi:image
+    name: imageroad
+    still_image_url: 'http://192.168.1.32/CGI/aah-images.cgi?db=quiet-water&limit=1&ext=full'
+
+camera imagefrontdoor:
+  - platform: generic
+    icon: mdi:image
+    name: imagefrontdoor
+    still_image_url: 'http://192.168.1.32/CGI/aah-images.cgi?db=rough-wind&limit=1&ext=full'
+
+#
+# WCV80N cameras
+#
+
+camera wcv80n_woodshed:
+  - platform: mjpeg
+    mjpeg_url: http://192.168.1.163/img/video.mjpeg
+    still_image_url: http://192.168.1.163/img/snapshot.cgi
+    name: wcv80n_woodshed
+    username: !secret wcv80n_username
+    password: !secret wcv80n_password
+
+camera wcv80n_livingroom:
+  - platform: mjpeg
+    mjpeg_url: http://192.168.1.164/img/video.mjpeg
+    still_image_url: http://192.168.1.164/img/snapshot.cgi
+    name: wcv80n_livingroom
+    username: !secret wcv80n_username
+    password: !secret wcv80n_password
+
+camera wcv80n_poolhouse_fridge:
+  - platform: mjpeg
+    mjpeg_url: http://192.168.1.165/img/video.mjpeg
+    still_image_url: http://192.168.1.165/img/snapshot.cgi
+    name: wcv80n_poolhouse_fridge
+    username: !secret wcv80n_username
+    password: !secret wcv80n_password
+
+camera wcv80n_interior_gate:
+  - platform: mjpeg
+    mjpeg_url: http://192.168.1.166/img/video.mjpeg
+    still_image_url: http://192.168.1.166/img/snapshot.cgi
+    name: wcv80n_interior_gate
+    username: !secret wcv80n_username
+    password: !secret wcv80n_password
+
+camera wcv80n_kitchen:
+  - platform: mjpeg
+    mjpeg_url: http://192.168.1.167/img/video.mjpeg
+    still_image_url: http://192.168.1.167/img/snapshot.cgi
+    name: wcv80n_kitchen
+    username: !secret wcv80n_username
+    password: !secret wcv80n_password
+
+camera wcv80n_poolhouse_exterior:
+  - platform: mjpeg
+    mjpeg_url: http://192.168.1.168/img/video.mjpeg
+    still_image_url: http://192.168.1.168/img/snapshot.cgi
+    name: wcv80n_poolhouse_exterior
+    username: !secret wcv80n_username
+    password: !secret wcv80n_password
+
+camera wcv80n_dogyard:
+  - platform: mjpeg
+    mjpeg_url: http://192.168.1.169/img/video.mjpeg
+    still_image_url: http://192.168.1.169/img/snapshot.cgi
+    name: wcv80n_dogyard
+    username: !secret wcv80n_username
+    password: !secret wcv80n_password
+
+camera wcv80n_dogshedmiddle:
+  - platform: mjpeg
+    mjpeg_url: http://192.168.1.170/img/video.mjpeg
+    still_image_url: http://192.168.1.170/img/snapshot.cgi
+    name: wcv80n_dogshedmiddle
+    username: !secret wcv80n_username
+    password: !secret wcv80n_password
+
+camera wcv80n_dogshedfront:
+  - platform: mjpeg
+    mjpeg_url: http://192.168.1.172/img/video.mjpeg
+    still_image_url: http://192.168.1.172/img/snapshot.cgi
+    name: wcv80n_dogshedfront
+    username: !secret wcv80n_username
+    password: !secret wcv80n_password
+
+camera wcv80n_dogshed_interior:
+  - platform: mjpeg
+    mjpeg_url: http://192.168.1.173/img/video.mjpeg
+    still_image_url: http://192.168.1.173/img/snapshot.cgi
+    name: wcv80n_dogshed_interior
+    username: !secret wcv80n_username
+    password: !secret wcv80n_password
+
+camera wcv80n_pondview:
+  - platform: mjpeg
+    mjpeg_url: http://192.168.1.174/img/video.mjpeg
+    still_image_url: http://192.168.1.174/img/snapshot.cgi
+    name: wcv80n_pondview
+    username: !secret wcv80n_username
+    password: !secret wcv80n_password
+
+camera wcv80n_gravelpad:
+  - platform: mjpeg
+    mjpeg_url: http://192.168.1.175/img/video.mjpeg
+    still_image_url: http://192.168.1.175/img/snapshot.cgi
+    name: wcv80n_gravelpad
+    username: !secret wcv80n_username
+    password: !secret wcv80n_password
+
+camera wcv80n_upperpath:
+  - platform: mjpeg
+    mjpeg_url: http://192.168.1.176/img/video.mjpeg
+    still_image_url: http://192.168.1.176/img/snapshot.cgi
+    name: wcv80n_upperpath
+    username: !secret wcv80n_username
+    password: !secret wcv80n_password
+
+camera wcv80n_laundry:
+  - platform: mjpeg
+    mjpeg_url: http://192.168.1.177/img/video.mjpeg
+    still_image_url: http://192.168.1.177/img/snapshot.cgi
+    name: wcv80n_laundry
+    username: !secret wcv80n_username
+    password: !secret wcv80n_password
+
+camera wcv80n_foyer:
+  - platform: mjpeg
+    mjpeg_url: http://192.168.1.178/img/video.mjpeg
+    still_image_url: http://192.168.1.178/img/snapshot.cgi
+    name: wcv80n_foyer
+    username: !secret wcv80n_username
+    password: !secret wcv80n_password
+
+camera wcv80n_frontwalk:
+  - platform: mjpeg
+    mjpeg_url: http://192.168.1.179/img/video.mjpeg
+    still_image_url: http://192.168.1.179/img/snapshot.cgi
+    name: wcv80n_frontwalk
+    username: !secret wcv80n_username
+    password: !secret wcv80n_password
+
+camera wcv80n_dogpond:
+  - platform: mjpeg
+    mjpeg_url: http://192.168.1.180/img/video.mjpeg
+    still_image_url: http://192.168.1.180/img/snapshot.cgi
+    name: wcv80n_dogpond
+    username: !secret wcv80n_username
+    password: !secret wcv80n_password
+
+camera wcv80n_poolhousestereo:
+  - platform: mjpeg
+    mjpeg_url: http://192.168.1.181/img/video.mjpeg
+    still_image_url: http://192.168.1.181/img/snapshot.cgi
+    name: wcv80n_poolhousestereo
+    username: !secret wcv80n_username
+    password: !secret wcv80n_password
+
+camera wcv80n_diningroom:
+  - platform: mjpeg
+    mjpeg_url: http://192.168.1.182/img/video.mjpeg
+    still_image_url: http://192.168.1.182/img/snapshot.cgi
+    name: wcv80n_diningroom
+    username: !secret wcv80n_username
+    password: !secret wcv80n_password
+
+camera wcv80n_backyard:
+  - platform: mjpeg
+    mjpeg_url: http://192.168.1.183/img/video.mjpeg
+    still_image_url: http://192.168.1.183/img/snapshot.cgi
+    name: wcv80n_backyard
+    username: !secret wcv80n_username
+    password: !secret wcv80n_password
+
+
+#
+# DEVICE TRACKER (NMAP)
+#
+
+device_tracker dt_nmap:
+  - platform: nmap_tracker
+    hosts: 192.168.1.1/24
+    home_interval: 10
+    track_new_devices: no
+    consider_home: 180
+    exclude:
+     - 192.168.1.30
+
+#
+# WUNDERGROUND (WEATHER UNDERGROUND)
+#
+
+sensor kcasanjo411:
+  - platform: wunderground
+    api_key: !secret wunderground_api_key
+    pws_id: KCASANJO411
+    monitored_conditions:
+      - weather
+      - feelslike_f
+      - precip_today_in
+      - relative_humidity
+      - visibility_mi
+      - wind_dir
+      - wind_gust_mph
+      - wind_mph
+      - weather_1d
+      - weather_1n
+      - weather_2d
+      - weather_2n
+      - weather_3d
+      - weather_3n
+      - weather_4d
+      - weather_4n
+
+#
+# REST PLATFORM SENSORS
+#
+
+sensor external_ip:
+  - platform: rest
+    resource: http://ip.jsontest.com
+    name: externalip
+    value_template: '{{ value_json.ip }}'
+
+# UPDATE - DATE
+
+sensor datekitchen:
+  - platform: rest
+    icon: mdi:alarm
+    resource: 'http://192.168.1.32/CGI/aah-updates.cgi?db=rough-fog'
+    name: 'datekitchen'
+    value_template: '{{ value_json.date | timestamp_local }}'
+
+sensor datebathroom:
+  - platform: rest
+    icon: mdi:alarm
+    type: time
+    resource: 'http://192.168.1.32/CGI/aah-updates.cgi?db=damp-cloud'
+    name: 'datebathroom'
+    value_template: '{{ value_json.date | timestamp_local }}'
+
+sensor datefrontdoor:
+  - platform: rest
+    icon: mdi:alarm
+    type: time
+    resource: 'http://192.168.1.32/CGI/aah-updates.cgi?db=rough-wind'
+    name: 'datefrontdoor'
+    value_template: '{{ value_json.date | timestamp_local }}'
+
+sensor dateroad:
+  - platform: rest
+    icon: mdi:alarm
+    type: time
+    resource: 'http://192.168.1.32/CGI/aah-updates.cgi?db=quiet-water'
+    name: 'dateroad'
+    value_template: '{{ value_json.date | timestamp_local }}'
+
+# UPDATE - COUNT
+
+sensor countkitchen:
+  - platform: rest
+    icon: mdi:numeric
+    resource: 'http://192.168.1.32/CGI/aah-updates.cgi?db=rough-fog'
+    name: 'countkitchen'
+    value_template: '{{ value_json.count }}'
+
+sensor countbathroom:
+  - platform: rest
+    icon: mdi:numeric
+    resource: 'http://192.168.1.32/CGI/aah-updates.cgi?db=damp-cloud'
+    name: 'countbathroom'
+    value_template: '{{ value_json.count }}'
+
+sensor countfrontdoor:
+  - platform: rest
+    icon: mdi:numeric
+    resource: 'http://192.168.1.32/CGI/aah-updates.cgi?db=rough-wind'
+    name: 'countfrontdoor'
+    value_template: '{{ value_json.count }}'
+
+sensor countroad:
+  - platform: rest
+    icon: mdi:numeric
+    resource: 'http://192.168.1.32/CGI/aah-updates.cgi?db=quiet-water'
+    name: 'countroad'
+    value_template: '{{ value_json.count }}'
+
+# IMAGE SENSING
+
+sensor imageidkitchen:
+  - platform: rest
+    icon: mdi:numeric
+    resource: 'http://192.168.1.32/CGI/aah-images.cgi?db=rough-fog&limit=1'
+    name: imageidkitchen
+    value_template: '{{ value_json.id }}'
+
+sensor imageclasskitchen:
+  - platform: rest
+    icon: mdi:numeric
+    resource: 'http://192.168.1.32/CGI/aah-images.cgi?db=rough-fog&limit=1'
+    name: imageclasskitchen
+    value_template: '{{ value_json.class }}'
+
+# IMAGE - COUNT
+
+sensor imagecountkitchen:
+  - platform: rest
+    icon: mdi:numeric
+    resource: 'http://192.168.1.32/CGI/aah-images.cgi?db=rough-fog'
+    name: imagecountkitchen
+    value_template: '{{ value_json.count }}'
+
+sensor imagecountbathroom:
+  - platform: rest
+    icon: mdi:numeric
+    resource: 'http://192.168.1.32/CGI/aah-images.cgi?db=damp-cloud'
+    name: imagecountbathroom
+    value_template: '{{ value_json.count }}'
+
+sensor imagecountfrontdoor:
+  - platform: rest
+    icon: mdi:numeric
+    resource: 'http://192.168.1.32/CGI/aah-images.cgi?db=rough-wind'
+    name: imagecountfrontdoor
+    value_template: '{{ value_json.count }}'
+
+sensor imagecountroad:
+  - platform: rest
+    icon: mdi:numeric
+    resource: 'http://192.168.1.32/CGI/aah-images.cgi?db=quiet-water'
+    name: imagecountroad
+    value_template: '{{ value_json.count }}'
+
+# IMAGE - DATE
+
+sensor imagedatekitchen:
+  - platform: rest
+    icon: mdi:numeric
+    resource: 'http://192.168.1.32/CGI/aah-images.cgi?db=rough-fog'
+    name: imagedatekitchen
+    value_template: '{{ value_json.date | timestamp_local }}'
+
+sensor imagedatebathroom:
+  - platform: rest
+    icon: mdi:numeric
+    resource: 'http://192.168.1.32/CGI/aah-images.cgi?db=damp-cloud'
+    name: imagedatebathroom
+    value_template: '{{ value_json.date | timestamp_local }}'
+
+sensor imagedatefrontdoor:
+  - platform: rest
+    icon: mdi:numeric
+    resource: 'http://192.168.1.32/CGI/aah-images.cgi?db=rough-wind'
+    name: imagedatefrontdoor
+    value_template: '{{ value_json.date | timestamp_local }}'
+
+sensor imagedateroad:
+  - platform: rest
+    icon: mdi:numeric
+    resource: 'http://192.168.1.32/CGI/aah-images.cgi?db=quiet-water'
+    name: imagedateroad
+    value_template: '{{ value_json.date | timestamp_local }}'
+
+#
+# MQTT PLATFORM SENSORS
+#
+
+mqtt:
+  broker: 192.168.1.30
+
+sensor mqttlastkitchen:
+  platform: mqtt
+  icon: mdi:human
+  state_topic: 'presence/kitchen'
+  name: mqttlastkitchen
+
+camera mqttimage:
+  - platform: mqtt
+    name: mqttimage
+    icon: mdi:image
+    topic: 'image/+'
+
+camera mqttimageannotated:
+  - platform: mqtt
+    name: mqttimageannotated
+    icon: mdi:image
+    topic: 'image-annotated/+'
+
+sensor whoinkitchen:
+  platform: mqtt
+  icon: mdi:human
+  state_topic: 'presence/kitchen'
+  name: whoinkitchen
+  expire_after: 60
+  value_template: '{{ value_json.class }}'
+
+sensor whoinbathroom:
+  platform: mqtt
+  icon: mdi:human
+  state_topic: 'presence/bathroom'
+  name: whoinbathroom
+  expire_after: 60
+  value_template: '{{ value_json.class }}'
+
+sensor whoinroad:
+  platform: mqtt
+  icon: mdi:human
+  state_topic: 'presence/road'
+  name: whoinroad
+  expire_after: 60
+  value_template: '{{ value_json.class }}'
+
+sensor whoinfrontdoor:
+  platform: mqtt
+  icon: mdi:human
+  state_topic: 'presence/frontdoor'
+  name: whoinfrontdoor
+  expire_after: 60
+  value_template: '{{ value_json.class }}'
+
+# LASTIN
+
+sensor lastinkitchen:
+  platform: mqtt
+  icon: mdi:human
+  state_topic: 'presence/kitchen'
+  name: lastinkitchen
+  value_template: '{{ value_json.class }}'
+
+sensor lastinbathroom:
+  platform: mqtt
+  icon: mdi:human
+  state_topic: 'presence/bathroom'
+  name: lastinbathroom
+  value_template: '{{ value_json.class }}'
+
+sensor lastinroad:
+  platform: mqtt
+  icon: mdi:human
+  state_topic: 'presence/road'
+  name: lastinroad
+  value_template: '{{ value_json.class }}'
+
+sensor lastinfrontdoor:
+  platform: mqtt
+  icon: mdi:human
+  state_topic: 'presence/frontdoor'
+  name: lastinfrontdoor
+  value_template: '{{ value_json.class }}'
+
+#
+# HISTORY_STATS
+#
+
+sensor peopleinkitchen:
+  - platform: history_stats
+    icon: mdi:timer
+    name: peopleinkitchen
+    entity_id: binary_sensor.people_in_kitchen
+    state: 'on'
+    type: ratio
+    start: '{{ now().replace(hour=0).replace(minute=0).replace(second=0) }}'
+    end: '{{ now() }}'
+
+sensor emptykitchen:
+  - platform: history_stats
+    icon: mdi:timer
+    name: emptykitchen
+    entity_id: sensor.whoinkitchen
+    state: 'unknown'
+    type: time
+    start: '{{ now().replace(hour=0).replace(minute=0).replace(second=0) }}'
+    end: '{{ now() }}'
+
+sensor emptybathroom:
+  - platform: history_stats
+    icon: mdi:timer
+    name: emptybathroom
+    entity_id: sensor.whoinbathroom
+    state: 'unknown'
+    type: time
+    start: '{{ now().replace(hour=0).replace(minute=0).replace(second=0) }}'
+    end: '{{ now() }}'
+
+sensor emptyfrontdoor:
+  - platform: history_stats
+    icon: mdi:timer
+    name: emptyfrontdoor
+    entity_id: sensor.whoinfrontdoor
+    state: 'unknown'
+    type: time
+    start: '{{ now().replace(hour=0).replace(minute=0).replace(second=0) }}'
+    end: '{{ now() }}'
+
+sensor emptyroad:
+  - platform: history_stats
+    icon: mdi:timer
+    name: emptyroad
+    entity_id: sensor.whoinroad
+    state: 'unknown'
+    type: time
+    start: '{{ now().replace(hour=0).replace(minute=0).replace(second=0) }}'
+    end: '{{ now() }}'
+ 
+# FFMPEG MOTION DETECT TEST
+
+ffmpeg:
+
+# BINARY SENSORS
+
+binary_sensor backyardmotion:
+  - platform: ffmpeg_motion
+    input: !secret backyardvideo
+    name: backyardmotion
+    device_class: motion
+    initial_state: false
+    changes: 5
+    ffmpeg_bin: /usr/bin/ffmpeg
+    # ffmpeg_bin: /usr/bin/avconv
+    # extra_arguments: -pred 1 -q:v 2
+    # reset: 20
+    # repeats: 0
+    # repeat_time: 0
+    # extra_arguments:
+
+binary_sensor peopleinkitchen:
+  - platform: template
+    name: peopleinkitchen
+    sensors:
+      ellen_notin_kitchen:
+        friendly_name: ellen notin kitchen
+        entity_id:
+          - sensor.whoinkitchen
+          - device_tracker.ellensiphone5
+        value_template: >
+          {{
+            states.device_tracker.ellensiphone5.state != 'home' and
+            states.sensor.whoinkitchen.state == 'ellen'
+          }}
+      david_notin_kitchen:
+        friendly_name: david notin kitchen
+        entity_id:
+          - sensor.whoinkitchen
+          - device_tracker.davids_iphone
+        value_template: >
+          {{
+            states.device_tracker.davids_iphone.state != 'home' and
+            states.sensor.whoinkitchen.state == 'david'
+          }}
+      riley_notin_kitchen:
+        friendly_name: riley notin kitchen
+        entity_id:
+          - sensor.whoinkitchen
+          - device_tracker.rileysiphone5
+        value_template: >
+          {{
+            states.device_tracker.rileysiphone5.state != 'home' and
+            states.sensor.whoinkitchen.state == 'riley'
+          }}
+      ian_notin_kitchen:
+        friendly_name: ian notin kitchen
+        entity_id:
+          - sensor.whoinkitchen
+          - device_tracker.ianmartinsiphone
+        value_template: >
+          {{
+            states.device_tracker.ianmartinsiphone.state != 'home' and
+            states.sensor.whoinkitchen.state == 'ian'
+          }}
+      hali_notin_kitchen:
+        friendly_name: hali notin kitchen
+        entity_id:
+          - sensor.whoinkitchen
+          - device_tracker.halisiphone
+        value_template: >
+          {{
+            states.device_tracker.halisiphone.state != 'home' and
+            states.sensor.whoinkitchen.state == 'hali'
+          }}
+      david_in_kitchen:
+        friendly_name: david in kitchen
+        entity_id:
+          - sensor.whoinkitchen
+          - device_tracker.davids_iphone
+        value_template: >
+          {{
+            states.device_tracker.davids_iphone.state == 'home' and
+            states.sensor.whoinkitchen.state == 'david'
+          }}
+      keli_in_kitchen:
+        friendly_name: keli in kitchen
+        entity_id:
+          - sensor.whoinkitchen
+          - device_tracker.kelis_iphone
+        value_template: >
+          {{
+            states.device_tracker.kelis_iphone.state == 'home' and
+            states.sensor.whoinkitchen.state == 'keli'
+          }}
+      people_in_kitchen:
+        friendly_name: people in kitchen
+        entity_id:
+          - sensor.whoinkitchen
+          - device_tracker.kelis_iphone
+          - device_tracker.davids_iphone
+        value_template: >
+          {{
+            (
+              states.device_tracker.davids_iphone.state == 'home' and
+              states.sensor.whoinkitchen.state == 'david'
+            )
+            or
+            (
+              states.device_tracker.kelis_iphone.state == 'home' and
+              states.sensor.whoinkitchen.state == 'keli'
+            )
+          }}
+
+# INCLUDE STUFF
+
+group: !include groups.yaml
+
+# automation: !include automations.yaml
