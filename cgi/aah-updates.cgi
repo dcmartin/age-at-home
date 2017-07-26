@@ -5,7 +5,7 @@ setenv LAN "192.168.1"
 setenv WWW "$LAN".32
 setenv DIGITS "$LAN".30
 setenv WAN "www.dcmartin.com"
-setenv TMP "/var/lib/age-at-home"
+if ($?TMP == 0) setenv TMP "/var/lib/age-at-home"
 
 # setenv DEBUG true
 

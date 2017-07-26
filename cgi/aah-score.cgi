@@ -4,14 +4,14 @@ setenv API "score"
 setenv LAN "192.168.1"
 if ($?TMP == 0) setenv TMP "/var/lib/age-at-home"
 # don't update statistics more than once per 24 hours
-set TTL = `echo "24 * 60 * 60" | bc`
+set TTL = `/bin/echo "24 * 60 * 60" | bc`
 set SECONDS = `date "+%s"`
-set DATE = `echo $SECONDS \/ $TTL \* $TTL | bc`
+set DATE = `/bin/echo $SECONDS \/ $TTL \* $TTL | bc`
 
-echo `date` "$0 $$ -- START" >>! $TMP/LOG
+/bin/echo `date` "$0 $$ -- START" >>! $TMP/LOG
 
 if ($?QUERY_STRING) then
-    set DB = `echo "$QUERY_STRING" | sed "s/.*db=\([^&]*\).*/\1/"`
+    set DB = `/bin/echo "$QUERY_STRING" | sed "s/.*db=\([^&]*\).*/\1/"`
     if ($#DB == 0) set DB = rough-fog
 else
     set DB = rough-fog
@@ -28,7 +28,7 @@ if (! -e "$OUTPUT") then
 	curl -L -s -q -o "$OUTPUT.$$" "https://ibmcds.looker.com/looks/9fBDPkqVtjHyBJqQBr6xrW4JP9dXgkRv.json?apply_formatting=true"
     endif
 
-    echo '{"device":"'$DB'", "scores":' >! "$OUTPUT".$$.$$
+    /bin/echo '{"device":"'$DB'", "scores":' >! "$OUTPUT".$$.$$
 
     if ($DB == "damp-cloud") then
 	cat "$OUTPUT".$$ \
@@ -40,19 +40,19 @@ if (! -e "$OUTPUT") then
 	    | sed "s/roughfog_visual_scores\.//g" >> "$OUTPUT".$$.$$
     endif
     rm -f "$OUTPUT.$$"
-    echo '}' >> "$OUTPUT.$$.$$"
+    /bin/echo '}' >> "$OUTPUT.$$.$$"
     mv -f "$OUTPUT".$$.$$ "$OUTPUT"
 endif
 
-echo "Content-Type: application/json; charset=utf-8"
-echo "Access-Control-Allow-Origin: *"
-set AGE = `echo "$SECONDS - $DATE" | bc`
-echo "Age: $AGE"
-echo "Cache-Control: max-age=$TTL"
-echo "Last-Modified:" `date -r $DATE '+%a, %d %b %Y %H:%M:%S %Z'`
-echo ""
+/bin/echo "Content-Type: application/json; charset=utf-8"
+/bin/echo "Access-Control-Allow-Origin: *"
+set AGE = `/bin/echo "$SECONDS - $DATE" | bc`
+/bin/echo "Age: $AGE"
+/bin/echo "Cache-Control: max-age=$TTL"
+/bin/echo "Last-Modified:" `date -r $DATE '+%a, %d %b %Y %H:%M:%S %Z'`
+/bin/echo ""
 cat "$OUTPUT"
 
 done:
 
-echo `date` "$0 $$ -- FINISH" >>! $TMP/LOG
+/bin/echo `date` "$0 $$ -- FINISH" >>! $TMP/LOG

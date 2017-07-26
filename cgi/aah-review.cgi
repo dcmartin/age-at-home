@@ -2,101 +2,201 @@
 setenv APP "aah"
 setenv API "review"
 setenv LAN "192.168.1"
-if ($?TMP == 0) setenv TMP "/var/lib/age-at-home"
+setenv WWW "$LAN".32
+setenv DIGITS "$LAN".30
+setenv WAN "www.dcmartin.com"
+setenv TMP "/var/lib/age-at-home"
 
-setenv DEBUG true
+# setenv DEBUG true
 
 # don't update statistics more than once per (in seconds)
 setenv TTL 1800
 setenv SECONDS `date "+%s"`
-setenv DATE `echo $SECONDS \/ $TTL \* $TTL | bc`
+setenv DATE `/bin/echo $SECONDS \/ $TTL \* $TTL | bc`
+
+# default image limit
+if ($?IMAGE_LIMIT == 0) setenv IMAGE_LIMIT 100
 
 if ($?QUERY_STRING) then
-    set DB = `echo "$QUERY_STRING" | sed 's/.*db=\([^&]*\).*/\1/'`
-    if ($DB == "$QUERY_STRING") unset DB
+    set db = `/bin/echo "$QUERY_STRING" | sed 's/.*db=\([^&]*\).*/\1/'`
+    if ($db == "$QUERY_STRING") unset db
+    set class = `/bin/echo "$QUERY_STRING" | sed 's/.*class=\([^&]*\).*/\1/'`
+    if ($class == "$QUERY_STRING") unset class
+    set limit = `/bin/echo "$QUERY_STRING" | sed 's/.*limit=\([^&]*\).*/\1/'`
+    if ($limit == "$QUERY_STRING") unset limit
 endif
 
-if ($?DB == 0) set DB = rough-fog
+if ($?db == 0) set db = "rough-fog"
+if ($?class == 0) set class = "all"
+if ($?limit == 0) set limit = $IMAGE_LIMIT
 
-setenv QUERY_STRING "db=$DB"
+# standardize QUERY_STRING (rendezvous w/ APP-make-API.csh script)
+setenv QUERY_STRING "db=$db"
+if ($?since) then
+  setenv QUERY_STRING "$QUERY_STRING&since=$since"
+endif
+if ($?limit) then
+  setenv QUERY_STRING "$QUERY_STRING&limit=$limit"
+endif
 
-echo `date` "$0 $$ -- START ($QUERY_STRING)" >>! $TMP/LOG
+/bin/echo `date` "$0 $$ -- START ($QUERY_STRING)" >>! $TMP/LOG
 
 # initiate new output
-if ($?DEBUG) echo `date` "$0 $$ ++ REQUESTING ./$APP-make-$API.bash" >>! $TMP/LOG
+if ($?DEBUG) /bin/echo `date` "$0 $$ ++ REQUESTING ./$APP-make-$API.bash" >>! $TMP/LOG
 ./$APP-make-$API.bash
 
+#
+# get read-only access to cloudant
+#
 if (-e ~$USER/.cloudant_url) then
     set cc = ( `cat ~$USER/.cloudant_url` )
     if ($#cc > 0) set CU = $cc[1]
+    if ($#cc > 1) set CN = $cc[2]
+    if ($#cc > 2) set CP = $cc[3]
+    set CU = "$CN":"$CP"@"$CU"
 endif
 if ($?CU == 0) then
-    if ($?DEBUG) echo `date` "$0 $$ -- no Cloudant URL" >>! $TMP/LOG
+    /bin/echo `date` "$0 $$ -- no Cloudant URL" >>! $TMP/LOG
     goto done
 endif
 
 #
-# find output
+# find cache
 #
-set OUTPUT = "$TMP/$APP-$API-$QUERY_STRING.$DATE.json"
-# check OUTPUT exists
-if (-s "$OUTPUT") then
-    set seqid = `/usr/local/bin/jq -f ".seqid' "$OUTPUT"`
-    if ($seqid == "null" || $seqid == 0) then
-      if ($?DEBUG) echo `date` "$0 $$ ++ bad $OUTPUT" >>! $TMP/LOG
-      rm -f "$OUTPUT"
-    endif
+set CACHE = "$TMP/$APP-$API-$QUERY_STRING.$DATE.json"
+
+if (! -s "$CACHE") then
+  /bin/rm -f "$CACHE:r:r".*
+
+  /usr/bin/curl -s -q -f -L "$WWW/CGI/aah-images.cgi?db=$db&limit=$limit" \
+        | /usr/local/bin/jq -r '.ids[]?' \
+        | /usr/bin/xargs -I % /usr/bin/curl -s -q -f -L "$WWW/CGI/aah-updates.cgi?db=$db&id=%" \
+        | /usr/local/bin/jq -j '.class,"/",.id,".jpg\n"' >! "$CACHE"
 endif
 
-if (! -s "$OUTPUT") then
-    # look for old output
-    set old = ( `echo "$TMP/$APP-$API-$QUERY_STRING".*.json` )
-    if ($?old) then
-      @ nold = $#old
-      if ($nold) then
-	set oldest = $old[$nold]
-	@ nold--
-	if ($nold) rm -f $old[1-$nold]
+if (-s "$CACHE") then
+    set output = '{"images":'
+    foreach i ( `/bin/cat "$CACHE"` )
+      if (-s "$TMP/$db/$i") then
+        if ($?stat) then
+          set output = "$output"','
+        else
+          set output = "$output"'['
+        endif
+	set stat = "$i"
+        set output = "$output"'"'"$i"'"'
+      else if (-l "$TMP/$db/$i") then
+        if ($?DEBUG) /bin/echo `date` "$0 $$ -- $TMP/$db/$i linked" >>&! $TMP/LOG
+      else
+        if ($?DEBUG) /bin/echo `date` "$0 $$ -- $TMP/$db/$i missing" >>&! $TMP/LOG
       endif
+    end
+    if ($?stat) then
+      set output = "$output"']'
+    else
+      set output = "$output"'null'
     endif
-    if ($?oldest) then
-	if ($?DEBUG) echo `date` "$0 $$ -- using old output ($oldest)" >>! $TMP/LOG
-	set OUTPUT = "$oldest"
-	set DATE = "$oldest:r:e"
-    endif
+    set output = "$output"'}'
+    goto output
+else
+  if ($?DEBUG) /bin/echo `date` "$0 $$ -- no $CACHE exists" >>&! $TMP/LOG
+  goto done
 endif
 
-if (-s "$OUTPUT") then
-    echo "Content-Type: application/json; charset=utf-8"
-    echo "Access-Control-Allow-Origin: *"
+
+
+  if ($class == "any" || $class == "all") then
+    set out = "/tmp/$0:t.$$.json"
+    set url = "$db-$API/_all_docs"
+    /usr/bin/curl -m 5 -s -q -f -L "$CU/$url" -o "$out"
+    if ($status != 22 && $status != 28 && -s "$out") then
+      set classes = ( `/usr/local/bin/jq -r '.rows[]?.id' "$out"` )
+      if ($?DEBUG) /bin/echo `date` "$0 $$ ++ SUCCESS ($classes)" >>&! $TMP/LOG
+      rm -f "$out"
+    else 
+      if ($?DEBUG) /bin/echo `date` "$0 $$ ++ FAILURE ($url)" >>&! $TMP/LOG
+      rm -f "$out"
+      goto done
+    endif
+    if ($class == "all") then
+      /bin/echo '{"date":'"$DATE"',"name":"'"$db"'","count":'$#classes',"classes":[' >! "$CACHE.$$"
+    else 
+      /bin/echo '{"date":'"$since"',"name":"'"$db"'","classes":[' >! "$CACHE.$$"
+    endif
+    @ k = 0
+    set all = "/tmp/$0:t.$$.csv"
+    foreach c ( $classes )
+      set url = "$db-$API/$c"
+      set out = "/tmp/$0:t.$$.json"
+      /usr/bin/curl -s -q -f -L "$CU/$url" -o "$out"
+      if ($status == 22 || ! -s "$out") then
+	if ($?DEBUG) /bin/echo `date` "$0 $$ ++ FAIL ($url)" >>&! $TMP/LOG
+	rm -f "$out"
+	continue
+      endif
+      if ($class != "any") then
+	if ($k) /bin/echo ',' >> "$CACHE.$$"
+        /usr/local/bin/jq '{"name":"'"$c"'","date":.date,"count":.count }' "$out" >> "$CACHE.$$"
+	@ k++
+      else
+        /usr/local/bin/jq -j '.ids[]?|select(.date>'"$since"')|.date,",","'"$c"'",",",.id,"\n"' "$out" >>! "$all"
+      endif
+    end
+    if ($class == "any") then
+      sort -t, -k1,1 -nr "$all" | head -"$limit" >! "$all.$$"
+      set classes = ( `awk -F, '{ print $2 }' "$all.$$" | sort | uniq` )
+      @ k = 0
+      foreach c ( $classes )
+	if ($k) /bin/echo ',' >> "$CACHE.$$"
+        /bin/echo '{"class":"'"$c"'","ids":[' >> "$CACHE.$$"
+	egrep ','"$c"',' "$all.$$" | awk -F, '{ printf("\"%s\",", $3) }' | sed 's/,$//' >> "$CACHE.$$"
+        /bin/echo ']}' >> "$CACHE.$$"
+	@ k++
+      end
+      rm -f "$all" "$all.$$"
+    endif
+    /bin/echo ']}' >> "$CACHE.$$"
+    mv "$CACHE.$$" "$CACHE"
+  else if ($class == "all") then
+    set url = "https://$CU/$db-$API/$class"
+    curl -s -q -f -L "$url" | /usr/local/bin/jq '{"name":.name,"date":.date,"count":.count,"classes":.classes}' >! "$CACHE"
+  else
+    set url = "https://$CU/$db-$API/$class"
+    curl -s -q -f -L "$url" | /usr/local/bin/jq '{"name":.name,"date":.date,"count":.count,"ids":.ids}' >! "$CACHE"
+  endif
+endif
+
+#
+# output
+#
+
+output:
+
+/bin/echo "Content-Type: application/json; charset=utf-8"
+/bin/echo "Access-Control-Allow-Origin: *"
+
+if (-s "$CACHE") then
     @ age = $SECONDS - $DATE
-    echo "Age: $age"
+    /bin/echo "Age: $age"
     @ refresh = $TTL - $age
     # check back if using old
     if ($refresh < 0) @ refresh = $TTL
-    echo "Refresh: $refresh"
-    echo "Cache-Control: max-age=$TTL"
-    echo "Last-Modified:" `date -r $DATE '+%a, %d %b %Y %H:%M:%S %Z'`
-    echo ""
-    /usr/local/bin/jq -c '.' "$OUTPUT"
-    if ($?DEBUG) echo `date` "$0 $$ -- output ($OUTPUT) Age: $age Refresh: $refresh" >>! $TMP/LOG
+    /bin/echo "Refresh: $refresh"
+    /bin/echo "Cache-Control: max-age=$TTL"
+    /bin/echo "Last-Modified:" `date -r $DATE '+%a, %d %b %Y %H:%M:%S %Z'`
+    /bin/echo ""
+    /usr/local/bin/jq -c '.' "$CACHE"
+    if ($?DEBUG) /bin/echo `date` "$0 $$ -- output ($CACHE) Age: $age Refresh: $refresh" >>! $TMP/LOG
 else
-    set URL = "https://$CU/$DB-$API/all"
-    if ($?DEBUG) echo `date` "$0 $$ -- returning redirect ($URL)" >>! $TMP/LOG
-    set age = `echo "$SECONDS - $DATE" | bc`
-    echo "Age: $age"
-    set refresh = `echo "$TTL - $age" | bc`
-    if ($refresh < 0) set refresh = 0
-    echo "Refresh: $refresh"
-    echo "Cache-Control: max-age=$TTL"
-    echo "Last-Modified:" `date -r $DATE '+%a, %d %b %Y %H:%M:%S %Z'`
-    echo "Status: 302 Found"
-    echo "Location: $URL"
-    echo ""
+    /bin/echo "Cache-Control: no-cache"
+    /bin/echo "Last-Modified:" `date -r $SECONDS '+%a, %d %b %Y %H:%M:%S %Z'`
+    /bin/echo ""
+    /bin/echo '{ "error": "not found" }'
 endif
 
-# done
+cleanup:
+  rm -f "$CACHE".$$
 
 done:
+  /bin/echo `date` "$0 $$ -- FINISH ($QUERY_STRING)" >>! $TMP/LOG
 
-echo `date` "$0 $$ -- FINISH ($QUERY_STRING)" >>! $TMP/LOG

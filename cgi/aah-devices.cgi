@@ -5,12 +5,12 @@ setenv LAN "192.168.1"
 setenv WWW "$LAN".32
 setenv DIGITS "$LAN".30
 setenv WAN "www.dcmartin.com"
-setenv TMP "/var/lib/age-at-home"
+if ($?TMP == 0) setenv TMP "/var/lib/age-at-home"
 
 setenv DEBUG true
 
 # don't update statistics more than once per (in seconds)
-setenv TTL 5
+setenv TTL 30
 setenv SECONDS `date "+%s"`
 setenv DATE `/bin/echo $SECONDS \/ $TTL \* $TTL | bc`
 

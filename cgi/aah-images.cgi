@@ -5,12 +5,12 @@ setenv LAN "192.168.1"
 setenv WWW "$LAN".32
 setenv DIGITS "$LAN".30
 setenv WAN "www.dcmartin.com"
-setenv TMP "/var/lib/age-at-home"
+if ($?TMP == 0) setenv TMP "/var/lib/age-at-home"
 
 setenv DEBUG true
 
 # don't update statistics more than once per (in seconds)
-setenv TTL 60
+setenv TTL 300
 setenv SECONDS `/bin/date "+%s"`
 setenv DATE `/bin/echo $SECONDS \/ $TTL \* $TTL | bc`
 
@@ -61,9 +61,6 @@ if ($?CU == 0) then
     /bin/echo `/bin/date` "$0 $$ -- no Cloudant URL" >>! $TMP/LOG
     goto done
 endif
-
-# TARGET 
-set OUTPUT = "$TMP/$APP-$API-$QUERY_STRING.$DATE.json"
 
 # find updates
 set url = "$WWW/CGI/aah-updates.cgi"
@@ -130,8 +127,10 @@ if ($db != "all" && ( $?id || $?limit )) then
   endif
 endif
 
-# test if singleton && non-image (i.e. json) requested
-if ($?singleton && $?ext == 0) then
+# define OUTPUT
+set OUTPUT = "$TMP/$APP-$API-$QUERY_STRING.$DATE.json"
+
+if ($?singleton) then
   if ($?id) then
     set url = "$db-images/$id"
   else
@@ -141,81 +140,54 @@ if ($?singleton && $?ext == 0) then
   /usr/bin/curl -s -q -f -L "$CU/$url" -o "$out"
   if ($status == 22 || $status == 28 || ! -s "$out") then
     if ($?id) then
-    set output = '{"error":"not found","db":"'"$db"'","id":"'"$id"'"}'
-    else if ($?limit)
-    set output = '{"error":"not found","db":"'"$db"'","limit":"'"$limit"'"}'
-    else
-    set output = '{"error":"not found","db":"'"$db"'"}'
-    endif
-  else
-    if ($?limit) then
-      set id = ( `/usr/local/bin/jq -r '.rows[].doc._id' "$out"` )
-    endif
-    set class = ( `/usr/bin/curl -s -q -f -L "$WWW/CGI/aah-updates.cgi?db=$db&id=$id" | /usr/local/bin/jq -r '.class?'` )
-    if ($#class && $class != "null") then
-      if ($?limit) then
-        set output = ( `/usr/local/bin/jq '.rows[]?.doc|{"id":._id,"class":"'"$class"'","date":.date,"type":.type,"size":.size,"crop":.crop,"depth":.depth,"color":.color}' "$out"` )
-      else
-        set output = ( `/usr/local/bin/jq '{"id":._id,"class":"'"$class"'","date":.date,"type":.type,"size":.size,"crop":.crop,"depth":.depth,"color":.color}' "$out"` )
-      endif
-    else
-      set output = '{"error":"not found","db":"'"$db"'","id":"'"$id"'"}'
-    endif
-  endif
-  rm -f "$out"
-  goto output
-endif
-
-# handle singleton (image)
-if ($?singleton && $?ext) then
-  if ($?id) then
-    set url = "$db-images/$id"
-  else if ($?limit) then
-    set url = "$db-images/_all_docs?include_docs=true&descending=true&limit=1"
-  endif
-  set out = "/tmp/$0:t.$$.json"
-  /usr/bin/curl -s -q -f -L "$CU/$url" -o "$out"
-  if ($status == 22 || $status == 28 || ! -s "$out") then
-    if ($?id) then
-	set output = '{"error":"not found","db":"'"$db"'","id":"'"$id"'"}'
-    else if ($?limit) then
-	set output = '{"error":"not found","db":"'"$db"'","limit":"'"$limit"'"}'
-    endif
-  else
-    if ($?limit) then
-      set json = ( `/usr/local/bin/jq '.rows[].doc' "$out"` )
-      set id = ( `/usr/local/bin/jq -r '.rows[].doc._id' "$out"` )
-    else
-      set json = ( `/usr/local/bin/jq '.' "$out"` )
-    endif
-    set id = ( `/bin/echo "$json" | /usr/local/bin/jq -r '._id'` )
-    set crop = ( `/bin/echo "$json" | /usr/local/bin/jq -r '.crop'` )
-    set class = ( `/usr/bin/curl -s -q -f -L "$WWW/CGI/aah-updates.cgi?db=$db&id=$id" | /usr/local/bin/jq -r '.class?' | /usr/bin/sed 's/ /_/g'` )
-    rm -f "$out"
-    if ($#class && $class != "null") then
-	if ($ext == "full") set path = "$TMP/$db/$class/$id.jpg"
-	if ($ext == "crop") set path = "$TMP/$db/$class/$id.jpeg"
-	if (-s "$path") then
-	  if ($?DEBUG) /bin/echo `/bin/date` "$0 $$ -- SINGLETON ($path)" >>! $TMP/LOG
-
-          set stat = ( `/usr/bin/stat -r "$path" | /usr/bin/awk '{ print $10 }'` )
-
-	  /bin/echo "Last-Modified:" `/bin/date -r $stat '+%a, %d %b %Y %H:%M:%S %Z'`
-	  /bin/echo "Access-Control-Allow-Origin: *"
-	  /bin/echo "Content-Location: $WWW/CGI/$APP-$API.cgi?db=$db&id=$id&ext=$ext"
-	  /bin/echo "Content-Type: image/jpeg"
-	  /bin/echo ""
-
-          ./aah-images-label.csh "$path" "$class" "$crop"
-	  goto done
-	endif
-        set output = '{"error":"does not exist","db":"'"$db"'","class":"'"$class"'","id":"'"$id"'"}'
-        goto output
-      endif
       set output = '{"error":"not found","db":"'"$db"'","id":"'"$id"'"}'
       goto output
+    else if ($?limit)
+      set output = '{"error":"not found","db":"'"$db"'","limit":"'"$limit"'"}'
+      goto output
+    else
+      set output = '{"error":"not found","db":"'"$db"'"}'
+      goto output
+    endif
   endif
+  if ($?limit) then
+    set json = ( `/usr/local/bin/jq '.rows[].doc' "$out"` )
+  else
+    set json = ( `/usr/local/bin/jq '.' "$out"` )
+  endif
+  # clean-up
   /bin/rm -f "$out"
+
+  # ensure id is specified
+  set id = ( `/bin/echo "$json" | /usr/local/bin/jq -r '._id'` )
+  set crop = ( `/bin/echo "$json" | /usr/local/bin/jq -r '.crop'` )
+  set class = ( `/usr/bin/curl -s -q -f -L "$WWW/CGI/aah-updates.cgi?db=$db&id=$id" | /usr/local/bin/jq -r '.class?' | /usr/bin/sed 's/ /_/g'` )
+
+  # test if non-image (i.e. json) requested
+  if ($?ext == 0) then
+    /bin/echo "$json" | /usr/local/bin/jq '{"id":._id,"class":"'"$class"'","date":.date,"type":.type,"size":.size,"crop":.crop,"depth":.depth,"color":.color}'  >! "$OUTPUT"
+    goto output
+  endif
+
+  # handle singleton (image)
+  if ($#class == 0 || $class == "null") then
+      set output = '{"error":"no class","db":"'"$db"'","id":"'"$id"'"}'
+      goto output
+  endif
+
+  # find original
+  if ($ext == "full") set path = "$TMP/$db/$class/$id.jpg"
+  if ($ext == "crop") set path = "$TMP/$db/$class/$id.jpeg"
+  if (-s "$path") then
+    if ($?DEBUG) /bin/echo `/bin/date` "$0 $$ -- SINGLETON ($path)" >>! $TMP/LOG
+    /bin/echo "Last-Modified:" `/bin/date -r $DATE '+%a, %d %b %Y %H:%M:%S %Z'`
+    /bin/echo "Access-Control-Allow-Origin: *"
+    /bin/echo "Content-Location: $WWW/CGI/$APP-$API.cgi?db=$db&id=$id&ext=$ext"
+    /bin/echo "Content-Type: image/jpeg"
+    /bin/echo ""
+    ./aah-images-label.csh "$path" "$class" "$crop"
+    goto done
+  endif
   set output = '{"error":"not found","db":"'"$db"'","id":"'"$id"'"}'
   goto output
 endif
@@ -339,11 +311,11 @@ output:
 /bin/echo "Content-Type: application/json; charset=utf-8"
 /bin/echo "Access-Control-Allow-Origin: *"
 
-if ($?output == 0 && -s "$OUTPUT") then
+if ($?output == 0 && $?OUTPUT) then
+  if (-s "$OUTPUT") then
     @ age = $SECONDS - $DATE
     /bin/echo "Age: $age"
     @ refresh = $TTL - $age
-    # check back if using old
     if ($refresh < 0) @ refresh = $TTL
     /bin/echo "Refresh: $refresh"
     /bin/echo "Cache-Control: max-age=$TTL"
@@ -351,15 +323,18 @@ if ($?output == 0 && -s "$OUTPUT") then
     /bin/echo ""
     /usr/local/bin/jq -c '.' "$OUTPUT"
     if ($?DEBUG) /bin/echo `/bin/date` "$0 $$ -- output ($OUTPUT) Age: $age Refresh: $refresh" >>! $TMP/LOG
+    /bin/rm -f "$OUTPUT"
+    goto done
+  endif
+endif
+
+/bin/echo "Cache-Control: no-cache"
+/bin/echo "Last-Modified:" `/bin/date -r $SECONDS '+%a, %d %b %Y %H:%M:%S %Z'`
+/bin/echo ""
+if ($?output) then
+   /bin/echo "$output"
 else
-    /bin/echo "Cache-Control: no-cache"
-    /bin/echo "Last-Modified:" `/bin/date -r $SECONDS '+%a, %d %b %Y %H:%M:%S %Z'`
-    /bin/echo ""
-    if ($?output) then
-      /bin/echo "$output"
-    else
-      /bin/echo '{ "error": "not found" }'
-    endif
+   /bin/echo '{ "error": "not found" }'
 endif
 
 # done

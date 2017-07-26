@@ -127,56 +127,12 @@ else
 endif
 
 # get location
-set location = ( `/usr/bin/curl -s -q "http://$WWW/CGI/aah-devices.cgi?db=$db" | /usr/local/bin/jq -r '.location'` )
+set location = ( `/usr/bin/curl -s -q "$WWW/CGI/aah-devices.cgi?db=$db" | /usr/local/bin/jq -r '.location'` )
 
-#
-# get images
-#
-if (-d "$CDIR") then
-  set IMAGES = "/tmp/$0:t.$$-images.csv"
-  set url = "$WWW/CGI/aah-images.cgi?db=$db&limit=$limit"
-  /usr/bin/curl -s -q -f -L "$url" \
-	| /usr/local/bin/jq -r '.ids[]?' \
-	| /usr/bin/xargs -I % /usr/bin/curl -s -q -f -L "$WWW/CGI/aah-updates.cgi?db=$db&id=%" \
-	| /usr/local/bin/jq -j '.class,"/",.id,".jpg\n"' \
-	| /usr/bin/sed "s/ /_/g" >! "$IMAGES.$$"
-  if (-s "$IMAGES.$$") then
-    foreach i ( `/bin/cat "$IMAGES.$$"` )
-      if (-s "$TMP/$db/$i") then
-	echo "$i" >>! "$IMAGES"
-      else if (-l "$TMP/$db/$i") then
-        if ($?DEBUG) /bin/echo `date` "$0 $$ -- $TMP/$db/$i linked" >>&! $TMP/LOG
-      else
-        if ($?DEBUG) /bin/echo `date` "$0 $$ -- $TMP/$db/$i missing" >>&! $TMP/LOG
-      endif
-    end 
-  endif
-  rm -f "$IMAGES.$$"
-else
-  if ($?DEBUG) /bin/echo `date` "$0 $$ -- no $CDIR exists" >>&! $TMP/LOG
-  goto done
-endif
-
-if (! -s "$IMAGES") then
-  goto done
-endif
-
-# check if we moved an image (assignment to new class via aah-label.cgi)
-if ($?assign) then
-  if ($?DEBUG) /bin/echo `date` "$0 $$ -- removing $assign from cache" >>&! $TMP/LOG
-  egrep -v "$assign" "$IMAGES" >! "$IMAGES.$$"
-  mv -f "$IMAGES.$$" "$IMAGES"
-endif
-
-# find all matching images
-if ($?match) then
-  egrep "$match" "$IMAGES" >! "$IMAGES.$$"
-  rm -f "$IMAGES"
-  set IMAGES = "$IMAGES.$$"
-endif
+set images = ( `/usr/bin/curl -s -q "$WWW/CGI/aah-images.cgi?db=$db&limit=$limit" | /usr/local/bin/jq -r '.ids[]?'` )
 
 # count images
-set nimage = `wc -l "$IMAGES" | awk '{ print $1 }'`
+set nimage = $#images
 
 @ ncolumns = 4
 if ($nimage < $ncolumns) @ ncolumns = $nimage
@@ -193,7 +149,7 @@ set act = "http://$WWW/CGI/$APP-label.cgi"
 # ITERATE OVER IMAGES (based on limit count)
 #
 @ k = 0
-foreach image ( `head -"$limit" "$IMAGES"` )
+foreach image ( $images )
   # test if done
   if ($k >= $limit) break
 
@@ -215,8 +171,8 @@ foreach image ( `head -"$limit" "$IMAGES"` )
   endif
 
   # how to access the image (and sample)
-  set img = "http://$WWW/CGI/$APP-images.cgi?db=$db&id=$image:r&ext=full"
-  set jpeg = "http://$WWW/CGI/$APP-images.cgi?db=$db&id=$image:r&ext=crop"
+  set img = "http://$WWW/CGI/$APP-images.cgi?db=$db&id=$image&ext=full"
+  set jpeg = "http://$WWW/CGI/$APP-images.cgi?db=$db&id=$image&ext=crop"
 
   # note change in limit to one (1) as we are inspecting single image (see width specification below)
   if ($?slave) then

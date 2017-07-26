@@ -3,7 +3,7 @@ setenv APP "aah"
 setenv API "stats"
 setenv LAN "192.168.1"
 setenv WWW "www.dcmartin.com"
-setenv TMP "/var/lib/age-at-home"
+if ($?TMP == 0) setenv TMP "/var/lib/age-at-home"
 
 if ($?TTL == 0) set TTL = 3600
 if ($?SECONDS == 0) set SECONDS = `/bin/date "+%s"`
@@ -26,7 +26,7 @@ if ($?class == 0) set class = person
 # standardize QUERY_STRING
 setenv QUERY_STRING "db=$db&class=$class"
 
-echo `date` "$0 $$ - START ($QUERY_STRING)" # # >>&! $TMP/LOG
+/bin/echo `date` "$0 $$ - START ($QUERY_STRING)" # # >>&! $TMP/LOG
 
 #
 # output set
@@ -132,12 +132,12 @@ endif
 #
 set OLD_STATS = "$OUTPUT:r"-old.json
 set prev_seqid = 0
-echo `date` "$0 $$ -- getting OLD_STATS ($db-$API/$class)" # # >>&! $TMP/LOG
+/bin/echo `date` "$0 $$ -- getting OLD_STATS ($db-$API/$class)" # # >>&! $TMP/LOG
 curl -s -q -o "$OLD_STATS" -X GET "$CU/$db-$API/$class"
 # check iff successful
 set CLASS_db = `/usr/local/bin/jq -r '._id' "$OLD_STATS"`
 if ($CLASS_db != $class) then
-  echo `date` "$0 $$ -- no old statistics ($db-$API/$class)" # # >>&! $TMP/LOG
+  /bin/echo `date` "$0 $$ -- no old statistics ($db-$API/$class)" # # >>&! $TMP/LOG
 else
   # get last sequence # for class specified
   set prev_seqid = `/usr/local/bin/jq -r '.seqid' "$OLD_STATS"`
@@ -151,7 +151,7 @@ set ALLCHANGES = "$TMP/$APP-$API-$db-changes.$DATE.json"
 set seqid = 0
 if ( ! -s "$ALLCHANGES" ) then
     rm -f "$ALLCHANGES:r:r".*
-    echo `date` "$0 $$ -- creating $ALLCHANGES" # # >>&! $TMP/LOG
+    /bin/echo `date` "$0 $$ -- creating $ALLCHANGES" # # >>&! $TMP/LOG
     set url = "$db/_changes?include_docs=true&since=$prev_seqid"
     curl -s -q -f -L "$CU/$url" -o "$ALLCHANGES.$$" >>&! "$TMP/LOG"
     if ($status != 22 && -s "$ALLCHANGES.$$") then
@@ -163,17 +163,17 @@ if ( ! -s "$ALLCHANGES" ) then
     rm -f "$ALLCHANGES.$$"
     set seqid = ( `/usr/local/bin/jq .last_seq "$ALLCHANGES"` )
     if ($seqid == "null") then
-         echo `date` "$0 $$ -- FATAL ERROR :: BAD ALLCHANGES ($ALLCHANGES)" # # >>&! $TMP/LOG
+         /bin/echo `date` "$0 $$ -- FATAL ERROR :: BAD ALLCHANGES ($ALLCHANGES)" # # >>&! $TMP/LOG
 	 exit
     endif
 else
     set seqid = ( `/usr/local/bin/jq .last_seq "$ALLCHANGES"` )
     if ($seqid == "null") then
-         echo `date` "$0 $$ -- FATAL ERROR :: BAD ALLCHANGES ($ALLCHANGES)" # # >>&! $TMP/LOG
+         /bin/echo `date` "$0 $$ -- FATAL ERROR :: BAD ALLCHANGES ($ALLCHANGES)" # # >>&! $TMP/LOG
 	 exit
     endif
-    set ttyl = `echo "$SECONDS - $DATE" | bc`
-    echo `date` "$0 $$ -- OUTPUT ($ALLCHANGES) is current with TTL of $TTL; next update in $ttyl seconds" # # >>&! $TMP/LOG
+    set ttyl = `/bin/echo "$SECONDS - $DATE" | bc`
+    /bin/echo `date` "$0 $$ -- OUTPUT ($ALLCHANGES) is current with TTL of $TTL; next update in $ttyl seconds" # # >>&! $TMP/LOG
 endif
 
 #
@@ -181,10 +181,10 @@ endif
 #
 set ALLRECORDS = "$ALLCHANGES:r".csv
 if ((! -s "$ALLRECORDS") || ((-M "$ALLCHANGES") > (-M "$ALLRECORDS"))) then
-    echo `date` "$0 $$ -- creating $ALLRECORDS" # # >>&! $TMP/LOG
+    /bin/echo `date` "$0 $$ -- creating $ALLRECORDS" # # >>&! $TMP/LOG
     /usr/local/bin/in2csv --no-inference -k "results" "$ALLCHANGES" >! "$ALLRECORDS"
 else
-    echo `date` "$0 $$ -- $ALLRECORDS is current with $ALLCHANGES" # # >>&! $TMP/LOG
+    /bin/echo `date` "$0 $$ -- $ALLRECORDS is current with $ALLCHANGES" # # >>&! $TMP/LOG
 endif
 
 #
@@ -194,37 +194,37 @@ endif
 set RECORDS = "$ALLCHANGES:r"-"$class".csv
 if ((! -s "$RECORDS") || ((-M "$ALLRECORDS") > (-M "$RECORDS"))) then
   # extract only rows with specified classifier
-  echo `date` "$0 $$ -- extracting all $class records" # # >>&! $TMP/LOG
+  /bin/echo `date` "$0 $$ -- extracting all $class records" # # >>&! $TMP/LOG
   head -1 "$ALLRECORDS" >! "$RECORDS.$$"
   tail +2 "$ALLRECORDS" | egrep ",$class," >> "$RECORDS.$$"
   mv -f "$RECORDS.$$" "$RECORDS"
 else
-    echo `date` "$0 $$ -- $RECORDS is current with $ALLRECORDS" # # >>&! $TMP/LOG
+    /bin/echo `date` "$0 $$ -- $RECORDS is current with $ALLRECORDS" # # >>&! $TMP/LOG
 endif
 
 #
 # Build intervals for all records
 #
 set datetime = ( doc/year doc/month doc/day doc/hour doc/minute doc/second )
-set dtcolumns = `echo "$datetime" | sed "s/ /,/g"`
+set dtcolumns = `/bin/echo "$datetime" | sed "s/ /,/g"`
 set colset = `/usr/local/bin/csvstat -n "$RECORDS" | /usr/local/bin/gawk '{ print $2 }'`
 
 set CLASS_INTERVALS = "$TMP/$APP-$API-$db-$class-intervals.$$.csv"
 if ((! -e "$CLASS_INTERVALS") || ((-M "$RECORDS") > (-M "$CLASS_INTERVALS"))) then
     # get all columns as set and convert to CSV header
-    set colnam = `echo $colset | sed "s/ /,/g"`
+    set colnam = `/bin/echo $colset | sed "s/ /,/g"`
 
-    echo `date` "$0 $$ -- creating $CLASS_INTERVALS" # # >>&! $TMP/LOG
-    echo "interval,ampm,week,day,id" >! "$TMP/$APP-$API-$db-$class-intervals.$$.csv"
+    /bin/echo `date` "$0 $$ -- creating $CLASS_INTERVALS" # # >>&! $TMP/LOG
+    /bin/echo "interval,ampm,week,day,id" >! "$TMP/$APP-$API-$db-$class-intervals.$$.csv"
 
     # cut out data/time columns and produce interval calculations using GAWK
     set datetime = ( doc/year doc/month doc/day doc/hour doc/minute doc/second )
-    set dtcolumns = `echo "$datetime" | sed "s/ /,/g"`
+    set dtcolumns = `/bin/echo "$datetime" | sed "s/ /,/g"`
     /usr/local/bin/csvcut -c "id","$dtcolumns" "$RECORDS" | \
 	tail +2 | \
 	/usr/local/bin/gawk -F, '{ m=$5*60+$6; m = m / 15; t=mktime(sprintf("%4d %2d %2d %2d %2d %2d", $2, $3, $4, $5, $6, $7)); printf "%d,%s,%s,%s,%s\n", m, strftime("%p",t),strftime("%U",t),strftime("%A",t), $1 }' >> "$CLASS_INTERVALS"
 else
-    echo `date` "$0 $$ -- $CLASS_INTERVALS is current with $RECORDS" # # >>&! $TMP/LOG
+    /bin/echo `date` "$0 $$ -- $CLASS_INTERVALS is current with $RECORDS" # # >>&! $TMP/LOG
 endif
 
 #
@@ -232,13 +232,13 @@ endif
 #
 set CLASS_VALUES = "$TMP/$APP-$API-$db-$class-values.$$.csv"
 if ((! -e "$CLASS_VALUES") || ((-M "$RECORDS") > (-M "$CLASS_VALUES"))) then
-    echo `date` "$0 $$ -- creating $CLASS_VALUES " # # >>&! $TMP/LOG
-    echo "classifier,score,$dtcolumns,id" >! "$CLASS_VALUES"
+    /bin/echo `date` "$0 $$ -- creating $CLASS_VALUES " # # >>&! $TMP/LOG
+    /bin/echo "classifier,score,$dtcolumns,id" >! "$CLASS_VALUES"
 
     /usr/local/bin/csvstat -n "$RECORDS" | /usr/local/bin/gawk '{ print $2 }'
 
     # check Alchemy when classifier is lowercase
-    set vi = `echo $class | sed "s/\([a-z]\)*.*/\1/"`
+    set vi = `/bin/echo $class | sed "s/\([a-z]\)*.*/\1/"`
     if ($vi != "") then
 	set acolset = `/usr/local/bin/csvstat -n "$RECORDS" | /usr/local/bin/gawk '{ print $2 }' | egrep "alchemy/text"`
 	foreach j ( $acolset )
@@ -247,7 +247,7 @@ if ((! -e "$CLASS_VALUES") || ((-M "$RECORDS") > (-M "$CLASS_VALUES"))) then
     endif
 
     # check VisualInsights when classifier is uppercase
-    set vi = `echo $class | sed "s/\([A-Z]\)*.*/\1/"`
+    set vi = `/bin/echo $class | sed "s/\([A-Z]\)*.*/\1/"`
     if ($vi != "") then
 	set vcolset = `/usr/local/bin/csvstat -n "$RECORDS" | /usr/local/bin/gawk '{ print $2 }' | egrep "classifier_id"`
 	foreach j ( $vcolset )
@@ -255,14 +255,14 @@ if ((! -e "$CLASS_VALUES") || ((-M "$RECORDS") > (-M "$CLASS_VALUES"))) then
 	end
     endif
 else
-    echo `date` "$0 $$ -- $CLASS_VALUES is current with $RECORDS" # # >>&! $TMP/LOG
+    /bin/echo `date` "$0 $$ -- $CLASS_VALUES is current with $RECORDS" # # >>&! $TMP/LOG
 endif
 
 #
 # extract only events by classifier specified
 #
 set CLASS_INTERVAL_VALUES = "$TMP/$APP-$API-$db-$class-interval-values.$$.csv" 
-echo `date` "$0 $$ -- creating $CLASS_INTERVAL_VALUES " # # >>&! $TMP/LOG
+/bin/echo `date` "$0 $$ -- creating $CLASS_INTERVAL_VALUES " # # >>&! $TMP/LOG
 cat "$CLASS_VALUES" | /usr/local/bin/csvjoin -c "id,id" - "$CLASS_INTERVALS" | /usr/local/bin/csvcut -c "interval,day,week,classifier,score" >! "$CLASS_INTERVAL_VALUES"
 
 #
@@ -277,7 +277,7 @@ while ($i < 96)
     set intvalues = ( $intvalues "c$i,s$i,m$i,d$i" )
     @ i++
 end
-set intnames = `echo $intvalues | sed "s/ /,/g"`
+set intnames = `/bin/echo $intvalues | sed "s/ /,/g"`
 
 # set dowindex = `date +%w`
 
@@ -286,12 +286,12 @@ set intnames = `echo $intvalues | sed "s/ /,/g"`
 #
 set NEW_STATS = "$OLD_STATS.$$"
 # get current day-of-week
-echo `date` "$0 $$ -- creating NEW_STATS ($NEW_STATS)" # # >>&! $TMP/LOG
-echo -n '{ "seqid":'$seqid',"days":[' >! "$NEW_STATS"
+/bin/echo `date` "$0 $$ -- creating NEW_STATS ($NEW_STATS)" # # >>&! $TMP/LOG
+/bin/echo -n '{ "seqid":'$seqid',"days":[' >! "$NEW_STATS"
 set days = ( Sunday Monday Tuesday Wednesday Thursday Friday Saturday )
 @ k = 0
 foreach d ( $days )
-    if ($k > 0) echo "," >> "$NEW_STATS"
+    if ($k > 0) /bin/echo "," >> "$NEW_STATS"
 
     # get new weeks
     /usr/local/bin/csvgrep -c day -m "$d" $CLASS_INTERVAL_VALUES | /usr/local/bin/csvcut -c week | tail +2 | sort -nr | uniq >! "$TMP/$APP-$API-$QUERY_STRING-weeks.$$"
@@ -303,11 +303,11 @@ foreach d ( $days )
     # remove temporary file
     rm -f "$TMP/$APP-$API-$QUERY_STRING-weeks.$$"
 
-    echo -n '{"weekday":"'$d'","nweek":'$#weeks',"weeks":['$weeks'],"intervals":[' >> "$NEW_STATS"
+    /bin/echo -n '{"weekday":"'$d'","nweek":'$#weeks',"weeks":['$weeks'],"intervals":[' >> "$NEW_STATS"
 
     @ j = 1
     foreach i ( $intervals )
-      if ($j > 1) echo "," >> "$NEW_STATS"
+      if ($j > 1) /bin/echo "," >> "$NEW_STATS"
 
       if (-s "$OLD_STATS") then
 	set count = `/usr/local/bin/jq -r '.days['$k'].intervals['$i'].count' "$OLD_STATS"` ; if ($count == "null") set count = 0
@@ -320,7 +320,7 @@ foreach d ( $days )
       endif
 
 	# calculate existing variance
-	set var = `echo "$stdev * $stdev * $count" | bc -l`
+	set var = `/bin/echo "$stdev * $stdev * $count" | bc -l`
 
 	egrep "^$i,$d," $CLASS_INTERVAL_VALUES | \
 	    awk -F, \
@@ -334,10 +334,10 @@ foreach d ( $days )
 	@ j++
     end
 
-    echo -n "] }" >> "$NEW_STATS"
+    /bin/echo -n "] }" >> "$NEW_STATS"
     @ k++
 end
-echo "] }" >> "$NEW_STATS"
+/bin/echo "] }" >> "$NEW_STATS"
 
 # update statistics
 mv -f "$NEW_STATS" "$OUTPUT"
@@ -357,4 +357,4 @@ cleanup:
 
 done:
 
-echo `date` "$0 $$ - FINISH ($QUERY_STRING)" # # >>&! $TMP/LOG
+/bin/echo `date` "$0 $$ - FINISH ($QUERY_STRING)" # # >>&! $TMP/LOG

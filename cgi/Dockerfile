@@ -1,4 +1,4 @@
-FROM ubuntu:latest
+FROM nginx:latest
 
 MAINTAINER dcmartin <github@dcmartin.com>
 
@@ -49,6 +49,11 @@ EXPOSE 80
 ENV TMP /var/lib/age-at-home
 WORKDIR ${TMP}
 VOLUME ["${TMP}"]
+
+#
+# COPY HTML
+#
+COPY html /usr/share/nginx/html
 
 #
 # invoke web server

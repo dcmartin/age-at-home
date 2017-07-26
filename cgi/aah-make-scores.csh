@@ -4,11 +4,11 @@ setenv API "scores"
 if ($?TMP == 0) setenv TMP "/var/lib/age-at-home"
 setenv LAN "192.168.1"
 # don't update statistics more than once per 12 hours
-set TTL = `echo "12 * 60 * 60" | bc`
+set TTL = `/bin/echo "12 * 60 * 60" | bc`
 set SECONDS = `date "+%s"`
-set DATE = `echo $SECONDS \/ $TTL \* $TTL | bc`
+set DATE = `/bin/echo $SECONDS \/ $TTL \* $TTL | bc`
 
-echo `date` "$0 $$ -- START" >>! $TMP/LOG
+/bin/echo `date` "$0 $$ -- START" >>! $TMP/LOG
 
 if (-e ~$USER/.cloudant_url) then
     set cc = ( `cat ~$USER/.cloudant_url` )
@@ -22,14 +22,14 @@ if ($?CLOUDANT_URL) then
 else if ($?CN && $?CP) then
     set CU = "$CN":"$CP"@"$CN.cloudant.com"
 else
-    echo `date` "$0 $$ -- no Cloudant URL" >>! $TMP/LOG
+    /bin/echo `date` "$0 $$ -- no Cloudant URL" >>! $TMP/LOG
     goto done
 endif
 
 if ($?QUERY_STRING) then
-    set DB = `echo "$QUERY_STRING" | sed "s/.*db=\([^&]*\).*/\1/"` 
+    set DB = `/bin/echo "$QUERY_STRING" | sed "s/.*db=\([^&]*\).*/\1/"` 
     # only process "all" (for now)
-    # set class = `echo "$QUERY_STRING" | sed "s/.*id=\([^&]*\)/\1/"`
+    # set class = `/bin/echo "$QUERY_STRING" | sed "s/.*id=\([^&]*\)/\1/"`
 endif
 if ($DB != "damp-cloud") set DB = rough-fog
 if ($?class == 0) set class = all
@@ -37,11 +37,11 @@ setenv QUERY_STRING "db=$DB&id=$class"
 
 # output set
 set JSON = "$TMP/$APP-$API-$QUERY_STRING.$DATE.json"
-set INPROGRESS = ( `echo "$JSON".*` )
+set INPROGRESS = ( `/bin/echo "$JSON".*` )
 
 # check JSON in-progress for current interval
 if ($#INPROGRESS) then
-    echo `date` "$0 $$ -- in-progress" >>! $TMP/LOG
+    /bin/echo `date` "$0 $$ -- in-progress" >>! $TMP/LOG
     goto done    
 else
     if ($DB == "damp-cloud") then
@@ -52,7 +52,7 @@ else
         curl -L -s -q -o "$JSON.$$" "https://ibmcds.looker.com/looks/9fBDPkqVtjHyBJqQBr6xrW4JP9dXgkRv.json?apply_formatting=true"
     endif
 
-    echo '{"device":"'$DB'", "scores":' >! "$JSON".$$.$$
+    /bin/echo '{"device":"'$DB'", "scores":' >! "$JSON".$$.$$
 
     if ($DB == "damp-cloud") then
         cat "$JSON".$$ \
@@ -66,7 +66,7 @@ else
             | sed 's/"roughfog_visual_scores\.score":"\([^"]*\)"/"score":\1/g' >> "$JSON".$$.$$
     endif
     rm -f "$JSON.$$"
-    echo '}' >> "$JSON.$$.$$"
+    /bin/echo '}' >> "$JSON.$$.$$"
     mv -f "$JSON".$$.$$ "$JSON"
 endif
 
@@ -76,29 +76,29 @@ endif
 if ($?CLOUDANT_OFF == 0 && $?CU && $?DB && (-s $JSON)) then
     set DEVICE_DB = `curl -s -q -X GET "$CU/$DB-$API" | /usr/local/bin/jq '.db_name'`
     if ( "$DEVICE_DB" == "null" ) then
-	echo `date` "$0 $$ -- create Cloudant ($DB-$API)" >>! $TMP/LOG
+	/bin/echo `date` "$0 $$ -- create Cloudant ($DB-$API)" >>! $TMP/LOG
 	# create DB
 	set DEVICE_DB = `curl -s -q -X PUT "$CU/$DB-$API" | /usr/local/bin/jq '.ok'`
 	# test for success
 	if ( "$DEVICE_DB" != "true" ) then
 	    # failure
-	    echo `date` "$0 $$ -- FAILED: create Cloudant ($DB-$API)" >>! $TMP/LOG
+	    /bin/echo `date` "$0 $$ -- FAILED: create Cloudant ($DB-$API)" >>! $TMP/LOG
 	    setenv CLOUDANT_OFF TRUE
 	endif
     endif
     if ( $?CLOUDANT_OFF == 0 ) then
-	set doc = ( `curl -s -q "$CU/$DB-$API/$class" | jq ._id,._rev | sed 's/"//g'` )
+	set doc = ( `curl -s -q "$CU/$DB-$API/$class" | /usr/local/bin/jq ._id,._rev | sed 's/"//g'` )
 	if ($#doc == 2 && $doc[1] == $class && $doc[2] != "") then
 	    set rev = $doc[2]
-	    echo `date` "$0 $$ -- DELETE $CU/$DB-$API/$class $rev" >>! $TMP/LOG
+	    /bin/echo `date` "$0 $$ -- DELETE $CU/$DB-$API/$class $rev" >>! $TMP/LOG
 	    curl -s -q -X DELETE "$CU/$DB-$API/$class?rev=$rev"
 	endif
-	echo `date` "$0 $$ -- STORE $CU/$DB-$API/$class" >>! $TMP/LOG
+	/bin/echo `date` "$0 $$ -- STORE $CU/$DB-$API/$class" >>! $TMP/LOG
 	curl -s -q -H "Content-type: application/json" -X PUT "$CU/$DB-$API/$class" -d "@$JSON" >>! $TMP/LOG
     endif
 else
-    echo `date` "$0 $$ -- no Cloudant update" >>! $TMP/LOG
+    /bin/echo `date` "$0 $$ -- no Cloudant update" >>! $TMP/LOG
 endif
 
 done:
-    echo `date` "$0 $$ -- FINISH" >>! $TMP/LOG
+    /bin/echo `date` "$0 $$ -- FINISH" >>! $TMP/LOG
