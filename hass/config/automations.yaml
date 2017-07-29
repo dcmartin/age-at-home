@@ -1,0 +1,116 @@
+#sunset:
+#  trigger:
+#    platform: sun
+#    # Possible values: sunset, sunrise
+#    event: sunset
+#    # Optional time offset. This example is 45 minutes.
+#    offset: '-00:45:00'
+#
+#mqttpublish:
+#  trigger:
+#    platform: state
+#    entity_id: device_tracker.davids_iphone
+#    state: 'home'
+#  action:
+#    service: mqtt.publish
+#    data:
+#      topic: "presence/home"
+#      # payload: "David is home"
+#      payload_template": "{{ states('device_tracker.davids_iphone') }}"
+#
+#lowscore:
+#  alias: very low scoring
+#  trigger:
+#    platform: numeric_state
+#    entity_id: sensor.mqttscore
+#    below: 0.5
+#  action:
+#    service: persistent_notification.create
+#    data:
+#      notification_id: 'NOTIFY1'
+#      title: "NUMERIC STATE"
+#      message: "Score below 0.5"
+#
+#highscore:
+#  alias: very high scoring
+#  trigger:
+#    platform: numeric_state
+#    entity_id: sensor.mqttscore
+#    above: 0.95
+#  action:
+#    - service: persistent_notification.create
+#      data:
+#        notification_id: 'NOTIFY1'
+#        title: "NUMERIC STATE"
+#        message: "Score above 0.95"
+#    - delay: 0:30
+#    - service: persistent_notification.dismiss
+#      data:
+#        notification_id: 'NOTIFY1'
+#
+#jsonscore:
+#  alias: score from presence JSON payload
+#  trigger:
+#    platform: numeric_state
+#    entity_id: sensor.mqttpresence
+#    value_template: '{{ value_json.score }}'
+#    above: 0.0
+#    below: 1.0
+#  action:
+#    service: persistent_notification.create
+#    data:
+#      notification_id: 'NOTIFY1'
+#      title: "MQTT"
+#      message: "Score processed"
+#
+#
+#davidishome:
+#  alias: davidishome
+#  trigger:
+#    platform: zone
+#    entity_id: device_tracker.davids_iphone
+#    zone: zone.home
+#    event: enter
+#  condition:
+#    platform: time
+#    after: '06:00'
+#    before: '22:00'
+#  action:
+#    - service: notify.notify
+#      data:
+#        message: David coming or going
+#    - delay: 0:35
+#    - service: notify.notify
+#      data:
+#        message: David is here or gone
+#  
+#notify_davids_iphone:
+#  alias: notify_davids_iphone
+#  trigger:
+#    platform: state
+#    entity_id: group.ageathome_notin_kitchen
+#    from: 'off'
+#    to: 'on'
+#  condition:
+#    platform: time
+#    after: '06:00'
+#    before: '22:00'
+#  action:
+#    service: notify.ios_davids_iphone
+#    data:
+#      message: "Something happened at home!"
+#      data:
+#        push:
+#          badge: 5
+#          category: "ALARM"
+#          # sound: <SOUND FILE HERE>
+#        action_data:
+#          entity_id: group.ageathome_notin_kitchen
+#          my_custom_data: foo_bar
+#  
+#isdavidhome:
+#  alias: isdavidhome
+#  trigger: 
+#    platform: template
+#    value_template: "{% if is_state('device_tracker.davids_iphone', 'home') %}true{% endif %}"
+#  

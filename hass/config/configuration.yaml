@@ -34,6 +34,11 @@ panel_iframe:
     title: 'DIGITS'
     icon: mdi:format-list-numbers
     url: 'http://age-at-home.dcmartin.com:5001'
+  horizon:
+    title: 'HORIZON'
+    icon: mdi:weather-sunset
+    url: 'http://192.168.1.39/dashboard'
+
 
 # WORKING ON PRESENCE
 
@@ -109,67 +114,27 @@ device_tracker:
     password: !secret icloud_password
     account_name: DCMARTIN
 
-notify:
-  - platform: ios
-    name: davids_iphone
-    target: !secret notify_target
+# NOTIFIERS
+
+# targeting app on davids phone
+notify ios:
+  platform: ios
+  name: davids_iphone
+  target: !secret notify_target
+
+# https://home-assistant.io/components/notify.rest/
+# curl -X POST -H 'Content-type: application/json' --data '{"text":"Hello, World!"}' !secret slack_webhook
+#notify slack:
+#  platform: rest
+#  name: slack
+#  resource: !secret slack_webhook
+#  method: POST
+#  data: "-H 'Content-type: application/json'"
+#  data_template: '{{ value_json.date | timestamp_local }}'
+
+# ZEROCONF -- should be automatic, but JIC
 
 zeroconf:
-
-# ATTEMPTED AUTOMATION
-
-#automation test1:
-#  alias: davidishome
-#  hide_entity: true
-#  initial_state: "off"
-#  trigger:
-#    platform: zone
-#    entity_id: device_tracker.davids_iphone
-#    zone: zone.home
-#    event: enter
-#  condition:
-#    - platform: time
-#      after: '06:00'
-#      before: '22:00'
-#  action:
-#    - service: notify.notify
-#      data:
-#        message: David coming or going
-#    - delay: 0:35
-#    - service: notify.notify
-#      data:
-#        message: David is here or gone
-#
-#automation test2:
-#  alias: notify_davids_iphone
-#  hide_entity: true
-#  initial_state: "off"
-#  trigger:
-#    platform: state
-#    entity_id: group.ageathome_notin_kitchen
-#    from: 'off'
-#    to: 'on'
-#  condition:
-#    - platform: time
-#      after: '06:00'
-#      before: '22:00'
-#  action:
-#    service: notify.ios_robbies_iphone_7_plus
-#    data:
-#      message: "Something happened at home!"
-#      data:
-#        push:
-#          badge: 5
-#          # sound: <SOUND FILE HERE>
-#          category: "ALARM" # Needs to match the top level identifier you used in the ios configuration
-#        action_data: # Anything passed in action_data will get echoed back to Home Assistant.
-#          entity_id: light.test
-#          my_custom_data: foo_bar
-#
-# automation test:
-#  trigger: 
-#    - platform: template
-#      value_template: "{% if is_state('device_tracker.davids_iphone', 'home') %}true{% endif %}"
 
 # ZONES
 
@@ -644,6 +609,48 @@ sensor external_ip:
     name: externalip
     value_template: '{{ value_json.ip }}'
 
+#
+# HORIZON STATIS
+#
+# {
+#   "geth": {
+#     "net_peer_count": -1,
+#     "eth_syncing": true,
+#     "eth_block_number": -1,
+#     "eth_accounts": [],
+#     "eth_balance": "0x0"
+#   },
+#   "configuration": {
+#     "exchange_api": "https://exchange.bluehorizon.network/api/v1/"
+#   },
+#   "connectivity": {
+#     "firmware.bluehorizon.network": true,
+#     "images.bluehorizon.network": true
+#   }
+# }
+#
+
+sensor horizon_connectivity:
+  - platform: rest
+    icon: mdi:weather-sunset
+    resource: 'http://192.168.1.39/status'
+    name: Horizon Connectivity
+    value_template: '{{ value_json.connectivity }}'
+
+sensor horizon_exchange:
+  - platform: rest
+    icon: mdi:weather-sunset
+    resource: 'http://192.168.1.39/status'
+    name: Horizon Exchange
+    value_template: '{{ value_json.configuration.exchange_api }}'
+
+sensor horizon_geth:
+  - platform: rest
+    icon: mdi:weather-sunset
+    resource: 'http://192.168.1.39/status'
+    name: Horizon Geth
+    value_template: '{{ value_json.geth }}'
+
 # UPDATE - DATE
 
 sensor datekitchen:
@@ -841,6 +848,13 @@ sensor whoinfrontdoor:
   value_template: '{{ value_json.class }}'
 
 # LASTIN
+
+sensor lastseen:
+  platform: mqtt
+  icon: mdi:human
+  state_topic: 'presence/+'
+  name: lastseen
+  value_template: '{{ value_json.class }}'
 
 sensor lastinkitchen:
   platform: mqtt
@@ -1042,4 +1056,4 @@ binary_sensor peopleinkitchen:
 
 group: !include groups.yaml
 
-# automation: !include automations.yaml
+automation: !include automations.yaml

@@ -8,15 +8,24 @@ default_view:
   icon: mdi:home-variant
   entities:
     - group.iphones
-    - group.ageathome_lastin
-
-today_view:
-  view: yes
-  name: Today
-  icon: mdi:calendar-today
-  entities:
     - group.weather_today
     - camera.wuradar
+
+horizon_view:
+  view: yes
+  name: Horizon View
+  icon: mdi:weather-sunset
+  entities:
+    - group.horizon_mtn_rpi2
+
+horizon_mtn_rpi2:
+  name: Horizon MTN RPi2
+  icon: mdi:weather-sunset
+  entities:
+    - device_tracker.mtn_rpi2
+    - sensor.horizon_connectivity
+    - sensor.horizon_exchange
+    - sensor.horizon_geth
 
 ageathome_view:
   view: yes
@@ -28,9 +37,19 @@ ageathome_view:
     - group.ageathome_lastin
     - group.ageathome_whoin
     - group.ageathome_empty
+    - group.ageathome_devices
+
+ageathome_detail:
+  view: true
+  name: AgeAtHome Detail
+  icon: mdi:image
+  entities:
+    - group.ageathome_images
+    - group.ageathome_cameras
+    - group.ageathome_updates
 
 ageathome_images:
-  view: true
+  # view: true
   name: AgeAtHome Images
   icon: mdi:image
   entities:
@@ -39,8 +58,8 @@ ageathome_images:
     - camera.imagekitchen
     - camera.imagebathroom
 
-ageathome_camera_view:
-  view: true
+ageathome_cameras:
+  # view: true
   name: AgeAtHome Cameras
   icon: mdi:cctv
   entities:
@@ -101,8 +120,6 @@ status_view:
   name: Status View
   icon: mdi:sitemap
   entities:
-    - group.ageathome_devices
-    - group.ageathome_updates
     - group.system_status
     - group.network_status
     - group.tivo_status
@@ -122,8 +139,6 @@ system_status:
     - device_tracker.microcell_cabin
     - device_tracker.dlicontroller
     - device_tracker.envoy
-    - device_tracker.mtn_rpi2
-    - device_tracker.mtn_rpi2_wifi
 
 network_status:
   name: Network Status
