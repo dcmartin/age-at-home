@@ -25,7 +25,7 @@ panel_iframe:
   docsis:
     title: 'Mikrotik'
     icon: mdi:router-wireless
-    url: 'http://dcmartin.dyndns.org'
+    url: 'http://192.168.1.1'
   classify:
     title: 'CLASSIFY'
     icon: mdi:image-filter
@@ -33,10 +33,10 @@ panel_iframe:
   digits:
     title: 'DIGITS'
     icon: mdi:format-list-numbers
-    url: 'http://age-at-home.dcmartin.com:5001'
-  horizon:
-    title: 'HORIZON'
-    icon: mdi:weather-sunset
+    url: 'http://192.168.1.30:5001'
+  mtn:
+    title: 'MTN'
+    icon: mdi:image-filter-hdr
     url: 'http://192.168.1.39/dashboard'
 
 
@@ -254,11 +254,20 @@ zone safeway:
 
 # plex
 
-media_player:
+media_player david_plex:
   - platform: plex
+    name: david_plex
     ip_address: 192.168.1.32
     port: 32400
     token: !secret plex_token
+
+sensor david_plex:
+  - platform: plex
+    host: 192.168.1.32
+    port: 32400
+    name: david_plex
+    username: !secret plex_username
+    password: !secret plex_password
 
 http:
   api_password: !secret http_api_password
@@ -610,7 +619,9 @@ sensor external_ip:
     value_template: '{{ value_json.ip }}'
 
 #
-# HORIZON STATIS
+# HORIZON STATUS
+# url: http://<lanip>/status
+# content_type: application/json
 #
 # {
 #   "geth": {
@@ -644,12 +655,482 @@ sensor horizon_exchange:
     name: Horizon Exchange
     value_template: '{{ value_json.configuration.exchange_api }}'
 
-sensor horizon_geth:
+sensor horizon_balance:
   - platform: rest
     icon: mdi:weather-sunset
     resource: 'http://192.168.1.39/status'
-    name: Horizon Geth
-    value_template: '{{ value_json.geth }}'
+    name: Horizon Balance
+    value_template: '{{ value_json.geth.eth_balance }}'
+
+sensor horizon_net_peer_count:
+  - platform: rest
+    icon: mdi:weather-sunset
+    resource: 'http://192.168.1.39/status'
+    name: Horizon Balance
+    value_template: '{{ value_json.geth.net_peer_count }}'
+
+sensor horizon_eth_syncing:
+  - platform: rest
+    icon: mdi:weather-sunset
+    resource: 'http://192.168.1.39/status'
+    name: Horizon Eth Syncing
+    value_template: '{{ value_json.geth.eth_syncing }}'
+
+sensor horizon_eth_blocknumber:
+  - platform: rest
+    icon: mdi:weather-sunset
+    resource: 'http://192.168.1.39/status'
+    name: Horizon Eth Blocknumber
+    value_template: '{{ value_json.geth.eth_block_number }}'
+
+# HORIZON DEVICE
+
+sensor horizon_device_accountid:
+  - platform: rest
+    icon: mdi:weather-sunset
+    resource: 'http://192.168.1.39/horizondevice'
+    name: Horizon Device AccountID
+    value_template: '{{ value_json.account.id }}'
+
+sensor horizon_device_name:
+  - platform: rest
+    icon: mdi:weather-sunset
+    resource: 'http://192.168.1.39/horizondevice'
+    name: Horizon Device Name
+    value_template: '{{ value_json.name }}'
+
+# HORIZON SERVICE/ATTRIBUTE
+
+sensor horizon_attribute_count:
+  - platform: rest
+    icon: mdi:weather-sunset
+    resource: 'http://192.168.1.39/service/attribute'
+    name: Horizon Attribute Count
+    value_template: '{{ value_json.attributes | length }}'
+
+# HORIZON AGREEMENT
+
+sensor horizon_agreements_active_count:
+  - platform: rest
+    icon: mdi:weather-sunset
+    resource: 'http://192.168.1.39/agreement'
+    name: Horizon Agreements Active Count
+    value_template: '{{ value_json.agreements.active | length }}'
+
+sensor horizon_agreements_archive_count:
+  - platform: rest
+    icon: mdi:weather-sunset
+    resource: 'http://192.168.1.39/agreement'
+    name: Horizon Agreements Archive Count
+    value_template: '{{ value_json.agreements.archive | length }}'
+
+# AGREEMENT #0
+
+sensor horizon_agreement0_name:
+  - platform: rest
+    icon: mdi:weather-sunset
+    resource: 'http://192.168.1.39/agreement'
+    name: 'Horizon Agreement0 Name'
+    value_template: '{{ value_json.agreements.active[0].name }}'
+
+sensor horizon_agreement0_id:
+  - platform: rest
+    icon: mdi:weather-sunset
+    resource: 'http://192.168.1.39/agreement'
+    name: 'Horizon Agreement0 ID'
+    value_template: '{{ value_json.agreements.active[0].current_agreement_id }}'
+
+sensor horizon_agreement0_protocol:
+  - platform: rest
+    icon: mdi:weather-sunset
+    resource: 'http://192.168.1.39/agreement'
+    name: Horizon Agreement0 Protocol
+    value_template: '{{ value_json.agreements.active[0].agreement_protocol }}'
+
+sensor horizon_agreement0_consumer:
+  - platform: rest
+    icon: mdi:weather-sunset
+    resource: 'http://192.168.1.39/agreement'
+    name: 'Horizon Agreement0 Consumer'
+    value_template: '{{ value_json.agreements.active[0].consumer_id }}'
+
+sensor horizon_agreement0_create:
+  - platform: rest
+    icon: mdi:weather-sunset
+    resource: 'http://192.168.1.39/agreement'
+    name: 'Horizon Agreement0 Create'
+    value_template: '{{ value_json.agreements.active[0].agreement_creation_time | timestamp_local }}'
+
+sensor horizon_agreement0_accept:
+  - platform: rest
+    icon: mdi:weather-sunset
+    resource: 'http://192.168.1.39/agreement'
+    name: 'Horizon Agreement0 Accept'
+    value_template: '{{ value_json.agreements.active[0].agreement_accepted_time | timestamp_local }}'
+
+sensor horizon_agreement0_finalize:
+  - platform: rest
+    icon: mdi:weather-sunset
+    resource: 'http://192.168.1.39/agreement'
+    name: 'Horizon Agreement0 Finalize'
+    value_template: '{{ value_json.agreements.active[0].agreement_finalized_time | timestamp_local }}'
+
+sensor horizon_agreement0_receive:
+  - platform: rest
+    icon: mdi:weather-sunset
+    resource: 'http://192.168.1.39/agreement'
+    name: 'Horizon Agreement0 Receive'
+    value_template: '{{ value_json.agreements.active[0].agreement_data_received_time | timestamp_local }}'
+
+sensor horizon_agreement0_start:
+  - platform: rest
+    icon: mdi:weather-sunset
+    resource: 'http://192.168.1.39/agreement'
+    name: 'Horizon Agreement0 Start'
+    value_template: '{{ value_json.agreements.active[0].agreement_execution_start_time | timestamp_local }}'
+
+# AGREEMENT #1
+
+sensor horizon_agreement1_name:
+  - platform: rest
+    icon: mdi:weather-sunset
+    resource: 'http://192.168.1.39/agreement'
+    name: 'Horizon Agreement1 Name'
+    value_template: '{{ value_json.agreements.active[1].name }}'
+
+sensor horizon_agreement1_id:
+  - platform: rest
+    icon: mdi:weather-sunset
+    resource: 'http://192.168.1.39/agreement'
+    name: 'Horizon Agreement1 ID'
+    value_template: '{{ value_json.agreements.active[1].current_agreement_id }}'
+
+sensor horizon_agreement1_protocol:
+  - platform: rest
+    icon: mdi:weather-sunset
+    resource: 'http://192.168.1.39/agreement'
+    name: Horizon Agreement1 Protocol
+    value_template: '{{ value_json.agreements.active[1].agreement_protocol }}'
+
+sensor horizon_agreement1_consumer:
+  - platform: rest
+    icon: mdi:weather-sunset
+    resource: 'http://192.168.1.39/agreement'
+    name: 'Horizon Agreement1 Consumer'
+    value_template: '{{ value_json.agreements.active[1].consumer_id }}'
+
+sensor horizon_agreement1_create:
+  - platform: rest
+    icon: mdi:weather-sunset
+    resource: 'http://192.168.1.39/agreement'
+    name: 'Horizon Agreement1 Create'
+    value_template: '{{ value_json.agreements.active[1].agreement_creation_time | timestamp_local }}'
+
+sensor horizon_agreement1_accept:
+  - platform: rest
+    icon: mdi:weather-sunset
+    resource: 'http://192.168.1.39/agreement'
+    name: 'Horizon Agreement1 Accept'
+    value_template: '{{ value_json.agreements.active[1].agreement_accepted_time | timestamp_local }}'
+
+sensor horizon_agreement1_finalize:
+  - platform: rest
+    icon: mdi:weather-sunset
+    resource: 'http://192.168.1.39/agreement'
+    name: 'Horizon Agreement1 Finalize'
+    value_template: '{{ value_json.agreements.active[1].agreement_finalized_time | timestamp_local }}'
+
+sensor horizon_agreement1_receive:
+  - platform: rest
+    icon: mdi:weather-sunset
+    resource: 'http://192.168.1.39/agreement'
+    name: 'Horizon Agreement1 Receive'
+    value_template: '{{ value_json.agreements.active[1].agreement_data_received_time | timestamp_local }}'
+
+sensor horizon_agreement1_start:
+  - platform: rest
+    icon: mdi:weather-sunset
+    resource: 'http://192.168.1.39/agreement'
+    name: 'Horizon Agreement1 Start'
+    value_template: '{{ value_json.agreements.active[1].agreement_execution_start_time | timestamp_local }}'
+
+# AGREEMENT #2
+
+sensor horizon_agreement2_name:
+  - platform: rest
+    icon: mdi:weather-sunset
+    resource: 'http://192.168.1.39/agreement'
+    name: 'Horizon Agreement2 Name'
+    value_template: '{{ value_json.agreements.active[2].name }}'
+
+sensor horizon_agreement2_id:
+  - platform: rest
+    icon: mdi:weather-sunset
+    resource: 'http://192.168.1.39/agreement'
+    name: 'Horizon Agreement2 ID'
+    value_template: '{{ value_json.agreements.active[2].current_agreement_id }}'
+
+sensor horizon_agreement2_protocol:
+  - platform: rest
+    icon: mdi:weather-sunset
+    resource: 'http://192.168.1.39/agreement'
+    name: Horizon Agreement2 Protocol
+    value_template: '{{ value_json.agreements.active[2].agreement_protocol }}'
+
+sensor horizon_agreement2_consumer:
+  - platform: rest
+    icon: mdi:weather-sunset
+    resource: 'http://192.168.1.39/agreement'
+    name: 'Horizon Agreement2 Consumer'
+    value_template: '{{ value_json.agreements.active[2].consumer_id }}'
+
+sensor horizon_agreement2_create:
+  - platform: rest
+    icon: mdi:weather-sunset
+    resource: 'http://192.168.1.39/agreement'
+    name: 'Horizon Agreement2 Create'
+    value_template: '{{ value_json.agreements.active[2].agreement_creation_time | timestamp_local }}'
+
+sensor horizon_agreement2_accept:
+  - platform: rest
+    icon: mdi:weather-sunset
+    resource: 'http://192.168.1.39/agreement'
+    name: 'Horizon Agreement2 Accept'
+    value_template: '{{ value_json.agreements.active[2].agreement_accepted_time | timestamp_local }}'
+
+sensor horizon_agreement2_finalize:
+  - platform: rest
+    icon: mdi:weather-sunset
+    resource: 'http://192.168.1.39/agreement'
+    name: 'Horizon Agreement2 Finalize'
+    value_template: '{{ value_json.agreements.active[2].agreement_finalized_time | timestamp_local }}'
+
+sensor horizon_agreement2_receive:
+  - platform: rest
+    icon: mdi:weather-sunset
+    resource: 'http://192.168.1.39/agreement'
+    name: 'Horizon Agreement2 Receive'
+    value_template: '{{ value_json.agreements.active[2].agreement_data_received_time | timestamp_local }}'
+
+sensor horizon_agreement2_start:
+  - platform: rest
+    icon: mdi:weather-sunset
+    resource: 'http://192.168.1.39/agreement'
+    name: 'Horizon Agreement2 Start'
+    value_template: '{{ value_json.agreements.active[2].agreement_execution_start_time | timestamp_local }}'
+
+# AGREEMENT #3
+
+sensor horizon_agreement3_name:
+  - platform: rest
+    icon: mdi:weather-sunset
+    resource: 'http://192.168.1.39/agreement'
+    name: 'Horizon Agreement3 Name'
+    value_template: '{{ value_json.agreements.active[3].name }}'
+
+sensor horizon_agreement3_id:
+  - platform: rest
+    icon: mdi:weather-sunset
+    resource: 'http://192.168.1.39/agreement'
+    name: 'Horizon Agreement3 ID'
+    value_template: '{{ value_json.agreements.active[3].current_agreement_id }}'
+
+sensor horizon_agreement3_protocol:
+  - platform: rest
+    icon: mdi:weather-sunset
+    resource: 'http://192.168.1.39/agreement'
+    name: Horizon Agreement3 Protocol
+    value_template: '{{ value_json.agreements.active[3].agreement_protocol }}'
+
+sensor horizon_agreement3_consumer:
+  - platform: rest
+    icon: mdi:weather-sunset
+    resource: 'http://192.168.1.39/agreement'
+    name: 'Horizon Agreement3 Consumer'
+    value_template: '{{ value_json.agreements.active[3].consumer_id }}'
+
+sensor horizon_agreement3_create:
+  - platform: rest
+    icon: mdi:weather-sunset
+    resource: 'http://192.168.1.39/agreement'
+    name: 'Horizon Agreement3 Create'
+    value_template: '{{ value_json.agreements.active[3].agreement_creation_time | timestamp_local }}'
+
+sensor horizon_agreement3_accept:
+  - platform: rest
+    icon: mdi:weather-sunset
+    resource: 'http://192.168.1.39/agreement'
+    name: 'Horizon Agreement3 Accept'
+    value_template: '{{ value_json.agreements.active[3].agreement_accepted_time | timestamp_local }}'
+
+sensor horizon_agreement3_finalize:
+  - platform: rest
+    icon: mdi:weather-sunset
+    resource: 'http://192.168.1.39/agreement'
+    name: 'Horizon Agreement3 Finalize'
+    value_template: '{{ value_json.agreements.active[3].agreement_finalized_time | timestamp_local }}'
+
+sensor horizon_agreement3_receive:
+  - platform: rest
+    icon: mdi:weather-sunset
+    resource: 'http://192.168.1.39/agreement'
+    name: 'Horizon Agreement3 Receive'
+    value_template: '{{ value_json.agreements.active[3].agreement_data_received_time | timestamp_local }}'
+
+sensor horizon_agreement3_start:
+  - platform: rest
+    icon: mdi:weather-sunset
+    resource: 'http://192.168.1.39/agreement'
+    name: 'Horizon Agreement3 Start'
+    value_template: '{{ value_json.agreements.active[3].agreement_execution_start_time | timestamp_local }}'
+
+# AGREEMENT #4
+
+sensor horizon_agreement4_name:
+  - platform: rest
+    icon: mdi:weather-sunset
+    resource: 'http://192.168.1.39/agreement'
+    name: 'Horizon Agreement4 Name'
+    value_template: '{{ value_json.agreements.active[4].name }}'
+
+sensor horizon_agreement4_id:
+  - platform: rest
+    icon: mdi:weather-sunset
+    resource: 'http://192.168.1.39/agreement'
+    name: 'Horizon Agreement4 ID'
+    value_template: '{{ value_json.agreements.active[4].current_agreement_id }}'
+
+sensor horizon_agreement4_protocol:
+  - platform: rest
+    icon: mdi:weather-sunset
+    resource: 'http://192.168.1.39/agreement'
+    name: Horizon Agreement4 Protocol
+    value_template: '{{ value_json.agreements.active[4].agreement_protocol }}'
+
+sensor horizon_agreement4_consumer:
+  - platform: rest
+    icon: mdi:weather-sunset
+    resource: 'http://192.168.1.39/agreement'
+    name: 'Horizon Agreement4 Consumer'
+    value_template: '{{ value_json.agreements.active[4].consumer_id }}'
+
+sensor horizon_agreement4_create:
+  - platform: rest
+    icon: mdi:weather-sunset
+    resource: 'http://192.168.1.39/agreement'
+    name: 'Horizon Agreement4 Create'
+    value_template: '{{ value_json.agreements.active[4].agreement_creation_time | timestamp_local }}'
+
+sensor horizon_agreement4_accept:
+  - platform: rest
+    icon: mdi:weather-sunset
+    resource: 'http://192.168.1.39/agreement'
+    name: 'Horizon Agreement4 Accept'
+    value_template: '{{ value_json.agreements.active[4].agreement_accepted_time | timestamp_local }}'
+
+sensor horizon_agreement4_finalize:
+  - platform: rest
+    icon: mdi:weather-sunset
+    resource: 'http://192.168.1.39/agreement'
+    name: 'Horizon Agreement4 Finalize'
+    value_template: '{{ value_json.agreements.active[4].agreement_finalized_time | timestamp_local }}'
+
+sensor horizon_agreement4_receive:
+  - platform: rest
+    icon: mdi:weather-sunset
+    resource: 'http://192.168.1.39/agreement'
+    name: 'Horizon Agreement4 Receive'
+    value_template: '{{ value_json.agreements.active[4].agreement_data_received_time | timestamp_local }}'
+
+sensor horizon_agreement4_start:
+  - platform: rest
+    icon: mdi:weather-sunset
+    resource: 'http://192.168.1.39/agreement'
+    name: 'Horizon Agreement4 Start'
+    value_template: '{{ value_json.agreements.active[4].agreement_execution_start_time | timestamp_local }}'
+
+# AGREEMENT #5
+
+sensor horizon_agreement5_name:
+  - platform: rest
+    icon: mdi:weather-sunset
+    resource: 'http://192.168.1.39/agreement'
+    name: 'Horizon Agreement5 Name'
+    value_template: '{{ value_json.agreements.active[5].name }}'
+
+sensor horizon_agreement5_id:
+  - platform: rest
+    icon: mdi:weather-sunset
+    resource: 'http://192.168.1.39/agreement'
+    name: 'Horizon Agreement5 ID'
+    value_template: '{{ value_json.agreements.active[5].current_agreement_id }}'
+
+sensor horizon_agreement5_protocol:
+  - platform: rest
+    icon: mdi:weather-sunset
+    resource: 'http://192.168.1.39/agreement'
+    name: Horizon Agreement5 Protocol
+    value_template: '{{ value_json.agreements.active[5].agreement_protocol }}'
+
+sensor horizon_agreement5_consumer:
+  - platform: rest
+    icon: mdi:weather-sunset
+    resource: 'http://192.168.1.39/agreement'
+    name: 'Horizon Agreement5 Consumer'
+    value_template: '{{ value_json.agreements.active[5].consumer_id }}'
+
+sensor horizon_agreement5_create:
+  - platform: rest
+    icon: mdi:weather-sunset
+    resource: 'http://192.168.1.39/agreement'
+    name: 'Horizon Agreement5 Create'
+    value_template: '{{ value_json.agreements.active[5].agreement_creation_time | timestamp_local }}'
+
+sensor horizon_agreement5_accept:
+  - platform: rest
+    icon: mdi:weather-sunset
+    resource: 'http://192.168.1.39/agreement'
+    name: 'Horizon Agreement5 Accept'
+    value_template: '{{ value_json.agreements.active[5].agreement_accepted_time | timestamp_local }}'
+
+sensor horizon_agreement5_finalize:
+  - platform: rest
+    icon: mdi:weather-sunset
+    resource: 'http://192.168.1.39/agreement'
+    name: 'Horizon Agreement5 Finalize'
+    value_template: '{{ value_json.agreements.active[5].agreement_finalized_time | timestamp_local }}'
+
+sensor horizon_agreement5_receive:
+  - platform: rest
+    icon: mdi:weather-sunset
+    resource: 'http://192.168.1.39/agreement'
+    name: 'Horizon Agreement5 Receive'
+    value_template: '{{ value_json.agreements.active[5].agreement_data_received_time | timestamp_local }}'
+
+sensor horizon_agreement5_start:
+  - platform: rest
+    icon: mdi:weather-sunset
+    resource: 'http://192.168.1.39/agreement'
+    name: 'Horizon Agreement5 Start'
+    value_template: '{{ value_json.agreements.active[5].agreement_execution_start_time | timestamp_local }}'
+
+# HORIZON WORKLOAD
+
+sensor horizon_workloads_count:
+  - platform: rest
+    icon: mdi:weather-sunset
+    resource: 'http://192.168.1.39/workload'
+    name: Horizon Workloads Count
+    value_template: '{{ value_json.workloads | length }}'
+
+# HORIZON PUBLICKEY
+
+sensor horizon_publickey:
+  - platform: rest
+    icon: mdi:weather-sunset
+    resource: 'http://192.168.1.39/publickey'
+    name: Horizon Publickey
+    value_template: '{{ value_json.pem }}'
 
 # UPDATE - DATE
 

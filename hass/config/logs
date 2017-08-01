@@ -1,5 +1,9 @@
 #!/bin/csh -f
-set ttl = 1500
-set d = `date +%s`
-set d = `echo "$d - $ttl" | bc`
+if ($#argv >= 1) then
+  set ttl = `/bin/echo "$argv[1] * 60" | /usr/bin/bc`
+else
+  set ttl = 1500
+endif
+set d = `/bin/date +%s`
+set d = `/bin/echo "$d - $ttl" | /usr/bin/bc`
 sudo docker logs -t --since `date +%Y-%m-%dT%T` homeassistant
