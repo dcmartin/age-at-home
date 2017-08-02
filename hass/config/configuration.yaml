@@ -138,6 +138,22 @@ zeroconf:
 
 # ZONES
 
+zone nannyshouse:
+  name: nannyshouse
+  friendly_name: "Nannys House"
+  latitude: 30.391078
+  longitude: -97.694590
+  radius: 200
+  track_ios: true
+
+zone austincity:
+  name: austincity
+  friendly_name: "Austin City"
+  latitude: 30.266187
+  longitude: -97.743503
+  radius: 15000
+  track_ios: true
+
 zone southsanjose:
   name: southsanjose
   friendly_name: 'South San Jose'
@@ -310,6 +326,7 @@ history:
       - binary_sensor.david_notin_kitchen
       - binary_sensor.ellen_notin_kitchen
       - sensor.peopleinkitchen
+      - sensor.david_plex
       - sensor.mqttscore
       - sensor.whoinkitchen
       - sensor.whoinbathroom
