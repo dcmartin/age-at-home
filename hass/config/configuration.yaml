@@ -354,7 +354,7 @@ tts:
   - platform: google
 
 ifttt:
-  key: dXbhgiite3T81apShQpCfW
+  key: !secret ifttt_key
 
 #
 # CAMERAS
