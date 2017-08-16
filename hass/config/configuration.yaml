@@ -138,6 +138,14 @@ zeroconf:
 
 # ZONES
 
+zone jimjanaustin:
+  name: jimjanaustin
+  friendly_name: "Jim Jan Austin"
+  latitude: 30.49788338485368
+  longitude: -97.7739577124575
+  radius: 200
+  track_ios: true
+
 zone nannyshouse:
   name: nannyshouse
   friendly_name: "Nannys House"
@@ -354,7 +362,7 @@ tts:
   - platform: google
 
 ifttt:
-  key: !secret ifttt_key
+  key: dXbhgiite3T81apShQpCfW
 
 #
 # CAMERAS
@@ -649,504 +657,997 @@ sensor external_ip:
 #     "eth_balance": "0x0"
 #   },
 #   "configuration": {
-#     "exchange_api": "https://exchange.bluehorizon.network/api/v1/"
+#     "exchange_api": "https://exchange.bluemtnrpi2.network/api/v1/"
 #   },
 #   "connectivity": {
-#     "firmware.bluehorizon.network": true,
-#     "images.bluehorizon.network": true
+#     "firmware.bluemtnrpi2.network": true,
+#     "images.bluemtnrpi2.network": true
 #   }
 # }
 #
 
-sensor horizon_connectivity:
+sensor mtnrpi2_connectivity:
   - platform: rest
     icon: mdi:weather-sunset
-    resource: 'http://192.168.1.39/status'
-    name: Horizon Connectivity
+    resource: 'http://192.168.1.32/CGI/mtn-status.cgi?ip=39'
+    name: MtnRpi2 Connectivity
     value_template: '{{ value_json.connectivity }}'
 
-sensor horizon_exchange:
+sensor mtnrpi2_exchange:
   - platform: rest
     icon: mdi:weather-sunset
-    resource: 'http://192.168.1.39/status'
-    name: Horizon Exchange
+    resource: 'http://192.168.1.32/CGI/mtn-status.cgi?ip=39'
+    name: MtnRpi2 Exchange
     value_template: '{{ value_json.configuration.exchange_api }}'
 
-sensor horizon_balance:
+sensor mtnrpi2_balance:
   - platform: rest
     icon: mdi:weather-sunset
-    resource: 'http://192.168.1.39/status'
-    name: Horizon Balance
+    resource: 'http://192.168.1.32/CGI/mtn-status.cgi?ip=39'
+    name: MtnRpi2 Balance
     value_template: '{{ value_json.geth.eth_balance }}'
 
-sensor horizon_net_peer_count:
+sensor mtnrpi2_net_peer_count:
   - platform: rest
     icon: mdi:weather-sunset
-    resource: 'http://192.168.1.39/status'
-    name: Horizon Balance
+    resource: 'http://192.168.1.32/CGI/mtn-status.cgi?ip=39'
+    name: MtnRpi2 Balance
     value_template: '{{ value_json.geth.net_peer_count }}'
 
-sensor horizon_eth_syncing:
+sensor mtnrpi2_eth_syncing:
   - platform: rest
     icon: mdi:weather-sunset
-    resource: 'http://192.168.1.39/status'
-    name: Horizon Eth Syncing
+    resource: 'http://192.168.1.32/CGI/mtn-status.cgi?ip=39'
+    name: MtnRpi2 Eth Syncing
     value_template: '{{ value_json.geth.eth_syncing }}'
 
-sensor horizon_eth_blocknumber:
+sensor mtnrpi2_eth_blocknumber:
   - platform: rest
     icon: mdi:weather-sunset
-    resource: 'http://192.168.1.39/status'
-    name: Horizon Eth Blocknumber
+    resource: 'http://192.168.1.32/CGI/mtn-status.cgi?ip=39'
+    name: MtnRpi2 Eth Blocknumber
     value_template: '{{ value_json.geth.eth_block_number }}'
 
 # HORIZON DEVICE
 
-sensor horizon_device_accountid:
+sensor mtnrpi2_device_accountid:
   - platform: rest
     icon: mdi:weather-sunset
-    resource: 'http://192.168.1.39/horizondevice'
-    name: Horizon Device AccountID
+    resource: 'http://192.168.1.32/CGI/mtn-device.cgi?ip=39'
+    name: MtnRpi2 Device AccountID
     value_template: '{{ value_json.account.id }}'
 
-sensor horizon_device_name:
+sensor mtnrpi2_device_name:
   - platform: rest
     icon: mdi:weather-sunset
-    resource: 'http://192.168.1.39/horizondevice'
-    name: Horizon Device Name
+    resource: 'http://192.168.1.32/CGI/mtn-device.cgi?ip=39'
+    name: MtnRpi2 Device Name
     value_template: '{{ value_json.name }}'
 
 # HORIZON SERVICE/ATTRIBUTE
 
-sensor horizon_attribute_count:
+sensor mtnrpi2_attribute_count:
   - platform: rest
     icon: mdi:weather-sunset
-    resource: 'http://192.168.1.39/service/attribute'
-    name: Horizon Attribute Count
+    resource: 'http://192.168.1.32/CGI/mtn-attribute.cgi?ip=39'
+    name: MtnRpi2 Attribute Count
     value_template: '{{ value_json.attributes | length }}'
 
 # HORIZON AGREEMENT
 
-sensor horizon_agreements_active_count:
+sensor mtnrpi2_agreements_active_count:
   - platform: rest
     icon: mdi:weather-sunset
-    resource: 'http://192.168.1.39/agreement'
-    name: Horizon Agreements Active Count
+    resource: 'http://192.168.1.32/CGI/mtn-agreement.cgi?ip=39'
+    name: MtnRpi2 Agreements Active Count
     value_template: '{{ value_json.agreements.active | length }}'
 
-sensor horizon_agreements_archive_count:
+sensor mtnrpi2_agreements_archive_count:
   - platform: rest
     icon: mdi:weather-sunset
-    resource: 'http://192.168.1.39/agreement'
-    name: Horizon Agreements Archive Count
+    resource: 'http://192.168.1.32/CGI/mtn-agreement.cgi?ip=39'
+    name: MtnRpi2 Agreements Archive Count
     value_template: '{{ value_json.agreements.archive | length }}'
 
 # AGREEMENT #0
 
-sensor horizon_agreement0_name:
+sensor mtnrpi2_agreement0_name:
   - platform: rest
     icon: mdi:weather-sunset
-    resource: 'http://192.168.1.39/agreement'
-    name: 'Horizon Agreement0 Name'
+    resource: 'http://192.168.1.32/CGI/mtn-agreement.cgi?ip=39'
+    name: 'MtnRpi2 Agreement0 Name'
     value_template: '{{ value_json.agreements.active[0].name }}'
 
-sensor horizon_agreement0_id:
+sensor mtnrpi2_agreement0_id:
   - platform: rest
     icon: mdi:weather-sunset
-    resource: 'http://192.168.1.39/agreement'
-    name: 'Horizon Agreement0 ID'
+    resource: 'http://192.168.1.32/CGI/mtn-agreement.cgi?ip=39'
+    name: 'MtnRpi2 Agreement0 ID'
     value_template: '{{ value_json.agreements.active[0].current_agreement_id }}'
 
-sensor horizon_agreement0_protocol:
+sensor mtnrpi2_agreement0_protocol:
   - platform: rest
     icon: mdi:weather-sunset
-    resource: 'http://192.168.1.39/agreement'
-    name: Horizon Agreement0 Protocol
+    resource: 'http://192.168.1.32/CGI/mtn-agreement.cgi?ip=39'
+    name: MtnRpi2 Agreement0 Protocol
     value_template: '{{ value_json.agreements.active[0].agreement_protocol }}'
 
-sensor horizon_agreement0_consumer:
+sensor mtnrpi2_agreement0_consumer:
   - platform: rest
     icon: mdi:weather-sunset
-    resource: 'http://192.168.1.39/agreement'
-    name: 'Horizon Agreement0 Consumer'
+    resource: 'http://192.168.1.32/CGI/mtn-agreement.cgi?ip=39'
+    name: 'MtnRpi2 Agreement0 Consumer'
     value_template: '{{ value_json.agreements.active[0].consumer_id }}'
 
-sensor horizon_agreement0_create:
+sensor mtnrpi2_agreement0_create:
   - platform: rest
     icon: mdi:weather-sunset
-    resource: 'http://192.168.1.39/agreement'
-    name: 'Horizon Agreement0 Create'
+    resource: 'http://192.168.1.32/CGI/mtn-agreement.cgi?ip=39'
+    name: 'MtnRpi2 Agreement0 Create'
     value_template: '{{ value_json.agreements.active[0].agreement_creation_time | timestamp_local }}'
 
-sensor horizon_agreement0_accept:
+sensor mtnrpi2_agreement0_accept:
   - platform: rest
     icon: mdi:weather-sunset
-    resource: 'http://192.168.1.39/agreement'
-    name: 'Horizon Agreement0 Accept'
+    resource: 'http://192.168.1.32/CGI/mtn-agreement.cgi?ip=39'
+    name: 'MtnRpi2 Agreement0 Accept'
     value_template: '{{ value_json.agreements.active[0].agreement_accepted_time | timestamp_local }}'
 
-sensor horizon_agreement0_finalize:
+sensor mtnrpi2_agreement0_finalize:
   - platform: rest
     icon: mdi:weather-sunset
-    resource: 'http://192.168.1.39/agreement'
-    name: 'Horizon Agreement0 Finalize'
+    resource: 'http://192.168.1.32/CGI/mtn-agreement.cgi?ip=39'
+    name: 'MtnRpi2 Agreement0 Finalize'
     value_template: '{{ value_json.agreements.active[0].agreement_finalized_time | timestamp_local }}'
 
-sensor horizon_agreement0_receive:
+sensor mtnrpi2_agreement0_receive:
   - platform: rest
     icon: mdi:weather-sunset
-    resource: 'http://192.168.1.39/agreement'
-    name: 'Horizon Agreement0 Receive'
+    resource: 'http://192.168.1.32/CGI/mtn-agreement.cgi?ip=39'
+    name: 'MtnRpi2 Agreement0 Receive'
     value_template: '{{ value_json.agreements.active[0].agreement_data_received_time | timestamp_local }}'
 
-sensor horizon_agreement0_start:
+sensor mtnrpi2_agreement0_start:
   - platform: rest
     icon: mdi:weather-sunset
-    resource: 'http://192.168.1.39/agreement'
-    name: 'Horizon Agreement0 Start'
+    resource: 'http://192.168.1.32/CGI/mtn-agreement.cgi?ip=39'
+    name: 'MtnRpi2 Agreement0 Start'
     value_template: '{{ value_json.agreements.active[0].agreement_execution_start_time | timestamp_local }}'
 
 # AGREEMENT #1
 
-sensor horizon_agreement1_name:
+sensor mtnrpi2_agreement1_name:
   - platform: rest
     icon: mdi:weather-sunset
-    resource: 'http://192.168.1.39/agreement'
-    name: 'Horizon Agreement1 Name'
+    resource: 'http://192.168.1.32/CGI/mtn-agreement.cgi?ip=39'
+    name: 'MtnRpi2 Agreement1 Name'
     value_template: '{{ value_json.agreements.active[1].name }}'
 
-sensor horizon_agreement1_id:
+sensor mtnrpi2_agreement1_id:
   - platform: rest
     icon: mdi:weather-sunset
-    resource: 'http://192.168.1.39/agreement'
-    name: 'Horizon Agreement1 ID'
+    resource: 'http://192.168.1.32/CGI/mtn-agreement.cgi?ip=39'
+    name: 'MtnRpi2 Agreement1 ID'
     value_template: '{{ value_json.agreements.active[1].current_agreement_id }}'
 
-sensor horizon_agreement1_protocol:
+sensor mtnrpi2_agreement1_protocol:
   - platform: rest
     icon: mdi:weather-sunset
-    resource: 'http://192.168.1.39/agreement'
-    name: Horizon Agreement1 Protocol
+    resource: 'http://192.168.1.32/CGI/mtn-agreement.cgi?ip=39'
+    name: MtnRpi2 Agreement1 Protocol
     value_template: '{{ value_json.agreements.active[1].agreement_protocol }}'
 
-sensor horizon_agreement1_consumer:
+sensor mtnrpi2_agreement1_consumer:
   - platform: rest
     icon: mdi:weather-sunset
-    resource: 'http://192.168.1.39/agreement'
-    name: 'Horizon Agreement1 Consumer'
+    resource: 'http://192.168.1.32/CGI/mtn-agreement.cgi?ip=39'
+    name: 'MtnRpi2 Agreement1 Consumer'
     value_template: '{{ value_json.agreements.active[1].consumer_id }}'
 
-sensor horizon_agreement1_create:
+sensor mtnrpi2_agreement1_create:
   - platform: rest
     icon: mdi:weather-sunset
-    resource: 'http://192.168.1.39/agreement'
-    name: 'Horizon Agreement1 Create'
+    resource: 'http://192.168.1.32/CGI/mtn-agreement.cgi?ip=39'
+    name: 'MtnRpi2 Agreement1 Create'
     value_template: '{{ value_json.agreements.active[1].agreement_creation_time | timestamp_local }}'
 
-sensor horizon_agreement1_accept:
+sensor mtnrpi2_agreement1_accept:
   - platform: rest
     icon: mdi:weather-sunset
-    resource: 'http://192.168.1.39/agreement'
-    name: 'Horizon Agreement1 Accept'
+    resource: 'http://192.168.1.32/CGI/mtn-agreement.cgi?ip=39'
+    name: 'MtnRpi2 Agreement1 Accept'
     value_template: '{{ value_json.agreements.active[1].agreement_accepted_time | timestamp_local }}'
 
-sensor horizon_agreement1_finalize:
+sensor mtnrpi2_agreement1_finalize:
   - platform: rest
     icon: mdi:weather-sunset
-    resource: 'http://192.168.1.39/agreement'
-    name: 'Horizon Agreement1 Finalize'
+    resource: 'http://192.168.1.32/CGI/mtn-agreement.cgi?ip=39'
+    name: 'MtnRpi2 Agreement1 Finalize'
     value_template: '{{ value_json.agreements.active[1].agreement_finalized_time | timestamp_local }}'
 
-sensor horizon_agreement1_receive:
+sensor mtnrpi2_agreement1_receive:
   - platform: rest
     icon: mdi:weather-sunset
-    resource: 'http://192.168.1.39/agreement'
-    name: 'Horizon Agreement1 Receive'
+    resource: 'http://192.168.1.32/CGI/mtn-agreement.cgi?ip=39'
+    name: 'MtnRpi2 Agreement1 Receive'
     value_template: '{{ value_json.agreements.active[1].agreement_data_received_time | timestamp_local }}'
 
-sensor horizon_agreement1_start:
+sensor mtnrpi2_agreement1_start:
   - platform: rest
     icon: mdi:weather-sunset
-    resource: 'http://192.168.1.39/agreement'
-    name: 'Horizon Agreement1 Start'
+    resource: 'http://192.168.1.32/CGI/mtn-agreement.cgi?ip=39'
+    name: 'MtnRpi2 Agreement1 Start'
     value_template: '{{ value_json.agreements.active[1].agreement_execution_start_time | timestamp_local }}'
 
 # AGREEMENT #2
 
-sensor horizon_agreement2_name:
+sensor mtnrpi2_agreement2_name:
   - platform: rest
     icon: mdi:weather-sunset
-    resource: 'http://192.168.1.39/agreement'
-    name: 'Horizon Agreement2 Name'
+    resource: 'http://192.168.1.32/CGI/mtn-agreement.cgi?ip=39'
+    name: 'MtnRpi2 Agreement2 Name'
     value_template: '{{ value_json.agreements.active[2].name }}'
 
-sensor horizon_agreement2_id:
+sensor mtnrpi2_agreement2_id:
   - platform: rest
     icon: mdi:weather-sunset
-    resource: 'http://192.168.1.39/agreement'
-    name: 'Horizon Agreement2 ID'
+    resource: 'http://192.168.1.32/CGI/mtn-agreement.cgi?ip=39'
+    name: 'MtnRpi2 Agreement2 ID'
     value_template: '{{ value_json.agreements.active[2].current_agreement_id }}'
 
-sensor horizon_agreement2_protocol:
+sensor mtnrpi2_agreement2_protocol:
   - platform: rest
     icon: mdi:weather-sunset
-    resource: 'http://192.168.1.39/agreement'
-    name: Horizon Agreement2 Protocol
+    resource: 'http://192.168.1.32/CGI/mtn-agreement.cgi?ip=39'
+    name: MtnRpi2 Agreement2 Protocol
     value_template: '{{ value_json.agreements.active[2].agreement_protocol }}'
 
-sensor horizon_agreement2_consumer:
+sensor mtnrpi2_agreement2_consumer:
   - platform: rest
     icon: mdi:weather-sunset
-    resource: 'http://192.168.1.39/agreement'
-    name: 'Horizon Agreement2 Consumer'
+    resource: 'http://192.168.1.32/CGI/mtn-agreement.cgi?ip=39'
+    name: 'MtnRpi2 Agreement2 Consumer'
     value_template: '{{ value_json.agreements.active[2].consumer_id }}'
 
-sensor horizon_agreement2_create:
+sensor mtnrpi2_agreement2_create:
   - platform: rest
     icon: mdi:weather-sunset
-    resource: 'http://192.168.1.39/agreement'
-    name: 'Horizon Agreement2 Create'
+    resource: 'http://192.168.1.32/CGI/mtn-agreement.cgi?ip=39'
+    name: 'MtnRpi2 Agreement2 Create'
     value_template: '{{ value_json.agreements.active[2].agreement_creation_time | timestamp_local }}'
 
-sensor horizon_agreement2_accept:
+sensor mtnrpi2_agreement2_accept:
   - platform: rest
     icon: mdi:weather-sunset
-    resource: 'http://192.168.1.39/agreement'
-    name: 'Horizon Agreement2 Accept'
+    resource: 'http://192.168.1.32/CGI/mtn-agreement.cgi?ip=39'
+    name: 'MtnRpi2 Agreement2 Accept'
     value_template: '{{ value_json.agreements.active[2].agreement_accepted_time | timestamp_local }}'
 
-sensor horizon_agreement2_finalize:
+sensor mtnrpi2_agreement2_finalize:
   - platform: rest
     icon: mdi:weather-sunset
-    resource: 'http://192.168.1.39/agreement'
-    name: 'Horizon Agreement2 Finalize'
+    resource: 'http://192.168.1.32/CGI/mtn-agreement.cgi?ip=39'
+    name: 'MtnRpi2 Agreement2 Finalize'
     value_template: '{{ value_json.agreements.active[2].agreement_finalized_time | timestamp_local }}'
 
-sensor horizon_agreement2_receive:
+sensor mtnrpi2_agreement2_receive:
   - platform: rest
     icon: mdi:weather-sunset
-    resource: 'http://192.168.1.39/agreement'
-    name: 'Horizon Agreement2 Receive'
+    resource: 'http://192.168.1.32/CGI/mtn-agreement.cgi?ip=39'
+    name: 'MtnRpi2 Agreement2 Receive'
     value_template: '{{ value_json.agreements.active[2].agreement_data_received_time | timestamp_local }}'
 
-sensor horizon_agreement2_start:
+sensor mtnrpi2_agreement2_start:
   - platform: rest
     icon: mdi:weather-sunset
-    resource: 'http://192.168.1.39/agreement'
-    name: 'Horizon Agreement2 Start'
+    resource: 'http://192.168.1.32/CGI/mtn-agreement.cgi?ip=39'
+    name: 'MtnRpi2 Agreement2 Start'
     value_template: '{{ value_json.agreements.active[2].agreement_execution_start_time | timestamp_local }}'
 
 # AGREEMENT #3
 
-sensor horizon_agreement3_name:
+sensor mtnrpi2_agreement3_name:
   - platform: rest
     icon: mdi:weather-sunset
-    resource: 'http://192.168.1.39/agreement'
-    name: 'Horizon Agreement3 Name'
+    resource: 'http://192.168.1.32/CGI/mtn-agreement.cgi?ip=39'
+    name: 'MtnRpi2 Agreement3 Name'
     value_template: '{{ value_json.agreements.active[3].name }}'
 
-sensor horizon_agreement3_id:
+sensor mtnrpi2_agreement3_id:
   - platform: rest
     icon: mdi:weather-sunset
-    resource: 'http://192.168.1.39/agreement'
-    name: 'Horizon Agreement3 ID'
+    resource: 'http://192.168.1.32/CGI/mtn-agreement.cgi?ip=39'
+    name: 'MtnRpi2 Agreement3 ID'
     value_template: '{{ value_json.agreements.active[3].current_agreement_id }}'
 
-sensor horizon_agreement3_protocol:
+sensor mtnrpi2_agreement3_protocol:
   - platform: rest
     icon: mdi:weather-sunset
-    resource: 'http://192.168.1.39/agreement'
-    name: Horizon Agreement3 Protocol
+    resource: 'http://192.168.1.32/CGI/mtn-agreement.cgi?ip=39'
+    name: MtnRpi2 Agreement3 Protocol
     value_template: '{{ value_json.agreements.active[3].agreement_protocol }}'
 
-sensor horizon_agreement3_consumer:
+sensor mtnrpi2_agreement3_consumer:
   - platform: rest
     icon: mdi:weather-sunset
-    resource: 'http://192.168.1.39/agreement'
-    name: 'Horizon Agreement3 Consumer'
+    resource: 'http://192.168.1.32/CGI/mtn-agreement.cgi?ip=39'
+    name: 'MtnRpi2 Agreement3 Consumer'
     value_template: '{{ value_json.agreements.active[3].consumer_id }}'
 
-sensor horizon_agreement3_create:
+sensor mtnrpi2_agreement3_create:
   - platform: rest
     icon: mdi:weather-sunset
-    resource: 'http://192.168.1.39/agreement'
-    name: 'Horizon Agreement3 Create'
+    resource: 'http://192.168.1.32/CGI/mtn-agreement.cgi?ip=39'
+    name: 'MtnRpi2 Agreement3 Create'
     value_template: '{{ value_json.agreements.active[3].agreement_creation_time | timestamp_local }}'
 
-sensor horizon_agreement3_accept:
+sensor mtnrpi2_agreement3_accept:
   - platform: rest
     icon: mdi:weather-sunset
-    resource: 'http://192.168.1.39/agreement'
-    name: 'Horizon Agreement3 Accept'
+    resource: 'http://192.168.1.32/CGI/mtn-agreement.cgi?ip=39'
+    name: 'MtnRpi2 Agreement3 Accept'
     value_template: '{{ value_json.agreements.active[3].agreement_accepted_time | timestamp_local }}'
 
-sensor horizon_agreement3_finalize:
+sensor mtnrpi2_agreement3_finalize:
   - platform: rest
     icon: mdi:weather-sunset
-    resource: 'http://192.168.1.39/agreement'
-    name: 'Horizon Agreement3 Finalize'
+    resource: 'http://192.168.1.32/CGI/mtn-agreement.cgi?ip=39'
+    name: 'MtnRpi2 Agreement3 Finalize'
     value_template: '{{ value_json.agreements.active[3].agreement_finalized_time | timestamp_local }}'
 
-sensor horizon_agreement3_receive:
+sensor mtnrpi2_agreement3_receive:
   - platform: rest
     icon: mdi:weather-sunset
-    resource: 'http://192.168.1.39/agreement'
-    name: 'Horizon Agreement3 Receive'
+    resource: 'http://192.168.1.32/CGI/mtn-agreement.cgi?ip=39'
+    name: 'MtnRpi2 Agreement3 Receive'
     value_template: '{{ value_json.agreements.active[3].agreement_data_received_time | timestamp_local }}'
 
-sensor horizon_agreement3_start:
+sensor mtnrpi2_agreement3_start:
   - platform: rest
     icon: mdi:weather-sunset
-    resource: 'http://192.168.1.39/agreement'
-    name: 'Horizon Agreement3 Start'
+    resource: 'http://192.168.1.32/CGI/mtn-agreement.cgi?ip=39'
+    name: 'MtnRpi2 Agreement3 Start'
     value_template: '{{ value_json.agreements.active[3].agreement_execution_start_time | timestamp_local }}'
 
 # AGREEMENT #4
 
-sensor horizon_agreement4_name:
+sensor mtnrpi2_agreement4_name:
   - platform: rest
     icon: mdi:weather-sunset
-    resource: 'http://192.168.1.39/agreement'
-    name: 'Horizon Agreement4 Name'
+    resource: 'http://192.168.1.32/CGI/mtn-agreement.cgi?ip=39'
+    name: 'MtnRpi2 Agreement4 Name'
     value_template: '{{ value_json.agreements.active[4].name }}'
 
-sensor horizon_agreement4_id:
+sensor mtnrpi2_agreement4_id:
   - platform: rest
     icon: mdi:weather-sunset
-    resource: 'http://192.168.1.39/agreement'
-    name: 'Horizon Agreement4 ID'
+    resource: 'http://192.168.1.32/CGI/mtn-agreement.cgi?ip=39'
+    name: 'MtnRpi2 Agreement4 ID'
     value_template: '{{ value_json.agreements.active[4].current_agreement_id }}'
 
-sensor horizon_agreement4_protocol:
+sensor mtnrpi2_agreement4_protocol:
   - platform: rest
     icon: mdi:weather-sunset
-    resource: 'http://192.168.1.39/agreement'
-    name: Horizon Agreement4 Protocol
+    resource: 'http://192.168.1.32/CGI/mtn-agreement.cgi?ip=39'
+    name: MtnRpi2 Agreement4 Protocol
     value_template: '{{ value_json.agreements.active[4].agreement_protocol }}'
 
-sensor horizon_agreement4_consumer:
+sensor mtnrpi2_agreement4_consumer:
   - platform: rest
     icon: mdi:weather-sunset
-    resource: 'http://192.168.1.39/agreement'
-    name: 'Horizon Agreement4 Consumer'
+    resource: 'http://192.168.1.32/CGI/mtn-agreement.cgi?ip=39'
+    name: 'MtnRpi2 Agreement4 Consumer'
     value_template: '{{ value_json.agreements.active[4].consumer_id }}'
 
-sensor horizon_agreement4_create:
+sensor mtnrpi2_agreement4_create:
   - platform: rest
     icon: mdi:weather-sunset
-    resource: 'http://192.168.1.39/agreement'
-    name: 'Horizon Agreement4 Create'
+    resource: 'http://192.168.1.32/CGI/mtn-agreement.cgi?ip=39'
+    name: 'MtnRpi2 Agreement4 Create'
     value_template: '{{ value_json.agreements.active[4].agreement_creation_time | timestamp_local }}'
 
-sensor horizon_agreement4_accept:
+sensor mtnrpi2_agreement4_accept:
   - platform: rest
     icon: mdi:weather-sunset
-    resource: 'http://192.168.1.39/agreement'
-    name: 'Horizon Agreement4 Accept'
+    resource: 'http://192.168.1.32/CGI/mtn-agreement.cgi?ip=39'
+    name: 'MtnRpi2 Agreement4 Accept'
     value_template: '{{ value_json.agreements.active[4].agreement_accepted_time | timestamp_local }}'
 
-sensor horizon_agreement4_finalize:
+sensor mtnrpi2_agreement4_finalize:
   - platform: rest
     icon: mdi:weather-sunset
-    resource: 'http://192.168.1.39/agreement'
-    name: 'Horizon Agreement4 Finalize'
+    resource: 'http://192.168.1.32/CGI/mtn-agreement.cgi?ip=39'
+    name: 'MtnRpi2 Agreement4 Finalize'
     value_template: '{{ value_json.agreements.active[4].agreement_finalized_time | timestamp_local }}'
 
-sensor horizon_agreement4_receive:
+sensor mtnrpi2_agreement4_receive:
   - platform: rest
     icon: mdi:weather-sunset
-    resource: 'http://192.168.1.39/agreement'
-    name: 'Horizon Agreement4 Receive'
+    resource: 'http://192.168.1.32/CGI/mtn-agreement.cgi?ip=39'
+    name: 'MtnRpi2 Agreement4 Receive'
     value_template: '{{ value_json.agreements.active[4].agreement_data_received_time | timestamp_local }}'
 
-sensor horizon_agreement4_start:
+sensor mtnrpi2_agreement4_start:
   - platform: rest
     icon: mdi:weather-sunset
-    resource: 'http://192.168.1.39/agreement'
-    name: 'Horizon Agreement4 Start'
+    resource: 'http://192.168.1.32/CGI/mtn-agreement.cgi?ip=39'
+    name: 'MtnRpi2 Agreement4 Start'
     value_template: '{{ value_json.agreements.active[4].agreement_execution_start_time | timestamp_local }}'
 
 # AGREEMENT #5
 
-sensor horizon_agreement5_name:
+sensor mtnrpi2_agreement5_name:
   - platform: rest
     icon: mdi:weather-sunset
-    resource: 'http://192.168.1.39/agreement'
-    name: 'Horizon Agreement5 Name'
+    resource: 'http://192.168.1.32/CGI/mtn-agreement.cgi?ip=39'
+    name: 'MtnRpi2 Agreement5 Name'
     value_template: '{{ value_json.agreements.active[5].name }}'
 
-sensor horizon_agreement5_id:
+sensor mtnrpi2_agreement5_id:
   - platform: rest
     icon: mdi:weather-sunset
-    resource: 'http://192.168.1.39/agreement'
-    name: 'Horizon Agreement5 ID'
+    resource: 'http://192.168.1.32/CGI/mtn-agreement.cgi?ip=39'
+    name: 'MtnRpi2 Agreement5 ID'
     value_template: '{{ value_json.agreements.active[5].current_agreement_id }}'
 
-sensor horizon_agreement5_protocol:
+sensor mtnrpi2_agreement5_protocol:
   - platform: rest
     icon: mdi:weather-sunset
-    resource: 'http://192.168.1.39/agreement'
-    name: Horizon Agreement5 Protocol
+    resource: 'http://192.168.1.32/CGI/mtn-agreement.cgi?ip=39'
+    name: MtnRpi2 Agreement5 Protocol
     value_template: '{{ value_json.agreements.active[5].agreement_protocol }}'
 
-sensor horizon_agreement5_consumer:
+sensor mtnrpi2_agreement5_consumer:
   - platform: rest
     icon: mdi:weather-sunset
-    resource: 'http://192.168.1.39/agreement'
-    name: 'Horizon Agreement5 Consumer'
+    resource: 'http://192.168.1.32/CGI/mtn-agreement.cgi?ip=39'
+    name: 'MtnRpi2 Agreement5 Consumer'
     value_template: '{{ value_json.agreements.active[5].consumer_id }}'
 
-sensor horizon_agreement5_create:
+sensor mtnrpi2_agreement5_create:
   - platform: rest
     icon: mdi:weather-sunset
-    resource: 'http://192.168.1.39/agreement'
-    name: 'Horizon Agreement5 Create'
+    resource: 'http://192.168.1.32/CGI/mtn-agreement.cgi?ip=39'
+    name: 'MtnRpi2 Agreement5 Create'
     value_template: '{{ value_json.agreements.active[5].agreement_creation_time | timestamp_local }}'
 
-sensor horizon_agreement5_accept:
+sensor mtnrpi2_agreement5_accept:
   - platform: rest
     icon: mdi:weather-sunset
-    resource: 'http://192.168.1.39/agreement'
-    name: 'Horizon Agreement5 Accept'
+    resource: 'http://192.168.1.32/CGI/mtn-agreement.cgi?ip=39'
+    name: 'MtnRpi2 Agreement5 Accept'
     value_template: '{{ value_json.agreements.active[5].agreement_accepted_time | timestamp_local }}'
 
-sensor horizon_agreement5_finalize:
+sensor mtnrpi2_agreement5_finalize:
   - platform: rest
     icon: mdi:weather-sunset
-    resource: 'http://192.168.1.39/agreement'
-    name: 'Horizon Agreement5 Finalize'
+    resource: 'http://192.168.1.32/CGI/mtn-agreement.cgi?ip=39'
+    name: 'MtnRpi2 Agreement5 Finalize'
     value_template: '{{ value_json.agreements.active[5].agreement_finalized_time | timestamp_local }}'
 
-sensor horizon_agreement5_receive:
+sensor mtnrpi2_agreement5_receive:
   - platform: rest
     icon: mdi:weather-sunset
-    resource: 'http://192.168.1.39/agreement'
-    name: 'Horizon Agreement5 Receive'
+    resource: 'http://192.168.1.32/CGI/mtn-agreement.cgi?ip=39'
+    name: 'MtnRpi2 Agreement5 Receive'
     value_template: '{{ value_json.agreements.active[5].agreement_data_received_time | timestamp_local }}'
 
-sensor horizon_agreement5_start:
+sensor mtnrpi2_agreement5_start:
   - platform: rest
     icon: mdi:weather-sunset
-    resource: 'http://192.168.1.39/agreement'
-    name: 'Horizon Agreement5 Start'
+    resource: 'http://192.168.1.32/CGI/mtn-agreement.cgi?ip=39'
+    name: 'MtnRpi2 Agreement5 Start'
     value_template: '{{ value_json.agreements.active[5].agreement_execution_start_time | timestamp_local }}'
 
 # HORIZON WORKLOAD
 
-sensor horizon_workloads_count:
+sensor mtnrpi2_workloads_count:
   - platform: rest
     icon: mdi:weather-sunset
-    resource: 'http://192.168.1.39/workload'
-    name: Horizon Workloads Count
+    resource: 'http://192.168.1.32/CGI/mtn-workload.cgi?ip=39'
+    name: MtnRpi2 Workloads Count
     value_template: '{{ value_json.workloads | length }}'
 
 # HORIZON PUBLICKEY
 
-sensor horizon_publickey:
+sensor mtnrpi2_publickey:
   - platform: rest
     icon: mdi:weather-sunset
-    resource: 'http://192.168.1.39/publickey'
-    name: Horizon Publickey
+    resource: 'http://192.168.1.32/CGI/mtn-publickey.cgi?ip=39'
+    name: MtnRpi2 Publickey
+    value_template: '{{ value_json.pem }}'
+
+# include as above for mtnrpi3
+
+sensor mtnrpi3_connectivity:
+  - platform: rest
+    icon: mdi:weather-sunset
+    resource: 'http://192.168.1.32/CGI/mtn-status.cgi?ip=40'
+    name: MtnRpi3 Connectivity
+    value_template: '{{ value_json.connectivity }}'
+
+sensor mtnrpi3_exchange:
+  - platform: rest
+    icon: mdi:weather-sunset
+    resource: 'http://192.168.1.32/CGI/mtn-status.cgi?ip=40'
+    name: MtnRpi3 Exchange
+    value_template: '{{ value_json.configuration.exchange_api }}'
+
+sensor mtnrpi3_balance:
+  - platform: rest
+    icon: mdi:weather-sunset
+    resource: 'http://192.168.1.32/CGI/mtn-status.cgi?ip=40'
+    name: MtnRpi3 Balance
+    value_template: '{{ value_json.geth.eth_balance }}'
+
+sensor mtnrpi3_net_peer_count:
+  - platform: rest
+    icon: mdi:weather-sunset
+    resource: 'http://192.168.1.32/CGI/mtn-status.cgi?ip=40'
+    name: MtnRpi3 Balance
+    value_template: '{{ value_json.geth.net_peer_count }}'
+
+sensor mtnrpi3_eth_syncing:
+  - platform: rest
+    icon: mdi:weather-sunset
+    resource: 'http://192.168.1.32/CGI/mtn-status.cgi?ip=40'
+    name: MtnRpi3 Eth Syncing
+    value_template: '{{ value_json.geth.eth_syncing }}'
+
+sensor mtnrpi3_eth_blocknumber:
+  - platform: rest
+    icon: mdi:weather-sunset
+    resource: 'http://192.168.1.32/CGI/mtn-status.cgi?ip=40'
+    name: MtnRpi3 Eth Blocknumber
+    value_template: '{{ value_json.geth.eth_block_number }}'
+
+# HORIZON DEVICE
+
+sensor mtnrpi3_device_accountid:
+  - platform: rest
+    icon: mdi:weather-sunset
+    resource: 'http://192.168.1.32/CGI/mtn-device.cgi?ip=40'
+    name: MtnRpi3 Device AccountID
+    value_template: '{{ value_json.account.id }}'
+
+sensor mtnrpi3_device_name:
+  - platform: rest
+    icon: mdi:weather-sunset
+    resource: 'http://192.168.1.32/CGI/mtn-device.cgi?ip=40'
+    name: MtnRpi3 Device Name
+    value_template: '{{ value_json.name }}'
+
+# HORIZON SERVICE/ATTRIBUTE
+
+sensor mtnrpi3_attribute_count:
+  - platform: rest
+    icon: mdi:weather-sunset
+    resource: 'http://192.168.1.32/CGI/mtn-attribute.cgi?ip=40'
+    name: MtnRpi3 Attribute Count
+    value_template: '{{ value_json.attributes | length }}'
+
+# HORIZON AGREEMENT
+
+sensor mtnrpi3_agreements_active_count:
+  - platform: rest
+    icon: mdi:weather-sunset
+    resource: 'http://192.168.1.32/CGI/mtn-agreement.cgi?ip=40'
+    name: MtnRpi3 Agreements Active Count
+    value_template: '{{ value_json.agreements.active | length }}'
+
+sensor mtnrpi3_agreements_archive_count:
+  - platform: rest
+    icon: mdi:weather-sunset
+    resource: 'http://192.168.1.32/CGI/mtn-agreement.cgi?ip=40'
+    name: MtnRpi3 Agreements Archive Count
+    value_template: '{{ value_json.agreements.archive | length }}'
+
+# AGREEMENT #0
+
+sensor mtnrpi3_agreement0_name:
+  - platform: rest
+    icon: mdi:weather-sunset
+    resource: 'http://192.168.1.32/CGI/mtn-agreement.cgi?ip=40'
+    name: 'MtnRpi3 Agreement0 Name'
+    value_template: '{{ value_json.agreements.active[0].name }}'
+
+sensor mtnrpi3_agreement0_id:
+  - platform: rest
+    icon: mdi:weather-sunset
+    resource: 'http://192.168.1.32/CGI/mtn-agreement.cgi?ip=40'
+    name: 'MtnRpi3 Agreement0 ID'
+    value_template: '{{ value_json.agreements.active[0].current_agreement_id }}'
+
+sensor mtnrpi3_agreement0_protocol:
+  - platform: rest
+    icon: mdi:weather-sunset
+    resource: 'http://192.168.1.32/CGI/mtn-agreement.cgi?ip=40'
+    name: MtnRpi3 Agreement0 Protocol
+    value_template: '{{ value_json.agreements.active[0].agreement_protocol }}'
+
+sensor mtnrpi3_agreement0_consumer:
+  - platform: rest
+    icon: mdi:weather-sunset
+    resource: 'http://192.168.1.32/CGI/mtn-agreement.cgi?ip=40'
+    name: 'MtnRpi3 Agreement0 Consumer'
+    value_template: '{{ value_json.agreements.active[0].consumer_id }}'
+
+sensor mtnrpi3_agreement0_create:
+  - platform: rest
+    icon: mdi:weather-sunset
+    resource: 'http://192.168.1.32/CGI/mtn-agreement.cgi?ip=40'
+    name: 'MtnRpi3 Agreement0 Create'
+    value_template: '{{ value_json.agreements.active[0].agreement_creation_time | timestamp_local }}'
+
+sensor mtnrpi3_agreement0_accept:
+  - platform: rest
+    icon: mdi:weather-sunset
+    resource: 'http://192.168.1.32/CGI/mtn-agreement.cgi?ip=40'
+    name: 'MtnRpi3 Agreement0 Accept'
+    value_template: '{{ value_json.agreements.active[0].agreement_accepted_time | timestamp_local }}'
+
+sensor mtnrpi3_agreement0_finalize:
+  - platform: rest
+    icon: mdi:weather-sunset
+    resource: 'http://192.168.1.32/CGI/mtn-agreement.cgi?ip=40'
+    name: 'MtnRpi3 Agreement0 Finalize'
+    value_template: '{{ value_json.agreements.active[0].agreement_finalized_time | timestamp_local }}'
+
+sensor mtnrpi3_agreement0_receive:
+  - platform: rest
+    icon: mdi:weather-sunset
+    resource: 'http://192.168.1.32/CGI/mtn-agreement.cgi?ip=40'
+    name: 'MtnRpi3 Agreement0 Receive'
+    value_template: '{{ value_json.agreements.active[0].agreement_data_received_time | timestamp_local }}'
+
+sensor mtnrpi3_agreement0_start:
+  - platform: rest
+    icon: mdi:weather-sunset
+    resource: 'http://192.168.1.32/CGI/mtn-agreement.cgi?ip=40'
+    name: 'MtnRpi3 Agreement0 Start'
+    value_template: '{{ value_json.agreements.active[0].agreement_execution_start_time | timestamp_local }}'
+
+# AGREEMENT #1
+
+sensor mtnrpi3_agreement1_name:
+  - platform: rest
+    icon: mdi:weather-sunset
+    resource: 'http://192.168.1.32/CGI/mtn-agreement.cgi?ip=40'
+    name: 'MtnRpi3 Agreement1 Name'
+    value_template: '{{ value_json.agreements.active[1].name }}'
+
+sensor mtnrpi3_agreement1_id:
+  - platform: rest
+    icon: mdi:weather-sunset
+    resource: 'http://192.168.1.32/CGI/mtn-agreement.cgi?ip=40'
+    name: 'MtnRpi3 Agreement1 ID'
+    value_template: '{{ value_json.agreements.active[1].current_agreement_id }}'
+
+sensor mtnrpi3_agreement1_protocol:
+  - platform: rest
+    icon: mdi:weather-sunset
+    resource: 'http://192.168.1.32/CGI/mtn-agreement.cgi?ip=40'
+    name: MtnRpi3 Agreement1 Protocol
+    value_template: '{{ value_json.agreements.active[1].agreement_protocol }}'
+
+sensor mtnrpi3_agreement1_consumer:
+  - platform: rest
+    icon: mdi:weather-sunset
+    resource: 'http://192.168.1.32/CGI/mtn-agreement.cgi?ip=40'
+    name: 'MtnRpi3 Agreement1 Consumer'
+    value_template: '{{ value_json.agreements.active[1].consumer_id }}'
+
+sensor mtnrpi3_agreement1_create:
+  - platform: rest
+    icon: mdi:weather-sunset
+    resource: 'http://192.168.1.32/CGI/mtn-agreement.cgi?ip=40'
+    name: 'MtnRpi3 Agreement1 Create'
+    value_template: '{{ value_json.agreements.active[1].agreement_creation_time | timestamp_local }}'
+
+sensor mtnrpi3_agreement1_accept:
+  - platform: rest
+    icon: mdi:weather-sunset
+    resource: 'http://192.168.1.32/CGI/mtn-agreement.cgi?ip=40'
+    name: 'MtnRpi3 Agreement1 Accept'
+    value_template: '{{ value_json.agreements.active[1].agreement_accepted_time | timestamp_local }}'
+
+sensor mtnrpi3_agreement1_finalize:
+  - platform: rest
+    icon: mdi:weather-sunset
+    resource: 'http://192.168.1.32/CGI/mtn-agreement.cgi?ip=40'
+    name: 'MtnRpi3 Agreement1 Finalize'
+    value_template: '{{ value_json.agreements.active[1].agreement_finalized_time | timestamp_local }}'
+
+sensor mtnrpi3_agreement1_receive:
+  - platform: rest
+    icon: mdi:weather-sunset
+    resource: 'http://192.168.1.32/CGI/mtn-agreement.cgi?ip=40'
+    name: 'MtnRpi3 Agreement1 Receive'
+    value_template: '{{ value_json.agreements.active[1].agreement_data_received_time | timestamp_local }}'
+
+sensor mtnrpi3_agreement1_start:
+  - platform: rest
+    icon: mdi:weather-sunset
+    resource: 'http://192.168.1.32/CGI/mtn-agreement.cgi?ip=40'
+    name: 'MtnRpi3 Agreement1 Start'
+    value_template: '{{ value_json.agreements.active[1].agreement_execution_start_time | timestamp_local }}'
+
+# AGREEMENT #2
+
+sensor mtnrpi3_agreement2_name:
+  - platform: rest
+    icon: mdi:weather-sunset
+    resource: 'http://192.168.1.32/CGI/mtn-agreement.cgi?ip=40'
+    name: 'MtnRpi3 Agreement2 Name'
+    value_template: '{{ value_json.agreements.active[2].name }}'
+
+sensor mtnrpi3_agreement2_id:
+  - platform: rest
+    icon: mdi:weather-sunset
+    resource: 'http://192.168.1.32/CGI/mtn-agreement.cgi?ip=40'
+    name: 'MtnRpi3 Agreement2 ID'
+    value_template: '{{ value_json.agreements.active[2].current_agreement_id }}'
+
+sensor mtnrpi3_agreement2_protocol:
+  - platform: rest
+    icon: mdi:weather-sunset
+    resource: 'http://192.168.1.32/CGI/mtn-agreement.cgi?ip=40'
+    name: MtnRpi3 Agreement2 Protocol
+    value_template: '{{ value_json.agreements.active[2].agreement_protocol }}'
+
+sensor mtnrpi3_agreement2_consumer:
+  - platform: rest
+    icon: mdi:weather-sunset
+    resource: 'http://192.168.1.32/CGI/mtn-agreement.cgi?ip=40'
+    name: 'MtnRpi3 Agreement2 Consumer'
+    value_template: '{{ value_json.agreements.active[2].consumer_id }}'
+
+sensor mtnrpi3_agreement2_create:
+  - platform: rest
+    icon: mdi:weather-sunset
+    resource: 'http://192.168.1.32/CGI/mtn-agreement.cgi?ip=40'
+    name: 'MtnRpi3 Agreement2 Create'
+    value_template: '{{ value_json.agreements.active[2].agreement_creation_time | timestamp_local }}'
+
+sensor mtnrpi3_agreement2_accept:
+  - platform: rest
+    icon: mdi:weather-sunset
+    resource: 'http://192.168.1.32/CGI/mtn-agreement.cgi?ip=40'
+    name: 'MtnRpi3 Agreement2 Accept'
+    value_template: '{{ value_json.agreements.active[2].agreement_accepted_time | timestamp_local }}'
+
+sensor mtnrpi3_agreement2_finalize:
+  - platform: rest
+    icon: mdi:weather-sunset
+    resource: 'http://192.168.1.32/CGI/mtn-agreement.cgi?ip=40'
+    name: 'MtnRpi3 Agreement2 Finalize'
+    value_template: '{{ value_json.agreements.active[2].agreement_finalized_time | timestamp_local }}'
+
+sensor mtnrpi3_agreement2_receive:
+  - platform: rest
+    icon: mdi:weather-sunset
+    resource: 'http://192.168.1.32/CGI/mtn-agreement.cgi?ip=40'
+    name: 'MtnRpi3 Agreement2 Receive'
+    value_template: '{{ value_json.agreements.active[2].agreement_data_received_time | timestamp_local }}'
+
+sensor mtnrpi3_agreement2_start:
+  - platform: rest
+    icon: mdi:weather-sunset
+    resource: 'http://192.168.1.32/CGI/mtn-agreement.cgi?ip=40'
+    name: 'MtnRpi3 Agreement2 Start'
+    value_template: '{{ value_json.agreements.active[2].agreement_execution_start_time | timestamp_local }}'
+
+# AGREEMENT #3
+
+sensor mtnrpi3_agreement3_name:
+  - platform: rest
+    icon: mdi:weather-sunset
+    resource: 'http://192.168.1.32/CGI/mtn-agreement.cgi?ip=40'
+    name: 'MtnRpi3 Agreement3 Name'
+    value_template: '{{ value_json.agreements.active[3].name }}'
+
+sensor mtnrpi3_agreement3_id:
+  - platform: rest
+    icon: mdi:weather-sunset
+    resource: 'http://192.168.1.32/CGI/mtn-agreement.cgi?ip=40'
+    name: 'MtnRpi3 Agreement3 ID'
+    value_template: '{{ value_json.agreements.active[3].current_agreement_id }}'
+
+sensor mtnrpi3_agreement3_protocol:
+  - platform: rest
+    icon: mdi:weather-sunset
+    resource: 'http://192.168.1.32/CGI/mtn-agreement.cgi?ip=40'
+    name: MtnRpi3 Agreement3 Protocol
+    value_template: '{{ value_json.agreements.active[3].agreement_protocol }}'
+
+sensor mtnrpi3_agreement3_consumer:
+  - platform: rest
+    icon: mdi:weather-sunset
+    resource: 'http://192.168.1.32/CGI/mtn-agreement.cgi?ip=40'
+    name: 'MtnRpi3 Agreement3 Consumer'
+    value_template: '{{ value_json.agreements.active[3].consumer_id }}'
+
+sensor mtnrpi3_agreement3_create:
+  - platform: rest
+    icon: mdi:weather-sunset
+    resource: 'http://192.168.1.32/CGI/mtn-agreement.cgi?ip=40'
+    name: 'MtnRpi3 Agreement3 Create'
+    value_template: '{{ value_json.agreements.active[3].agreement_creation_time | timestamp_local }}'
+
+sensor mtnrpi3_agreement3_accept:
+  - platform: rest
+    icon: mdi:weather-sunset
+    resource: 'http://192.168.1.32/CGI/mtn-agreement.cgi?ip=40'
+    name: 'MtnRpi3 Agreement3 Accept'
+    value_template: '{{ value_json.agreements.active[3].agreement_accepted_time | timestamp_local }}'
+
+sensor mtnrpi3_agreement3_finalize:
+  - platform: rest
+    icon: mdi:weather-sunset
+    resource: 'http://192.168.1.32/CGI/mtn-agreement.cgi?ip=40'
+    name: 'MtnRpi3 Agreement3 Finalize'
+    value_template: '{{ value_json.agreements.active[3].agreement_finalized_time | timestamp_local }}'
+
+sensor mtnrpi3_agreement3_receive:
+  - platform: rest
+    icon: mdi:weather-sunset
+    resource: 'http://192.168.1.32/CGI/mtn-agreement.cgi?ip=40'
+    name: 'MtnRpi3 Agreement3 Receive'
+    value_template: '{{ value_json.agreements.active[3].agreement_data_received_time | timestamp_local }}'
+
+sensor mtnrpi3_agreement3_start:
+  - platform: rest
+    icon: mdi:weather-sunset
+    resource: 'http://192.168.1.32/CGI/mtn-agreement.cgi?ip=40'
+    name: 'MtnRpi3 Agreement3 Start'
+    value_template: '{{ value_json.agreements.active[3].agreement_execution_start_time | timestamp_local }}'
+
+# AGREEMENT #4
+
+sensor mtnrpi3_agreement4_name:
+  - platform: rest
+    icon: mdi:weather-sunset
+    resource: 'http://192.168.1.32/CGI/mtn-agreement.cgi?ip=40'
+    name: 'MtnRpi3 Agreement4 Name'
+    value_template: '{{ value_json.agreements.active[4].name }}'
+
+sensor mtnrpi3_agreement4_id:
+  - platform: rest
+    icon: mdi:weather-sunset
+    resource: 'http://192.168.1.32/CGI/mtn-agreement.cgi?ip=40'
+    name: 'MtnRpi3 Agreement4 ID'
+    value_template: '{{ value_json.agreements.active[4].current_agreement_id }}'
+
+sensor mtnrpi3_agreement4_protocol:
+  - platform: rest
+    icon: mdi:weather-sunset
+    resource: 'http://192.168.1.32/CGI/mtn-agreement.cgi?ip=40'
+    name: MtnRpi3 Agreement4 Protocol
+    value_template: '{{ value_json.agreements.active[4].agreement_protocol }}'
+
+sensor mtnrpi3_agreement4_consumer:
+  - platform: rest
+    icon: mdi:weather-sunset
+    resource: 'http://192.168.1.32/CGI/mtn-agreement.cgi?ip=40'
+    name: 'MtnRpi3 Agreement4 Consumer'
+    value_template: '{{ value_json.agreements.active[4].consumer_id }}'
+
+sensor mtnrpi3_agreement4_create:
+  - platform: rest
+    icon: mdi:weather-sunset
+    resource: 'http://192.168.1.32/CGI/mtn-agreement.cgi?ip=40'
+    name: 'MtnRpi3 Agreement4 Create'
+    value_template: '{{ value_json.agreements.active[4].agreement_creation_time | timestamp_local }}'
+
+sensor mtnrpi3_agreement4_accept:
+  - platform: rest
+    icon: mdi:weather-sunset
+    resource: 'http://192.168.1.32/CGI/mtn-agreement.cgi?ip=40'
+    name: 'MtnRpi3 Agreement4 Accept'
+    value_template: '{{ value_json.agreements.active[4].agreement_accepted_time | timestamp_local }}'
+
+sensor mtnrpi3_agreement4_finalize:
+  - platform: rest
+    icon: mdi:weather-sunset
+    resource: 'http://192.168.1.32/CGI/mtn-agreement.cgi?ip=40'
+    name: 'MtnRpi3 Agreement4 Finalize'
+    value_template: '{{ value_json.agreements.active[4].agreement_finalized_time | timestamp_local }}'
+
+sensor mtnrpi3_agreement4_receive:
+  - platform: rest
+    icon: mdi:weather-sunset
+    resource: 'http://192.168.1.32/CGI/mtn-agreement.cgi?ip=40'
+    name: 'MtnRpi3 Agreement4 Receive'
+    value_template: '{{ value_json.agreements.active[4].agreement_data_received_time | timestamp_local }}'
+
+sensor mtnrpi3_agreement4_start:
+  - platform: rest
+    icon: mdi:weather-sunset
+    resource: 'http://192.168.1.32/CGI/mtn-agreement.cgi?ip=40'
+    name: 'MtnRpi3 Agreement4 Start'
+    value_template: '{{ value_json.agreements.active[4].agreement_execution_start_time | timestamp_local }}'
+
+# AGREEMENT #5
+
+sensor mtnrpi3_agreement5_name:
+  - platform: rest
+    icon: mdi:weather-sunset
+    resource: 'http://192.168.1.32/CGI/mtn-agreement.cgi?ip=40'
+    name: 'MtnRpi3 Agreement5 Name'
+    value_template: '{{ value_json.agreements.active[5].name }}'
+
+sensor mtnrpi3_agreement5_id:
+  - platform: rest
+    icon: mdi:weather-sunset
+    resource: 'http://192.168.1.32/CGI/mtn-agreement.cgi?ip=40'
+    name: 'MtnRpi3 Agreement5 ID'
+    value_template: '{{ value_json.agreements.active[5].current_agreement_id }}'
+
+sensor mtnrpi3_agreement5_protocol:
+  - platform: rest
+    icon: mdi:weather-sunset
+    resource: 'http://192.168.1.32/CGI/mtn-agreement.cgi?ip=40'
+    name: MtnRpi3 Agreement5 Protocol
+    value_template: '{{ value_json.agreements.active[5].agreement_protocol }}'
+
+sensor mtnrpi3_agreement5_consumer:
+  - platform: rest
+    icon: mdi:weather-sunset
+    resource: 'http://192.168.1.32/CGI/mtn-agreement.cgi?ip=40'
+    name: 'MtnRpi3 Agreement5 Consumer'
+    value_template: '{{ value_json.agreements.active[5].consumer_id }}'
+
+sensor mtnrpi3_agreement5_create:
+  - platform: rest
+    icon: mdi:weather-sunset
+    resource: 'http://192.168.1.32/CGI/mtn-agreement.cgi?ip=40'
+    name: 'MtnRpi3 Agreement5 Create'
+    value_template: '{{ value_json.agreements.active[5].agreement_creation_time | timestamp_local }}'
+
+sensor mtnrpi3_agreement5_accept:
+  - platform: rest
+    icon: mdi:weather-sunset
+    resource: 'http://192.168.1.32/CGI/mtn-agreement.cgi?ip=40'
+    name: 'MtnRpi3 Agreement5 Accept'
+    value_template: '{{ value_json.agreements.active[5].agreement_accepted_time | timestamp_local }}'
+
+sensor mtnrpi3_agreement5_finalize:
+  - platform: rest
+    icon: mdi:weather-sunset
+    resource: 'http://192.168.1.32/CGI/mtn-agreement.cgi?ip=40'
+    name: 'MtnRpi3 Agreement5 Finalize'
+    value_template: '{{ value_json.agreements.active[5].agreement_finalized_time | timestamp_local }}'
+
+sensor mtnrpi3_agreement5_receive:
+  - platform: rest
+    icon: mdi:weather-sunset
+    resource: 'http://192.168.1.32/CGI/mtn-agreement.cgi?ip=40'
+    name: 'MtnRpi3 Agreement5 Receive'
+    value_template: '{{ value_json.agreements.active[5].agreement_data_received_time | timestamp_local }}'
+
+sensor mtnrpi3_agreement5_start:
+  - platform: rest
+    icon: mdi:weather-sunset
+    resource: 'http://192.168.1.32/CGI/mtn-agreement.cgi?ip=40'
+    name: 'MtnRpi3 Agreement5 Start'
+    value_template: '{{ value_json.agreements.active[5].agreement_execution_start_time | timestamp_local }}'
+
+# HORIZON WORKLOAD
+
+sensor mtnrpi3_workloads_count:
+  - platform: rest
+    icon: mdi:weather-sunset
+    resource: 'http://192.168.1.32/CGI/mtn-workload.cgi?ip=40'
+    name: MtnRpi3 Workloads Count
+    value_template: '{{ value_json.workloads | length }}'
+
+# HORIZON PUBLICKEY
+
+sensor mtnrpi3_publickey:
+  - platform: rest
+    icon: mdi:weather-sunset
+    resource: 'http://192.168.1.32/CGI/mtn-publickey.cgi?ip=40'
+    name: MtnRpi3 Publickey
     value_template: '{{ value_json.pem }}'
 
 # UPDATE - DATE
@@ -1449,7 +1950,7 @@ binary_sensor backyardmotion:
     device_class: motion
     initial_state: false
     changes: 5
-    ffmpeg_bin: /usr/bin/ffmpeg
+    # ffmpeg_bin: /usr/bin/ffmpeg
     # ffmpeg_bin: /usr/bin/avconv
     # extra_arguments: -pred 1 -q:v 2
     # reset: 20

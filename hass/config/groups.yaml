@@ -11,151 +11,267 @@ default_view:
     - group.weather_today
     - camera.wuradar
 
-horizon_view:
+mtn_view:
   view: yes
-  name: Horizon View
+  name: Mtn View
   icon: mdi:image-filter-hdr
   entities:
-    - group.horizon_device
-    - group.horizon_status
-    - group.horizon_workload
-    - group.horizon_attribute
-    - group.horizon_agreements
+    - group.mtnrpi2_status
+    - group.mtnrpi3_status
 
-horizon_agreement_view:
-  view: yes
-  name: Horizon Agreement View
-  icon: mdi:account-card-details
-  entities:
-    - group.horizon_agreement0
-    - group.horizon_agreement1
-    - group.horizon_agreement2
-    - group.horizon_agreement3
-    - group.horizon_agreement4
-    - group.horizon_agreement5
+# rpi2
 
-horizon_status:
-  name: Horizon Status
+mtnrpi2_status:
+  name: MtnRpi2 Status
   icon: mdi:weather-sunset
   entities:
-    - sensor.horizon_balance
-    - sensor.horizon_net_peer_count
-    - sensor.horizon_exchange
-    - sensor.horizon_connectivity
-    - sensor.horizon_publickey
-    - sensor.horizon_eth_blocknumber
-    - sensor.horizon_eth_syncing
+    - device_tracker.mtn_rpi2
+    - sensor.mtnrpi2_device_name
+    - sensor.mtnrpi2_device_accountid
+    - sensor.mtnrpi2_balance
+    - sensor.mtnrpi2_net_peer_count
+    - sensor.mtnrpi2_exchange
+    - sensor.mtnrpi2_connectivity
+    - sensor.mtnrpi2_publickey
+    - sensor.mtnrpi2_eth_blocknumber
+    - sensor.mtnrpi2_eth_syncing
+    - sensor.mtnrpi2_agreements_active_count
+    - sensor.mtnrpi2_agreements_archive_count
 
-horizon_agreements:
-  name: Horizon Agreements
-  entities:
-    - sensor.horizon_agreements_active_count
-    - sensor.horizon_agreements_archive_count
-
-horizon_device:
-  name: Horizon Device
+mtnrpi2_agreement_view:
+  view: yes
+  name: MtnRpi2 Agreement View
   icon: mdi:account-card-details
   entities:
-    - device_tracker.mtn_rpi2
-    - sensor.horizon_device_name
-    - sensor.horizon_device_accountid
+    - group.mtnrpi2_agreement0
+    - group.mtnrpi2_agreement1
+    - group.mtnrpi2_agreement2
+    - group.mtnrpi2_agreement3
+    - group.mtnrpi2_agreement4
+    - group.mtnrpi2_agreement5
 
-
-horizon_agreement0:
-  name: 'Horizon Agreement0'
+mtnrpi2_agreement0:
+  name: 'MtnRpi2 Agreement0'
   icon: mdi:worker
   entities:
-    - sensor.horizon_agreement0_name
-    - sensor.horizon_agreement0_id
-    - sensor.horizon_agreement0_protocol
-    - sensor.horizon_agreement0_consumer
-    - sensor.horizon_agreement0_create
-    - sensor.horizon_agreement0_accept
-    - sensor.horizon_agreement0_finalize
-    - sensor.horizon_agreement0_receive
-    - sensor.horizon_agreement0_start
+    - sensor.mtnrpi2_agreement0_name
+    - sensor.mtnrpi2_agreement0_id
+    - sensor.mtnrpi2_agreement0_protocol
+    - sensor.mtnrpi2_agreement0_consumer
+    - sensor.mtnrpi2_agreement0_create
+    - sensor.mtnrpi2_agreement0_accept
+    - sensor.mtnrpi2_agreement0_finalize
+    - sensor.mtnrpi2_agreement0_receive
+    - sensor.mtnrpi2_agreement0_start
 
-horizon_agreement1:
-  name: 'Horizon Agreement1'
+mtnrpi2_agreement1:
+  name: 'MtnRpi2 Agreement1'
   icon: mdi:worker
   entities:
-    - sensor.horizon_agreement1_name
-    - sensor.horizon_agreement1_id
-    - sensor.horizon_agreement1_protocol
-    - sensor.horizon_agreement1_consumer
-    - sensor.horizon_agreement1_create
-    - sensor.horizon_agreement1_accept
-    - sensor.horizon_agreement1_finalize
-    - sensor.horizon_agreement1_receive
-    - sensor.horizon_agreement1_start
+    - sensor.mtnrpi2_agreement1_name
+    - sensor.mtnrpi2_agreement1_id
+    - sensor.mtnrpi2_agreement1_protocol
+    - sensor.mtnrpi2_agreement1_consumer
+    - sensor.mtnrpi2_agreement1_create
+    - sensor.mtnrpi2_agreement1_accept
+    - sensor.mtnrpi2_agreement1_finalize
+    - sensor.mtnrpi2_agreement1_receive
+    - sensor.mtnrpi2_agreement1_start
 
-horizon_agreement2:
-  name: 'Horizon Agreement2'
+mtnrpi2_agreement2:
+  name: 'MtnRpi2 Agreement2'
   icon: mdi:worker
   entities:
-    - sensor.horizon_agreement2_name
-    - sensor.horizon_agreement2_id
-    - sensor.horizon_agreement2_protocol
-    - sensor.horizon_agreement2_consumer
-    - sensor.horizon_agreement2_create
-    - sensor.horizon_agreement2_accept
-    - sensor.horizon_agreement2_finalize
-    - sensor.horizon_agreement2_receive
-    - sensor.horizon_agreement2_start
+    - sensor.mtnrpi2_agreement2_name
+    - sensor.mtnrpi2_agreement2_id
+    - sensor.mtnrpi2_agreement2_protocol
+    - sensor.mtnrpi2_agreement2_consumer
+    - sensor.mtnrpi2_agreement2_create
+    - sensor.mtnrpi2_agreement2_accept
+    - sensor.mtnrpi2_agreement2_finalize
+    - sensor.mtnrpi2_agreement2_receive
+    - sensor.mtnrpi2_agreement2_start
 
-horizon_agreement3:
-  name: 'Horizon Agreement3'
+mtnrpi2_agreement3:
+  name: 'MtnRpi2 Agreement3'
   icon: mdi:worker
   entities:
-    - sensor.horizon_agreement3_name
-    - sensor.horizon_agreement3_id
-    - sensor.horizon_agreement3_protocol
-    - sensor.horizon_agreement3_consumer
-    - sensor.horizon_agreement3_create
-    - sensor.horizon_agreement3_accept
-    - sensor.horizon_agreement3_finalize
-    - sensor.horizon_agreement3_receive
-    - sensor.horizon_agreement3_start
+    - sensor.mtnrpi2_agreement3_name
+    - sensor.mtnrpi2_agreement3_id
+    - sensor.mtnrpi2_agreement3_protocol
+    - sensor.mtnrpi2_agreement3_consumer
+    - sensor.mtnrpi2_agreement3_create
+    - sensor.mtnrpi2_agreement3_accept
+    - sensor.mtnrpi2_agreement3_finalize
+    - sensor.mtnrpi2_agreement3_receive
+    - sensor.mtnrpi2_agreement3_start
 
-horizon_agreement4:
-  name: 'Horizon Agreement4'
+mtnrpi2_agreement4:
+  name: 'MtnRpi2 Agreement4'
   icon: mdi:worker
   entities:
-    - sensor.horizon_agreement4_name
-    - sensor.horizon_agreement4_id
-    - sensor.horizon_agreement4_protocol
-    - sensor.horizon_agreement4_consumer
-    - sensor.horizon_agreement4_create
-    - sensor.horizon_agreement4_accept
-    - sensor.horizon_agreement4_finalize
-    - sensor.horizon_agreement4_receive
-    - sensor.horizon_agreement4_start
+    - sensor.mtnrpi2_agreement4_name
+    - sensor.mtnrpi2_agreement4_id
+    - sensor.mtnrpi2_agreement4_protocol
+    - sensor.mtnrpi2_agreement4_consumer
+    - sensor.mtnrpi2_agreement4_create
+    - sensor.mtnrpi2_agreement4_accept
+    - sensor.mtnrpi2_agreement4_finalize
+    - sensor.mtnrpi2_agreement4_receive
+    - sensor.mtnrpi2_agreement4_start
 
-horizon_agreement5:
-  name: 'Horizon Agreement5'
+mtnrpi2_agreement5:
+  name: 'MtnRpi2 Agreement5'
   icon: mdi:worker
   entities:
-    - sensor.horizon_agreement5_name
-    - sensor.horizon_agreement5_id
-    - sensor.horizon_agreement5_protocol
-    - sensor.horizon_agreement5_consumer
-    - sensor.horizon_agreement5_create
-    - sensor.horizon_agreement5_accept
-    - sensor.horizon_agreement5_finalize
-    - sensor.horizon_agreement5_receive
-    - sensor.horizon_agreement5_start
+    - sensor.mtnrpi2_agreement5_name
+    - sensor.mtnrpi2_agreement5_id
+    - sensor.mtnrpi2_agreement5_protocol
+    - sensor.mtnrpi2_agreement5_consumer
+    - sensor.mtnrpi2_agreement5_create
+    - sensor.mtnrpi2_agreement5_accept
+    - sensor.mtnrpi2_agreement5_finalize
+    - sensor.mtnrpi2_agreement5_receive
+    - sensor.mtnrpi2_agreement5_start
 
-horizon_workload:
-  name: Horizon Workload
+mtnrpi2_workload:
+  name: MtnRpi2 Workload
   icon: mdi:worker
   entities:
-    - sensor.horizon_workloads_count
+    - sensor.mtnrpi2_workloads_count
 
-horizon_attribute:
-  name: Horizon Attribute
+mtnrpi2_attribute:
+  name: MtnRpi2 Attribute
   icon: mdi:altimeter
   entities:
-    - sensor.horizon_attribute_count
+    - sensor.mtnrpi2_attribute_count
+
+# rpi3
+
+mtnrpi3_status:
+  name: MtnRpi3 Status
+  icon: mdi:weather-sunset
+  entities:
+    - device_tracker.mtn_rpi3
+    - sensor.mtnrpi3_device_name
+    - sensor.mtnrpi3_device_accountid
+    - sensor.mtnrpi3_balance
+    - sensor.mtnrpi3_net_peer_count
+    - sensor.mtnrpi3_exchange
+    - sensor.mtnrpi3_connectivity
+    - sensor.mtnrpi3_publickey
+    - sensor.mtnrpi3_eth_blocknumber
+    - sensor.mtnrpi3_eth_syncing
+    - sensor.mtnrpi3_agreements_active_count
+    - sensor.mtnrpi3_agreements_archive_count
+
+mtnrpi3_agreement_view:
+  view: yes
+  name: MtnRpi3 Agreement View
+  icon: mdi:account-card-details
+  entities:
+    - group.mtnrpi3_agreement0
+    - group.mtnrpi3_agreement1
+    - group.mtnrpi3_agreement2
+    - group.mtnrpi3_agreement3
+    - group.mtnrpi3_agreement4
+    - group.mtnrpi3_agreement5
+
+mtnrpi3_agreement0:
+  name: 'MtnRpi3 Agreement0'
+  icon: mdi:worker
+  entities:
+    - sensor.mtnrpi3_agreement0_name
+    - sensor.mtnrpi3_agreement0_id
+    - sensor.mtnrpi3_agreement0_protocol
+    - sensor.mtnrpi3_agreement0_consumer
+    - sensor.mtnrpi3_agreement0_create
+    - sensor.mtnrpi3_agreement0_accept
+    - sensor.mtnrpi3_agreement0_finalize
+    - sensor.mtnrpi3_agreement0_receive
+    - sensor.mtnrpi3_agreement0_start
+
+mtnrpi3_agreement1:
+  name: 'MtnRpi3 Agreement1'
+  icon: mdi:worker
+  entities:
+    - sensor.mtnrpi3_agreement1_name
+    - sensor.mtnrpi3_agreement1_id
+    - sensor.mtnrpi3_agreement1_protocol
+    - sensor.mtnrpi3_agreement1_consumer
+    - sensor.mtnrpi3_agreement1_create
+    - sensor.mtnrpi3_agreement1_accept
+    - sensor.mtnrpi3_agreement1_finalize
+    - sensor.mtnrpi3_agreement1_receive
+    - sensor.mtnrpi3_agreement1_start
+
+mtnrpi3_agreement2:
+  name: 'MtnRpi3 Agreement2'
+  icon: mdi:worker
+  entities:
+    - sensor.mtnrpi3_agreement2_name
+    - sensor.mtnrpi3_agreement2_id
+    - sensor.mtnrpi3_agreement2_protocol
+    - sensor.mtnrpi3_agreement2_consumer
+    - sensor.mtnrpi3_agreement2_create
+    - sensor.mtnrpi3_agreement2_accept
+    - sensor.mtnrpi3_agreement2_finalize
+    - sensor.mtnrpi3_agreement2_receive
+    - sensor.mtnrpi3_agreement2_start
+
+mtnrpi3_agreement3:
+  name: 'MtnRpi3 Agreement3'
+  icon: mdi:worker
+  entities:
+    - sensor.mtnrpi3_agreement3_name
+    - sensor.mtnrpi3_agreement3_id
+    - sensor.mtnrpi3_agreement3_protocol
+    - sensor.mtnrpi3_agreement3_consumer
+    - sensor.mtnrpi3_agreement3_create
+    - sensor.mtnrpi3_agreement3_accept
+    - sensor.mtnrpi3_agreement3_finalize
+    - sensor.mtnrpi3_agreement3_receive
+    - sensor.mtnrpi3_agreement3_start
+
+mtnrpi3_agreement4:
+  name: 'MtnRpi3 Agreement4'
+  icon: mdi:worker
+  entities:
+    - sensor.mtnrpi3_agreement4_name
+    - sensor.mtnrpi3_agreement4_id
+    - sensor.mtnrpi3_agreement4_protocol
+    - sensor.mtnrpi3_agreement4_consumer
+    - sensor.mtnrpi3_agreement4_create
+    - sensor.mtnrpi3_agreement4_accept
+    - sensor.mtnrpi3_agreement4_finalize
+    - sensor.mtnrpi3_agreement4_receive
+    - sensor.mtnrpi3_agreement4_start
+
+mtnrpi3_agreement5:
+  name: 'MtnRpi3 Agreement5'
+  icon: mdi:worker
+  entities:
+    - sensor.mtnrpi3_agreement5_name
+    - sensor.mtnrpi3_agreement5_id
+    - sensor.mtnrpi3_agreement5_protocol
+    - sensor.mtnrpi3_agreement5_consumer
+    - sensor.mtnrpi3_agreement5_create
+    - sensor.mtnrpi3_agreement5_accept
+    - sensor.mtnrpi3_agreement5_finalize
+    - sensor.mtnrpi3_agreement5_receive
+    - sensor.mtnrpi3_agreement5_start
+
+mtnrpi3_workload:
+  name: MtnRpi3 Workload
+  icon: mdi:worker
+  entities:
+    - sensor.mtnrpi3_workloads_count
+
+mtnrpi3_attribute:
+  name: MtnRpi3 Attribute
+  icon: mdi:altimeter
+  entities:
+    - sensor.mtnrpi3_attribute_count
 
 # AGE-AT-HOME
 
@@ -170,15 +286,77 @@ ageathome_view:
     - group.ageathome_whoin
     - group.ageathome_empty
     - group.ageathome_devices
+    - group.ageathome_updates
 
 ageathome_detail:
   view: true
   name: AgeAtHome Detail
   icon: mdi:image
   entities:
-    - group.ageathome_images
-    - group.ageathome_cameras
-    - group.ageathome_updates
+    - group.ageathome_kitchen
+    - group.ageathome_bathroom
+    - group.ageathome_frontdoor
+    - group.ageathome_road
+
+ageathome_kitchen:
+  name: AgeAtHome Kitchen
+  icon: mdi:human-male-female
+  entities:
+    - camera.imagekitchen
+    - camera.camerakitchen
+    - sensor.lastinkitchen
+    - sensor.countkitchen
+    - sensor.datekitchen
+    - sensor.emptykitchen
+    - sensor.imagecountkitchen
+    - sensor.imagedatekitchen
+    - sensor.lastinkitchen
+    - sensor.whoinkitchen
+
+ageathome_bathroom:
+  name: AgeAtHome Bathroom
+  icon: mdi:human-male-female
+  entities:
+    - camera.imagebathroom
+    - camera.camerabathroom
+    - sensor.lastinbathroom
+    - sensor.countbathroom
+    - sensor.datebathroom
+    - sensor.emptybathroom
+    - sensor.imagecountbathroom
+    - sensor.imagedatebathroom
+    - sensor.lastinbathroom
+    - sensor.whoinbathroom
+
+ageathome_frontdoor:
+  name: AgeAtHome Frontdoor
+  icon: mdi:human-male-female
+  entities:
+    - camera.imagefrontdoor
+    - camera.camerafrontdoor
+    - sensor.lastinfrontdoor
+    - sensor.countfrontdoor
+    - sensor.datefrontdoor
+    - sensor.emptyfrontdoor
+    - sensor.imagecountfrontdoor
+    - sensor.imagedatefrontdoor
+    - sensor.lastinfrontdoor
+    - sensor.whoinfrontdoor
+
+ageathome_road:
+  name: AgeAtHome Road
+  icon: mdi:human-male-female
+  entities:
+    - camera.imageroad
+    - camera.cameraroad
+    - sensor.lastinroad
+    - sensor.countroad
+    - sensor.dateroad
+    - sensor.emptyroad
+    - sensor.imagecountroad
+    - sensor.imagedateroad
+    - sensor.lastinroad
+    - sensor.whoinroad
 
 ageathome_images:
   # view: true
