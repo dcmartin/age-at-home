@@ -155,20 +155,23 @@ foreach image ( $images )
 
   if ($?DEBUG) /bin/echo `date` "$0 $$ -- PROCESSING IMAGE ($k/$limit) ($image)" >>&! $TMP/LOG
 
-  # setup 
-  set jpg = $image:t
-  set jpm = `/bin/echo "$jpg:r" | sed "s/\(.*\)-.*-.*/\1/"` # get the image date for matching
-  set time = `/bin/echo $jpg | sed "s/\(....\)\(..\)\(..\)\(..\)\(..\).*-.*/\1\/\2\/\3 \4:\5/"` # breakdown image identifier into time components for image label
+  # get image details
+  set imginfo = ( `/usr/bin/curl -s -q "$WWW/CGI/aah-images.cgi?db=$db&id=$image" | /usr/local/bin/jq '.'` )
+  # {
+  #   "id": "20170802094803-7134-00",
+  #   "class": "ellen",
+  #   "date": 1501692483,
+  #   "type": "JPEG",
+  #   "size": "640x480+0+0",
+  #   "crop": "494x160+68+150",
+  #   "depth": "8-bit",
+  #   "color": "sRGB"
+  # }
+  set dir = ( `/bin/echo "$imginfo" | /usr/local/bin/jq -r '.class'` )
+  set date = ( `/bin/echo "$imginfo" | /usr/local/bin/jq -r '.date'` )
 
-  # special case for "all"
-  if ($class == "all") then
-    set dir = $image:h # class of image is encoded as head of path
-    set dir = $dir:t # and tail, e.g. <path>/<class>/<jpeg>
-    set txt = "$dir"
-  else
-    set dir = $class
-    set txt = "$class"
-  endif
+  set jpm = `/bin/echo "$image" | sed "s/\(.*\)-.*-.*/\1/"` # get the image date for matching
+  set time = `/bin/echo "$image" | sed "s/\(....\)\(..\)\(..\)\(..\)\(..\).*-.*/\1\/\2\/\3 \4:\5/"` # breakdown image identifier into time components for image label
 
   # how to access the image (and sample)
   set img = "http://$WWW/CGI/$APP-images.cgi?db=$db&id=$image&ext=full"
@@ -191,19 +194,19 @@ foreach image ( $images )
   /bin/echo '<form action="'"$act"'" method="get">' >> "$HTML"
   /bin/echo '<input type="hidden" name="db" value="'"$db"'">' >> "$HTML"
   /bin/echo '<input type="hidden" name="class" value="'"$class"'">' >> "$HTML"
-  /bin/echo '<input type="hidden" name="image" value="'"$jpg"'">' >> "$HTML"
+  /bin/echo '<input type="hidden" name="image" value="'"$image"'">' >> "$HTML"
   /bin/echo '<input type="hidden" name="old" value="'"$dir"'">' >> "$HTML"
   /bin/echo '<input type="hidden" name="match" value="'"$match"'">' >> "$HTML"
   /bin/echo '<input type="hidden" name="limit" value="'"$limit"'">' >> "$HTML"
   if ($?slave) /bin/echo '<input type="hidden" name="slave" value="true">' >> "$HTML"
-  /bin/echo '<button style="background-color:#999999" type="submit" name="skip" value="'"$jpg"'">SKIP</button>' >> "$HTML"
+  /bin/echo '<button style="background-color:#999999" type="submit" name="skip" value="'"$image"'">SKIP</button>' >> "$HTML"
   /bin/echo '</form>' >> "$HTML"
   /bin/echo '</td><td>' >> "$HTML"
   # FORM 2
   /bin/echo '<form action="'"$act"'" method="get">' >> "$HTML"
   /bin/echo '<input type="hidden" name="db" value="'"$db"'">' >> "$HTML"
   /bin/echo '<input type="hidden" name="class" value="'"$class"'">' >> "$HTML"
-  /bin/echo '<input type="hidden" name="image" value="'"$jpg"'">' >> "$HTML"
+  /bin/echo '<input type="hidden" name="image" value="'"$image"'">' >> "$HTML"
   /bin/echo '<input type="hidden" name="old" value="'"$dir"'">' >> "$HTML"
   /bin/echo '<input type="hidden" name="match" value="'"$match"'">' >> "$HTML"
   /bin/echo '<input type="hidden" name="limit" value="'"$limit"'">' >> "$HTML"
@@ -226,7 +229,7 @@ foreach image ( $images )
   /bin/echo '<form action="'"$act"'" method="get">' >> "$HTML"
   /bin/echo '<input type="hidden" name="db" value="'"$db"'">' >> "$HTML"
   /bin/echo '<input type="hidden" name="class" value="'"$class"'">' >> "$HTML"
-  /bin/echo '<input type="hidden" name="image" value="'"$jpg"'">' >> "$HTML"
+  /bin/echo '<input type="hidden" name="image" value="'"$image"'">' >> "$HTML"
   /bin/echo '<input type="hidden" name="old" value="'"$dir"'">' >> "$HTML"
   /bin/echo '<input type="hidden" name="match" value="'"$match"'">' >> "$HTML"
   /bin/echo '<input type="hidden" name="limit" value="'"$limit"'">' >> "$HTML"
@@ -256,7 +259,7 @@ foreach image ( $images )
   #
   # ENTIRE SECTION IS FOR SINGLE IMAGE DETAIL
   #
-  set record = ( `/usr/bin/curl -s -q -L "$CU/$db/$jpg:r" | /usr/local/bin/jq -r '.'` )
+  set record = ( `/usr/bin/curl -s -q -L "$CU/$db/$image" | /usr/local/bin/jq -r '.'` )
   set crop = `/bin/echo "$record" | /usr/local/bin/jq -r '.imagebox'`
   set scores = ( `/bin/echo "$record" | /usr/local/bin/jq -r '.visual.scores|sort_by(.score)'` )
   set top1 = ( `/bin/echo "$record" | /usr/local/bin/jq -r '.visual.scores|sort_by(.score)[-1]'` )
