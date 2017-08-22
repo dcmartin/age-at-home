@@ -9,8 +9,8 @@ URL_GENERIC_HC="https://raw.githubusercontent.com/home-assistant/hassio-build/ma
 URL_SERVICE_HASSIO="https://raw.githubusercontent.com/home-assistant/hassio-build/master/install/systemd/hassio-supervisor.service"
 URL_SERVICE_HOSTCONTROLL="https://raw.githubusercontent.com/home-assistant/hassio-build/master/install/systemd/hassio-hc.service"
 
-BIN_DIR=/usr/bin
-DATA_SHARE=/usr/share/hassio
+BIN_DIR=/usr/local/bin
+DATA_SHARE=/usr/local/share/hassio
 
 # Check env
 command -v docker > /dev/null 2>&1 || { echo "[ERROR] Please install docker first"; exit 1; }
@@ -114,9 +114,9 @@ chmod a+x "$BIN_DIR/hassio-hc"
 echo "[INFO] Install startup scripts"
 curl -sL "$URL_START_HASSIO" > "$BIN_DIR/hassio-start"
 
-sed -i "s|%%SUPERVISOR_IMAGE%%|$HASSIO_DOCKER|g" "$BIN_DIR/hassio-start"
-sed -i "s|%%HOMEASSISTANT_IMAGE%%|$HOMEASSISTANT_DOCKER|g" "$BIN_DIR/hassio-start"
-sed -i "s|%%DATA_SHARE%%|$DATA_SHARE|g" "$BIN_DIR/hassio-start"
+sed -i bak "s|%%SUPERVISOR_IMAGE%%|$HASSIO_DOCKER|g" "$BIN_DIR/hassio-start"
+sed -i bak "s|%%HOMEASSISTANT_IMAGE%%|$HOMEASSISTANT_DOCKER|g" "$BIN_DIR/hassio-start"
+sed -i bak "s|%%DATA_SHARE%%|$DATA_SHARE|g" "$BIN_DIR/hassio-start"
 
 chmod a+x "$BIN_DIR/hassio-start"
 
@@ -127,8 +127,8 @@ if [ "$INIT_SYSTEM" == "systemd" ]; then
     curl -sL "$URL_SERVICE_HASSIO" > "/etc/systemd/system/hassio-supervisor.service"
     curl -sL "$URL_SERVICE_HOSTCONTROLL" > "/etc/systemd/system/hassio-hc.service"
 
-    sed -i "s|%%BIN_DIR%%|$BIN_DIR|g" "/etc/systemd/system/hassio-hc.service"
-    sed -i "s|%%BIN_DIR%%|$BIN_DIR|g" "/etc/systemd/system/hassio-supervisor.service"
+    sed -i bak "s|%%BIN_DIR%%|$BIN_DIR|g" "/etc/systemd/system/hassio-hc.service"
+    sed -i bak "s|%%BIN_DIR%%|$BIN_DIR|g" "/etc/systemd/system/hassio-supervisor.service"
 
     systemctl enable hassio-supervisor.service
 
