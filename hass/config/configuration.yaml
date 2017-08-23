@@ -359,7 +359,7 @@ history:
       - device_tracker.rileysiphone5
 
 # View all events in a logbook
-# logbook:
+logbook:
 
 # Text to speech
 tts:
