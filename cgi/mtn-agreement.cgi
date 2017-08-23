@@ -19,36 +19,47 @@ if ($?ip == 0) then
   set ip = 39
 else
   if ($#ip != 1 || ("$ip" != "39" && "$ip" != "40")) then
-    exit
+    set TTL = 0
+    set output = '{"agreements":{"active":null,"archived":null},"error":"invalid ip","ip":"'"$ip"'"}'
+    goto output
   endif
 endif
 
 set json = "/tmp/$0:t.$ip.$DATE.json"
 
 if (! -s "$json") then
-  /bin/rm -f /tmp/$0:t.$ip.*.json
-  /usr/bin/curl -s -q -f -L0 "http://192.168.1.$ip/agreement" | /usr/local/bin/jq '.' >! "$json.$$"
-  if (-s "$json.$$") then
-    /bin/mv "$json.$$" "$json"
+  set old = ( `/bin/echo "$json:r:r".*.json` )
+
+  ./mtn-fetch-agreement.bash "$ip" "$json"
+
+  if ($?old) then
+    if ($#old) then
+      @ nold = $#old
+      set json = "$old[$nold]"
+      @ nold--
+      if ($nold) then
+        /bin/rm -f "$old[1-$nold]"
+      endif
+    endif
   endif
-  /bin/rm -f "$json.$$"
 endif
 
 if (! -s "$json") then
-  set output = '{"error":"no agreements","ip":"'"$ip"'"}'
+  set TTL = 0
+  set output = '{"agreements":{"active":null,"archived":null},"error":"no agreements","ip":"'"$ip"'"}'
   goto output
 endif
 
 if ($?id) then
   if ($?st == 0) set st = "active"
-  set nactive = ( `/usr/local/bin/jq '.agreements.active | length' "/tmp/$0:t.$ip.$DATE.json"` )
-  set narchive = ( `/usr/local/bin/jq '.agreements.archive | length' "/tmp/$0:t.$ip.$DATE.json"` )
+  set nactive = ( `/usr/local/bin/jq '.agreements.active | length' "$json"` )
+  set narchive = ( `/usr/local/bin/jq '.agreements.archive | length' "$json"` )
 
   switch ($st)
   case "active":
     if ($id < $nactive && $id >= 0) then
       set noglob
-      set output = ( `/usr/local/bin/jq '.agreements.active['"$id"']' "/tmp/$0:t.$ip.$DATE.json"` )
+      set output = ( `/usr/local/bin/jq '.agreements.active['"$id"']' "$json"` )
       unset noglob
       goto output
     endif
@@ -56,13 +67,13 @@ if ($?id) then
   case "archive":
     if ($id < $nactive && $id >= 0) then
       set noglob
-      set output = `/usr/local/bin/jq '.agreements.archive['"$id"']' "/tmp/$0:t.$ip.$DATE.json"` )
+      set output = `/usr/local/bin/jq '.agreements.archive['"$id"']' "$json"` )
       unset noglob
       goto output
     endif
     breaksw
   endsw
-  set output = '{"error":"invalid agreement","ip":"'"$ip"'","id":"'"$id"'","status":"'"$st"'"}'
+  set output = '{"agreements":{"active":null,"archived":null},"error":"invalid agreement","ip":"'"$ip"'","id":"'"$id"'","status":"'"$st"'"}'
 endif
 
 output:
