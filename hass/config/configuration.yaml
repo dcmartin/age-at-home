@@ -34,10 +34,14 @@ panel_iframe:
     title: 'DIGITS'
     icon: mdi:format-list-numbers
     url: 'http://192.168.1.30:5001'
-  mtn:
-    title: 'MTN'
+  rpi2:
+    title: 'mtn_rpi2'
     icon: mdi:image-filter-hdr
     url: 'http://192.168.1.39/dashboard'
+  rpi3:
+    title: 'mtn_rpi3'
+    icon: mdi:image-filter-hdr
+    url: 'http://192.168.1.40/dashboard'
 
 
 # WORKING ON PRESENCE
