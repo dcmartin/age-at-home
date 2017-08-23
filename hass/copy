@@ -1,7 +1,10 @@
 #!/bin/csh -fb
-sudo docker cp config/known_devices.yaml homeassistant:/config/known_devices.yaml
-sudo docker cp config/configuration.yaml homeassistant:/config/configuration.yaml
-sudo docker cp config/groups.yaml homeassistant:/config/groups.yaml
-sudo docker cp config/automations.yaml homeassistant:/config/automations.yaml
-sudo docker cp config/templates.yaml homeassistant:/config/templates.yaml
-sudo docker cp config/secrets.yaml homeassistant:/config/secrets.yaml 
+
+set dir = "$cwd/$0:h"
+
+sudo docker cp $dir/config/known_devices.yaml homeassistant:/config/known_devices.yaml
+sudo docker cp $dir/config/configuration.yaml homeassistant:/config/configuration.yaml
+sudo docker cp $dir/config/groups.yaml homeassistant:/config/groups.yaml
+sudo docker cp $dir/config/automations.yaml homeassistant:/config/automations.yaml
+sudo docker cp $dir/config/templates.yaml homeassistant:/config/templates.yaml
+sudo docker cp $dir/config/secrets.yaml homeassistant:/config/secrets.yaml 
