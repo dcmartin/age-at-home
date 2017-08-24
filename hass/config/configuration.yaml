@@ -366,7 +366,7 @@ tts:
   - platform: google
 
 ifttt:
-  key: dXbhgiite3T81apShQpCfW
+  key: !secret ifttt_key
 
 #
 # CAMERAS
@@ -413,25 +413,25 @@ camera imagekitchen:
   - platform: generic
     name: imagekitchen
     icon: mdi:image
-    still_image_url: 'http://192.168.1.32/CGI/aah-images.cgi?db=rough-fog&limit=1&ext=full'
+    still_image_url: 'http://192.168.1.32/CGI/aah-imageLast.cgi?db=rough-fog&ext=full'
 
 camera imagebathroom:
   - platform: generic
     icon: mdi:image
     name: imagebathroom
-    still_image_url: 'http://192.168.1.32/CGI/aah-images.cgi?db=damp-cloud&limit=1&ext=full'
+    still_image_url: 'http://192.168.1.32/CGI/aah-imageLast.cgi?db=damp-cloud&ext=full'
 
 camera imageroad:
   - platform: generic
     icon: mdi:image
     name: imageroad
-    still_image_url: 'http://192.168.1.32/CGI/aah-images.cgi?db=quiet-water&limit=1&ext=full'
+    still_image_url: 'http://192.168.1.32/CGI/aah-imageLast.cgi?db=quiet-water&ext=full'
 
 camera imagefrontdoor:
   - platform: generic
     icon: mdi:image
     name: imagefrontdoor
-    still_image_url: 'http://192.168.1.32/CGI/aah-images.cgi?db=rough-wind&limit=1&ext=full'
+    still_image_url: 'http://192.168.1.32/CGI/aah-imageLast.cgi?db=rough-wind&ext=full'
 
 #
 # WCV80N cameras
