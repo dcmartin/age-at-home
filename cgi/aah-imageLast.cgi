@@ -10,7 +10,7 @@ if ($?TMP == 0) setenv TMP "/var/lib/age-at-home"
 setenv DEBUG true
 
 # don't update statistics more than once per (in seconds)
-setenv TTL 15
+setenv TTL 5
 setenv SECONDS `/bin/date "+%s"`
 setenv DATE `/bin/echo $SECONDS \/ $TTL \* $TTL | bc`
 
@@ -31,31 +31,32 @@ else if ($ext != "full" && $ext != "crop") then
   set ext = "full"
 endif
 
-if ($?DEBUG) /bin/echo `/bin/date` "$0 $$ -- START ($db-$ext)" >>! $TMP/LOG
+if ($?VERBOSE) /bin/echo `/bin/date` "$0 $$ -- START ($db $ext)" >>! $TMP/LOG
 
 # find image
 set out = "/tmp/$0:t.$db-$ext.$DATE.jpg"
 
 if (! -s "$out") then
-  /bin/rm -f "$out:r:r".*.jpg
+  set old = ( `/bin/echo "$out:r:r".*.jpg` )
 
-  set url = "$WWW/CGI/$APP-images.cgi?db=$db&limit=1&ext=full"
-  set time = 4
+  if ($?DEBUG) /bin/echo `/bin/date` "$0 $$ -- ASYNC REQUEST ($db $ext)" >>! $TMP/LOG
 
-  /usr/bin/curl -s -q -f -k -m $time -L0 "$url" -o "$out.$$"
-  set code = $status
-  if ($code == 22 || $code == 28 || ! -s "$out.$$") then
-    if ($?VERBOSE) /bin/echo `date` "$0 $$ ++ FAILURE ($url)" >>&! $TMP/LOG
-    set output = '{"error":"no image","url":"'"$url"'"}'
-    goto output
-  else
-    /bin/mv "$out.$$" "$out"
+  ./aah-fetch-imageLast.bash "$db" "$ext" "$out"
+
+  if ($?old) then
+    if ($#old) then
+      @ nold = $#old
+      set out = "$old[$nold]"
+      @ nold--
+      if ($nold) then
+        /bin/rm -f "$old[1-$nold]"
+      endif
+    endif
   endif
-  /bin/rm -f "$out.$$"
 endif
 
 if (-s "$out") then
-  if ($?DEBUG) /bin/echo `/bin/date` "$0 $$ -- SINGLETON ($out)" >>! $TMP/LOG
+  if ($?DEBUG) /bin/echo `/bin/date` "$0 $$ -- CACHE HIT ($out)" >>! $TMP/LOG
   /bin/echo "Last-Modified:" `/bin/date -r $DATE '+%a, %d %b %Y %H:%M:%S %Z'`
   /bin/echo "Access-Control-Allow-Origin: *"
   /bin/echo "Content-Type: image/jpeg"
@@ -64,7 +65,8 @@ if (-s "$out") then
   /bin/dd if="$out"
   goto done
 endif
-  set output = '{"error":"not found","db":"'"$db"'"}'
+  if ($?DEBUG) /bin/echo `/bin/date` "$0 $$ -- FAIL ($db $ext)" >>! $TMP/LOG
+  set output = '{"error":"not found","db":"'"$db"'","ext":"'"$ext"'"}'
   goto output
 endif
 
@@ -73,6 +75,8 @@ endif
 #
 
 output:
+
+if ($?DEBUG) /bin/echo `/bin/date` "$0 $$ -- FAIL ($output)" >>! $TMP/LOG
 
 /bin/echo "Content-Type: application/json; charset=utf-8"
 /bin/echo "Access-Control-Allow-Origin: *"
@@ -88,4 +92,4 @@ endif
 
 done:
 
-if ($?DEBUG) /bin/echo `/bin/date` "$0 $$ -- FINISH ($db-$ext)" >>! $TMP/LOG
+if ($?VERBOSE) /bin/echo `/bin/date` "$0 $$ -- FINISH ($DATE)" >>! $TMP/LOG

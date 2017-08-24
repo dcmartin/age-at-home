@@ -7,7 +7,7 @@ setenv DIGITS "$LAN".30
 setenv WAN "www.dcmartin.com"
 if ($?TMP == 0) setenv TMP "/var/lib/age-at-home"
 
-setenv DEBUG true
+# setenv DEBUG true
 
 # don't update statistics more than once per (in seconds)
 setenv TTL 300
@@ -341,4 +341,7 @@ endif
 
 done:
 
-if ($?DEBUG) /bin/echo `/bin/date` "$0 $$ -- FINISH ($QUERY_STRING)" >>! $TMP/LOG
+@ now = `/bin/date "+%s"`
+@ elapsed = $now - $SECONDS
+
+if ($?DEBUG) /bin/echo `/bin/date` "$0 $$ -- FINISH ($elapsed)" >>! $TMP/LOG
