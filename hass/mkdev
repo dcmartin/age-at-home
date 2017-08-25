@@ -5,29 +5,23 @@ onintr cleanup
 if ($#argv > 0) then
   set vendor = $argv[1]
 else
-  set vendor = "Cisco-Linksys"
+  echo "$0 - <vendor> (default all)" >&! /dev/stderr
+  set vendor = "all"
 endif
 
 if ($#argv > 1) then
-  set lan = $argv[2]
+  echo "$0 - $vendor <net> (default 192.168.1.0/24)" >&! /dev/stderr
+  set net = $argv[2]
 else
-  set lan = "192.168.1.0/24"
-endif
-
-if ($#argv > 2) then
-  set config = $argv[3]
-endif
-
-if ($#argv > 3) then
-  set device = $argv[4]
+  set net = "192.168.1.0/24"
 endif
 
 # find devices on the LAN
 set out = "/tmp/$0:t.$$.txt"
-/usr/bin/sudo /usr/bin/nmap -sn -T5 "$lan" >! "$out"
+/usr/bin/sudo /usr/bin/nmap -sn -T5 "$net" >! "$out"
 
-if (! -s "$out") then
-  /bin/echo 'No nmap(8) output for '"$lan" >& /dev/stderr
+if (! -e "$out") then
+  /bin/echo 'No nmap(8) output for '"$net" >& /dev/stderr
   exit
 endif
 

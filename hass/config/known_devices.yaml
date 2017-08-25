@@ -37,6 +37,24 @@ envoy:
   hide_if_away: false
   vendor: Enphase Energy
 
+# Sonos_0001 192.168.1.111 B8:E9:37:D7:E6:E8
+Sonos_Play3:
+  mac: B8:E9:37:D7:E6:E8
+  name: Sonos_Play3
+  icon: mdi:speaker
+  track: true
+  hide_if_away: false
+  vendor: Sonos
+
+# Sonos_0002 192.168.1.192 94:9F:3E:0C:41:18
+Sonos_Play1:
+  mac: 94:9F:3E:0C:41:18
+  name: Sonos_Play1
+  icon: mdi:speaker
+  track: true
+  hide_if_away: false
+  vendor: Sonos
+
 # microcells
 
 microcell_garage:
@@ -319,7 +337,7 @@ davidmac_en1:
 amazon_firetv:
   hide_if_away: false
   icon:
-  mac: 0:BB:3A:77:92:CB
+  mac: 00:BB:3A:77:92:CB
   name: amazon_firetv
   picture:
   track: false
@@ -337,7 +355,7 @@ photosmart_7510:
 phaser_8650:
   hide_if_away: true
   icon:
-  mac: 0:0:AA:D1:EE:F2
+  mac: 00:0:AA:D1:EE:F2
   name: phaser_8650
   picture:
   track: false
@@ -346,7 +364,7 @@ phaser_8650:
 shenzhen:
   hide_if_away: false
   icon:
-  mac: 8:D8:33:B6:CE:CC
+  mac: 08:D8:33:B6:CE:CC
   name: shenzhen
   picture:
   track: false

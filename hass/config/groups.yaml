@@ -11,6 +11,14 @@ default_view:
     - group.weather_today
     - camera.wuradar
 
+sonos_view:
+  view: yes
+  icon: mdi:speaker
+  name: Sonos View
+  entities:
+    - media_player.play1
+    - media_player.play3
+
 mtn_view:
   view: yes
   name: Mtn View
@@ -444,6 +452,36 @@ status_view:
     - group.network_status
     - group.tivo_status
     - group.webcam_status
+    - group.sonos_play1
+    - group.sonos_play3
+
+sonos_play1:
+  name: Sonos PLAY1
+  entities:
+    - device_tracker.sonos_play1
+    - sensor.play1_state
+    - sensor.play1_volume
+    - sensor.play1_volume_muted
+    - sensor.play1_media_content_id
+    - sensor.play1_media_content_type
+    - sensor.play1_media_duration
+    - sensor.play1_media_title
+    - sensor.play1_media_artist
+    - sensor.play1_media_album_name
+
+sonos_play3:
+  name: Sonos PLAY3
+  entities:
+    - device_tracker.sonos_play3
+    - sensor.play3_state
+    - sensor.play3_volume
+    - sensor.play3_volume_muted
+    - sensor.play3_media_content_id
+    - sensor.play3_media_content_type
+    - sensor.play3_media_duration
+    - sensor.play3_media_title
+    - sensor.play3_media_artist
+    - sensor.play3_media_album_name
 
 system_status:
   name: System Status
@@ -500,6 +538,8 @@ weather_today:
   name: Weather Today
   entities:
     - sun.sun
+    - sensor.solar_angle
+    - sensor.sunrise
     - sensor.pws_weather
     - sensor.pws_feelslike_f
     - sensor.pws_precip_today_in
