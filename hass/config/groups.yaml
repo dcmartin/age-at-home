@@ -11,12 +11,18 @@ default_view:
     - group.weather_today
     - camera.wuradar
 
-sonos_view:
+play1_view:
   view: yes
   icon: mdi:speaker
-  name: Sonos View
+  name: Play1 View
   entities:
     - media_player.play1
+
+play3_view:
+  view: yes
+  icon: mdi:speaker
+  name: Play3 View
+  entities:
     - media_player.play3
 
 mtn_view:

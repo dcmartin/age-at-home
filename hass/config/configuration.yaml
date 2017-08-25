@@ -20,13 +20,34 @@ http:
     - http://dcmartin.com
   base_url: homeassistant.dcmartin.com:8123
 
+updater:
+  include_used_components: true
+
 hassio:
 
 discovery:
 
 frontend:
 
+sun:
+  elevation: 827
+
 config:
+
+python_script:
+
+#recorder:
+#  db_url: !secret my_sql_url
+
+mqtt:
+  broker: 192.168.1.26
+  keepalive: 60
+  client_id: homeassistant
+  # port:
+  # username:
+  # password:
+
+logger: !include logger.yaml
 
 # SONOS
 
@@ -382,16 +403,8 @@ sensor david_plex:
     username: !secret plex_username
     password: !secret plex_password
 
-# https://home-assistant.io/blog/2016/10/25/explaining-the-updater/
-updater:
-  include_used_components: true
-
 # Allows you to issue voice commands from the frontend in enabled browsers
 conversation:
-
-# Track the sun
-sun:
-  elevation: 827
 
 # Enables support for tracking state changes over time.
 history:
@@ -403,7 +416,7 @@ history:
       - camera
       - rest
       - mqtt
-      # - media_player
+      - media_player
   include:
     entities:
       - group.ageathome_notin_kitchen
@@ -424,6 +437,8 @@ history:
       - sensor.emptybathroom
       - sensor.emptyfrontdoor
       - sensor.emptyroad
+      - sensor.play1_state
+      - sensor.play3_state
       - device_tracker.davids_iphone
       - device_tracker.kelis_iphone
       - device_tracker.dcmsiphone
@@ -1873,9 +1888,6 @@ sensor imagedateroad:
 # MQTT PLATFORM SENSORS
 #
 
-mqtt:
-  broker: 192.168.1.26
-
 sensor mqttlastkitchen:
   platform: mqtt
   icon: mdi:human
@@ -1966,6 +1978,26 @@ sensor lastinfrontdoor:
 #
 # HISTORY_STATS
 #
+
+sensor play1_paused:
+  - platform: history_stats
+    icon: mdi:speaker
+    name: play1_paused
+    entity_id: sensor.play1_state
+    state: 'paused'
+    type: ratio
+    start: '{{ now().replace(hour=0).replace(minute=0).replace(second=0) }}'
+    end: '{{ now() }}'
+
+sensor play3_paused:
+  - platform: history_stats
+    icon: mdi:speaker
+    name: play3_paused
+    entity_id: sensor.play3_state
+    state: 'paused'
+    type: ratio
+    start: '{{ now().replace(hour=0).replace(minute=0).replace(second=0) }}'
+    end: '{{ now() }}'
 
 sensor peopleinkitchen:
   - platform: history_stats

@@ -58,10 +58,19 @@ endif
 
 set config = "auto-config-$vendor.yaml"
 set device = "auto-device-$vendor.yaml"
+set sensor = "auto-sensor-$vendor.yaml"
+set automa = "auto-automa-$vendor.yaml"
 
-rm -f "$config" "$device"
+rm -f "$config" "$device" "$sensor" "$automa"
 
 /bin/echo '++ Processing '$#vendors' vendors' >& /dev/stderr
+
+# start automation
+/bin/echo 'automation:' >>! "$automa"
+/bin/echo '  - alias: Notify Device Status' >>! "$automa"
+/bin/echo '    trigger:' >>! "$automa"
+/bin/echo '      platform: state' >>! "$automa"
+/bin/echo '      entity_id:' >>! "$automa"
 
 @ total = 0
 
@@ -97,6 +106,20 @@ foreach vendor ( $vendors )
         breaksw
     endsw
 
+    # define sensor for on/off-line device status
+    /bin/echo '# '"$name"' '"$ip"' '"$mac" >>! "$sensor"
+    /bin/echo 'sensor '"$name"_onoff':' >>! "$sensor"
+    /bin/echo '  - platform: template' >>! "$sensor"
+    /bin/echo '    sensors:' >>! "$sensor"
+    /bin/echo '      device_'"$name"'_onoff:' >>! "$sensor"
+    /bin/echo '        friendly_name: "'"$name"' OnOff"' >>! "$sensor"
+    /bin/echo '        value_template: "{{ '"'Online' if is_state ( 'device_tracker.""$name""', 'home' ) else 'Offline' }}"'"' >>! "$sensor"
+    /bin/echo '' >>! "$sensor"
+
+    # add to automation
+    /bin/echo '        - sensor.device_'"$name"'_onoff' >>! "$automa"
+
+    # handle device
     /bin/echo '# '"$name"' '"$ip"' '"$mac" >>! "$device"
     /bin/echo "$name"':' >>! "$device"
     /bin/echo '  mac: '"$mac" >>! "$device"
@@ -120,7 +143,6 @@ foreach vendor ( $vendors )
     endsw 
     /bin/echo '  icon: '"$icon" >>! "$device"
     /bin/echo '  picture: '"$picture" >>! "$device"
-
     /bin/echo '  track: true' >>! "$device"
     /bin/echo '  hide_if_away: false' >>! "$device"
     /bin/echo '  vendor: '"$vendor" >>! "$device"
@@ -130,6 +152,22 @@ foreach vendor ( $vendors )
     @ total++
   end
 end
+
+# end automation
+/bin/echo '    condition:' >>! "$automa"
+/bin/echo '      - condition: template' >>! "$automa"
+/bin/echo '        value_template: "{% if trigger.from_state and trigger.to_state %} True {% else %} False {% endif %}"' >>! "$automa"
+/bin/echo '    action:' >>! "$automa"
+/bin/echo '      - service: script.notify_me' >>! "$automa"
+/bin/echo '        data_template:' >>! "$automa"
+/bin/echo '          value1: >' >>! "$automa"
+/bin/echo '            {% if trigger.to_state.state | lower == "offline" %}' >>! "$automa"
+/bin/echo '              {{ trigger.to_state.attributes.friendly_name }} has gone offline!' >>! "$automa"
+/bin/echo '            {% else %}' >>! "$automa"
+/bin/echo '              {{ trigger.to_state.attributes.friendly_name }} has come online!' >>! "$automa"
+/bin/echo '            {% endif %}' >>! "$automa"
+/bin/echo '            <' >>! "$automa"
+/bin/echo '' >>! "$automa"
 
 cleanup:
 

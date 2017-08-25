@@ -1,0 +1,16 @@
+default: error
+logs:
+  homeassistant.core: error
+  homeassistant.setup: error
+  homeassistant.loader: error
+  homeassistant.components.automation: error
+  homeassistant.components.device_tracker: error
+  homeassistant.components.discovery: error
+  homeassistant.components.http: error 
+  homeassistant.components.media_player: error 
+  homeassistant.components.recorder: error 
+  homeassistant.components.sensor: error 
+  homeassistant.helpers.script: error 
+  homeassistant.components.light.lifx: error 
+  homeassistant.components.mqtt: error 
+  homeassistant.components.api: error 

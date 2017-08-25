@@ -1,5 +1,5 @@
 #sonos_volume_limiter:
-#- id: sonos_volume_limiter
+#  id: sonos_volume_limiter
 #  alias: Sonos Volume Limiter
 #  initial_state: True
 #  hide_entity: False
@@ -17,6 +17,7 @@
 #      data_template:
 #        entity_id: media_player.play1
 #        volume_level: 0.34
+#
 
 #sunset:
 #  trigger:
@@ -25,7 +26,7 @@
 #    event: sunset
 #    # Optional time offset. This example is 45 minutes.
 #    offset: '-00:45:00'
-#
+
 #mqttpublish:
 #  trigger:
 #    platform: state
@@ -37,7 +38,7 @@
 #      topic: "presence/home"
 #      # payload: "David is home"
 #      payload_template": "{{ states('device_tracker.davids_iphone') }}"
-#
+
 #lowscore:
 #  alias: very low scoring
 #  trigger:
@@ -50,7 +51,7 @@
 #      notification_id: 'NOTIFY1'
 #      title: "NUMERIC STATE"
 #      message: "Score below 0.5"
-#
+
 #highscore:
 #  alias: very high scoring
 #  trigger:
@@ -67,7 +68,7 @@
 #    - service: persistent_notification.dismiss
 #      data:
 #        notification_id: 'NOTIFY1'
-#
+
 #jsonscore:
 #  alias: score from presence JSON payload
 #  trigger:
@@ -82,8 +83,7 @@
 #      notification_id: 'NOTIFY1'
 #      title: "MQTT"
 #      message: "Score processed"
-#
-#
+
 #davidishome:
 #  alias: davidishome
 #  trigger:
@@ -103,7 +103,7 @@
 #    - service: notify.notify
 #      data:
 #        message: David is here or gone
-#  
+
 #notify_davids_iphone:
 #  alias: notify_davids_iphone
 #  trigger:
@@ -127,7 +127,7 @@
 #        action_data:
 #          entity_id: group.ageathome_notin_kitchen
 #          my_custom_data: foo_bar
-#  
+
 #isdavidhome:
 #  alias: isdavidhome
 #  trigger: 
