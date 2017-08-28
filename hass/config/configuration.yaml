@@ -34,10 +34,12 @@ sun:
 
 config:
 
-python_script:
+# not yet (threw error)
+# python_script:
 
-#recorder:
-#  db_url: !secret my_sql_url
+# have to figure this one out
+# recorder:
+#   db_url: !secret my_sql_url
 
 mqtt:
   broker: 192.168.1.26
@@ -53,6 +55,10 @@ logger: !include logger.yaml
 
 media_player sonos:
   - platform: sonos
+
+#
+# TEMPLATES
+#
 
 sensor solar:
   - platform: template
@@ -228,9 +234,9 @@ device_tracker:
 
 # targeting app on davids phone
 notify ios:
-  platform: ios
-  name: davids_iphone
-  target: !secret notify_target
+  - platform: ios
+    name: davids_iphone
+    target: !secret notify_target
 
 # https://home-assistant.io/components/notify.rest/
 # curl -X POST -H 'Content-type: application/json' --data '{"text":"Hello, World!"}' !secret slack_webhook
@@ -429,14 +435,14 @@ history:
       - sensor.peopleinkitchen
       - sensor.david_plex
       - sensor.mqttscore
-      - sensor.whoinkitchen
-      - sensor.whoinbathroom
-      - sensor.whoinfrontdoor
-      - sensor.whoinroad
-      - sensor.emptykitchen
-      - sensor.emptybathroom
-      - sensor.emptyfrontdoor
-      - sensor.emptyroad
+      - sensor.kitchen_who
+      - sensor.bathroom_who
+      - sensor.frontdoor_who
+      - sensor.road_who
+      - sensor.kitchen_empty_time
+      - sensor.bathroom_empty_time
+      - sensor.frontdoor_empty_time
+      - sensor.road_empty_time
       - sensor.play1_state
       - sensor.play3_state
       - device_tracker.davids_iphone
@@ -473,56 +479,6 @@ camera wuradar:
   - platform: generic
     still_image_url: 'https://icons.wxug.com/data/weather-maps/radar/united-states/bakersfield-california-region-current-radar-animation.gif'
     name: wuradar
-
-# AAH cameras (still image should be last motion; mjpeg should be live)
-
-camera camerakitchen:
-  - platform: mjpeg
-    name: camerakitchen
-    mjpeg_url: http://192.168.1.34:8081/
-
-camera camerabathroom:
-  - platform: mjpeg
-    name: camerabathroom
-    mjpeg_url: http://192.168.1.35:8081/
-
-camera cameraroad:
-  - platform: mjpeg
-    name: cameraroad
-    mjpeg_url: http://192.168.1.36:8081/
-
-camera camerafrontdoor:   
-  - platform: mjpeg
-    name: camerafrontdoor
-    mjpeg_url: http://192.168.1.37:8081/
-
-#
-# ANNOTATED IMAGES
-#
-
-camera imagekitchen:
-  - platform: generic
-    name: imagekitchen
-    icon: mdi:image
-    still_image_url: 'http://192.168.1.253/CGI/aah-imageLast.cgi?db=rough-fog&ext=full'
-
-camera imagebathroom:
-  - platform: generic
-    icon: mdi:image
-    name: imagebathroom
-    still_image_url: 'http://192.168.1.253/CGI/aah-imageLast.cgi?db=damp-cloud&ext=full'
-
-camera imageroad:
-  - platform: generic
-    icon: mdi:image
-    name: imageroad
-    still_image_url: 'http://192.168.1.253/CGI/aah-imageLast.cgi?db=quiet-water&ext=full'
-
-camera imagefrontdoor:
-  - platform: generic
-    icon: mdi:image
-    name: imagefrontdoor
-    still_image_url: 'http://192.168.1.253/CGI/aah-imageLast.cgi?db=rough-wind&ext=full'
 
 #
 # WCV80N cameras
@@ -1747,13 +1703,6 @@ sensor mtnrpi3_publickey:
 
 # UPDATE - DATE
 
-sensor datekitchen:
-  - platform: rest
-    icon: mdi:alarm
-    resource: 'http://192.168.1.253/CGI/aah-updates.cgi?db=rough-fog'
-    name: 'datekitchen'
-    value_template: '{{ value_json.date | timestamp_local }}'
-
 sensor datebathroom:
   - platform: rest
     icon: mdi:alarm
@@ -1780,13 +1729,6 @@ sensor dateroad:
 
 # UPDATE - COUNT
 
-sensor countkitchen:
-  - platform: rest
-    icon: mdi:numeric
-    resource: 'http://192.168.1.253/CGI/aah-updates.cgi?db=rough-fog'
-    name: 'countkitchen'
-    value_template: '{{ value_json.count }}'
-
 sensor countbathroom:
   - platform: rest
     icon: mdi:numeric
@@ -1808,30 +1750,7 @@ sensor countroad:
     name: 'countroad'
     value_template: '{{ value_json.count }}'
 
-# IMAGE SENSING
-
-sensor imageidkitchen:
-  - platform: rest
-    icon: mdi:numeric
-    resource: 'http://192.168.1.253/CGI/aah-images.cgi?db=rough-fog&limit=1'
-    name: imageidkitchen
-    value_template: '{{ value_json.id }}'
-
-sensor imageclasskitchen:
-  - platform: rest
-    icon: mdi:numeric
-    resource: 'http://192.168.1.253/CGI/aah-images.cgi?db=rough-fog&limit=1'
-    name: imageclasskitchen
-    value_template: '{{ value_json.class }}'
-
 # IMAGE - COUNT
-
-sensor imagecountkitchen:
-  - platform: rest
-    icon: mdi:numeric
-    resource: 'http://192.168.1.253/CGI/aah-images.cgi?db=rough-fog'
-    name: imagecountkitchen
-    value_template: '{{ value_json.count }}'
 
 sensor imagecountbathroom:
   - platform: rest
@@ -1855,13 +1774,6 @@ sensor imagecountroad:
     value_template: '{{ value_json.count }}'
 
 # IMAGE - DATE
-
-sensor imagedatekitchen:
-  - platform: rest
-    icon: mdi:numeric
-    resource: 'http://192.168.1.253/CGI/aah-images.cgi?db=rough-fog'
-    name: imagedatekitchen
-    value_template: '{{ value_json.date | timestamp_local }}'
 
 sensor imagedatebathroom:
   - platform: rest
@@ -1888,12 +1800,6 @@ sensor imagedateroad:
 # MQTT PLATFORM SENSORS
 #
 
-sensor mqttlastkitchen:
-  platform: mqtt
-  icon: mdi:human
-  state_topic: 'presence/kitchen'
-  name: mqttlastkitchen
-
 camera mqttimage:
   - platform: mqtt
     name: mqttimage
@@ -1906,74 +1812,321 @@ camera mqttimageannotated:
     icon: mdi:image
     topic: 'image-annotated/+'
 
+#
+# KITCHEN
+#
+
+camera kitchen_camera:
+  - platform: mjpeg
+    name: kitchen_camera
+    mjpeg_url: http://192.168.1.34:8081/
+
+# MQTT sensors
+
+sensor presence_kitchen:
+  - platform: mqtt
+    name: presence_kitchen
+    icon: mdi:human
+    state_topic: 'presence/kitchen'
+
+sensor kitchen_what:
+  - platform: mqtt
+    name: kitchen_what
+    icon: mdi:human-greeting
+    state_topic: 'presence/kitchen'
+    value_template: '{{ value_json.class }}'
+
+sensor kitchen_who:
+  - platform: mqtt
+    name: kitchen_who
+    icon: mdi:human-greeting
+    state_topic: 'presence/kitchen'
+    value_template: '{{ value_json.model }}'
+
+sensor kitchen_why:
+  - platform: mqtt
+    name: kitchen_why
+    icon: mdi:human-greeting
+    state_topic: 'presence/kitchen'
+    value_template: '{{ value_json.score }}'
+
+sensor kitchen_when:
+  - platform: mqtt
+    name: kitchen_when
+    icon: mdi:human-greeting
+    state_topic: 'presence/kitchen'
+    value_template: '{{ value_json.date | timestamp_local }}'
+
+camera kitchen_image:
+  - platform: mqtt
+    name: kitchen_image
+    icon: mdi:image
+    topic: 'image/kitchen'
+
+camera kitchen_image_annotated:
+  - platform: mqtt
+    name: kitchen_image_annotated
+    icon: mdi:image
+    topic: 'image-annotated/kitchen'
+
+# REST sensors
+
+sensor kitchen_updates:
+  - platform: rest
+    icon: mdi:numeric
+    resource: 'http://192.168.1.253/CGI/aah-updates.cgi?db=rough-fog'
+    name: 'kitchen_updates'
+
+sensor kitchen_images:
+  - platform: rest
+    icon: mdi:numeric
+    resource: 'http://192.168.1.253/CGI/aah-images.cgi?db=rough-fog'
+    name: 'kitchen_images'
+
+# TEMPLATE sensors
+
+sensor kitchen_json:
+  - platform: template
+    sensors:
+      kitchen_presence_json:
+        entity_id: sensor.presence_kitchen
+        value_template: '{{ states.sensor.presence_kitchen.state | tojson }}'
+      kitchen_updates_json:
+        entity_id: sensor.kitchen_updates
+        value_template: '{{ states.sensor.kitchen_updates.state | tojson }}'
+      kitchen_images_json:
+        entity_id: sensor.kitchen_images
+        value_template: '{{ states.sensor.kitchen_images.state | tojson }}'
+
+sensor kitchen_attributes:
+  - platform: template
+    sensors:
+      kitchen_date:
+        entity_id: sensor.kitchen_presence_json
+        value_template: '{{ value_json.date | timestamp_local }}'
+      kitchen_class:
+        entity_id: sensor.kitchen_presence_json
+        value_template: '{{ value_json.class }}'
+      kitchen_model:
+        entity_id: sensor.kitchen_presence_json
+        value_template: '{{ value_json.model }}'
+      kitchen_score:
+        entity_id: sensor.kitchen_presence_json
+        value_template: '{{ value_json.score }}'
+      kitchen_nupdate:
+        entity_id: sensor.kitchen_updates_json
+        value_template: '{{ value_json.count }}'
+      kitchen_nimage:
+        entity_id: sensor.kitchen_images_json
+        value_template: '{{ value_json.count }}'
+
+#
+# BATHROOM
+#
+
+camera bathroom_camera:
+  - platform: mjpeg
+    name: bathroom_camera
+    mjpeg_url: http://192.168.1.35:8081/
+
+# MQTT sensors
+
+sensor presence_bathroom:
+  - platform: mqtt
+    name: presence_bathroom
+    state_topic: 'presence/bathroom'
+
+sensor bathroom_what:
+  - platform: mqtt
+    name: bathroom_what
+    expire_after: 30
+    state_topic: 'presence/bathroom'
+    value_template: '{{ value_json.class }}'
+
+sensor bathroom_who:
+  - platform: mqtt
+    name: bathroom_who
+    expire_after: 30
+    state_topic: 'presence/bathroom'
+    value_template: '{{ value_json.model }}'
+
+sensor bathroom_why:
+  - platform: mqtt
+    name: bathroom_why
+    expire_after: 30
+    state_topic: 'presence/bathroom'
+    value_template: '{{ value_json.score }}'
+
+sensor bathroom_when:
+  - platform: mqtt
+    name: bathroom_when
+    state_topic: 'presence/bathroom'
+    value_template: '{{ value_json.date | timestamp_local }}'
+
+sensor bathroom_ago:
+  - platform: mqtt
+    name: bathroom_ago
+    unit_of_measurement: seconds
+    state_topic: 'presence/bathroom'
+    value_template: '{{ now() - value_json.date | int }}'
+
+camera bathroom_image:
+  - platform: mqtt
+    name: bathroom_image
+    topic: 'image/bathroom'
+
+camera bathroom_image_annotated:
+  - platform: mqtt
+    name: bathroom_image_annotated
+    topic: 'image-annotated/bathroom'
+
+#
+# ROAD
+#
+
+camera road_camera:
+  - platform: mjpeg
+    name: road_camera
+    mjpeg_url: http://192.168.1.36:8081/
+
+# MQTT sensors
+
+sensor presence_road:
+  - platform: mqtt
+    name: presence_road
+    icon: mdi:human
+    state_topic: 'presence/road'
+
+sensor road_what:
+  - platform: mqtt
+    name: road_what
+    icon: mdi:human-greeting
+    state_topic: 'presence/road'
+    value_template: '{{ value_json.class }}'
+
+sensor road_who:
+  - platform: mqtt
+    name: road_who
+    icon: mdi:human-greeting
+    state_topic: 'presence/road'
+    value_template: '{{ value_json.model }}'
+
+sensor road_why:
+  - platform: mqtt
+    name: road_why
+    icon: mdi:human-greeting
+    state_topic: 'presence/road'
+    value_template: '{{ value_json.score }}'
+
+sensor road_when:
+  - platform: mqtt
+    name: road_when
+    icon: mdi:human-greeting
+    state_topic: 'presence/road'
+    value_template: '{{ value_json.date | timestamp_local }}'
+
+camera road_image:
+  - platform: mqtt
+    name: road_image
+    icon: mdi:image
+    topic: 'image/road'
+
+camera road_image_annotated:
+  - platform: mqtt
+    name: road_image_annotated
+    icon: mdi:image
+    topic: 'image-annotated/road'
+
+#
+# FRONTDOOR
+#
+
+camera frontdoor_camera:   
+  - platform: mjpeg
+    name: frontdoor_camera
+    mjpeg_url: http://192.168.1.37:8081/
+
+# MQTT sensors
+
+sensor presence_frontdoor:
+  - platform: mqtt
+    name: presence_frontdoor
+    icon: mdi:human
+    state_topic: 'presence/frontdoor'
+
+sensor frontdoor_what:
+  - platform: mqtt
+    name: frontdoor_what
+    icon: mdi:human-greeting
+    state_topic: 'presence/frontdoor'
+    value_template: '{{ value_json.class }}'
+
+sensor frontdoor_who:
+  - platform: mqtt
+    name: frontdoor_who
+    icon: mdi:human-greeting
+    state_topic: 'presence/frontdoor'
+    value_template: '{{ value_json.model }}'
+
+sensor frontdoor_why:
+  - platform: mqtt
+    name: frontdoor_why
+    icon: mdi:human-greeting
+    state_topic: 'presence/frontdoor'
+    value_template: '{{ value_json.score }}'
+
+sensor frontdoor_when:
+  - platform: mqtt
+    name: frontdoor_when
+    icon: mdi:human-greeting
+    state_topic: 'presence/frontdoor'
+    value_template: '{{ value_json.date | timestamp_local }}'
+
+camera frontdoor_image:
+  - platform: mqtt
+    name: frontdoor_image
+    icon: mdi:image
+    topic: 'image/frontdoor'
+
+camera frontdoor_image_annotated:
+  - platform: mqtt
+    name: frontdoor_image_annotated
+    icon: mdi:image
+    topic: 'image-annotated/frontdoor'
+
+# WHOIN
+
 sensor whoinkitchen:
-  platform: mqtt
-  icon: mdi:human
-  state_topic: 'presence/kitchen'
-  name: whoinkitchen
-  expire_after: 60
-  value_template: '{{ value_json.class }}'
+  - platform: mqtt
+    icon: mdi:human
+    state_topic: 'presence/kitchen'
+    name: whoinkitchen
+    expire_after: 60
+    value_template: '{{ value_json.class }}'
 
 sensor whoinbathroom:
-  platform: mqtt
-  icon: mdi:human
-  state_topic: 'presence/bathroom'
-  name: whoinbathroom
-  expire_after: 60
-  value_template: '{{ value_json.class }}'
+  - platform: mqtt
+    icon: mdi:human
+    state_topic: 'presence/bathroom'
+    name: whoinbathroom
+    expire_after: 60
+    value_template: '{{ value_json.class }}'
 
 sensor whoinroad:
-  platform: mqtt
-  icon: mdi:human
-  state_topic: 'presence/road'
-  name: whoinroad
-  expire_after: 60
-  value_template: '{{ value_json.class }}'
+  - platform: mqtt
+    icon: mdi:human
+    state_topic: 'presence/road'
+    name: whoinroad
+    expire_after: 60
+    value_template: '{{ value_json.class }}'
 
 sensor whoinfrontdoor:
-  platform: mqtt
-  icon: mdi:human
-  state_topic: 'presence/frontdoor'
-  name: whoinfrontdoor
-  expire_after: 60
-  value_template: '{{ value_json.class }}'
-
-# LASTIN
-
-sensor lastseen:
-  platform: mqtt
-  icon: mdi:human
-  state_topic: 'presence/+'
-  name: lastseen
-  value_template: '{{ value_json.class }}'
-
-sensor lastinkitchen:
-  platform: mqtt
-  icon: mdi:human
-  state_topic: 'presence/kitchen'
-  name: lastinkitchen
-  value_template: '{{ value_json.class }}'
-
-sensor lastinbathroom:
-  platform: mqtt
-  icon: mdi:human
-  state_topic: 'presence/bathroom'
-  name: lastinbathroom
-  value_template: '{{ value_json.class }}'
-
-sensor lastinroad:
-  platform: mqtt
-  icon: mdi:human
-  state_topic: 'presence/road'
-  name: lastinroad
-  value_template: '{{ value_json.class }}'
-
-sensor lastinfrontdoor:
-  platform: mqtt
-  icon: mdi:human
-  state_topic: 'presence/frontdoor'
-  name: lastinfrontdoor
-  value_template: '{{ value_json.class }}'
+  - platform: mqtt
+    icon: mdi:human
+    state_topic: 'presence/frontdoor'
+    name: whoinfrontdoor
+    expire_after: 60
+    value_template: '{{ value_json.class }}'
 
 #
 # HISTORY_STATS
@@ -2009,41 +2162,41 @@ sensor peopleinkitchen:
     start: '{{ now().replace(hour=0).replace(minute=0).replace(second=0) }}'
     end: '{{ now() }}'
 
-sensor emptykitchen:
+sensor kitchen_empty_time:
   - platform: history_stats
     icon: mdi:timer
-    name: emptykitchen
-    entity_id: sensor.whoinkitchen
+    name: kitchen_empty_time
+    entity_id: sensor.kitchen_who
     state: 'unknown'
     type: time
     start: '{{ now().replace(hour=0).replace(minute=0).replace(second=0) }}'
     end: '{{ now() }}'
 
-sensor emptybathroom:
+sensor bathroom_empty_time:
   - platform: history_stats
     icon: mdi:timer
-    name: emptybathroom
-    entity_id: sensor.whoinbathroom
+    name: bathroom_empty_time
+    entity_id: sensor.bathroom_who
     state: 'unknown'
     type: time
     start: '{{ now().replace(hour=0).replace(minute=0).replace(second=0) }}'
     end: '{{ now() }}'
 
-sensor emptyfrontdoor:
+sensor frontdoor_empty_time:
   - platform: history_stats
     icon: mdi:timer
-    name: emptyfrontdoor
-    entity_id: sensor.whoinfrontdoor
+    name: frontdoor_empty_time
+    entity_id: sensor.frontdoor_who
     state: 'unknown'
     type: time
     start: '{{ now().replace(hour=0).replace(minute=0).replace(second=0) }}'
     end: '{{ now() }}'
 
-sensor emptyroad:
+sensor road_empty_time:
   - platform: history_stats
     icon: mdi:timer
-    name: emptyroad
-    entity_id: sensor.whoinroad
+    name: road_empty_time
+    entity_id: sensor.road_who
     state: 'unknown'
     type: time
     start: '{{ now().replace(hour=0).replace(minute=0).replace(second=0) }}'
@@ -2077,89 +2230,89 @@ binary_sensor peopleinkitchen:
       ellen_notin_kitchen:
         friendly_name: ellen notin kitchen
         entity_id:
-          - sensor.whoinkitchen
+          - sensor.kitchen_who
           - device_tracker.ellensiphone5
         value_template: >
           {{
             states.device_tracker.ellensiphone5.state != 'home' and
-            states.sensor.whoinkitchen.state == 'ellen'
+            states.sensor.kitchen_who.state == 'ellen'
           }}
       david_notin_kitchen:
         friendly_name: david notin kitchen
         entity_id:
-          - sensor.whoinkitchen
+          - sensor.kitchen_who
           - device_tracker.davids_iphone
         value_template: >
           {{
             states.device_tracker.davids_iphone.state != 'home' and
-            states.sensor.whoinkitchen.state == 'david'
+            states.sensor.kitchen_who.state == 'david'
           }}
       riley_notin_kitchen:
         friendly_name: riley notin kitchen
         entity_id:
-          - sensor.whoinkitchen
+          - sensor.kitchen_who
           - device_tracker.rileysiphone5
         value_template: >
           {{
             states.device_tracker.rileysiphone5.state != 'home' and
-            states.sensor.whoinkitchen.state == 'riley'
+            states.sensor.kitchen_who.state == 'riley'
           }}
       ian_notin_kitchen:
         friendly_name: ian notin kitchen
         entity_id:
-          - sensor.whoinkitchen
+          - sensor.kitchen_who
           - device_tracker.ianmartinsiphone
         value_template: >
           {{
             states.device_tracker.ianmartinsiphone.state != 'home' and
-            states.sensor.whoinkitchen.state == 'ian'
+            states.sensor.kitchen_who.state == 'ian'
           }}
       hali_notin_kitchen:
         friendly_name: hali notin kitchen
         entity_id:
-          - sensor.whoinkitchen
+          - sensor.kitchen_who
           - device_tracker.halisiphone
         value_template: >
           {{
             states.device_tracker.halisiphone.state != 'home' and
-            states.sensor.whoinkitchen.state == 'hali'
+            states.sensor.kitchen_who.state == 'hali'
           }}
       david_in_kitchen:
         friendly_name: david in kitchen
         entity_id:
-          - sensor.whoinkitchen
+          - sensor.kitchen_who
           - device_tracker.davids_iphone
         value_template: >
           {{
             states.device_tracker.davids_iphone.state == 'home' and
-            states.sensor.whoinkitchen.state == 'david'
+            states.sensor.kitchen_who.state == 'david'
           }}
       keli_in_kitchen:
         friendly_name: keli in kitchen
         entity_id:
-          - sensor.whoinkitchen
+          - sensor.kitchen_who
           - device_tracker.kelis_iphone
         value_template: >
           {{
             states.device_tracker.kelis_iphone.state == 'home' and
-            states.sensor.whoinkitchen.state == 'keli'
+            states.sensor.kitchen_who.state == 'keli'
           }}
       people_in_kitchen:
         friendly_name: people in kitchen
         entity_id:
-          - sensor.whoinkitchen
+          - sensor.kitchen_who
           - device_tracker.kelis_iphone
           - device_tracker.davids_iphone
         value_template: >
           {{
             (
               states.device_tracker.davids_iphone.state == 'home' and
-              states.sensor.whoinkitchen.state == 'david'
+              states.sensor.kitchen_who.state == 'david'
             )
             or
             (
               states.device_tracker.kelis_iphone.state == 'home' and
-              states.sensor.whoinkitchen.state == 'keli'
+              states.sensor.kitchen_who.state == 'keli'
             )
           }}
 

@@ -287,7 +287,9 @@ mtnrpi3_attribute:
   entities:
     - sensor.mtnrpi3_attribute_count
 
+#
 # AGE-AT-HOME
+#
 
 ageathome_view:
   view: yes
@@ -295,10 +297,9 @@ ageathome_view:
   icon: mdi:human-male-female
   entities:
     - group.ageathome_mqtt
-    - group.ageathome_notin_kitchen
     - group.ageathome_lastin
-    - group.ageathome_whoin
-    - group.ageathome_empty
+    - group.ageathome_who
+    - group.ageathome_empty_time
     - group.ageathome_devices
     - group.ageathome_updates
 
@@ -307,90 +308,105 @@ ageathome_detail:
   name: AgeAtHome Detail
   icon: mdi:image
   entities:
-    - group.ageathome_kitchen
-    - group.ageathome_bathroom
-    - group.ageathome_frontdoor
-    - group.ageathome_road
+    - group.ageathome_kitchen_details
+    - group.ageathome_bathroom_details
+    - group.ageathome_frontdoor_details
+    - group.ageathome_road_details
 
-ageathome_kitchen:
-  name: AgeAtHome Kitchen
-  icon: mdi:human-male-female
-  entities:
-    - camera.imagekitchen
-    - camera.camerakitchen
-    - sensor.lastinkitchen
-    - sensor.countkitchen
-    - sensor.datekitchen
-    - sensor.emptykitchen
-    - sensor.imagecountkitchen
-    - sensor.imagedatekitchen
-    - sensor.lastinkitchen
-    - sensor.whoinkitchen
+# KITCHEN
 
-ageathome_bathroom:
-  name: AgeAtHome Bathroom
-  icon: mdi:human-male-female
+ageathome_kitchen_view:
+  view: true
+  name: AgeAtHome Kitchen View
+  icon: mdi:stove
   entities:
-    - camera.imagebathroom
-    - camera.camerabathroom
-    - sensor.lastinbathroom
-    - sensor.countbathroom
-    - sensor.datebathroom
-    - sensor.emptybathroom
-    - sensor.imagecountbathroom
-    - sensor.imagedatebathroom
-    - sensor.lastinbathroom
-    - sensor.whoinbathroom
+    - camera.kitchen_camera
+    - camera.kitchen_image_annotated
+    - group.ageathome_kitchen_details
+    - group.ageathome_notin_kitchen
 
-ageathome_frontdoor:
-  name: AgeAtHome Frontdoor
-  icon: mdi:human-male-female
+ageathome_kitchen_details:
+  name: AgeAtHome Kitchen Details
   entities:
-    - camera.imagefrontdoor
-    - camera.camerafrontdoor
-    - sensor.lastinfrontdoor
-    - sensor.countfrontdoor
-    - sensor.datefrontdoor
-    - sensor.emptyfrontdoor
-    - sensor.imagecountfrontdoor
-    - sensor.imagedatefrontdoor
-    - sensor.lastinfrontdoor
-    - sensor.whoinfrontdoor
+    - sensor.kitchen_who
+    - sensor.kitchen_what
+    - sensor.kitchen_when
+    - sensor.kitchen_why
+    - sensor.kitchen_updates
+    - sensor.kitchen_images
+    - sensor.kitchen_empty_time
 
-ageathome_road:
-  name: AgeAtHome Road
-  icon: mdi:human-male-female
-  entities:
-    - camera.imageroad
-    - camera.cameraroad
-    - sensor.lastinroad
-    - sensor.countroad
-    - sensor.dateroad
-    - sensor.emptyroad
-    - sensor.imagecountroad
-    - sensor.imagedateroad
-    - sensor.lastinroad
-    - sensor.whoinroad
+# BATHROOM
 
-ageathome_images:
-  # view: true
-  name: AgeAtHome Images
-  icon: mdi:image
+ageathome_bathroom_view:
+  view: true
+  name: AgeAtHome Bathroom View
+  icon: mdi:anchor
   entities:
-    - camera.imageroad
-    - camera.imagefrontdoor
-    - camera.imagekitchen
-    - camera.imagebathroom
+    - camera.bathroom_camera
+    - camera.bathroom_image_annotated
+    - group.ageathome_bathroom_details
+    - group.ageathome_notin_bathroom
 
-ageathome_cameras:
-  # view: true
-  name: AgeAtHome Cameras
-  icon: mdi:cctv
+ageathome_bathroom_details:
+  name: AgeAtHome Bathroom Details
+  icon: mdi:bathroom-scale
   entities:
-    - camera.cameraroad
-    - camera.camerafrontdoor
-    - camera.camerakitchen
-    - camera.camerabathroom
+    - sensor.bathroom_who
+    - sensor.bathroom_what
+    - sensor.bathroom_when
+    - sensor.bathroom_why
+    - sensor.bathroom_updates
+    - sensor.bathroom_images
+    - sensor.bathroom_empty_time
+
+# FRONTDOOR
+
+ageathome_frontdoor_view:
+  view: true
+  name: AgeAtHome Bathroom View
+  icon: mdi:home-outline
+  entities:
+    - camera.frontdoor_camera
+    - camera.frontdoor_image_annotated
+    - group.ageathome_frontdoor_details
+    - group.ageathome_notin_frontdoor
+
+ageathome_frontdoor_details:
+  name: AgeAtHome Frontdoor Details
+  icon: mdi:home-outline
+  entities:
+    - sensor.frontdoor_who
+    - sensor.frontdoor_what
+    - sensor.frontdoor_when
+    - sensor.frontdoor_why
+    - sensor.frontdoor_updates
+    - sensor.frontdoor_images
+    - sensor.frontdoor_empty_time
+
+# ROAD
+
+ageathome_road_view:
+  view: true
+  name: AgeAtHome Bathroom View
+  icon: mdi:road
+  entities:
+    - camera.road_camera
+    - camera.road_image_annotated
+    - group.ageathome_road_details
+    - group.ageathome_notin_road
+
+ageathome_road_details:
+  name: AgeAtHome Frontdoor Details
+  icon: mdi:road
+  entities:
+    - sensor.road_who
+    - sensor.road_what
+    - sensor.road_when
+    - sensor.road_why
+    - sensor.road_updates
+    - sensor.road_images
+    - sensor.road_empty_time
 
 weather_view:
   view: yes
@@ -573,34 +589,35 @@ ageathome_lastin:
     - sensor.lastinroad
     - sensor.lastinfrontdoor
 
-ageathome_empty:
+ageathome_empty_time:
   name: 'AgeAtHome Empty'
   icon: mdi:home
   entities:
-    - sensor.emptykitchen
-    - sensor.emptybathroom
-    - sensor.emptyroad
-    - sensor.emptyfrontdoor
+    - sensor.kitchen_empty_time
+    - sensor.bathroom_empty_time
+    - sensor.road_empty_time
+    - sensor.frontdoor_empty_time
 
 ageathome_mqtt:
   name: 'AgeAtHome MQTT'
   icon: mdi:home
   entities:
     - camera.mqttimage
+    - camera.mqttimageannotated
     - sensor.mqttwho
     - sensor.mqttwhat
     - sensor.mqttwhere
     - sensor.mqttwhen
     - sensor.mqttscore
 
-ageathome_whoin:
+ageathome__who:
   name: 'AgeAtHome WhoIn'
   icon: mdi:home
   entities:
-    - sensor.whoinkitchen
-    - sensor.whoinbathroom
-    - sensor.whoinroad
-    - sensor.whoinfrontdoor
+    - sensor.kitchen_who
+    - sensor.bathroom_who
+    - sensor.road_who
+    - sensor.frontdoor_who
 
 ageathome_notin_kitchen:
   name: 'AgeAtHome NotIn Kitchen'
