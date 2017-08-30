@@ -297,7 +297,6 @@ ageathome_view:
   icon: mdi:human-male-female
   entities:
     - group.ageathome_mqtt
-    - group.ageathome_lastin
     - group.ageathome_who
     - group.ageathome_empty_time
     - group.ageathome_devices
@@ -332,8 +331,7 @@ ageathome_kitchen_details:
     - sensor.kitchen_what
     - sensor.kitchen_when
     - sensor.kitchen_why
-    - sensor.kitchen_updates
-    - sensor.kitchen_images
+    - sensor.kitchen_ago
     - sensor.kitchen_empty_time
 
 # BATHROOM
@@ -356,8 +354,7 @@ ageathome_bathroom_details:
     - sensor.bathroom_what
     - sensor.bathroom_when
     - sensor.bathroom_why
-    - sensor.bathroom_updates
-    - sensor.bathroom_images
+    - sensor.bathroom_ago
     - sensor.bathroom_empty_time
 
 # FRONTDOOR
@@ -380,8 +377,7 @@ ageathome_frontdoor_details:
     - sensor.frontdoor_what
     - sensor.frontdoor_when
     - sensor.frontdoor_why
-    - sensor.frontdoor_updates
-    - sensor.frontdoor_images
+    - sensor.frontdoor_ago
     - sensor.frontdoor_empty_time
 
 # ROAD
@@ -404,8 +400,7 @@ ageathome_road_details:
     - sensor.road_what
     - sensor.road_when
     - sensor.road_why
-    - sensor.road_updates
-    - sensor.road_images
+    - sensor.road_ago
     - sensor.road_empty_time
 
 weather_view:
@@ -580,18 +575,8 @@ ageathome_devices:
     - device_tracker.dampcloud
     - device_tracker.roughwind
 
-ageathome_lastin:
-  name: 'AgeAtHome LastIn'
-  icon: mdi:home
-  entities:
-    - sensor.lastinkitchen
-    - sensor.lastinbathroom
-    - sensor.lastinroad
-    - sensor.lastinfrontdoor
-
 ageathome_empty_time:
   name: 'AgeAtHome Empty'
-  icon: mdi:home
   entities:
     - sensor.kitchen_empty_time
     - sensor.bathroom_empty_time
@@ -600,7 +585,6 @@ ageathome_empty_time:
 
 ageathome_mqtt:
   name: 'AgeAtHome MQTT'
-  icon: mdi:home
   entities:
     - camera.mqttimage
     - camera.mqttimageannotated
@@ -610,14 +594,21 @@ ageathome_mqtt:
     - sensor.mqttwhen
     - sensor.mqttscore
 
-ageathome__who:
-  name: 'AgeAtHome WhoIn'
-  icon: mdi:home
+ageathome_who:
+  name: 'AgeAtHome Who'
   entities:
     - sensor.kitchen_who
     - sensor.bathroom_who
     - sensor.road_who
     - sensor.frontdoor_who
+
+ageathome_ago:
+  name: 'AgeAtHome Ago'
+  entities:
+    - sensor.kitchen_ago
+    - sensor.bathroom_ago
+    - sensor.road_ago
+    - sensor.frontdoor_ago
 
 ageathome_notin_kitchen:
   name: 'AgeAtHome NotIn Kitchen'
@@ -628,6 +619,39 @@ ageathome_notin_kitchen:
     - binary_sensor.hali_notin_kitchen
     - binary_sensor.ian_notin_kitchen
     - binary_sensor.riley_notin_kitchen
+    - binary_sensor.ellen_notin_kitchen
+
+ageathome_notin_bathroom:
+  name: 'AgeAtHome NotIn Bathroom'
+  icon: mdi:cancel
+  entities:
+    - binary_sensor.david_notin_bathroom
+    - binary_sensor.keli_notin_bathroom
+    - binary_sensor.hali_notin_bathroom
+    - binary_sensor.ian_notin_bathroom
+    - binary_sensor.riley_notin_bathroom
+    - binary_sensor.ellen_notin_bathroom
+
+ageathome_notin_road:
+  name: 'AgeAtHome NotIn Road'
+  icon: mdi:cancel
+  entities:
+    - binary_sensor.david_notin_road
+    - binary_sensor.keli_notin_road
+    - binary_sensor.hali_notin_road
+    - binary_sensor.ian_notin_road
+    - binary_sensor.riley_notin_road
+    - binary_sensor.ellen_notin_road
+
+ageathome_notin_frontdoor:
+  name: 'AgeAtHome NotIn Frontdoor'
+  icon: mdi:cancel
+  entities:
+    - binary_sensor.david_notin_frontdoor
+    - binary_sensor.keli_notin_frontdoor
+    - binary_sensor.hali_notin_frontdoor
+    - binary_sensor.ian_notin_frontdoor
+    - binary_sensor.riley_notin_frontdoor
     - binary_sensor.ellen_notin_kitchen
 
 ageathome_updates:

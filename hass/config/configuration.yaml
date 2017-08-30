@@ -13,7 +13,9 @@ homeassistant:
 
 http:
   api_password: !secret http_api_password
-  trusted_networks: 192.168.1.0/24
+  trusted_networks: 
+    - 192.168.1.0/24
+    - 172.30.33.0/24
   cors_allowed_origins: 
     - https://google.com
     - https://home-assistant.io
@@ -1701,101 +1703,6 @@ sensor mtnrpi3_publickey:
     name: MtnRpi3 Publickey
     value_template: '{{ value_json.pem }}'
 
-# UPDATE - DATE
-
-sensor datebathroom:
-  - platform: rest
-    icon: mdi:alarm
-    type: time
-    resource: 'http://192.168.1.253/CGI/aah-updates.cgi?db=damp-cloud'
-    name: 'datebathroom'
-    value_template: '{{ value_json.date | timestamp_local }}'
-
-sensor datefrontdoor:
-  - platform: rest
-    icon: mdi:alarm
-    type: time
-    resource: 'http://192.168.1.253/CGI/aah-updates.cgi?db=rough-wind'
-    name: 'datefrontdoor'
-    value_template: '{{ value_json.date | timestamp_local }}'
-
-sensor dateroad:
-  - platform: rest
-    icon: mdi:alarm
-    type: time
-    resource: 'http://192.168.1.253/CGI/aah-updates.cgi?db=quiet-water'
-    name: 'dateroad'
-    value_template: '{{ value_json.date | timestamp_local }}'
-
-# UPDATE - COUNT
-
-sensor countbathroom:
-  - platform: rest
-    icon: mdi:numeric
-    resource: 'http://192.168.1.253/CGI/aah-updates.cgi?db=damp-cloud'
-    name: 'countbathroom'
-    value_template: '{{ value_json.count }}'
-
-sensor countfrontdoor:
-  - platform: rest
-    icon: mdi:numeric
-    resource: 'http://192.168.1.253/CGI/aah-updates.cgi?db=rough-wind'
-    name: 'countfrontdoor'
-    value_template: '{{ value_json.count }}'
-
-sensor countroad:
-  - platform: rest
-    icon: mdi:numeric
-    resource: 'http://192.168.1.253/CGI/aah-updates.cgi?db=quiet-water'
-    name: 'countroad'
-    value_template: '{{ value_json.count }}'
-
-# IMAGE - COUNT
-
-sensor imagecountbathroom:
-  - platform: rest
-    icon: mdi:numeric
-    resource: 'http://192.168.1.253/CGI/aah-images.cgi?db=damp-cloud'
-    name: imagecountbathroom
-    value_template: '{{ value_json.count }}'
-
-sensor imagecountfrontdoor:
-  - platform: rest
-    icon: mdi:numeric
-    resource: 'http://192.168.1.253/CGI/aah-images.cgi?db=rough-wind'
-    name: imagecountfrontdoor
-    value_template: '{{ value_json.count }}'
-
-sensor imagecountroad:
-  - platform: rest
-    icon: mdi:numeric
-    resource: 'http://192.168.1.253/CGI/aah-images.cgi?db=quiet-water'
-    name: imagecountroad
-    value_template: '{{ value_json.count }}'
-
-# IMAGE - DATE
-
-sensor imagedatebathroom:
-  - platform: rest
-    icon: mdi:numeric
-    resource: 'http://192.168.1.253/CGI/aah-images.cgi?db=damp-cloud'
-    name: imagedatebathroom
-    value_template: '{{ value_json.date | timestamp_local }}'
-
-sensor imagedatefrontdoor:
-  - platform: rest
-    icon: mdi:numeric
-    resource: 'http://192.168.1.253/CGI/aah-images.cgi?db=rough-wind'
-    name: imagedatefrontdoor
-    value_template: '{{ value_json.date | timestamp_local }}'
-
-sensor imagedateroad:
-  - platform: rest
-    icon: mdi:numeric
-    resource: 'http://192.168.1.253/CGI/aah-images.cgi?db=quiet-water'
-    name: imagedateroad
-    value_template: '{{ value_json.date | timestamp_local }}'
-
 #
 # MQTT PLATFORM SENSORS
 #
@@ -1857,6 +1764,13 @@ sensor kitchen_when:
     state_topic: 'presence/kitchen'
     value_template: '{{ value_json.date | timestamp_local }}'
 
+sensor kitchen_ago:
+  - platform: mqtt
+    name: kitchen_ago
+    unit_of_measurement: seconds
+    state_topic: 'presence/kitchen'
+    value_template: '{{ (now().timestamp() | int) - value_json.date }}'
+
 camera kitchen_image:
   - platform: mqtt
     name: kitchen_image
@@ -1869,56 +1783,31 @@ camera kitchen_image_annotated:
     icon: mdi:image
     topic: 'image-annotated/kitchen'
 
-# REST sensors
-
-sensor kitchen_updates:
-  - platform: rest
-    icon: mdi:numeric
-    resource: 'http://192.168.1.253/CGI/aah-updates.cgi?db=rough-fog'
-    name: 'kitchen_updates'
-
-sensor kitchen_images:
-  - platform: rest
-    icon: mdi:numeric
-    resource: 'http://192.168.1.253/CGI/aah-images.cgi?db=rough-fog'
-    name: 'kitchen_images'
-
-# TEMPLATE sensors
-
-sensor kitchen_json:
-  - platform: template
-    sensors:
-      kitchen_presence_json:
-        entity_id: sensor.presence_kitchen
-        value_template: '{{ states.sensor.presence_kitchen.state | tojson }}'
-      kitchen_updates_json:
-        entity_id: sensor.kitchen_updates
-        value_template: '{{ states.sensor.kitchen_updates.state | tojson }}'
-      kitchen_images_json:
-        entity_id: sensor.kitchen_images
-        value_template: '{{ states.sensor.kitchen_images.state | tojson }}'
-
-sensor kitchen_attributes:
-  - platform: template
-    sensors:
-      kitchen_date:
-        entity_id: sensor.kitchen_presence_json
-        value_template: '{{ value_json.date | timestamp_local }}'
-      kitchen_class:
-        entity_id: sensor.kitchen_presence_json
-        value_template: '{{ value_json.class }}'
-      kitchen_model:
-        entity_id: sensor.kitchen_presence_json
-        value_template: '{{ value_json.model }}'
-      kitchen_score:
-        entity_id: sensor.kitchen_presence_json
-        value_template: '{{ value_json.score }}'
-      kitchen_nupdate:
-        entity_id: sensor.kitchen_updates_json
-        value_template: '{{ value_json.count }}'
-      kitchen_nimage:
-        entity_id: sensor.kitchen_images_json
-        value_template: '{{ value_json.count }}'
+###
+### TEMPLATE sensors - SHOULD WORK; DOES NOW
+###
+### sensor kitchen_json:
+###   - platform: template
+###     sensors:
+###       kitchen_presence_json:
+###         entity_id: sensor.presence_kitchen
+###         value_template: '{{ states.sensor.presence_kitchen.state | tojson }}'
+### 
+### sensor kitchen_attributes:
+###   - platform: template
+###     sensors:
+###       kitchen_date:
+###         entity_id: sensor.kitchen_presence_json
+###         value_template: '{{ value_json.date | timestamp_local }}'
+###       kitchen_class:
+###         entity_id: sensor.kitchen_presence_json
+###         value_template: '{{ value_json.class }}'
+###       kitchen_model:
+###         entity_id: sensor.kitchen_presence_json
+###         value_template: '{{ value_json.model }}'
+###       kitchen_score:
+###         entity_id: sensor.kitchen_presence_json
+###         value_template: '{{ value_json.score }}'
 
 #
 # BATHROOM
@@ -1968,7 +1857,7 @@ sensor bathroom_ago:
     name: bathroom_ago
     unit_of_measurement: seconds
     state_topic: 'presence/bathroom'
-    value_template: '{{ now() - value_json.date | int }}'
+    value_template: '{{ (now().timestamp() | int) - value_json.date }}'
 
 camera bathroom_image:
   - platform: mqtt
@@ -2024,6 +1913,13 @@ sensor road_when:
     icon: mdi:human-greeting
     state_topic: 'presence/road'
     value_template: '{{ value_json.date | timestamp_local }}'
+
+sensor road_ago:
+  - platform: mqtt
+    name: road_ago
+    unit_of_measurement: seconds
+    state_topic: 'presence/road'
+    value_template: '{{ (now().timestamp() | int) - value_json.date }}'
 
 camera road_image:
   - platform: mqtt
@@ -2082,6 +1978,13 @@ sensor frontdoor_when:
     state_topic: 'presence/frontdoor'
     value_template: '{{ value_json.date | timestamp_local }}'
 
+sensor frontdoor_ago:
+  - platform: mqtt
+    name: frontdoor_ago
+    unit_of_measurement: seconds
+    state_topic: 'presence/frontdoor'
+    value_template: '{{ (now().timestamp() | int) - value_json.date }}'
+
 camera frontdoor_image:
   - platform: mqtt
     name: frontdoor_image
@@ -2093,40 +1996,6 @@ camera frontdoor_image_annotated:
     name: frontdoor_image_annotated
     icon: mdi:image
     topic: 'image-annotated/frontdoor'
-
-# WHOIN
-
-sensor whoinkitchen:
-  - platform: mqtt
-    icon: mdi:human
-    state_topic: 'presence/kitchen'
-    name: whoinkitchen
-    expire_after: 60
-    value_template: '{{ value_json.class }}'
-
-sensor whoinbathroom:
-  - platform: mqtt
-    icon: mdi:human
-    state_topic: 'presence/bathroom'
-    name: whoinbathroom
-    expire_after: 60
-    value_template: '{{ value_json.class }}'
-
-sensor whoinroad:
-  - platform: mqtt
-    icon: mdi:human
-    state_topic: 'presence/road'
-    name: whoinroad
-    expire_after: 60
-    value_template: '{{ value_json.class }}'
-
-sensor whoinfrontdoor:
-  - platform: mqtt
-    icon: mdi:human
-    state_topic: 'presence/frontdoor'
-    name: whoinfrontdoor
-    expire_after: 60
-    value_template: '{{ value_json.class }}'
 
 #
 # HISTORY_STATS
