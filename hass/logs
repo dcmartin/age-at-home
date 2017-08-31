@@ -6,4 +6,4 @@ else
 endif
 set d = `/bin/date +%s`
 set d = `/bin/echo "$d - $ttl" | /usr/bin/bc`
-sudo docker logs -t --since `date +%Y-%m-%dT%T` homeassistant
+sudo docker logs -f -t --since `date +%Y-%m-%dT%T` homeassistant

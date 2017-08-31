@@ -25,23 +25,45 @@ http:
 updater:
   include_used_components: true
 
+#
+# BASICS
+#
+
 hassio:
-
 discovery:
-
 frontend:
-
-sun:
-  elevation: 827
-
 config:
+logger: !include logger.yaml
 
-# not yet (threw error)
-# python_script:
+#
+# PANEL IFRAME(S)
+#
 
-# have to figure this one out
-# recorder:
-#   db_url: !secret my_sql_url
+panel_iframe:
+  docsis:
+    title: 'Mikrotik'
+    icon: mdi:router-wireless
+    url: 'http://192.168.1.1'
+  classify:
+    title: 'CLASSIFY'
+    icon: mdi:image-filter
+    url: 'http://age-at-home.dcmartin.com/classify.html'
+  digits:
+    title: 'DIGITS'
+    icon: mdi:format-list-numbers
+    url: 'http://digits.dcmartin.com:5001'
+  rpi2:
+    title: 'mtn_rpi2'
+    icon: mdi:image-filter-hdr
+    url: 'http://192.168.1.39/dashboard'
+  rpi3:
+    title: 'mtn_rpi3'
+    icon: mdi:image-filter-hdr
+    url: 'http://192.168.1.40/dashboard'
+
+#
+# MQTT
+#
 
 mqtt:
   broker: 192.168.1.26
@@ -51,16 +73,12 @@ mqtt:
   # username:
   # password:
 
-logger: !include logger.yaml
-
-# SONOS
-
-media_player sonos:
-  - platform: sonos
-
 #
-# TEMPLATES
+# SUN
 #
+
+sun:
+  elevation: 827
 
 sensor solar:
   - platform: template
@@ -70,7 +88,44 @@ sensor solar:
         friendly_name: 'Sun angle'
         unit_of_measurement: 'degrees'
       sunrise:
-        value_template: '{{ states.sun.sun.attributes.next_rising }}'
+        value_template: '{{ strptime(states.sun.sun.attributes.next_rising,"%Y-%m-%dT%T%Z" ) | timestamp_custom("%h:%M %p") }}'
+      sunset:
+        value_template: '{{ strptime(states.sun.sun.attributes.next_setting,"%Y-%m-%dT%T%Z" ) | timestamp_custom("%h:%M %p") }}'
+        # 2017-08-31T13:36:56+00:00
+
+#
+# FFMPEG MOTION DETECT TEST
+#
+
+ffmpeg:
+
+binary_sensor backyardmotion:
+  - platform: ffmpeg_motion
+    input: !secret backyardvideo
+    name: backyardmotion
+    device_class: motion
+    initial_state: false
+    changes: 5
+    # ffmpeg_bin: /usr/bin/ffmpeg
+    # ffmpeg_bin: /usr/bin/avconv
+    # extra_arguments: -pred 1 -q:v 2
+    # reset: 20
+    # repeats: 0
+    # repeat_time: 0
+    # extra_arguments:
+# not yet (threw error)
+# python_script:
+
+# have to figure this one out
+# recorder:
+#   db_url: !secret my_sql_url
+
+#
+# SONOS
+#
+
+media_player sonos:
+  - platform: sonos
 
 sensor sonos_play1:
   - platform: template
@@ -134,71 +189,25 @@ sensor sonos_play3:
         entity_id: media_player.play3
         value_template: '{{ states.media_player.play3.attributes.media_album_name }}'
 
-# PANEL IFRAME(S)
+sensor play1_paused:
+  - platform: history_stats
+    icon: mdi:speaker
+    name: play1_paused
+    entity_id: sensor.play1_state
+    state: 'paused'
+    type: ratio
+    start: '{{ now().replace(hour=0).replace(minute=0).replace(second=0) }}'
+    end: '{{ now() }}'
 
-panel_iframe:
-  docsis:
-    title: 'Mikrotik'
-    icon: mdi:router-wireless
-    url: 'http://192.168.1.1'
-  classify:
-    title: 'CLASSIFY'
-    icon: mdi:image-filter
-    url: 'http://age-at-home.dcmartin.com/classify.html'
-  digits:
-    title: 'DIGITS'
-    icon: mdi:format-list-numbers
-    url: 'http://digits.dcmartin.com:5001'
-  rpi2:
-    title: 'mtn_rpi2'
-    icon: mdi:image-filter-hdr
-    url: 'http://192.168.1.39/dashboard'
-  rpi3:
-    title: 'mtn_rpi3'
-    icon: mdi:image-filter-hdr
-    url: 'http://192.168.1.40/dashboard'
-
-# WORKING ON PRESENCE
-
-sensor score:
-  - platform: mqtt
-    icon: mdi:numeric
-    state_topic: 'presence/+'
-    name: mqttscore
-    friendly_name: 'Score Last'
-    value_template: '{{ value_json.score }}'
-
-sensor mqttwhere:
-  - platform: mqtt
-    icon: mdi:house
-    state_topic: 'presence/+'
-    name: mqttwhere
-    friendly_name: 'Where Last'
-    value_template: '{{ value_json.location }}'
-
-sensor mqttwhat:
-  - platform: mqtt
-    icon: mdi:human
-    state_topic: 'presence/+'
-    name: mqttwhat
-    friendly_name: 'What Last'
-    value_template: '{{ value_json.class }}'
-
-sensor mqttwho:
-  - platform: mqtt
-    icon: mdi:comment-question-outline
-    state_topic: 'presence/+'
-    name: mqttwho
-    friendly_name: 'Who Last'
-    value_template: '{{ value_json.model }}'
-
-sensor mqttwhen:
-  - platform: mqtt
-    icon: mdi:clock
-    state_topic: 'presence/+'
-    name: mqttwhen
-    friendly_name: 'When Last'
-    value_template: '{{ value_json.date | timestamp_custom("%H:%M") }}'
+sensor play3_paused:
+  - platform: history_stats
+    icon: mdi:speaker
+    name: play3_paused
+    entity_id: sensor.play3_state
+    state: 'paused'
+    type: ratio
+    start: '{{ now().replace(hour=0).replace(minute=0).replace(second=0) }}'
+    end: '{{ now() }}'
 
 # IOS
 
@@ -248,7 +257,7 @@ notify ios:
 #  resource: !secret slack_webhook
 #  method: POST
 #  data: "-H 'Content-type: application/json'"
-#  data_template: '{{ value_json.date | timestamp_local }}'
+#  data_template: '{{ value_json.date | timestamp_custom("%h:%M %p") }}'
 
 # ZEROCONF -- should be automatic, but JIC
 
@@ -427,31 +436,28 @@ history:
       - media_player
   include:
     entities:
-      - group.ageathome_notin_kitchen
-      - binary_sensor.backyardmotion
+      - sensor.solar_angle
       - binary_sensor.keli_in_kitchen
       - binary_sensor.david_in_kitchen
-      - binary_sensor.people_in_kitchen
-      - binary_sensor.david_notin_kitchen
-      - binary_sensor.ellen_notin_kitchen
-      - sensor.peopleinkitchen
+      - binary_sensor.kitchen_wrong
       - sensor.david_plex
-      - sensor.mqttscore
-      - sensor.kitchen_who
-      - sensor.bathroom_who
-      - sensor.frontdoor_who
-      - sensor.road_who
+      - sensor.last_what
+      - sensor.kitchen_what
+      - sensor.bathroom_what
+      - sensor.frontdoor_what
+      - sensor.road_what
       - sensor.kitchen_empty_time
       - sensor.bathroom_empty_time
       - sensor.frontdoor_empty_time
       - sensor.road_empty_time
+      - sensor.kitchen_busy_time
+      - sensor.bathroom_busy_time
+      - sensor.frontdoor_busy_time
+      - sensor.road_busy_time
       - sensor.play1_state
       - sensor.play3_state
       - device_tracker.davids_iphone
       - device_tracker.kelis_iphone
-      - device_tracker.dcmsiphone
-      - device_tracker.davidcsapple_watch
-      - device_tracker.kelisiphone7
       - device_tracker.ellensiphone5
       - device_tracker.halisiphone
       - device_tracker.ianmartinsiphone
@@ -809,63 +815,72 @@ sensor mtnrpi2_agreement0_name:
     icon: mdi:weather-sunset
     resource: 'http://192.168.1.254/CGI/mtn-agreement.cgi?ip=39&id=0'
     name: 'MtnRpi2 Agreement0 Name'
-    value_template: '{{ value_json.name }}'
+    friendly_name: 'Name'
+    value_template: '{{ value_json.name | default("null") }}'
 
 sensor mtnrpi2_agreement0_id:
   - platform: rest
     icon: mdi:weather-sunset
     resource: 'http://192.168.1.254/CGI/mtn-agreement.cgi?ip=39&id=0'
     name: 'MtnRpi2 Agreement0 ID'
-    value_template: '{{ value_json.current_agreement_id }}'
+    friendly_name: 'AgreementID'
+    value_template: '{{ value_json.current_agreement_id | default("null") }}'
 
 sensor mtnrpi2_agreement0_protocol:
   - platform: rest
     icon: mdi:weather-sunset
     resource: 'http://192.168.1.254/CGI/mtn-agreement.cgi?ip=39&id=0'
     name: MtnRpi2 Agreement0 Protocol
-    value_template: '{{ value_json.agreement_protocol }}'
+    friendly_name: 'Protocol'
+    value_template: '{{ value_json.agreement_protocol | default("null") }}'
 
 sensor mtnrpi2_agreement0_consumer:
   - platform: rest
     icon: mdi:weather-sunset
     resource: 'http://192.168.1.254/CGI/mtn-agreement.cgi?ip=39&id=0'
     name: 'MtnRpi2 Agreement0 Consumer'
-    value_template: '{{ value_json.consumer_id }}'
+    friendly_name: 'Consumer'
+    value_template: '{{ value_json.consumer_id | default("null") }}'
 
 sensor mtnrpi2_agreement0_create:
   - platform: rest
     icon: mdi:weather-sunset
     resource: 'http://192.168.1.254/CGI/mtn-agreement.cgi?ip=39&id=0'
     name: 'MtnRpi2 Agreement0 Create'
-    value_template: '{{ value_json.agreement_creation_time | timestamp_local }}'
+    friendly_name: 'Created'
+    value_template: '{{ (value_json.agreement_creation_time | timestamp_custom("%a %b %d @ %h:%M %p")) | default("null") }}'
 
 sensor mtnrpi2_agreement0_accept:
   - platform: rest
     icon: mdi:weather-sunset
     resource: 'http://192.168.1.254/CGI/mtn-agreement.cgi?ip=39&id=0'
     name: 'MtnRpi2 Agreement0 Accept'
-    value_template: '{{ value_json.agreement_accepted_time | timestamp_local }}'
+    friendly_name: 'Accepted'
+    value_template: '{{ (value_json.agreement_accepted_time | timestamp_custom("%a %b %d @ %h:%M %p")) | default("null") }}'
 
 sensor mtnrpi2_agreement0_finalize:
   - platform: rest
     icon: mdi:weather-sunset
     resource: 'http://192.168.1.254/CGI/mtn-agreement.cgi?ip=39&id=0'
     name: 'MtnRpi2 Agreement0 Finalize'
-    value_template: '{{ value_json.agreement_finalized_time | timestamp_local }}'
+    friendly_name: 'Finalized'
+    value_template: '{{ (value_json.agreement_finalized_time | timestamp_custom("%a %b %d @ %h:%M %p")) | default("null") }}'
 
 sensor mtnrpi2_agreement0_receive:
   - platform: rest
     icon: mdi:weather-sunset
     resource: 'http://192.168.1.254/CGI/mtn-agreement.cgi?ip=39&id=0'
     name: 'MtnRpi2 Agreement0 Receive'
-    value_template: '{{ value_json.agreement_data_received_time | timestamp_local }}'
+    friendly_name: 'Received'
+    value_template: '{{ (value_json.agreement_data_received_time | timestamp_custom("%a %b %d @ %h:%M %p")) | default("null") }}'
 
 sensor mtnrpi2_agreement0_start:
   - platform: rest
     icon: mdi:weather-sunset
     resource: 'http://192.168.1.254/CGI/mtn-agreement.cgi?ip=39&id=0'
     name: 'MtnRpi2 Agreement0 Start'
-    value_template: '{{ value_json.agreement_execution_start_time | timestamp_local }}'
+    friendly_name: 'Started'
+    value_template: '{{ (value_json.agreement_execution_start_time | timestamp_custom("%a %b %d @ %h:%M %p")) | default("null") }}'
 
 # AGREEMENT #1
 
@@ -874,63 +889,63 @@ sensor mtnrpi2_agreement1_name:
     icon: mdi:weather-sunset
     resource: 'http://192.168.1.254/CGI/mtn-agreement.cgi?ip=39&id=1'
     name: 'MtnRpi2 Agreement1 Name'
-    value_template: '{{ value_json.name }}'
+    value_template: '{{ value_json.name | default("null") }}'
 
 sensor mtnrpi2_agreement1_id:
   - platform: rest
     icon: mdi:weather-sunset
     resource: 'http://192.168.1.254/CGI/mtn-agreement.cgi?ip=39&id=1'
     name: 'MtnRpi2 Agreement1 ID'
-    value_template: '{{ value_json.current_agreement_id }}'
+    value_template: '{{ value_json.current_agreement_id | default("null") }}'
 
 sensor mtnrpi2_agreement1_protocol:
   - platform: rest
     icon: mdi:weather-sunset
     resource: 'http://192.168.1.254/CGI/mtn-agreement.cgi?ip=39&id=1'
     name: MtnRpi2 Agreement1 Protocol
-    value_template: '{{ value_json.agreement_protocol }}'
+    value_template: '{{ value_json.agreement_protocol | default("null") }}'
 
 sensor mtnrpi2_agreement1_consumer:
   - platform: rest
     icon: mdi:weather-sunset
     resource: 'http://192.168.1.254/CGI/mtn-agreement.cgi?ip=39&id=1'
     name: 'MtnRpi2 Agreement1 Consumer'
-    value_template: '{{ value_json.consumer_id }}'
+    value_template: '{{ value_json.consumer_id | default("null") }}'
 
 sensor mtnrpi2_agreement1_create:
   - platform: rest
     icon: mdi:weather-sunset
     resource: 'http://192.168.1.254/CGI/mtn-agreement.cgi?ip=39&id=1'
     name: 'MtnRpi2 Agreement1 Create'
-    value_template: '{{ value_json.agreement_creation_time | timestamp_local }}'
+    value_template: '{{ value_json.agreement_creation_time | timestamp_custom("%h:%M %p") | default("null") }}'
 
 sensor mtnrpi2_agreement1_accept:
   - platform: rest
     icon: mdi:weather-sunset
     resource: 'http://192.168.1.254/CGI/mtn-agreement.cgi?ip=39&id=1'
     name: 'MtnRpi2 Agreement1 Accept'
-    value_template: '{{ value_json.agreement_accepted_time | timestamp_local }}'
+    value_template: '{{ value_json.agreement_accepted_time | timestamp_custom("%h:%M %p") | default("null") }}'
 
 sensor mtnrpi2_agreement1_finalize:
   - platform: rest
     icon: mdi:weather-sunset
     resource: 'http://192.168.1.254/CGI/mtn-agreement.cgi?ip=39&id=1'
     name: 'MtnRpi2 Agreement1 Finalize'
-    value_template: '{{ value_json.agreement_finalized_time | timestamp_local }}'
+    value_template: '{{ value_json.agreement_finalized_time | timestamp_custom("%h:%M %p") | default("null") }}'
 
 sensor mtnrpi2_agreement1_receive:
   - platform: rest
     icon: mdi:weather-sunset
     resource: 'http://192.168.1.254/CGI/mtn-agreement.cgi?ip=39&id=1'
     name: 'MtnRpi2 Agreement1 Receive'
-    value_template: '{{ value_json.agreement_data_received_time | timestamp_local }}'
+    value_template: '{{ value_json.agreement_data_received_time | timestamp_custom("%h:%M %p") | default("null") }}'
 
 sensor mtnrpi2_agreement1_start:
   - platform: rest
     icon: mdi:weather-sunset
     resource: 'http://192.168.1.254/CGI/mtn-agreement.cgi?ip=39&id=1'
     name: 'MtnRpi2 Agreement1 Start'
-    value_template: '{{ value_json.agreement_execution_start_time | timestamp_local }}'
+    value_template: '{{ value_json.agreement_execution_start_time | timestamp_custom("%h:%M %p") | default("null") }}'
 
 # AGREEMENT #2
 
@@ -939,63 +954,63 @@ sensor mtnrpi2_agreement2_name:
     icon: mdi:weather-sunset
     resource: 'http://192.168.1.254/CGI/mtn-agreement.cgi?ip=39&id=2'
     name: 'MtnRpi2 Agreement2 Name'
-    value_template: '{{ value_json.name }}'
+    value_template: '{{ value_json.name | default("null") }}'
 
 sensor mtnrpi2_agreement2_id:
   - platform: rest
     icon: mdi:weather-sunset
     resource: 'http://192.168.1.254/CGI/mtn-agreement.cgi?ip=39&id=2'
     name: 'MtnRpi2 Agreement2 ID'
-    value_template: '{{ value_json.current_agreement_id }}'
+    value_template: '{{ value_json.current_agreement_id | default("null") }}'
 
 sensor mtnrpi2_agreement2_protocol:
   - platform: rest
     icon: mdi:weather-sunset
     resource: 'http://192.168.1.254/CGI/mtn-agreement.cgi?ip=39&id=2'
     name: MtnRpi2 Agreement2 Protocol
-    value_template: '{{ value_json.agreement_protocol }}'
+    value_template: '{{ value_json.agreement_protocol | default("null") }}'
 
 sensor mtnrpi2_agreement2_consumer:
   - platform: rest
     icon: mdi:weather-sunset
     resource: 'http://192.168.1.254/CGI/mtn-agreement.cgi?ip=39&id=2'
     name: 'MtnRpi2 Agreement2 Consumer'
-    value_template: '{{ value_json.consumer_id }}'
+    value_template: '{{ value_json.consumer_id | default("null") }}'
 
 sensor mtnrpi2_agreement2_create:
   - platform: rest
     icon: mdi:weather-sunset
     resource: 'http://192.168.1.254/CGI/mtn-agreement.cgi?ip=39&id=2'
     name: 'MtnRpi2 Agreement2 Create'
-    value_template: '{{ value_json.agreement_creation_time | timestamp_local }}'
+    value_template: '{{ value_json.agreement_creation_time | timestamp_custom("%h:%M %p") | default("null") }}'
 
 sensor mtnrpi2_agreement2_accept:
   - platform: rest
     icon: mdi:weather-sunset
     resource: 'http://192.168.1.254/CGI/mtn-agreement.cgi?ip=39&id=2'
     name: 'MtnRpi2 Agreement2 Accept'
-    value_template: '{{ value_json.agreement_accepted_time | timestamp_local }}'
+    value_template: '{{ value_json.agreement_accepted_time | timestamp_custom("%h:%M %p") | default("null") }}'
 
 sensor mtnrpi2_agreement2_finalize:
   - platform: rest
     icon: mdi:weather-sunset
     resource: 'http://192.168.1.254/CGI/mtn-agreement.cgi?ip=39&id=2'
     name: 'MtnRpi2 Agreement2 Finalize'
-    value_template: '{{ value_json.agreement_finalized_time | timestamp_local }}'
+    value_template: '{{ value_json.agreement_finalized_time | timestamp_custom("%h:%M %p") | default("null") }}'
 
 sensor mtnrpi2_agreement2_receive:
   - platform: rest
     icon: mdi:weather-sunset
     resource: 'http://192.168.1.254/CGI/mtn-agreement.cgi?ip=39&id=2'
     name: 'MtnRpi2 Agreement2 Receive'
-    value_template: '{{ value_json.agreement_data_received_time | timestamp_local }}'
+    value_template: '{{ value_json.agreement_data_received_time | timestamp_custom("%h:%M %p") | default("null") }}'
 
 sensor mtnrpi2_agreement2_start:
   - platform: rest
     icon: mdi:weather-sunset
     resource: 'http://192.168.1.254/CGI/mtn-agreement.cgi?ip=39&id=2'
     name: 'MtnRpi2 Agreement2 Start'
-    value_template: '{{ value_json.agreement_execution_start_time | timestamp_local }}'
+    value_template: '{{ value_json.agreement_execution_start_time | timestamp_custom("%h:%M %p") | default("null") }}'
 
 # AGREEMENT #3
 
@@ -1004,63 +1019,63 @@ sensor mtnrpi2_agreement3_name:
     icon: mdi:weather-sunset
     resource: 'http://192.168.1.254/CGI/mtn-agreement.cgi?ip=39&id=3'
     name: 'MtnRpi2 Agreement3 Name'
-    value_template: '{{ value_json.name }}'
+    value_template: '{{ value_json.name | default("null") }}'
 
 sensor mtnrpi2_agreement3_id:
   - platform: rest
     icon: mdi:weather-sunset
     resource: 'http://192.168.1.254/CGI/mtn-agreement.cgi?ip=39&id=3'
     name: 'MtnRpi2 Agreement3 ID'
-    value_template: '{{ value_json.current_agreement_id }}'
+    value_template: '{{ value_json.current_agreement_id | default("null") }}'
 
 sensor mtnrpi2_agreement3_protocol:
   - platform: rest
     icon: mdi:weather-sunset
     resource: 'http://192.168.1.254/CGI/mtn-agreement.cgi?ip=39&id=3'
     name: MtnRpi2 Agreement3 Protocol
-    value_template: '{{ value_json.agreement_protocol }}'
+    value_template: '{{ value_json.agreement_protocol | default("null") }}'
 
 sensor mtnrpi2_agreement3_consumer:
   - platform: rest
     icon: mdi:weather-sunset
     resource: 'http://192.168.1.254/CGI/mtn-agreement.cgi?ip=39&id=3'
     name: 'MtnRpi2 Agreement3 Consumer'
-    value_template: '{{ value_json.consumer_id }}'
+    value_template: '{{ value_json.consumer_id | default("null") }}'
 
 sensor mtnrpi2_agreement3_create:
   - platform: rest
     icon: mdi:weather-sunset
     resource: 'http://192.168.1.254/CGI/mtn-agreement.cgi?ip=39&id=3'
     name: 'MtnRpi2 Agreement3 Create'
-    value_template: '{{ value_json.agreement_creation_time | timestamp_local }}'
+    value_template: '{{ value_json.agreement_creation_time | timestamp_custom("%h:%M %p") | default("null") }}'
 
 sensor mtnrpi2_agreement3_accept:
   - platform: rest
     icon: mdi:weather-sunset
     resource: 'http://192.168.1.254/CGI/mtn-agreement.cgi?ip=39&id=3'
     name: 'MtnRpi2 Agreement3 Accept'
-    value_template: '{{ value_json.agreement_accepted_time | timestamp_local }}'
+    value_template: '{{ value_json.agreement_accepted_time | timestamp_custom("%h:%M %p") | default("null") }}'
 
 sensor mtnrpi2_agreement3_finalize:
   - platform: rest
     icon: mdi:weather-sunset
     resource: 'http://192.168.1.254/CGI/mtn-agreement.cgi?ip=39&id=3'
     name: 'MtnRpi2 Agreement3 Finalize'
-    value_template: '{{ value_json.agreement_finalized_time | timestamp_local }}'
+    value_template: '{{ value_json.agreement_finalized_time | timestamp_custom("%h:%M %p") | default("null") }}'
 
 sensor mtnrpi2_agreement3_receive:
   - platform: rest
     icon: mdi:weather-sunset
     resource: 'http://192.168.1.254/CGI/mtn-agreement.cgi?ip=39&id=3'
     name: 'MtnRpi2 Agreement3 Receive'
-    value_template: '{{ value_json.agreement_data_received_time | timestamp_local }}'
+    value_template: '{{ value_json.agreement_data_received_time | timestamp_custom("%h:%M %p") | default("null") }}'
 
 sensor mtnrpi2_agreement3_start:
   - platform: rest
     icon: mdi:weather-sunset
     resource: 'http://192.168.1.254/CGI/mtn-agreement.cgi?ip=39&id=3'
     name: 'MtnRpi2 Agreement3 Start'
-    value_template: '{{ value_json.agreement_execution_start_time | timestamp_local }}'
+    value_template: '{{ value_json.agreement_execution_start_time | timestamp_custom("%h:%M %p") | default("null") }}'
 
 # AGREEMENT #4
 
@@ -1069,79 +1084,92 @@ sensor mtnrpi2_agreement4_name:
     icon: mdi:weather-sunset
     resource: 'http://192.168.1.254/CGI/mtn-agreement.cgi?ip=39&id=4'
     name: 'MtnRpi2 Agreement4 Name'
-    value_template: '{{ value_json.name }}'
+    value_template: '{{ value_json.name | default("null") }}'
 
 sensor mtnrpi2_agreement4_id:
   - platform: rest
     icon: mdi:weather-sunset
     resource: 'http://192.168.1.254/CGI/mtn-agreement.cgi?ip=39&id=4'
     name: 'MtnRpi2 Agreement4 ID'
-    value_template: '{{ value_json.current_agreement_id }}'
+    value_template: '{{ value_json.current_agreement_id | default("null") }}'
 
 sensor mtnrpi2_agreement4_protocol:
   - platform: rest
     icon: mdi:weather-sunset
     resource: 'http://192.168.1.254/CGI/mtn-agreement.cgi?ip=39&id=4'
     name: MtnRpi2 Agreement4 Protocol
-    value_template: '{{ value_json.agreement_protocol }}'
+    value_template: '{{ value_json.agreement_protocol | default("null") }}'
 
 sensor mtnrpi2_agreement4_consumer:
   - platform: rest
     icon: mdi:weather-sunset
     resource: 'http://192.168.1.254/CGI/mtn-agreement.cgi?ip=39&id=4'
     name: 'MtnRpi2 Agreement4 Consumer'
-    value_template: '{{ value_json.consumer_id }}'
+    value_template: '{{ value_json.consumer_id | default("null") }}'
 
 sensor mtnrpi2_agreement4_create:
   - platform: rest
     icon: mdi:weather-sunset
     resource: 'http://192.168.1.254/CGI/mtn-agreement.cgi?ip=39&id=4'
     name: 'MtnRpi2 Agreement4 Create'
-    value_template: '{{ value_json.agreement_creation_time | timestamp_local }}'
+    value_template: '{{ value_json.agreement_creation_time | timestamp_custom("%h:%M %p") | default("null") }}'
 
 sensor mtnrpi2_agreement4_accept:
   - platform: rest
     icon: mdi:weather-sunset
     resource: 'http://192.168.1.254/CGI/mtn-agreement.cgi?ip=39&id=4'
     name: 'MtnRpi2 Agreement4 Accept'
-    value_template: '{{ value_json.agreement_accepted_time | timestamp_local }}'
+    value_template: '{{ value_json.agreement_accepted_time | timestamp_custom("%h:%M %p") | default("null") }}'
 
 sensor mtnrpi2_agreement4_finalize:
   - platform: rest
     icon: mdi:weather-sunset
     resource: 'http://192.168.1.254/CGI/mtn-agreement.cgi?ip=39&id=4'
     name: 'MtnRpi2 Agreement4 Finalize'
-    value_template: '{{ value_json.agreement_finalized_time | timestamp_local }}'
+    value_template: '{{ value_json.agreement_finalized_time | timestamp_custom("%h:%M %p") | default("null") }}'
 
 sensor mtnrpi2_agreement4_receive:
   - platform: rest
     icon: mdi:weather-sunset
     resource: 'http://192.168.1.254/CGI/mtn-agreement.cgi?ip=39&id=4'
     name: 'MtnRpi2 Agreement4 Receive'
-    value_template: '{{ value_json.agreement_data_received_time | timestamp_local }}'
+    value_template: '{{ value_json.agreement_data_received_time | timestamp_custom("%h:%M %p") | default("null") }}'
 
 sensor mtnrpi2_agreement4_start:
   - platform: rest
     icon: mdi:weather-sunset
     resource: 'http://192.168.1.254/CGI/mtn-agreement.cgi?ip=39&id=4'
     name: 'MtnRpi2 Agreement4 Start'
-    value_template: '{{ value_json.agreement_execution_start_time | timestamp_local }}'
+    value_template: '{{ ( value_json.agreement_execution_start_time | timestamp_custom("%h:%M %p")) | default("null") }}'
 
 # AGREEMENT #5
+
+sensor mtnrpi2_agreement5:
+  - platform: rest
+    resource: 'http://192.168.1.254/CGI/mtn-agreement.cgi?ip=39&id=5'
+    name: 'MtnRpi2 Agreement5'
+
+sensor mtnrpi2_agreements:
+  - platform: template
+    sensors:
+      agreement5_name:
+        entity_id: sensor.mtnrpi2_agreement5
+        value_template: '{{ states.sensor.mtnrpi2_agreement5.state["name"] }}'
 
 sensor mtnrpi2_agreement5_name:
   - platform: rest
     icon: mdi:weather-sunset
     resource: 'http://192.168.1.254/CGI/mtn-agreement.cgi?ip=39&id=5'
     name: 'MtnRpi2 Agreement5 Name'
-    value_template: '{{ value_json.name }}'
-
+    value_template: '{{ value_json.name | default("null") }}'
+    
 sensor mtnrpi2_agreement5_id:
   - platform: rest
     icon: mdi:weather-sunset
     resource: 'http://192.168.1.254/CGI/mtn-agreement.cgi?ip=39&id=5'
     name: 'MtnRpi2 Agreement5 ID'
     value_template: '{{ value_json.current_agreement_id }}'
+    # value_template: '{% if value_json.error %} {{ value_json.error }} {% else %} {{ value_json.current_agreement_id }} {% endif %}'
 
 sensor mtnrpi2_agreement5_protocol:
   - platform: rest
@@ -1149,6 +1177,7 @@ sensor mtnrpi2_agreement5_protocol:
     resource: 'http://192.168.1.254/CGI/mtn-agreement.cgi?ip=39&id=5'
     name: MtnRpi2 Agreement5 Protocol
     value_template: '{{ value_json.agreement_protocol }}'
+    # value_template: '{% if value_json.error %} {{ value_json.error }} {% else %} {{ value_json.agreement_protocol }} {% endif %}'
 
 sensor mtnrpi2_agreement5_consumer:
   - platform: rest
@@ -1156,41 +1185,47 @@ sensor mtnrpi2_agreement5_consumer:
     resource: 'http://192.168.1.254/CGI/mtn-agreement.cgi?ip=39&id=5'
     name: 'MtnRpi2 Agreement5 Consumer'
     value_template: '{{ value_json.consumer_id }}'
+    # value_template: {% if value_json.error %} {{ value_json.error }} {% else %} {{ value_json.consumer_id }} {% endif %}'
 
 sensor mtnrpi2_agreement5_create:
   - platform: rest
     icon: mdi:weather-sunset
     resource: 'http://192.168.1.254/CGI/mtn-agreement.cgi?ip=39&id=5'
     name: 'MtnRpi2 Agreement5 Create'
-    value_template: '{{ value_json.agreement_creation_time | timestamp_local }}'
+    value_template: '{{ value_json.agreement_creation_time | timestamp_custom("%a %b %d @ %T %p") }}'
+    # value_template: {% if value_json.error %} {{ value_json.error }} {% else %} {{ value_json.agreement_creation_time | timestamp_custom("%a %b %d @ %T %p") }} {% endif %}'
 
 sensor mtnrpi2_agreement5_accept:
   - platform: rest
     icon: mdi:weather-sunset
     resource: 'http://192.168.1.254/CGI/mtn-agreement.cgi?ip=39&id=5'
     name: 'MtnRpi2 Agreement5 Accept'
-    value_template: '{{ value_json.agreement_accepted_time | timestamp_local }}'
+    value_template: '{{ value_json.agreement_accepted_time | timestamp_custom("%a %b %d @ %T %p") }}'
+    # value_template: {% if value_json.error %} {{ value_json.error }} {% else %} {{ value_json.agreement_accepted_time | timestamp_custom("%a %b %d @ %T %p") }} {% endif %}'
 
 sensor mtnrpi2_agreement5_finalize:
   - platform: rest
     icon: mdi:weather-sunset
     resource: 'http://192.168.1.254/CGI/mtn-agreement.cgi?ip=39&id=5'
     name: 'MtnRpi2 Agreement5 Finalize'
-    value_template: '{{ value_json.agreement_finalized_time | timestamp_local }}'
+    value_template: '{{ value_json.agreement_finalized_time | timestamp_custom("%a %b %d @ %T %p") }}'
+    # value_template: {% if value_json.error %} {{ value_json.error }} {% else %} {{ value_json.agreement_finalized_time | timestamp_custom("%a %b %d @ %T %p") }} {% endif %}'
 
 sensor mtnrpi2_agreement5_receive:
   - platform: rest
     icon: mdi:weather-sunset
     resource: 'http://192.168.1.254/CGI/mtn-agreement.cgi?ip=39&id=5'
     name: 'MtnRpi2 Agreement5 Receive'
-    value_template: '{{ value_json.agreement_data_received_time | timestamp_local }}'
+    value_template: '{{ value_json.agreement_data_received_time | timestamp_custom("%a %b %d @ %T %p") }}'
+    # value_template: {% if value_json.error %} {{ value_json.error }} {% else %} {{ value_json.agreement_data_received_time | timestamp_custom("%a %b %d @ %T %p") }} {% endif %}'
 
 sensor mtnrpi2_agreement5_start:
   - platform: rest
     icon: mdi:weather-sunset
     resource: 'http://192.168.1.254/CGI/mtn-agreement.cgi?ip=39&id=5'
     name: 'MtnRpi2 Agreement5 Start'
-    value_template: '{{ value_json.agreement_execution_start_time | timestamp_local }}'
+    value_template: '{{ value_json.agreement_execution_start_time | timestamp_custom("%a %b %d @ %T %p") }}'
+    # value_template: {% if value_json.error %} {{ value_json.error }} {% else %} {{ value_json.agreement_execution_start_time | timestamp_custom("%a %b %d @ %T %p") }} {% endif %}'
 
 # HORIZON WORKLOAD
 
@@ -1302,63 +1337,63 @@ sensor mtnrpi3_agreement0_name:
     icon: mdi:weather-sunset
     resource: 'http://192.168.1.254/CGI/mtn-agreement.cgi?ip=40&id=0'
     name: 'MtnRpi3 Agreement0 Name'
-    value_template: '{{ value_json.name }}'
+    value_template: '{{ value_json.name | default("null") }}'
 
 sensor mtnrpi3_agreement0_id:
   - platform: rest
     icon: mdi:weather-sunset
     resource: 'http://192.168.1.254/CGI/mtn-agreement.cgi?ip=40&id=0'
     name: 'MtnRpi3 Agreement0 ID'
-    value_template: '{{ value_json.current_agreement_id }}'
+    value_template: '{{ value_json.current_agreement_id | default("null") }}'
 
 sensor mtnrpi3_agreement0_protocol:
   - platform: rest
     icon: mdi:weather-sunset
     resource: 'http://192.168.1.254/CGI/mtn-agreement.cgi?ip=40&id=0'
     name: MtnRpi3 Agreement0 Protocol
-    value_template: '{{ value_json.agreement_protocol }}'
+    value_template: '{{ value_json.agreement_protocol | default("null") }}'
 
 sensor mtnrpi3_agreement0_consumer:
   - platform: rest
     icon: mdi:weather-sunset
     resource: 'http://192.168.1.254/CGI/mtn-agreement.cgi?ip=40&id=0'
     name: 'MtnRpi3 Agreement0 Consumer'
-    value_template: '{{ value_json.consumer_id }}'
+    value_template: '{{ value_json.consumer_id | default("null") }}'
 
 sensor mtnrpi3_agreement0_create:
   - platform: rest
     icon: mdi:weather-sunset
     resource: 'http://192.168.1.254/CGI/mtn-agreement.cgi?ip=40&id=0'
     name: 'MtnRpi3 Agreement0 Create'
-    value_template: '{{ value_json.agreement_creation_time | timestamp_local }}'
+    value_template: '{{ value_json.agreement_creation_time | timestamp_custom("%T %p") }}'
 
 sensor mtnrpi3_agreement0_accept:
   - platform: rest
     icon: mdi:weather-sunset
     resource: 'http://192.168.1.254/CGI/mtn-agreement.cgi?ip=40&id=0'
     name: 'MtnRpi3 Agreement0 Accept'
-    value_template: '{{ value_json.agreement_accepted_time | timestamp_local }}'
+    value_template: '{{ value_json.agreement_accepted_time | timestamp_custom("%T %p") }}'
 
 sensor mtnrpi3_agreement0_finalize:
   - platform: rest
     icon: mdi:weather-sunset
     resource: 'http://192.168.1.254/CGI/mtn-agreement.cgi?ip=40&id=0'
     name: 'MtnRpi3 Agreement0 Finalize'
-    value_template: '{{ value_json.agreement_finalized_time | timestamp_local }}'
+    value_template: '{{ value_json.agreement_finalized_time | timestamp_custom("%T %p") }}'
 
 sensor mtnrpi3_agreement0_receive:
   - platform: rest
     icon: mdi:weather-sunset
     resource: 'http://192.168.1.254/CGI/mtn-agreement.cgi?ip=40&id=0'
     name: 'MtnRpi3 Agreement0 Receive'
-    value_template: '{{ value_json.agreement_data_received_time | timestamp_local }}'
+    value_template: '{{ value_json.agreement_data_received_time | timestamp_custom("%T %p") }}'
 
 sensor mtnrpi3_agreement0_start:
   - platform: rest
     icon: mdi:weather-sunset
     resource: 'http://192.168.1.254/CGI/mtn-agreement.cgi?ip=40&id=0'
     name: 'MtnRpi3 Agreement0 Start'
-    value_template: '{{ value_json.agreement_execution_start_time | timestamp_local }}'
+    value_template: '{{ value_json.agreement_execution_start_time | timestamp_custom("%T %p") }}'
 
 # AGREEMENT #1
 
@@ -1367,63 +1402,63 @@ sensor mtnrpi3_agreement1_name:
     icon: mdi:weather-sunset
     resource: 'http://192.168.1.254/CGI/mtn-agreement.cgi?ip=40&id=1'
     name: 'MtnRpi3 Agreement1 Name'
-    value_template: '{{ value_json.name }}'
+    value_template: '{{ value_json.name | default("null") }}'
 
 sensor mtnrpi3_agreement1_id:
   - platform: rest
     icon: mdi:weather-sunset
     resource: 'http://192.168.1.254/CGI/mtn-agreement.cgi?ip=40&id=1'
     name: 'MtnRpi3 Agreement1 ID'
-    value_template: '{{ value_json.current_agreement_id }}'
+    value_template: '{{ value_json.current_agreement_id | default("null") }}'
 
 sensor mtnrpi3_agreement1_protocol:
   - platform: rest
     icon: mdi:weather-sunset
     resource: 'http://192.168.1.254/CGI/mtn-agreement.cgi?ip=40&id=1'
     name: MtnRpi3 Agreement1 Protocol
-    value_template: '{{ value_json.agreement_protocol }}'
+    value_template: '{{ value_json.agreement_protocol | default("null") }}'
 
 sensor mtnrpi3_agreement1_consumer:
   - platform: rest
     icon: mdi:weather-sunset
     resource: 'http://192.168.1.254/CGI/mtn-agreement.cgi?ip=40&id=1'
     name: 'MtnRpi3 Agreement1 Consumer'
-    value_template: '{{ value_json.consumer_id }}'
+    value_template: '{{ value_json.consumer_id | default("null") }}'
 
 sensor mtnrpi3_agreement1_create:
   - platform: rest
     icon: mdi:weather-sunset
     resource: 'http://192.168.1.254/CGI/mtn-agreement.cgi?ip=40&id=1'
     name: 'MtnRpi3 Agreement1 Create'
-    value_template: '{{ value_json.agreement_creation_time | timestamp_local }}'
+    value_template: '{{ value_json.agreement_creation_time | timestamp_custom("%T %p") }}'
 
 sensor mtnrpi3_agreement1_accept:
   - platform: rest
     icon: mdi:weather-sunset
     resource: 'http://192.168.1.254/CGI/mtn-agreement.cgi?ip=40&id=1'
     name: 'MtnRpi3 Agreement1 Accept'
-    value_template: '{{ value_json.agreement_accepted_time | timestamp_local }}'
+    value_template: '{{ value_json.agreement_accepted_time | timestamp_custom("%T %p") }}'
 
 sensor mtnrpi3_agreement1_finalize:
   - platform: rest
     icon: mdi:weather-sunset
     resource: 'http://192.168.1.254/CGI/mtn-agreement.cgi?ip=40&id=1'
     name: 'MtnRpi3 Agreement1 Finalize'
-    value_template: '{{ value_json.agreement_finalized_time | timestamp_local }}'
+    value_template: '{{ value_json.agreement_finalized_time | timestamp_custom("%T %p") }}'
 
 sensor mtnrpi3_agreement1_receive:
   - platform: rest
     icon: mdi:weather-sunset
     resource: 'http://192.168.1.254/CGI/mtn-agreement.cgi?ip=40&id=1'
     name: 'MtnRpi3 Agreement1 Receive'
-    value_template: '{{ value_json.agreement_data_received_time | timestamp_local }}'
+    value_template: '{{ value_json.agreement_data_received_time | timestamp_custom("%T %p") }}'
 
 sensor mtnrpi3_agreement1_start:
   - platform: rest
     icon: mdi:weather-sunset
     resource: 'http://192.168.1.254/CGI/mtn-agreement.cgi?ip=40&id=1'
     name: 'MtnRpi3 Agreement1 Start'
-    value_template: '{{ value_json.agreement_execution_start_time | timestamp_local }}'
+    value_template: '{{ value_json.agreement_execution_start_time | timestamp_custom("%T %p") }}'
 
 # AGREEMENT #2
 
@@ -1432,63 +1467,63 @@ sensor mtnrpi3_agreement2_name:
     icon: mdi:weather-sunset
     resource: 'http://192.168.1.254/CGI/mtn-agreement.cgi?ip=40&id=2'
     name: 'MtnRpi3 Agreement2 Name'
-    value_template: '{{ value_json.name }}'
+    value_template: '{{ value_json.name | default("null") }}'
 
 sensor mtnrpi3_agreement2_id:
   - platform: rest
     icon: mdi:weather-sunset
     resource: 'http://192.168.1.254/CGI/mtn-agreement.cgi?ip=40&id=2'
     name: 'MtnRpi3 Agreement2 ID'
-    value_template: '{{ value_json.current_agreement_id }}'
+    value_template: '{{ value_json.current_agreement_id | default("null") }}'
 
 sensor mtnrpi3_agreement2_protocol:
   - platform: rest
     icon: mdi:weather-sunset
     resource: 'http://192.168.1.254/CGI/mtn-agreement.cgi?ip=40&id=2'
     name: MtnRpi3 Agreement2 Protocol
-    value_template: '{{ value_json.agreement_protocol }}'
+    value_template: '{{ value_json.agreement_protocol | default("null") }}'
 
 sensor mtnrpi3_agreement2_consumer:
   - platform: rest
     icon: mdi:weather-sunset
     resource: 'http://192.168.1.254/CGI/mtn-agreement.cgi?ip=40&id=2'
     name: 'MtnRpi3 Agreement2 Consumer'
-    value_template: '{{ value_json.consumer_id }}'
+    value_template: '{{ value_json.consumer_id | default("null") }}'
 
 sensor mtnrpi3_agreement2_create:
   - platform: rest
     icon: mdi:weather-sunset
     resource: 'http://192.168.1.254/CGI/mtn-agreement.cgi?ip=40&id=2'
     name: 'MtnRpi3 Agreement2 Create'
-    value_template: '{{ value_json.agreement_creation_time | timestamp_local }}'
+    value_template: '{{ value_json.agreement_creation_time | timestamp_custom("%T %p") }}'
 
 sensor mtnrpi3_agreement2_accept:
   - platform: rest
     icon: mdi:weather-sunset
     resource: 'http://192.168.1.254/CGI/mtn-agreement.cgi?ip=40&id=2'
     name: 'MtnRpi3 Agreement2 Accept'
-    value_template: '{{ value_json.agreement_accepted_time | timestamp_local }}'
+    value_template: '{{ value_json.agreement_accepted_time | timestamp_custom("%T %p") }}'
 
 sensor mtnrpi3_agreement2_finalize:
   - platform: rest
     icon: mdi:weather-sunset
     resource: 'http://192.168.1.254/CGI/mtn-agreement.cgi?ip=40&id=2'
     name: 'MtnRpi3 Agreement2 Finalize'
-    value_template: '{{ value_json.agreement_finalized_time | timestamp_local }}'
+    value_template: '{{ value_json.agreement_finalized_time | timestamp_custom("%T %p") }}'
 
 sensor mtnrpi3_agreement2_receive:
   - platform: rest
     icon: mdi:weather-sunset
     resource: 'http://192.168.1.254/CGI/mtn-agreement.cgi?ip=40&id=2'
     name: 'MtnRpi3 Agreement2 Receive'
-    value_template: '{{ value_json.agreement_data_received_time | timestamp_local }}'
+    value_template: '{{ value_json.agreement_data_received_time | timestamp_custom("%T %p") }}'
 
 sensor mtnrpi3_agreement2_start:
   - platform: rest
     icon: mdi:weather-sunset
     resource: 'http://192.168.1.254/CGI/mtn-agreement.cgi?ip=40&id=2'
     name: 'MtnRpi3 Agreement2 Start'
-    value_template: '{{ value_json.agreement_execution_start_time | timestamp_local }}'
+    value_template: '{{ value_json.agreement_execution_start_time | timestamp_custom("%T %p") }}'
 
 # AGREEMENT #3
 
@@ -1497,63 +1532,63 @@ sensor mtnrpi3_agreement3_name:
     icon: mdi:weather-sunset
     resource: 'http://192.168.1.254/CGI/mtn-agreement.cgi?ip=40&id=3'
     name: 'MtnRpi3 Agreement3 Name'
-    value_template: '{{ value_json.name }}'
+    value_template: '{{ value_json.name | default("null") }}'
 
 sensor mtnrpi3_agreement3_id:
   - platform: rest
     icon: mdi:weather-sunset
     resource: 'http://192.168.1.254/CGI/mtn-agreement.cgi?ip=40&id=3'
     name: 'MtnRpi3 Agreement3 ID'
-    value_template: '{{ value_json.current_agreement_id }}'
+    value_template: '{{ value_json.current_agreement_id | default("null") }}'
 
 sensor mtnrpi3_agreement3_protocol:
   - platform: rest
     icon: mdi:weather-sunset
     resource: 'http://192.168.1.254/CGI/mtn-agreement.cgi?ip=40&id=3'
     name: MtnRpi3 Agreement3 Protocol
-    value_template: '{{ value_json.agreement_protocol }}'
+    value_template: '{{ value_json.agreement_protocol | default("null") }}'
 
 sensor mtnrpi3_agreement3_consumer:
   - platform: rest
     icon: mdi:weather-sunset
     resource: 'http://192.168.1.254/CGI/mtn-agreement.cgi?ip=40&id=3'
     name: 'MtnRpi3 Agreement3 Consumer'
-    value_template: '{{ value_json.consumer_id }}'
+    value_template: '{{ value_json.consumer_id | default("null") }}'
 
 sensor mtnrpi3_agreement3_create:
   - platform: rest
     icon: mdi:weather-sunset
     resource: 'http://192.168.1.254/CGI/mtn-agreement.cgi?ip=40&id=3'
     name: 'MtnRpi3 Agreement3 Create'
-    value_template: '{{ value_json.agreement_creation_time | timestamp_local }}'
+    value_template: '{{ value_json.agreement_creation_time | timestamp_custom("%T %p") }}'
 
 sensor mtnrpi3_agreement3_accept:
   - platform: rest
     icon: mdi:weather-sunset
     resource: 'http://192.168.1.254/CGI/mtn-agreement.cgi?ip=40&id=3'
     name: 'MtnRpi3 Agreement3 Accept'
-    value_template: '{{ value_json.agreement_accepted_time | timestamp_local }}'
+    value_template: '{{ value_json.agreement_accepted_time | timestamp_custom("%T %p") }}'
 
 sensor mtnrpi3_agreement3_finalize:
   - platform: rest
     icon: mdi:weather-sunset
     resource: 'http://192.168.1.254/CGI/mtn-agreement.cgi?ip=40&id=3'
     name: 'MtnRpi3 Agreement3 Finalize'
-    value_template: '{{ value_json.agreement_finalized_time | timestamp_local }}'
+    value_template: '{{ value_json.agreement_finalized_time | timestamp_custom("%T %p") }}'
 
 sensor mtnrpi3_agreement3_receive:
   - platform: rest
     icon: mdi:weather-sunset
     resource: 'http://192.168.1.254/CGI/mtn-agreement.cgi?ip=40&id=3'
     name: 'MtnRpi3 Agreement3 Receive'
-    value_template: '{{ value_json.agreement_data_received_time | timestamp_local }}'
+    value_template: '{{ value_json.agreement_data_received_time | timestamp_custom("%T %p") }}'
 
 sensor mtnrpi3_agreement3_start:
   - platform: rest
     icon: mdi:weather-sunset
     resource: 'http://192.168.1.254/CGI/mtn-agreement.cgi?ip=40&id=3'
     name: 'MtnRpi3 Agreement3 Start'
-    value_template: '{{ value_json.agreement_execution_start_time | timestamp_local }}'
+    value_template: '{{ value_json.agreement_execution_start_time | timestamp_custom("%T %p") }}'
 
 # AGREEMENT #4
 
@@ -1562,63 +1597,63 @@ sensor mtnrpi3_agreement4_name:
     icon: mdi:weather-sunset
     resource: 'http://192.168.1.254/CGI/mtn-agreement.cgi?ip=40&id=4'
     name: 'MtnRpi3 Agreement4 Name'
-    value_template: '{{ value_json.name }}'
+    value_template: '{{ value_json.name | default("null") }}'
 
 sensor mtnrpi3_agreement4_id:
   - platform: rest
     icon: mdi:weather-sunset
     resource: 'http://192.168.1.254/CGI/mtn-agreement.cgi?ip=40&id=4'
     name: 'MtnRpi3 Agreement4 ID'
-    value_template: '{{ value_json.current_agreement_id }}'
+    value_template: '{{ value_json.current_agreement_id | default("null") }}'
 
 sensor mtnrpi3_agreement4_protocol:
   - platform: rest
     icon: mdi:weather-sunset
     resource: 'http://192.168.1.254/CGI/mtn-agreement.cgi?ip=40&id=4'
     name: MtnRpi3 Agreement4 Protocol
-    value_template: '{{ value_json.agreement_protocol }}'
+    value_template: '{{ value_json.agreement_protocol | default("null") }}'
 
 sensor mtnrpi3_agreement4_consumer:
   - platform: rest
     icon: mdi:weather-sunset
     resource: 'http://192.168.1.254/CGI/mtn-agreement.cgi?ip=40&id=4'
     name: 'MtnRpi3 Agreement4 Consumer'
-    value_template: '{{ value_json.consumer_id }}'
+    value_template: '{{ value_json.consumer_id | default("null") }}'
 
 sensor mtnrpi3_agreement4_create:
   - platform: rest
     icon: mdi:weather-sunset
     resource: 'http://192.168.1.254/CGI/mtn-agreement.cgi?ip=40&id=4'
     name: 'MtnRpi3 Agreement4 Create'
-    value_template: '{{ value_json.agreement_creation_time | timestamp_local }}'
+    value_template: '{{ value_json.agreement_creation_time | timestamp_custom("%T %p") }}'
 
 sensor mtnrpi3_agreement4_accept:
   - platform: rest
     icon: mdi:weather-sunset
     resource: 'http://192.168.1.254/CGI/mtn-agreement.cgi?ip=40&id=4'
     name: 'MtnRpi3 Agreement4 Accept'
-    value_template: '{{ value_json.agreement_accepted_time | timestamp_local }}'
+    value_template: '{{ value_json.agreement_accepted_time | timestamp_custom("%T %p") }}'
 
 sensor mtnrpi3_agreement4_finalize:
   - platform: rest
     icon: mdi:weather-sunset
     resource: 'http://192.168.1.254/CGI/mtn-agreement.cgi?ip=40&id=4'
     name: 'MtnRpi3 Agreement4 Finalize'
-    value_template: '{{ value_json.agreement_finalized_time | timestamp_local }}'
+    value_template: '{{ value_json.agreement_finalized_time | timestamp_custom("%T %p") }}'
 
 sensor mtnrpi3_agreement4_receive:
   - platform: rest
     icon: mdi:weather-sunset
     resource: 'http://192.168.1.254/CGI/mtn-agreement.cgi?ip=40&id=4'
     name: 'MtnRpi3 Agreement4 Receive'
-    value_template: '{{ value_json.agreement_data_received_time | timestamp_local }}'
+    value_template: '{{ value_json.agreement_data_received_time | timestamp_custom("%T %p") }}'
 
 sensor mtnrpi3_agreement4_start:
   - platform: rest
     icon: mdi:weather-sunset
     resource: 'http://192.168.1.254/CGI/mtn-agreement.cgi?ip=40&id=4'
     name: 'MtnRpi3 Agreement4 Start'
-    value_template: '{{ value_json.agreement_execution_start_time | timestamp_local }}'
+    value_template: '{{ value_json.agreement_execution_start_time | timestamp_custom("%T %p") }}'
 
 # AGREEMENT #5
 
@@ -1627,63 +1662,63 @@ sensor mtnrpi3_agreement5_name:
     icon: mdi:weather-sunset
     resource: 'http://192.168.1.254/CGI/mtn-agreement.cgi?ip=40&id=5'
     name: 'MtnRpi3 Agreement5 Name'
-    value_template: '{{ value_json.name }}'
+    value_template: '{{ value_json.name | default("null") }}'
 
 sensor mtnrpi3_agreement5_id:
   - platform: rest
     icon: mdi:weather-sunset
     resource: 'http://192.168.1.254/CGI/mtn-agreement.cgi?ip=40&id=5'
     name: 'MtnRpi3 Agreement5 ID'
-    value_template: '{{ value_json.current_agreement_id }}'
+    value_template: '{{ value_json.current_agreement_id | default("null") }}'
 
 sensor mtnrpi3_agreement5_protocol:
   - platform: rest
     icon: mdi:weather-sunset
     resource: 'http://192.168.1.254/CGI/mtn-agreement.cgi?ip=40&id=5'
     name: MtnRpi3 Agreement5 Protocol
-    value_template: '{{ value_json.agreement_protocol }}'
+    value_template: '{{ value_json.agreement_protocol | default("null") }}'
 
 sensor mtnrpi3_agreement5_consumer:
   - platform: rest
     icon: mdi:weather-sunset
     resource: 'http://192.168.1.254/CGI/mtn-agreement.cgi?ip=40&id=5'
     name: 'MtnRpi3 Agreement5 Consumer'
-    value_template: '{{ value_json.consumer_id }}'
+    value_template: '{{ value_json.consumer_id | default("null") }}'
 
 sensor mtnrpi3_agreement5_create:
   - platform: rest
     icon: mdi:weather-sunset
     resource: 'http://192.168.1.254/CGI/mtn-agreement.cgi?ip=40&id=5'
     name: 'MtnRpi3 Agreement5 Create'
-    value_template: '{{ value_json.agreement_creation_time | timestamp_local }}'
+    value_template: '{{ value_json.agreement_creation_time | timestamp_custom("%T %p") }}'
 
 sensor mtnrpi3_agreement5_accept:
   - platform: rest
     icon: mdi:weather-sunset
     resource: 'http://192.168.1.254/CGI/mtn-agreement.cgi?ip=40&id=5'
     name: 'MtnRpi3 Agreement5 Accept'
-    value_template: '{{ value_json.agreement_accepted_time | timestamp_local }}'
+    value_template: '{{ value_json.agreement_accepted_time | timestamp_custom("%T %p") }}'
 
 sensor mtnrpi3_agreement5_finalize:
   - platform: rest
     icon: mdi:weather-sunset
     resource: 'http://192.168.1.254/CGI/mtn-agreement.cgi?ip=40&id=5'
     name: 'MtnRpi3 Agreement5 Finalize'
-    value_template: '{{ value_json.agreement_finalized_time | timestamp_local }}'
+    value_template: '{{ value_json.agreement_finalized_time | timestamp_custom("%T %p") }}'
 
 sensor mtnrpi3_agreement5_receive:
   - platform: rest
     icon: mdi:weather-sunset
     resource: 'http://192.168.1.254/CGI/mtn-agreement.cgi?ip=40&id=5'
     name: 'MtnRpi3 Agreement5 Receive'
-    value_template: '{{ value_json.agreement_data_received_time | timestamp_local }}'
+    value_template: '{{ value_json.agreement_data_received_time | timestamp_custom("%T %p") }}'
 
 sensor mtnrpi3_agreement5_start:
   - platform: rest
     icon: mdi:weather-sunset
     resource: 'http://192.168.1.254/CGI/mtn-agreement.cgi?ip=40&id=5'
     name: 'MtnRpi3 Agreement5 Start'
-    value_template: '{{ value_json.agreement_execution_start_time | timestamp_local }}'
+    value_template: '{{ value_json.agreement_execution_start_time | timestamp_custom("%T %p") }}'
 
 # HORIZON WORKLOAD
 
@@ -1701,34 +1736,74 @@ sensor mtnrpi3_publickey:
     icon: mdi:weather-sunset
     resource: 'http://192.168.1.254/CGI/mtn-publickey.cgi?ip=40'
     name: MtnRpi3 Publickey
-    value_template: '{{ value_json.pem }}'
+    value_template: '{{ value_json.pem | default("null") }}'
 
-#
-# MQTT PLATFORM SENSORS
-#
+###
+### AGE-AT-HOME
+###
 
-camera mqttimage:
+camera last_image:
   - platform: mqtt
-    name: mqttimage
+    name: last_image
     icon: mdi:image
     topic: 'image/+'
 
-camera mqttimageannotated:
+camera last_image_annotated:
   - platform: mqtt
-    name: mqttimageannotated
+    name: last_image_annotated
     icon: mdi:image
     topic: 'image-annotated/+'
 
-#
-# KITCHEN
-#
+sensor last_ago:
+  - platform: mqtt
+    name: last_ago
+    unit_of_measurement: seconds
+    state_topic: 'presence/+'
+    value_template: '{{ (now().timestamp() | int) - value_json.date }}'
+
+sensor last_how:
+  - platform: mqtt
+    icon: mdi:numeric
+    state_topic: 'presence/+'
+    name: last_how
+    value_template: '{{ value_json.score }}'
+
+sensor last_where:
+  - platform: mqtt
+    icon: mdi:house
+    state_topic: 'presence/+'
+    name: last_where
+    value_template: '{{ value_json.location }}'
+
+sensor last_what:
+  - platform: mqtt
+    icon: mdi:human
+    state_topic: 'presence/+'
+    name: last_what
+    value_template: '{{ value_json.class }}'
+
+sensor last_who:
+  - platform: mqtt
+    icon: mdi:comment-question-outline
+    state_topic: 'presence/+'
+    name: last_who
+    value_template: '{{ value_json.model }}'
+
+sensor last_when:
+  - platform: mqtt
+    icon: mdi:clock
+    state_topic: 'presence/+'
+    name: last_when
+    value_template: '{{ value_json.date | timestamp_custom("%T %p") }}'
+
+##
+## KITCHEN
+##
 
 camera kitchen_camera:
   - platform: mjpeg
     name: kitchen_camera
     mjpeg_url: http://192.168.1.34:8081/
-
-# MQTT sensors
 
 sensor presence_kitchen:
   - platform: mqtt
@@ -1762,7 +1837,7 @@ sensor kitchen_when:
     name: kitchen_when
     icon: mdi:human-greeting
     state_topic: 'presence/kitchen'
-    value_template: '{{ value_json.date | timestamp_local }}'
+    value_template: '{{ value_json.date | timestamp_custom("%T %p") }}'
 
 sensor kitchen_ago:
   - platform: mqtt
@@ -1783,42 +1858,49 @@ camera kitchen_image_annotated:
     icon: mdi:image
     topic: 'image-annotated/kitchen'
 
-###
-### TEMPLATE sensors - SHOULD WORK; DOES NOW
-###
-### sensor kitchen_json:
-###   - platform: template
-###     sensors:
-###       kitchen_presence_json:
-###         entity_id: sensor.presence_kitchen
-###         value_template: '{{ states.sensor.presence_kitchen.state | tojson }}'
-### 
-### sensor kitchen_attributes:
-###   - platform: template
-###     sensors:
-###       kitchen_date:
-###         entity_id: sensor.kitchen_presence_json
-###         value_template: '{{ value_json.date | timestamp_local }}'
-###       kitchen_class:
-###         entity_id: sensor.kitchen_presence_json
-###         value_template: '{{ value_json.class }}'
-###       kitchen_model:
-###         entity_id: sensor.kitchen_presence_json
-###         value_template: '{{ value_json.model }}'
-###       kitchen_score:
-###         entity_id: sensor.kitchen_presence_json
-###         value_template: '{{ value_json.score }}'
+sensor kitchen_empty_time:
+  - platform: history_stats
+    icon: mdi:timer
+    name: kitchen_empty_time
+    entity_id: sensor.kitchen_what
+    state: 'unknown'
+    type: time
+    start: '{{ now().replace(hour=0).replace(minute=0).replace(second=0) }}'
+    end: '{{ now() }}'
 
-#
-# BATHROOM
-#
+# TEMPLATE sensors - why no work?
+
+sensor kitchen_json:
+  - platform: template
+    sensors:
+      kitchen_presence_json:
+        entity_id: sensor.presence_kitchen
+        value_template: '{{ states.sensor.presence_kitchen.state }}'
+
+sensor kitchen_attributes:
+  - platform: template
+    sensors:
+      kitchen_date:
+        entity_id: sensor.kitchen_presence_json
+        value_template: '{{ value_json.date | timestamp_custom("%h:%M %p") }}'
+      kitchen_class:
+        entity_id: sensor.kitchen_presence_json
+        value_template: '{{ value_json.class }}'
+      kitchen_model:
+        entity_id: sensor.kitchen_presence_json
+        value_template: '{{ value_json.model }}'
+      kitchen_score:
+        entity_id: sensor.kitchen_presence_json
+        value_template: '{{ value_json.score }}'
+
+##
+## BATHROOM
+##
 
 camera bathroom_camera:
   - platform: mjpeg
     name: bathroom_camera
     mjpeg_url: http://192.168.1.35:8081/
-
-# MQTT sensors
 
 sensor presence_bathroom:
   - platform: mqtt
@@ -1850,7 +1932,7 @@ sensor bathroom_when:
   - platform: mqtt
     name: bathroom_when
     state_topic: 'presence/bathroom'
-    value_template: '{{ value_json.date | timestamp_local }}'
+    value_template: '{{ value_json.date | timestamp_custom("%h:%M %p") }}'
 
 sensor bathroom_ago:
   - platform: mqtt
@@ -1869,16 +1951,24 @@ camera bathroom_image_annotated:
     name: bathroom_image_annotated
     topic: 'image-annotated/bathroom'
 
-#
-# ROAD
-#
+sensor bathroom_empty_time:
+  - platform: history_stats
+    icon: mdi:timer
+    name: bathroom_empty_time
+    entity_id: sensor.bathroom_what
+    state: 'unknown'
+    type: time
+    start: '{{ now().replace(hour=0).replace(minute=0).replace(second=0) }}'
+    end: '{{ now() }}'
+
+##
+## ROAD
+##
 
 camera road_camera:
   - platform: mjpeg
     name: road_camera
     mjpeg_url: http://192.168.1.36:8081/
-
-# MQTT sensors
 
 sensor presence_road:
   - platform: mqtt
@@ -1912,7 +2002,7 @@ sensor road_when:
     name: road_when
     icon: mdi:human-greeting
     state_topic: 'presence/road'
-    value_template: '{{ value_json.date | timestamp_local }}'
+    value_template: '{{ value_json.date | timestamp_custom("%h:%M %p") }}'
 
 sensor road_ago:
   - platform: mqtt
@@ -1933,16 +2023,24 @@ camera road_image_annotated:
     icon: mdi:image
     topic: 'image-annotated/road'
 
-#
-# FRONTDOOR
-#
+sensor road_empty_time:
+  - platform: history_stats
+    icon: mdi:timer
+    name: road_empty_time
+    entity_id: sensor.road_what
+    state: 'unknown'
+    type: time
+    start: '{{ now().replace(hour=0).replace(minute=0).replace(second=0) }}'
+    end: '{{ now() }}'
+ 
+##
+## FRONTDOOR
+##
 
 camera frontdoor_camera:   
   - platform: mjpeg
     name: frontdoor_camera
     mjpeg_url: http://192.168.1.37:8081/
-
-# MQTT sensors
 
 sensor presence_frontdoor:
   - platform: mqtt
@@ -1976,7 +2074,7 @@ sensor frontdoor_when:
     name: frontdoor_when
     icon: mdi:human-greeting
     state_topic: 'presence/frontdoor'
-    value_template: '{{ value_json.date | timestamp_local }}'
+    value_template: '{{ value_json.date | timestamp_custom("%h:%M %p") }}'
 
 sensor frontdoor_ago:
   - platform: mqtt
@@ -1997,192 +2095,99 @@ camera frontdoor_image_annotated:
     icon: mdi:image
     topic: 'image-annotated/frontdoor'
 
-#
-# HISTORY_STATS
-#
-
-sensor play1_paused:
-  - platform: history_stats
-    icon: mdi:speaker
-    name: play1_paused
-    entity_id: sensor.play1_state
-    state: 'paused'
-    type: ratio
-    start: '{{ now().replace(hour=0).replace(minute=0).replace(second=0) }}'
-    end: '{{ now() }}'
-
-sensor play3_paused:
-  - platform: history_stats
-    icon: mdi:speaker
-    name: play3_paused
-    entity_id: sensor.play3_state
-    state: 'paused'
-    type: ratio
-    start: '{{ now().replace(hour=0).replace(minute=0).replace(second=0) }}'
-    end: '{{ now() }}'
-
-sensor peopleinkitchen:
+sensor frontdoor_empty_time:
   - platform: history_stats
     icon: mdi:timer
-    name: peopleinkitchen
+    name: frontdoor_empty_time
+    entity_id: sensor.frontdoor_what
+    state: 'unknown'
+    type: time
+    start: '{{ now().replace(hour=0).replace(minute=0).replace(second=0) }}'
+    end: '{{ now() }}'
+
+#
+# PRESENCE
+#
+
+sensor kitchen_busy_time:
+  - platform: history_stats
+    icon: mdi:timer
+    name: kitchen_busy_time
     entity_id: binary_sensor.people_in_kitchen
     state: 'on'
     type: ratio
     start: '{{ now().replace(hour=0).replace(minute=0).replace(second=0) }}'
     end: '{{ now() }}'
 
-sensor kitchen_empty_time:
-  - platform: history_stats
-    icon: mdi:timer
-    name: kitchen_empty_time
-    entity_id: sensor.kitchen_who
-    state: 'unknown'
-    type: time
-    start: '{{ now().replace(hour=0).replace(minute=0).replace(second=0) }}'
-    end: '{{ now() }}'
-
-sensor bathroom_empty_time:
-  - platform: history_stats
-    icon: mdi:timer
-    name: bathroom_empty_time
-    entity_id: sensor.bathroom_who
-    state: 'unknown'
-    type: time
-    start: '{{ now().replace(hour=0).replace(minute=0).replace(second=0) }}'
-    end: '{{ now() }}'
-
-sensor frontdoor_empty_time:
-  - platform: history_stats
-    icon: mdi:timer
-    name: frontdoor_empty_time
-    entity_id: sensor.frontdoor_who
-    state: 'unknown'
-    type: time
-    start: '{{ now().replace(hour=0).replace(minute=0).replace(second=0) }}'
-    end: '{{ now() }}'
-
-sensor road_empty_time:
-  - platform: history_stats
-    icon: mdi:timer
-    name: road_empty_time
-    entity_id: sensor.road_who
-    state: 'unknown'
-    type: time
-    start: '{{ now().replace(hour=0).replace(minute=0).replace(second=0) }}'
-    end: '{{ now() }}'
- 
-# FFMPEG MOTION DETECT TEST
-
-ffmpeg:
-
-# BINARY SENSORS
-
-binary_sensor backyardmotion:
-  - platform: ffmpeg_motion
-    input: !secret backyardvideo
-    name: backyardmotion
-    device_class: motion
-    initial_state: false
-    changes: 5
-    # ffmpeg_bin: /usr/bin/ffmpeg
-    # ffmpeg_bin: /usr/bin/avconv
-    # extra_arguments: -pred 1 -q:v 2
-    # reset: 20
-    # repeats: 0
-    # repeat_time: 0
-    # extra_arguments:
-
 binary_sensor peopleinkitchen:
   - platform: template
     name: peopleinkitchen
     sensors:
-      ellen_notin_kitchen:
-        friendly_name: ellen notin kitchen
+      people_in_kitchen:
         entity_id:
-          - sensor.kitchen_who
+          - sensor.kitchen_what
+        value_template: >
+          {{
+              states.sensor.kitchen_what.state == 'david'
+            or
+              states.sensor.kitchen_what.state == 'keli'
+            or
+              states.sensor.kitchen_what.state == 'hali'
+            or
+              states.sensor.kitchen_what.state == 'ian'
+            or
+              states.sensor.kitchen_what.state == 'riley'
+            or
+              states.sensor.kitchen_what.state == 'ellen'
+          }}
+
+binary_sensor kitchen_validate:
+  - platform: template
+    sensors:
+      kitchen_wrong:
+        entity_id:
+          - sensor.kitchen_what
           - device_tracker.ellensiphone5
-        value_template: >
-          {{
-            states.device_tracker.ellensiphone5.state != 'home' and
-            states.sensor.kitchen_who.state == 'ellen'
-          }}
-      david_notin_kitchen:
-        friendly_name: david notin kitchen
-        entity_id:
-          - sensor.kitchen_who
           - device_tracker.davids_iphone
-        value_template: >
-          {{
-            states.device_tracker.davids_iphone.state != 'home' and
-            states.sensor.kitchen_who.state == 'david'
-          }}
-      riley_notin_kitchen:
-        friendly_name: riley notin kitchen
-        entity_id:
-          - sensor.kitchen_who
           - device_tracker.rileysiphone5
-        value_template: >
-          {{
-            states.device_tracker.rileysiphone5.state != 'home' and
-            states.sensor.kitchen_who.state == 'riley'
-          }}
-      ian_notin_kitchen:
-        friendly_name: ian notin kitchen
-        entity_id:
-          - sensor.kitchen_who
           - device_tracker.ianmartinsiphone
-        value_template: >
-          {{
-            states.device_tracker.ianmartinsiphone.state != 'home' and
-            states.sensor.kitchen_who.state == 'ian'
-          }}
-      hali_notin_kitchen:
-        friendly_name: hali notin kitchen
-        entity_id:
-          - sensor.kitchen_who
           - device_tracker.halisiphone
         value_template: >
           {{
-            states.device_tracker.halisiphone.state != 'home' and
-            states.sensor.kitchen_who.state == 'hali'
+            ( states.device_tracker.davids_iphone.state != 'home' and states.sensor.kitchen_what.state == 'david' )
+	    or
+	    ( states.device_tracker.kelis_iphone.state == 'home' and states.sensor.kitchen_what.state == 'keli' )
+	    or
+	    ( states.device_tracker.halisiphone.state != 'home' and states.sensor.kitchen_what.state == 'hali' )
+	    or
+	    ( states.device_tracker.ianmartinsiphone.state != 'home' and states.sensor.kitchen_what.state == 'ian' )
+	    or
+            ( states.device_tracker.rileysiphone5.state != 'home' and states.sensor.kitchen_what.state == 'riley' )
+	    or
+            ( states.device_tracker.ellensiphone5.state != 'home' and states.sensor.kitchen_what.state == 'ellen' )
           }}
+
+binary_sensor kitchen_test:
+  - platform: template
+    sensors:
       david_in_kitchen:
-        friendly_name: david in kitchen
         entity_id:
-          - sensor.kitchen_who
+          - sensor.kitchen_what
           - device_tracker.davids_iphone
         value_template: >
           {{
             states.device_tracker.davids_iphone.state == 'home' and
-            states.sensor.kitchen_who.state == 'david'
+            states.sensor.kitchen_what.state == 'david'
           }}
       keli_in_kitchen:
         friendly_name: keli in kitchen
         entity_id:
-          - sensor.kitchen_who
+          - sensor.kitchen_what
           - device_tracker.kelis_iphone
         value_template: >
           {{
             states.device_tracker.kelis_iphone.state == 'home' and
-            states.sensor.kitchen_who.state == 'keli'
-          }}
-      people_in_kitchen:
-        friendly_name: people in kitchen
-        entity_id:
-          - sensor.kitchen_who
-          - device_tracker.kelis_iphone
-          - device_tracker.davids_iphone
-        value_template: >
-          {{
-            (
-              states.device_tracker.davids_iphone.state == 'home' and
-              states.sensor.kitchen_who.state == 'david'
-            )
-            or
-            (
-              states.device_tracker.kelis_iphone.state == 'home' and
-              states.sensor.kitchen_who.state == 'keli'
-            )
+            states.sensor.kitchen_what.state == 'keli'
           }}
 
 # INCLUDE STUFF
