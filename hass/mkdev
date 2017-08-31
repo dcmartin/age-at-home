@@ -5,18 +5,26 @@ onintr cleanup
 if ($#argv > 0) then
   set vendor = $argv[1]
 else
-  echo "$0 - <vendor> (default all)" >&! /dev/stderr
-  set vendor = "all"
+  echo -n "$0 <vendor> (default all):"
+  set vendor = $<
+  if ($#vendor == 0 || $vendor == "") then
+    set vendor = "all"
+  endif
 endif
+echo "$0 - using vendor ($vendor)" >&! /dev/stderr
 
 if ($#argv > 1) then
-  echo "$0 - $vendor <net> (default 192.168.1.0/24)" >&! /dev/stderr
   set net = $argv[2]
 else
-  set net = "192.168.1.0/24"
+  echo -n "$0 $vendor <net> (default 192.168.1.0/24):"
+  set net = $<
+  if ($#net == 0 || $net == "") then
+    set net = "192.168.1.0/24"
+  endif
 endif
+echo "$0 - using net ($net)" >&! /dev/stderr
 
-# find devices on the LAN
+# find hosts on the LAN
 set out = "/tmp/$0:t.$$.txt"
 /usr/bin/sudo /usr/bin/nmap -sn -T5 "$net" >! "$out"
 
@@ -57,16 +65,16 @@ if ($?vendors == 0) then
 endif
 
 set config = "auto-config-$vendor.yaml"
-set device = "auto-device-$vendor.yaml"
+set host = "auto-host-$vendor.yaml"
 set sensor = "auto-sensor-$vendor.yaml"
 set automa = "auto-automa-$vendor.yaml"
 
-rm -f "$config" "$device" "$sensor" "$automa"
+rm -f "$config" "$host" "$sensor" "$automa"
 
 /bin/echo '++ Processing '$#vendors' vendors' >& /dev/stderr
 
 # start automation
-/bin/echo 'automation:' >>! "$automa"
+/bin/echo 'automation notify_host_status:' >>! "$automa"
 /bin/echo '  - alias: Notify Device Status' >>! "$automa"
 /bin/echo '    trigger:' >>! "$automa"
 /bin/echo '      platform: state' >>! "$automa"
@@ -106,24 +114,24 @@ foreach vendor ( $vendors )
         breaksw
     endsw
 
-    # define sensor for on/off-line device status
+    # define sensor for on/off-line host status
     /bin/echo '# '"$name"' '"$ip"' '"$mac" >>! "$sensor"
     /bin/echo 'sensor '"$name"_onoff':' >>! "$sensor"
     /bin/echo '  - platform: template' >>! "$sensor"
     /bin/echo '    sensors:' >>! "$sensor"
-    /bin/echo '      device_'"$name"'_onoff:' >>! "$sensor"
+    /bin/echo '      host_'"$name"'_onoff:' >>! "$sensor"
     /bin/echo '        friendly_name: "'"$name"' OnOff"' >>! "$sensor"
-    /bin/echo '        value_template: "{{ '"'Online' if is_state ( 'device_tracker.""$name""', 'home' ) else 'Offline' }}"'"' >>! "$sensor"
+    /bin/echo '        value_template: "{{ '"'Online' if is_state ( 'host_tracker.""$name""', 'home' ) else 'Offline' }}"'"' >>! "$sensor"
     /bin/echo '' >>! "$sensor"
 
     # add to automation
-    /bin/echo '        - sensor.device_'"$name"'_onoff' >>! "$automa"
+    /bin/echo '        - sensor.host_'"$name"'_onoff' >>! "$automa"
 
-    # handle device
-    /bin/echo '# '"$name"' '"$ip"' '"$mac" >>! "$device"
-    /bin/echo "$name"':' >>! "$device"
-    /bin/echo '  mac: '"$mac" >>! "$device"
-    /bin/echo '  name: '"$name" >>! "$device"
+    # handle host
+    /bin/echo '# '"$name"' '"$ip"' '"$mac" >>! "$host"
+    /bin/echo "$name"':' >>! "$host"
+    /bin/echo '  mac: '"$mac" >>! "$host"
+    /bin/echo '  name: '"$name" >>! "$host"
     switch ($vendor)
       case "camera":
       case "Cisco-Linksys":
@@ -141,12 +149,12 @@ foreach vendor ( $vendors )
         set picture = ""
         breaksw
     endsw 
-    /bin/echo '  icon: '"$icon" >>! "$device"
-    /bin/echo '  picture: '"$picture" >>! "$device"
-    /bin/echo '  track: true' >>! "$device"
-    /bin/echo '  hide_if_away: false' >>! "$device"
-    /bin/echo '  vendor: '"$vendor" >>! "$device"
-    /bin/echo '' >>! "$device"
+    /bin/echo '  icon: '"$icon" >>! "$host"
+    /bin/echo '  picture: '"$picture" >>! "$host"
+    /bin/echo '  track: true' >>! "$host"
+    /bin/echo '  hide_if_away: false' >>! "$host"
+    /bin/echo '  vendor: '"$vendor" >>! "$host"
+    /bin/echo '' >>! "$host"
 
     @ i++
     @ total++
@@ -166,11 +174,10 @@ end
 /bin/echo '            {% else %}' >>! "$automa"
 /bin/echo '              {{ trigger.to_state.attributes.friendly_name }} has come online!' >>! "$automa"
 /bin/echo '            {% endif %}' >>! "$automa"
-/bin/echo '            <' >>! "$automa"
 /bin/echo '' >>! "$automa"
 
 cleanup:
 
 /bin/rm -f "$out"
 
-/bin/echo '++ Produced YAML for '"$total"' devices: '"$config"' & '"$device" >& /dev/stderr
+/bin/echo '++ Produced YAML for '"$total"' hosts: '"$config"' & '"$host" >& /dev/stderr
