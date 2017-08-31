@@ -63,20 +63,20 @@ endif
 #
 # find cache
 #
-set CACHE = "$TMP/$APP-$API-$QUERY_STRING.$DATE.json"
+set OUTPUT = "$TMP/$APP-$API-$QUERY_STRING.$DATE.json"
 
-if (! -s "$CACHE") then
-  /bin/rm -f "$CACHE:r:r".*
+if (! -s "$OUTPUT") then
+  /bin/rm -f "$OUTPUT:r:r".*
 
   /usr/bin/curl -s -q -f -L "$WWW/CGI/aah-images.cgi?db=$db&limit=$limit" \
         | /usr/local/bin/jq -r '.ids[]?' \
         | /usr/bin/xargs -I % /usr/bin/curl -s -q -f -L "$WWW/CGI/aah-updates.cgi?db=$db&id=%" \
-        | /usr/local/bin/jq -j '.class,"/",.id,".jpg\n"' >! "$CACHE"
+        | /usr/local/bin/jq -j '.class,"/",.id,".jpg\n"' >! "$OUTPUT"
 endif
 
-if (-s "$CACHE") then
+if (-s "$OUTPUT") then
     set output = '{"images":'
-    foreach i ( `/bin/cat "$CACHE"` )
+    foreach i ( `/bin/cat "$OUTPUT"` )
       if (-s "$TMP/$db/$i") then
         if ($?stat) then
           set output = "$output"','
@@ -99,7 +99,7 @@ if (-s "$CACHE") then
     set output = "$output"'}'
     goto output
 else
-  if ($?DEBUG) /bin/echo `date` "$0 $$ -- no $CACHE exists" >>&! $TMP/LOG
+  if ($?DEBUG) /bin/echo `date` "$0 $$ -- no $OUTPUT exists" >>&! $TMP/LOG
   goto done
 endif
 
@@ -119,9 +119,9 @@ endif
       goto done
     endif
     if ($class == "all") then
-      /bin/echo '{"date":'"$DATE"',"name":"'"$db"'","count":'$#classes',"classes":[' >! "$CACHE.$$"
+      /bin/echo '{"date":'"$DATE"',"name":"'"$db"'","count":'$#classes',"classes":[' >! "$OUTPUT.$$"
     else 
-      /bin/echo '{"date":'"$since"',"name":"'"$db"'","classes":[' >! "$CACHE.$$"
+      /bin/echo '{"date":'"$since"',"name":"'"$db"'","classes":[' >! "$OUTPUT.$$"
     endif
     @ k = 0
     set all = "/tmp/$0:t.$$.csv"
@@ -135,8 +135,8 @@ endif
 	continue
       endif
       if ($class != "any") then
-	if ($k) /bin/echo ',' >> "$CACHE.$$"
-        /usr/local/bin/jq '{"name":"'"$c"'","date":.date,"count":.count }' "$out" >> "$CACHE.$$"
+	if ($k) /bin/echo ',' >> "$OUTPUT.$$"
+        /usr/local/bin/jq '{"name":"'"$c"'","date":.date,"count":.count }' "$out" >> "$OUTPUT.$$"
 	@ k++
       else
         /usr/local/bin/jq -j '.ids[]?|select(.date>'"$since"')|.date,",","'"$c"'",",",.id,"\n"' "$out" >>! "$all"
@@ -147,22 +147,22 @@ endif
       set classes = ( `awk -F, '{ print $2 }' "$all.$$" | sort | uniq` )
       @ k = 0
       foreach c ( $classes )
-	if ($k) /bin/echo ',' >> "$CACHE.$$"
-        /bin/echo '{"class":"'"$c"'","ids":[' >> "$CACHE.$$"
-	egrep ','"$c"',' "$all.$$" | awk -F, '{ printf("\"%s\",", $3) }' | sed 's/,$//' >> "$CACHE.$$"
-        /bin/echo ']}' >> "$CACHE.$$"
+	if ($k) /bin/echo ',' >> "$OUTPUT.$$"
+        /bin/echo '{"class":"'"$c"'","ids":[' >> "$OUTPUT.$$"
+	egrep ','"$c"',' "$all.$$" | awk -F, '{ printf("\"%s\",", $3) }' | sed 's/,$//' >> "$OUTPUT.$$"
+        /bin/echo ']}' >> "$OUTPUT.$$"
 	@ k++
       end
       rm -f "$all" "$all.$$"
     endif
-    /bin/echo ']}' >> "$CACHE.$$"
-    mv "$CACHE.$$" "$CACHE"
+    /bin/echo ']}' >> "$OUTPUT.$$"
+    mv "$OUTPUT.$$" "$OUTPUT"
   else if ($class == "all") then
     set url = "https://$CU/$db-$API/$class"
-    curl -s -q -f -L "$url" | /usr/local/bin/jq '{"name":.name,"date":.date,"count":.count,"classes":.classes}' >! "$CACHE"
+    curl -s -q -f -L "$url" | /usr/local/bin/jq '{"name":.name,"date":.date,"count":.count,"classes":.classes}' >! "$OUTPUT"
   else
     set url = "https://$CU/$db-$API/$class"
-    curl -s -q -f -L "$url" | /usr/local/bin/jq '{"name":.name,"date":.date,"count":.count,"ids":.ids}' >! "$CACHE"
+    curl -s -q -f -L "$url" | /usr/local/bin/jq '{"name":.name,"date":.date,"count":.count,"ids":.ids}' >! "$OUTPUT"
   endif
 endif
 
@@ -175,7 +175,7 @@ output:
 /bin/echo "Content-Type: application/json; charset=utf-8"
 /bin/echo "Access-Control-Allow-Origin: *"
 
-if (-s "$CACHE") then
+if (-s "$OUTPUT") then
     @ age = $SECONDS - $DATE
     /bin/echo "Age: $age"
     @ refresh = $TTL - $age
@@ -185,8 +185,8 @@ if (-s "$CACHE") then
     /bin/echo "Cache-Control: max-age=$TTL"
     /bin/echo "Last-Modified:" `date -r $DATE '+%a, %d %b %Y %H:%M:%S %Z'`
     /bin/echo ""
-    /usr/local/bin/jq -c '.' "$CACHE"
-    if ($?DEBUG) /bin/echo `date` "$0 $$ -- output ($CACHE) Age: $age Refresh: $refresh" >>! $TMP/LOG
+    /usr/local/bin/jq -c '.' "$OUTPUT"
+    if ($?DEBUG) /bin/echo `date` "$0 $$ -- output ($OUTPUT) Age: $age Refresh: $refresh" >>! $TMP/LOG
 else
     /bin/echo "Cache-Control: no-cache"
     /bin/echo "Last-Modified:" `date -r $SECONDS '+%a, %d %b %Y %H:%M:%S %Z'`
@@ -195,7 +195,7 @@ else
 endif
 
 cleanup:
-  rm -f "$CACHE".$$
+  rm -f "$OUTPUT".$$
 
 done:
   /bin/echo `date` "$0 $$ -- FINISH ($QUERY_STRING)" >>! $TMP/LOG

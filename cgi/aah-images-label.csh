@@ -54,7 +54,7 @@ endif
     -strokewidth 3 \
     -draw "rectangle $rect" "$out"
 
-if (-s "$out") then
+if (-e "$out") then
   /bin/dd if="$out"
   /bin/rm -f "$out"
 else

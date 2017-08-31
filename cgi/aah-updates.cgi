@@ -5,7 +5,7 @@ setenv LAN "192.168.1"
 setenv WWW "$LAN".32
 setenv DIGITS "$LAN".30
 setenv WAN "www.dcmartin.com"
-if ($?TMP == 0) setenv TMP "/var/lib/age-at-home"
+setenv TMP "/var/lib/age-at-home"
 
 # setenv DEBUG true
 
@@ -67,7 +67,7 @@ endif
 set OUTPUT = "$TMP/$APP-$API-$QUERY_STRING.$DATE.json"
 # test if been-there-done-that
 if ($?id == 0 && $?since == 0 && $?force == 0 && -s "$OUTPUT") goto output
-rm -f "$OUTPUT:r:r".*
+/bin/rm -f "$OUTPUT:r:r".*
 
 # handle singleton
 if ($db != "all" && $?id) then
@@ -75,6 +75,7 @@ if ($db != "all" && $?id) then
   set out = "/tmp/$0:t.$$.json"
   /usr/bin/curl -s -q -f -L "$url" -o "$out"
   if ($status == 22 || $status == 28 || ! -s "$out") then
+    /bin/rm -f "$out"
     set output = '{"error":"not found","db":"'"$db"'","id":"'"$id"'"}'
   else 
     set class = ( `/usr/local/bin/jq -r '.class' "$out" | /usr/bin/sed "s/ /_/g"` )
@@ -133,7 +134,7 @@ if ($db != "all" && $?id) then
       set output = "$output"'}'
     endif # include_scores
   endif # found
-  rm -f "$out"
+  /bin/rm -f "$out"
   goto output
 endif
 
@@ -170,7 +171,7 @@ foreach d ( $devices )
   curl -s -q -f -L "$CU/$url" -o "$out"
   if ($status == 22 || $status == 28 || ! -s "$out") then
     if ($?VERBOSE) /bin/echo `date` "$0 $$ ++ FAILURE ($url) ($status)" >>&! $TMP/LOG
-    rm -f "$out"
+    /bin/rm -f "$out"
     continue
   endif
   set cd = `/usr/local/bin/jq -r '.date?' "$out"`; if ($cd == "null") set cd = 0
@@ -211,13 +212,14 @@ foreach d ( $devices )
         echo '{"name":"'"$d"'","date":'"$cd"',"count":'"$num"',"total":'"$len"',"limit":'"$limit"',"ids":['"$all"']}' >! "$OUTPUT"
       endif
     endif
-    rm -f "$out"
+    /bin/rm -f "$out"
     goto output
   else if ($db == "all") then
     set json = '{"name":"'"$d"'","date":'"$cd"',"count":'"$cc"',"total":'"$ct"'}'
   else
     unset json
   endif
+  /bin/rm -f "$out"
   if ($k) set all = "$all"','
   @ k++
   if ($?json) then

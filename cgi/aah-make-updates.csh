@@ -40,7 +40,7 @@ if (-s "$OUTPUT") goto done
 #
 # SINGLE THREADED (by QUERY_STRING)
 #
-set INPROGRESS = ( `/bin/echo "$OUTPUT:r:r".*` )
+set INPROGRESS = ( `/bin/echo "$OUTPUT".*` )
 if ($#INPROGRESS) then
     foreach ip ( $INPROGRESS )
       set pid = $ip:e
@@ -50,7 +50,7 @@ if ($#INPROGRESS) then
         goto done
       else
         if ($?VERBOSE) /bin/echo `/bin/date` "$0 $$ -- removing $ip" >>&! $TMP/LOG
-        rm -f "$ip"
+        /bin/rm -f "$ip"
       endif
     end
     if ($?VERBOSE) /bin/echo `/bin/date` "$0 $$ -- NO PROCESSES FOUND ($QUERY_STRING)" >>&! $TMP/LOG
@@ -59,7 +59,7 @@ else
 endif
 
 # cleanup if interrupted
-rm -f "$OUTPUT:r:r".*
+/bin/rm -f "$OUTPUT:r:r".*
 onintr cleanup
 touch "$OUTPUT".$$
 
@@ -146,7 +146,7 @@ else
   set seqid = 0
   set last_total = 0
 endif
-rm -f "$out"
+/bin/rm -f "$out"
 
 # CHANGES target
 set CHANGES = "/tmp/$0:t.$$.$device.$DATE.json"
@@ -178,8 +178,9 @@ if ($?VERBOSE) /bin/echo `/bin/date` "$0 $$ -- download _changes ($url)" >>! $TM
 if ($status != 22 && $status != 28 && -s "$out") then
   # test JSON
   /usr/local/bin/jq '.' "$out" >&! /dev/null
-  if ($status != 0) then
-    set result = $status
+  set result = $status
+  if ($result != 0) then
+    /bin/rm -f "$out"
     if ($try < 4) then
       @ transfer = $transfer + $transfer
       @ try++
@@ -193,15 +194,16 @@ if ($status != 22 && $status != 28 && -s "$out") then
   set last_seq = `/usr/local/bin/jq -r '.last_seq' "$out"`
   if ($last_seq == $seqid) then
     if ($?VERBOSE) /bin/echo `/bin/date` "$0 $$ -- $device -- up-to-date ($seqid)" >>! $TMP/LOG
+    /bin/rm -f "$out"
     goto done
   endif
 
   if ($?VERBOSE) /bin/echo `/bin/date` "$0 $$ -- $device -- preprocessing into lines reversing order to LIFO" >>! $TMP/LOG
   /usr/local/bin/jq '{"results":.results|sort_by(.id)|reverse}' "$out" | /usr/local/bin/jq -c '.results[].doc' >! "$CHANGES"
-  rm -f "$out"
+  /bin/rm -f "$out"
   set total_changes = `/usr/bin/wc -l "$CHANGES" | /usr/bin/awk '{ print $1 }'`
 else
-  rm -f "$out"
+  /bin/rm -f "$out"
   if ($try < 3) then
     @ transfer = $transfer + $transfer
     @ try++
@@ -261,21 +263,21 @@ while ($idx <= $total_changes)
   /usr/bin/curl -m 1 -s -q -f -L -H "Content-type: application/json" "$CU/$url" -o "$out" >>&! $TMP/LOG
   if ($status == 22 || $status == 28 || ! -s "$out") then
     if ($?VERBOSE) /bin/echo `/bin/date` "$0 $$ -- no existing update ($u)" >>&! $TMP/LOG
-    rm -f "$out"
+    /bin/rm -f "$out"
     unset idrev
   else
     set idrev = ( `/usr/local/bin/jq -r '._rev' "$out"` )
     if ($#idrev && $idrev != "null") then
       if ($?force == 0) then
         if ($?VERBOSE) /bin/echo `/bin/date` "$0 $$ -- BREAKING ($device) CHANGES: $nchange INDEX: $idx COUNT: $total_changes -- existing $u update ($idrev)" >>! $TMP/LOG
-        rm -f "$out"
+        /bin/rm -f "$out"
         break
       endif
       if ($?VERBOSE) /bin/echo `/bin/date` "$0 $$ -- WARNING -- EXISTING RECORD ($u) ($idrev)" >>! $TMP/LOG
     else
       unset idrev
     endif
-    rm -f "$out"
+    /bin/rm -f "$out"
   endif
 
   #
@@ -329,9 +331,9 @@ while ($idx <= $total_changes)
     set changes = ( $changes $u )
     @ nchange++
   endif
-  rm /tmp/curl.$$.json
+  /bin/rm /tmp/curl.$$.json
   # cleanup
-  rm -f "$event" "$stats" "$id"
+  /bin/rm -f "$event" "$stats" "$id"
 end
 
 if ($?failures) then
@@ -339,7 +341,7 @@ if ($?failures) then
 endif
 
 if ($?CHANGES) then
-  rm -f "$CHANGES"
+  /bin/rm -f "$CHANGES"
 endif
 
 update:
@@ -417,4 +419,4 @@ done:
 if ($?VERBOSE) /bin/echo `/bin/date` "$0 $$ -- FINISH ($QUERY_STRING)"  >>! $TMP/LOG
 
 cleanup:
-rm -f "$OUTPUT.$$"
+/bin/rm -f "$OUTPUT.$$"
