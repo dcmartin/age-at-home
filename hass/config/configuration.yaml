@@ -2040,6 +2040,8 @@ binary_sensor kitchen_test:
 
 # INCLUDE STUFF
 
+automation dump: !include dump.yaml
+
 group: !include groups.yaml
 
 automation: !include automations.yaml
