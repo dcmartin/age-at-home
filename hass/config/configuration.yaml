@@ -1761,21 +1761,18 @@ sensor presence_bathroom:
 sensor bathroom_what:
   - platform: mqtt
     name: bathroom_what
-    expire_after: 30
     state_topic: 'presence/bathroom'
     value_template: '{{ value_json.class | default("nothing") }}'
 
 sensor bathroom_who:
   - platform: mqtt
     name: bathroom_who
-    expire_after: 30
     state_topic: 'presence/bathroom'
     value_template: '{{ value_json.model | default("none") }}'
 
 sensor bathroom_why:
   - platform: mqtt
     name: bathroom_why
-    expire_after: 30
     state_topic: 'presence/bathroom'
     value_template: '{{ value_json.score | default(0.0) }}'
 
