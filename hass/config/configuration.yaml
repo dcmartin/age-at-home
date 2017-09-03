@@ -1596,14 +1596,18 @@ sensor mtnrpi3_publickey:
 camera last_image:
   - platform: mqtt
     name: last_image
-    icon: mdi:image
     topic: 'image/+'
 
 camera last_image_annotated:
   - platform: mqtt
     name: last_image_annotated
-    icon: mdi:image
     topic: 'image-annotated/+'
+
+camera last_image_cropped:
+  - platform: mqtt
+    name: last_image_cropped
+    icon: mdi:image
+    topic: 'image-cropped/+'
 
 sensor last_ago:
   - platform: mqtt
@@ -1700,14 +1704,18 @@ sensor kitchen_ago:
 camera kitchen_image:
   - platform: mqtt
     name: kitchen_image
-    icon: mdi:image
     topic: 'image/kitchen'
 
 camera kitchen_image_annotated:
   - platform: mqtt
     name: kitchen_image_annotated
-    icon: mdi:image
     topic: 'image-annotated/kitchen'
+
+camera kitchen_image_cropped:
+  - platform: mqtt
+    name: kitchen_image_cropped
+    icon: mdi:image
+    topic: 'image-cropped/kitchen'
 
 sensor kitchen_empty_time:
   - platform: history_stats
@@ -1724,7 +1732,7 @@ sensor kitchen_empty_time:
 sensor kitchen_json:
   - platform: template
     sensors:
-      kitchen_presence_json:
+      kitchen_presence_state:
         entity_id: sensor.presence_kitchen
         value_template: '{{ states.sensor.presence_kitchen.state }}'
 
@@ -1732,17 +1740,17 @@ sensor kitchen_attributes:
   - platform: template
     sensors:
       kitchen_date:
-        entity_id: sensor.kitchen_presence_json
-        value_template: '{{ value_json.date | timestamp_custom("%I:%M %p") }}'
+        entity_id: sensor.kitchen_presence
+        value_template: '{{ states.sensor.kitchen_presence.state.date | timestamp_custom("%I:%M %p") }}'
       kitchen_class:
-        entity_id: sensor.kitchen_presence_json
-        value_template: '{{ value_json.class }}'
+        entity_id: sensor.kitchen_presence
+        value_template: '{{ states.sensor.kitchen_presence.state.class }}'
       kitchen_model:
-        entity_id: sensor.kitchen_presence_json
-        value_template: '{{ value_json.model }}'
+        entity_id: sensor.kitchen_presence
+        value_template: '{{ states.sensor.kitchen_presence.state.model }}'
       kitchen_score:
-        entity_id: sensor.kitchen_presence_json
-        value_template: '{{ value_json.score }}'
+        entity_id: sensor.kitchen_presence
+        value_template: '{{ states.sensor.kitchen_presence.state.score }}'
 
 ##
 ## BATHROOM
@@ -1798,6 +1806,11 @@ camera bathroom_image_annotated:
   - platform: mqtt
     name: bathroom_image_annotated
     topic: 'image-annotated/bathroom'
+
+camera bathroom_image_cropped:
+  - platform: mqtt
+    name: bathroom_image_cropped
+    topic: 'image-cropped/bathroom'
 
 sensor bathroom_empty_time:
   - platform: history_stats
@@ -1868,8 +1881,12 @@ camera road_image:
 camera road_image_annotated:
   - platform: mqtt
     name: road_image_annotated
-    icon: mdi:image
     topic: 'image-annotated/road'
+
+camera road_image_cropped:
+  - platform: mqtt
+    name: road_image_cropped
+    topic: 'image-cropped/road'
 
 sensor road_empty_time:
   - platform: history_stats
@@ -2040,8 +2057,44 @@ binary_sensor kitchen_test:
 
 # INCLUDE STUFF
 
-automation dump: !include dump.yaml
-
 group: !include groups.yaml
 
-automation: !include automations.yaml
+# automation: !include automations.yaml
+#
+# TESTING
+#
+
+automation track_david:
+  id: 'davids_iphone_home'
+  alias: 'david_home'
+  trigger:
+    platform: state
+    entity_id: device_tracker.davids_iphone
+    to: 'home'
+  action:
+    - service: notify.notify
+      data:
+        message: Hello, David!
+    - delay: 0:30
+    - service: notify.notify
+      data:
+        message: Still here?
+
+# automation:
+#  - alias: track_david
+#    initial_state: off
+#    trigger:
+#      - platform: state
+#        entity_id: device_tracker.davids_iphone
+#        to: 'home'
+#    action:
+#      - service: mqtt.publish
+#        topic: '/presence/david'
+#        payload: '{ "what":"david", "where":"home" }'
+#       payload_template: '{{ states.device_tracker.davids_iphone.state | default("unknown") }}'
+#       data_template:
+#         topic: '/dump/{{ trigger.platform }}'
+#         retain: false
+#         payload: >-
+#           {% set p = trigger.platform %}
+#           {{"trigger.platform: "}} {{ p }}{{- "\n" -}}

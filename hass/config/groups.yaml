@@ -349,6 +349,7 @@ ageathome_last:
   name: 'AgeAtHome Last'
   entities:
     - camera.last_image_annotated
+    - camera.last_image_cropped
     - sensor.last_who
     - sensor.last_what
     - sensor.last_where
@@ -383,6 +384,7 @@ ageathome_kitchen_view:
   icon: mdi:stove
   entities:
     - camera.kitchen_image_annotated
+    - camera.kitchen_image_cropped
     - group.ageathome_kitchen_details
     - group.ageathome_notin_kitchen
 
@@ -415,6 +417,7 @@ ageathome_bathroom_view:
   icon: mdi:anchor
   entities:
     - camera.bathroom_image_annotated
+    - camera.bathroom_image_cropped
     - group.ageathome_bathroom_details
     - group.ageathome_notin_bathroom
 
@@ -448,6 +451,7 @@ ageathome_frontdoor_view:
   icon: mdi:home-outline
   entities:
     - camera.frontdoor_image_annotated
+    - camera.frontdoor_image_cropped
     - group.ageathome_frontdoor_details
     - group.ageathome_notin_frontdoor
 
@@ -481,6 +485,7 @@ ageathome_road_view:
   icon: mdi:road
   entities:
     - camera.road_image_annotated
+    - camera.road_image_cropped
     - group.ageathome_road_details
     - group.ageathome_notin_road
 
