@@ -45,7 +45,13 @@ mtn_view:
   icon: mdi:image-filter-hdr
   entities:
     - group.mtnrpi2_status
-    - group.mtnrpi3_status
+    - group.mtnrpi2_agreement_view
+    - group.mtnrpi2_agreement0
+    - group.mtnrpi2_agreement1
+    - group.mtnrpi2_agreement2
+    - group.mtnrpi2_agreement3
+    - group.mtnrpi2_agreement4
+    - group.mtnrpi2_agreement5
 
 # RPI2
 
@@ -65,18 +71,6 @@ mtnrpi2_status:
     - sensor.mtnrpi2_eth_syncing
     - sensor.mtnrpi2_agreements_active_count
     - sensor.mtnrpi2_agreements_archive_count
-
-mtnrpi2_agreement_view:
-  view: yes
-  name: MtnRpi2 Agreement View
-  icon: mdi:account-card-details
-  entities:
-    - group.mtnrpi2_agreement0
-    - group.mtnrpi2_agreement1
-    - group.mtnrpi2_agreement2
-    - group.mtnrpi2_agreement3
-    - group.mtnrpi2_agreement4
-    - group.mtnrpi2_agreement5
 
 mtnrpi2_agreement0:
   name: 'MtnRpi2 Agreement0'
@@ -194,7 +188,7 @@ mtnrpi3_status:
     - sensor.mtnrpi3_agreements_archive_count
 
 mtnrpi3_agreement_view:
-  view: yes
+  # view: true
   name: MtnRpi3 Agreement View
   icon: mdi:account-card-details
   entities:
@@ -361,9 +355,6 @@ ageathome_what:
   name: 'AgeAtHome What'
   entities:
     - sensor.kitchen_what
-    - binary_sensor.kitchen_wrong
-    - binary_sensor.keli_in_kitchen
-    - binary_sensor.david_in_kitchen
     - sensor.bathroom_what
     - sensor.road_what
     - sensor.frontdoor_what
@@ -397,6 +388,9 @@ ageathome_kitchen_details:
     - sensor.kitchen_why
     - sensor.kitchen_ago
     - sensor.kitchen_empty_time
+    - binary_sensor.kitchen_wrong
+    - binary_sensor.keli_in_kitchen
+    - binary_sensor.david_in_kitchen
 
 ageathome_notin_kitchen:
   name: 'AgeAtHome NotIn Kitchen'
