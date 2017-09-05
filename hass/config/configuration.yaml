@@ -712,37 +712,37 @@ sensor external_ip:
 
 sensor mtnrpi2_connectivity:
   - platform: rest
-    resource: 'http://192.168.1.254/CGI/mtn-status.cgi?ip=39'
+    resource: 'http://192.168.1.32/CGI/mtn-status.cgi?ip=39'
     name: MtnRpi2 Connectivity
     value_template: '{{ value_json.connectivity | default("null") }}'
 
 sensor mtnrpi2_exchange:
   - platform: rest
-    resource: 'http://192.168.1.254/CGI/mtn-status.cgi?ip=39'
+    resource: 'http://192.168.1.32/CGI/mtn-status.cgi?ip=39'
     name: MtnRpi2 Exchange
     value_template: '{{ value_json.configuration.exchange_api | default("null") }}'
 
 sensor mtnrpi2_balance:
   - platform: rest
-    resource: 'http://192.168.1.254/CGI/mtn-status.cgi?ip=39'
+    resource: 'http://192.168.1.32/CGI/mtn-status.cgi?ip=39'
     name: MtnRpi2 Balance
     value_template: '{{ value_json.geth.eth_balance | default("null") }}'
 
 sensor mtnrpi2_net_peer_count:
   - platform: rest
-    resource: 'http://192.168.1.254/CGI/mtn-status.cgi?ip=39'
+    resource: 'http://192.168.1.32/CGI/mtn-status.cgi?ip=39'
     name: MtnRpi2 Balance
     value_template: '{{ value_json.geth.net_peer_count | default("null") }}'
 
 sensor mtnrpi2_eth_syncing:
   - platform: rest
-    resource: 'http://192.168.1.254/CGI/mtn-status.cgi?ip=39'
+    resource: 'http://192.168.1.32/CGI/mtn-status.cgi?ip=39'
     name: MtnRpi2 Eth Syncing
     value_template: '{{ value_json.geth.eth_syncing | default("null") }}'
 
 sensor mtnrpi2_eth_blocknumber:
   - platform: rest
-    resource: 'http://192.168.1.254/CGI/mtn-status.cgi?ip=39'
+    resource: 'http://192.168.1.32/CGI/mtn-status.cgi?ip=39'
     name: MtnRpi2 Eth Blocknumber
     value_template: '{{ value_json.geth.eth_block_number | default("null") }}'
 
@@ -750,13 +750,13 @@ sensor mtnrpi2_eth_blocknumber:
 
 sensor mtnrpi2_device_accountid:
   - platform: rest
-    resource: 'http://192.168.1.254/CGI/mtn-device.cgi?ip=39'
+    resource: 'http://192.168.1.32/CGI/mtn-device.cgi?ip=39'
     name: MtnRpi2 Device AccountID
     value_template: '{{ value_json.account.id | default("null") }}'
 
 sensor mtnrpi2_device_name:
   - platform: rest
-    resource: 'http://192.168.1.254/CGI/mtn-device.cgi?ip=39'
+    resource: 'http://192.168.1.32/CGI/mtn-device.cgi?ip=39'
     name: MtnRpi2 Device Name
     value_template: '{{ value_json.name | default("null") }}'
 
@@ -764,7 +764,7 @@ sensor mtnrpi2_device_name:
 
 sensor mtnrpi2_attribute_count:
   - platform: rest
-    resource: 'http://192.168.1.254/CGI/mtn-attribute.cgi?ip=39'
+    resource: 'http://192.168.1.32/CGI/mtn-attribute.cgi?ip=39'
     name: MtnRpi2 Attribute Count
     value_template: '{{ value_json.attributes | length }}'
 
@@ -772,13 +772,13 @@ sensor mtnrpi2_attribute_count:
 
 sensor mtnrpi2_agreements_active_count:
   - platform: rest
-    resource: 'http://192.168.1.254/CGI/mtn-agreement.cgi?ip=39'
+    resource: 'http://192.168.1.32/CGI/mtn-agreement.cgi?ip=39'
     name: MtnRpi2 Agreements Active Count
     value_template: '{{ value_json.agreements.active | length }}'
 
 sensor mtnrpi2_agreements_archive_count:
   - platform: rest
-    resource: 'http://192.168.1.254/CGI/mtn-agreement.cgi?ip=39'
+    resource: 'http://192.168.1.32/CGI/mtn-agreement.cgi?ip=39'
     name: MtnRpi2 Agreements Archive Count
     value_template: '{{ value_json.agreements.archive | length }}'
 
@@ -786,63 +786,63 @@ sensor mtnrpi2_agreements_archive_count:
 
 sensor mtnrpi2_agreement0_name:
   - platform: rest
-    resource: 'http://192.168.1.254/CGI/mtn-agreement.cgi?ip=39&id=0'
+    resource: 'http://192.168.1.32/CGI/mtn-agreement.cgi?ip=39&id=0'
     name: 'MtnRpi2 Agreement0 Name'
     friendly_name: 'Name'
     value_template: '{{ value_json.name | default("null") }}'
 
 sensor mtnrpi2_agreement0_id:
   - platform: rest
-    resource: 'http://192.168.1.254/CGI/mtn-agreement.cgi?ip=39&id=0'
+    resource: 'http://192.168.1.32/CGI/mtn-agreement.cgi?ip=39&id=0'
     name: 'MtnRpi2 Agreement0 ID'
     friendly_name: 'AgreementID'
     value_template: '{{ value_json.current_agreement_id | default("null") }}'
 
 sensor mtnrpi2_agreement0_protocol:
   - platform: rest
-    resource: 'http://192.168.1.254/CGI/mtn-agreement.cgi?ip=39&id=0'
+    resource: 'http://192.168.1.32/CGI/mtn-agreement.cgi?ip=39&id=0'
     name: MtnRpi2 Agreement0 Protocol
     friendly_name: 'Protocol'
     value_template: '{{ value_json.agreement_protocol | default("null") }}'
 
 sensor mtnrpi2_agreement0_consumer:
   - platform: rest
-    resource: 'http://192.168.1.254/CGI/mtn-agreement.cgi?ip=39&id=0'
+    resource: 'http://192.168.1.32/CGI/mtn-agreement.cgi?ip=39&id=0'
     name: 'MtnRpi2 Agreement0 Consumer'
     friendly_name: 'Consumer'
     value_template: '{{ value_json.consumer_id | default("null") }}'
 
 sensor mtnrpi2_agreement0_create:
   - platform: rest
-    resource: 'http://192.168.1.254/CGI/mtn-agreement.cgi?ip=39&id=0'
+    resource: 'http://192.168.1.32/CGI/mtn-agreement.cgi?ip=39&id=0'
     name: 'MtnRpi2 Agreement0 Create'
     friendly_name: 'Created'
     value_template: '{{ value_json.agreement_creation_time | timestamp_custom("%a %b %d @ %I:%M %p") }}'
 
 sensor mtnrpi2_agreement0_accept:
   - platform: rest
-    resource: 'http://192.168.1.254/CGI/mtn-agreement.cgi?ip=39&id=0'
+    resource: 'http://192.168.1.32/CGI/mtn-agreement.cgi?ip=39&id=0'
     name: 'MtnRpi2 Agreement0 Accept'
     friendly_name: 'Accepted'
     value_template: '{{ value_json.agreement_accepted_time | timestamp_custom("%a %b %d @ %I:%M %p") }}'
 
 sensor mtnrpi2_agreement0_finalize:
   - platform: rest
-    resource: 'http://192.168.1.254/CGI/mtn-agreement.cgi?ip=39&id=0'
+    resource: 'http://192.168.1.32/CGI/mtn-agreement.cgi?ip=39&id=0'
     name: 'MtnRpi2 Agreement0 Finalize'
     friendly_name: 'Finalized'
     value_template: '{{ value_json.agreement_finalized_time | timestamp_custom("%a %b %d @ %I:%M %p") }}'
 
 sensor mtnrpi2_agreement0_receive:
   - platform: rest
-    resource: 'http://192.168.1.254/CGI/mtn-agreement.cgi?ip=39&id=0'
+    resource: 'http://192.168.1.32/CGI/mtn-agreement.cgi?ip=39&id=0'
     name: 'MtnRpi2 Agreement0 Receive'
     friendly_name: 'Received'
     value_template: '{{ value_json.agreement_data_received_time | timestamp_custom("%a %b %d @ %I:%M %p") }}'
 
 sensor mtnrpi2_agreement0_start:
   - platform: rest
-    resource: 'http://192.168.1.254/CGI/mtn-agreement.cgi?ip=39&id=0'
+    resource: 'http://192.168.1.32/CGI/mtn-agreement.cgi?ip=39&id=0'
     name: 'MtnRpi2 Agreement0 Start'
     friendly_name: 'Started'
     value_template: '{{ value_json.agreement_execution_start_time | timestamp_custom("%a %b %d @ %I:%M %p") }}'
@@ -851,55 +851,55 @@ sensor mtnrpi2_agreement0_start:
 
 sensor mtnrpi2_agreement1_name:
   - platform: rest
-    resource: 'http://192.168.1.254/CGI/mtn-agreement.cgi?ip=39&id=1'
+    resource: 'http://192.168.1.32/CGI/mtn-agreement.cgi?ip=39&id=1'
     name: 'MtnRpi2 Agreement1 Name'
     value_template: '{{ value_json.name | default("null") }}'
 
 sensor mtnrpi2_agreement1_id:
   - platform: rest
-    resource: 'http://192.168.1.254/CGI/mtn-agreement.cgi?ip=39&id=1'
+    resource: 'http://192.168.1.32/CGI/mtn-agreement.cgi?ip=39&id=1'
     name: 'MtnRpi2 Agreement1 ID'
     value_template: '{{ value_json.current_agreement_id | default("null") }}'
 
 sensor mtnrpi2_agreement1_protocol:
   - platform: rest
-    resource: 'http://192.168.1.254/CGI/mtn-agreement.cgi?ip=39&id=1'
+    resource: 'http://192.168.1.32/CGI/mtn-agreement.cgi?ip=39&id=1'
     name: MtnRpi2 Agreement1 Protocol
     value_template: '{{ value_json.agreement_protocol | default("null") }}'
 
 sensor mtnrpi2_agreement1_consumer:
   - platform: rest
-    resource: 'http://192.168.1.254/CGI/mtn-agreement.cgi?ip=39&id=1'
+    resource: 'http://192.168.1.32/CGI/mtn-agreement.cgi?ip=39&id=1'
     name: 'MtnRpi2 Agreement1 Consumer'
     value_template: '{{ value_json.consumer_id | default("null") }}'
 
 sensor mtnrpi2_agreement1_create:
   - platform: rest
-    resource: 'http://192.168.1.254/CGI/mtn-agreement.cgi?ip=39&id=1'
+    resource: 'http://192.168.1.32/CGI/mtn-agreement.cgi?ip=39&id=1'
     name: 'MtnRpi2 Agreement1 Create'
     value_template: '{{ value_json.agreement_creation_time | timestamp_custom("%a %b %d @ %I:%M %p") }}'
 
 sensor mtnrpi2_agreement1_accept:
   - platform: rest
-    resource: 'http://192.168.1.254/CGI/mtn-agreement.cgi?ip=39&id=1'
+    resource: 'http://192.168.1.32/CGI/mtn-agreement.cgi?ip=39&id=1'
     name: 'MtnRpi2 Agreement1 Accept'
     value_template: '{{ value_json.agreement_accepted_time | timestamp_custom("%a %b %d @ %I:%M %p") }}'
 
 sensor mtnrpi2_agreement1_finalize:
   - platform: rest
-    resource: 'http://192.168.1.254/CGI/mtn-agreement.cgi?ip=39&id=1'
+    resource: 'http://192.168.1.32/CGI/mtn-agreement.cgi?ip=39&id=1'
     name: 'MtnRpi2 Agreement1 Finalize'
     value_template: '{{ value_json.agreement_finalized_time | timestamp_custom("%a %b %d @ %I:%M %p") }}'
 
 sensor mtnrpi2_agreement1_receive:
   - platform: rest
-    resource: 'http://192.168.1.254/CGI/mtn-agreement.cgi?ip=39&id=1'
+    resource: 'http://192.168.1.32/CGI/mtn-agreement.cgi?ip=39&id=1'
     name: 'MtnRpi2 Agreement1 Receive'
     value_template: '{{ value_json.agreement_data_received_time | timestamp_custom("%a %b %d @ %I:%M %p") }}'
 
 sensor mtnrpi2_agreement1_start:
   - platform: rest
-    resource: 'http://192.168.1.254/CGI/mtn-agreement.cgi?ip=39&id=1'
+    resource: 'http://192.168.1.32/CGI/mtn-agreement.cgi?ip=39&id=1'
     name: 'MtnRpi2 Agreement1 Start'
     value_template: '{{ value_json.agreement_execution_start_time | timestamp_custom("%a %b %d @ %I:%M %p") }}'
 
@@ -907,55 +907,55 @@ sensor mtnrpi2_agreement1_start:
 
 sensor mtnrpi2_agreement2_name:
   - platform: rest
-    resource: 'http://192.168.1.254/CGI/mtn-agreement.cgi?ip=39&id=2'
+    resource: 'http://192.168.1.32/CGI/mtn-agreement.cgi?ip=39&id=2'
     name: 'MtnRpi2 Agreement2 Name'
     value_template: '{{ value_json.name | default("null") }}'
 
 sensor mtnrpi2_agreement2_id:
   - platform: rest
-    resource: 'http://192.168.1.254/CGI/mtn-agreement.cgi?ip=39&id=2'
+    resource: 'http://192.168.1.32/CGI/mtn-agreement.cgi?ip=39&id=2'
     name: 'MtnRpi2 Agreement2 ID'
     value_template: '{{ value_json.current_agreement_id | default("null") }}'
 
 sensor mtnrpi2_agreement2_protocol:
   - platform: rest
-    resource: 'http://192.168.1.254/CGI/mtn-agreement.cgi?ip=39&id=2'
+    resource: 'http://192.168.1.32/CGI/mtn-agreement.cgi?ip=39&id=2'
     name: MtnRpi2 Agreement2 Protocol
     value_template: '{{ value_json.agreement_protocol | default("null") }}'
 
 sensor mtnrpi2_agreement2_consumer:
   - platform: rest
-    resource: 'http://192.168.1.254/CGI/mtn-agreement.cgi?ip=39&id=2'
+    resource: 'http://192.168.1.32/CGI/mtn-agreement.cgi?ip=39&id=2'
     name: 'MtnRpi2 Agreement2 Consumer'
     value_template: '{{ value_json.consumer_id | default("null") }}'
 
 sensor mtnrpi2_agreement2_create:
   - platform: rest
-    resource: 'http://192.168.1.254/CGI/mtn-agreement.cgi?ip=39&id=2'
+    resource: 'http://192.168.1.32/CGI/mtn-agreement.cgi?ip=39&id=2'
     name: 'MtnRpi2 Agreement2 Create'
     value_template: '{{ value_json.agreement_creation_time | timestamp_custom("%a %b %d @ %I:%M %p") }}'
 
 sensor mtnrpi2_agreement2_accept:
   - platform: rest
-    resource: 'http://192.168.1.254/CGI/mtn-agreement.cgi?ip=39&id=2'
+    resource: 'http://192.168.1.32/CGI/mtn-agreement.cgi?ip=39&id=2'
     name: 'MtnRpi2 Agreement2 Accept'
     value_template: '{{ value_json.agreement_accepted_time | timestamp_custom("%a %b %d @ %I:%M %p") }}'
 
 sensor mtnrpi2_agreement2_finalize:
   - platform: rest
-    resource: 'http://192.168.1.254/CGI/mtn-agreement.cgi?ip=39&id=2'
+    resource: 'http://192.168.1.32/CGI/mtn-agreement.cgi?ip=39&id=2'
     name: 'MtnRpi2 Agreement2 Finalize'
     value_template: '{{ value_json.agreement_finalized_time | timestamp_custom("%a %b %d @ %I:%M %p") }}'
 
 sensor mtnrpi2_agreement2_receive:
   - platform: rest
-    resource: 'http://192.168.1.254/CGI/mtn-agreement.cgi?ip=39&id=2'
+    resource: 'http://192.168.1.32/CGI/mtn-agreement.cgi?ip=39&id=2'
     name: 'MtnRpi2 Agreement2 Receive'
     value_template: '{{ value_json.agreement_data_received_time | timestamp_custom("%a %b %d @ %I:%M %p") }}'
 
 sensor mtnrpi2_agreement2_start:
   - platform: rest
-    resource: 'http://192.168.1.254/CGI/mtn-agreement.cgi?ip=39&id=2'
+    resource: 'http://192.168.1.32/CGI/mtn-agreement.cgi?ip=39&id=2'
     name: 'MtnRpi2 Agreement2 Start'
     value_template: '{{ value_json.agreement_execution_start_time | timestamp_custom("%a %b %d @ %I:%M %p") }}'
 
@@ -963,55 +963,55 @@ sensor mtnrpi2_agreement2_start:
 
 sensor mtnrpi2_agreement3_name:
   - platform: rest
-    resource: 'http://192.168.1.254/CGI/mtn-agreement.cgi?ip=39&id=3'
+    resource: 'http://192.168.1.32/CGI/mtn-agreement.cgi?ip=39&id=3'
     name: 'MtnRpi2 Agreement3 Name'
     value_template: '{{ value_json.name | default("null") }}'
 
 sensor mtnrpi2_agreement3_id:
   - platform: rest
-    resource: 'http://192.168.1.254/CGI/mtn-agreement.cgi?ip=39&id=3'
+    resource: 'http://192.168.1.32/CGI/mtn-agreement.cgi?ip=39&id=3'
     name: 'MtnRpi2 Agreement3 ID'
     value_template: '{{ value_json.current_agreement_id | default("null") }}'
 
 sensor mtnrpi2_agreement3_protocol:
   - platform: rest
-    resource: 'http://192.168.1.254/CGI/mtn-agreement.cgi?ip=39&id=3'
+    resource: 'http://192.168.1.32/CGI/mtn-agreement.cgi?ip=39&id=3'
     name: MtnRpi2 Agreement3 Protocol
     value_template: '{{ value_json.agreement_protocol | default("null") }}'
 
 sensor mtnrpi2_agreement3_consumer:
   - platform: rest
-    resource: 'http://192.168.1.254/CGI/mtn-agreement.cgi?ip=39&id=3'
+    resource: 'http://192.168.1.32/CGI/mtn-agreement.cgi?ip=39&id=3'
     name: 'MtnRpi2 Agreement3 Consumer'
     value_template: '{{ value_json.consumer_id | default("null") }}'
 
 sensor mtnrpi2_agreement3_create:
   - platform: rest
-    resource: 'http://192.168.1.254/CGI/mtn-agreement.cgi?ip=39&id=3'
+    resource: 'http://192.168.1.32/CGI/mtn-agreement.cgi?ip=39&id=3'
     name: 'MtnRpi2 Agreement3 Create'
     value_template: '{{ value_json.agreement_creation_time | timestamp_custom("%a %b %d @ %I:%M %p") }}'
 
 sensor mtnrpi2_agreement3_accept:
   - platform: rest
-    resource: 'http://192.168.1.254/CGI/mtn-agreement.cgi?ip=39&id=3'
+    resource: 'http://192.168.1.32/CGI/mtn-agreement.cgi?ip=39&id=3'
     name: 'MtnRpi2 Agreement3 Accept'
     value_template: '{{ value_json.agreement_accepted_time | timestamp_custom("%a %b %d @ %I:%M %p") }}'
 
 sensor mtnrpi2_agreement3_finalize:
   - platform: rest
-    resource: 'http://192.168.1.254/CGI/mtn-agreement.cgi?ip=39&id=3'
+    resource: 'http://192.168.1.32/CGI/mtn-agreement.cgi?ip=39&id=3'
     name: 'MtnRpi2 Agreement3 Finalize'
     value_template: '{{ value_json.agreement_finalized_time | timestamp_custom("%a %b %d @ %I:%M %p") }}'
 
 sensor mtnrpi2_agreement3_receive:
   - platform: rest
-    resource: 'http://192.168.1.254/CGI/mtn-agreement.cgi?ip=39&id=3'
+    resource: 'http://192.168.1.32/CGI/mtn-agreement.cgi?ip=39&id=3'
     name: 'MtnRpi2 Agreement3 Receive'
     value_template: '{{ value_json.agreement_data_received_time | timestamp_custom("%a %b %d @ %I:%M %p") }}'
 
 sensor mtnrpi2_agreement3_start:
   - platform: rest
-    resource: 'http://192.168.1.254/CGI/mtn-agreement.cgi?ip=39&id=3'
+    resource: 'http://192.168.1.32/CGI/mtn-agreement.cgi?ip=39&id=3'
     name: 'MtnRpi2 Agreement3 Start'
     value_template: '{{ value_json.agreement_execution_start_time | timestamp_custom("%a %b %d @ %I:%M %p") }}'
 
@@ -1019,55 +1019,55 @@ sensor mtnrpi2_agreement3_start:
 
 sensor mtnrpi2_agreement4_name:
   - platform: rest
-    resource: 'http://192.168.1.254/CGI/mtn-agreement.cgi?ip=39&id=4'
+    resource: 'http://192.168.1.32/CGI/mtn-agreement.cgi?ip=39&id=4'
     name: 'MtnRpi2 Agreement4 Name'
     value_template: '{{ value_json.name | default("null") }}'
 
 sensor mtnrpi2_agreement4_id:
   - platform: rest
-    resource: 'http://192.168.1.254/CGI/mtn-agreement.cgi?ip=39&id=4'
+    resource: 'http://192.168.1.32/CGI/mtn-agreement.cgi?ip=39&id=4'
     name: 'MtnRpi2 Agreement4 ID'
     value_template: '{{ value_json.current_agreement_id | default("null") }}'
 
 sensor mtnrpi2_agreement4_protocol:
   - platform: rest
-    resource: 'http://192.168.1.254/CGI/mtn-agreement.cgi?ip=39&id=4'
+    resource: 'http://192.168.1.32/CGI/mtn-agreement.cgi?ip=39&id=4'
     name: MtnRpi2 Agreement4 Protocol
     value_template: '{{ value_json.agreement_protocol | default("null") }}'
 
 sensor mtnrpi2_agreement4_consumer:
   - platform: rest
-    resource: 'http://192.168.1.254/CGI/mtn-agreement.cgi?ip=39&id=4'
+    resource: 'http://192.168.1.32/CGI/mtn-agreement.cgi?ip=39&id=4'
     name: 'MtnRpi2 Agreement4 Consumer'
     value_template: '{{ value_json.consumer_id | default("null") }}'
 
 sensor mtnrpi2_agreement4_create:
   - platform: rest
-    resource: 'http://192.168.1.254/CGI/mtn-agreement.cgi?ip=39&id=4'
+    resource: 'http://192.168.1.32/CGI/mtn-agreement.cgi?ip=39&id=4'
     name: 'MtnRpi2 Agreement4 Create'
     value_template: '{{ value_json.agreement_creation_time | timestamp_custom("%a %b %d @ %I:%M %p") }}'
 
 sensor mtnrpi2_agreement4_accept:
   - platform: rest
-    resource: 'http://192.168.1.254/CGI/mtn-agreement.cgi?ip=39&id=4'
+    resource: 'http://192.168.1.32/CGI/mtn-agreement.cgi?ip=39&id=4'
     name: 'MtnRpi2 Agreement4 Accept'
     value_template: '{{ value_json.agreement_accepted_time | timestamp_custom("%a %b %d @ %I:%M %p") }}'
 
 sensor mtnrpi2_agreement4_finalize:
   - platform: rest
-    resource: 'http://192.168.1.254/CGI/mtn-agreement.cgi?ip=39&id=4'
+    resource: 'http://192.168.1.32/CGI/mtn-agreement.cgi?ip=39&id=4'
     name: 'MtnRpi2 Agreement4 Finalize'
     value_template: '{{ value_json.agreement_finalized_time | timestamp_custom("%a %b %d @ %I:%M %p") }}'
 
 sensor mtnrpi2_agreement4_receive:
   - platform: rest
-    resource: 'http://192.168.1.254/CGI/mtn-agreement.cgi?ip=39&id=4'
+    resource: 'http://192.168.1.32/CGI/mtn-agreement.cgi?ip=39&id=4'
     name: 'MtnRpi2 Agreement4 Receive'
     value_template: '{{ value_json.agreement_data_received_time | timestamp_custom("%a %b %d @ %I:%M %p") }}'
 
 sensor mtnrpi2_agreement4_start:
   - platform: rest
-    resource: 'http://192.168.1.254/CGI/mtn-agreement.cgi?ip=39&id=4'
+    resource: 'http://192.168.1.32/CGI/mtn-agreement.cgi?ip=39&id=4'
     name: 'MtnRpi2 Agreement4 Start'
     value_template: '{{ value_json.agreement_execution_start_time | timestamp_custom("%a %b %d @ %I:%M %p") }}'
 
@@ -1075,7 +1075,7 @@ sensor mtnrpi2_agreement4_start:
 
 sensor mtnrpi2_agreement5:
   - platform: rest
-    resource: 'http://192.168.1.254/CGI/mtn-agreement.cgi?ip=39&id=5'
+    resource: 'http://192.168.1.32/CGI/mtn-agreement.cgi?ip=39&id=5'
     name: 'MtnRpi2 Agreement5'
 
 sensor mtnrpi2_agreements:
@@ -1087,62 +1087,62 @@ sensor mtnrpi2_agreements:
 
 sensor mtnrpi2_agreement5_name:
   - platform: rest
-    resource: 'http://192.168.1.254/CGI/mtn-agreement.cgi?ip=39&id=5'
+    resource: 'http://192.168.1.32/CGI/mtn-agreement.cgi?ip=39&id=5'
     name: 'MtnRpi2 Agreement5 Name'
     value_template: '{{ value_json.name | default("null") }}'
     
 sensor mtnrpi2_agreement5_id:
   - platform: rest
-    resource: 'http://192.168.1.254/CGI/mtn-agreement.cgi?ip=39&id=5'
+    resource: 'http://192.168.1.32/CGI/mtn-agreement.cgi?ip=39&id=5'
     name: 'MtnRpi2 Agreement5 ID'
     value_template: '{{ value_json.current_agreement_id | default("null") }}'
     # value_template: '{% if value_json.error %} {{ value_json.error }} {% else %} {{ value_json.current_agreement_id }} {% endif %}'
 
 sensor mtnrpi2_agreement5_protocol:
   - platform: rest
-    resource: 'http://192.168.1.254/CGI/mtn-agreement.cgi?ip=39&id=5'
+    resource: 'http://192.168.1.32/CGI/mtn-agreement.cgi?ip=39&id=5'
     name: MtnRpi2 Agreement5 Protocol
     value_template: '{{ value_json.agreement_protocol | default("null") }}'
     # value_template: '{% if value_json.error %} {{ value_json.error }} {% else %} {{ value_json.agreement_protocol }} {% endif %}'
 
 sensor mtnrpi2_agreement5_consumer:
   - platform: rest
-    resource: 'http://192.168.1.254/CGI/mtn-agreement.cgi?ip=39&id=5'
+    resource: 'http://192.168.1.32/CGI/mtn-agreement.cgi?ip=39&id=5'
     name: 'MtnRpi2 Agreement5 Consumer'
     value_template: '{{ value_json.consumer_id | default("null") }}'
     # value_template: {% if value_json.error %} {{ value_json.error }} {% else %} {{ value_json.consumer_id }} {% endif %}'
 
 sensor mtnrpi2_agreement5_create:
   - platform: rest
-    resource: 'http://192.168.1.254/CGI/mtn-agreement.cgi?ip=39&id=5'
+    resource: 'http://192.168.1.32/CGI/mtn-agreement.cgi?ip=39&id=5'
     name: 'MtnRpi2 Agreement5 Create'
     value_template: '{{ value_json.agreement_creation_time | timestamp_custom("%a %b %d @ %I:%M %p") }}'
     # value_template: {% if value_json.error %} {{ value_json.error }} {% else %} {{ value_json.agreement_creation_time | timestamp_custom("%a %b %d @ %T %p") }} {% endif %}'
 
 sensor mtnrpi2_agreement5_accept:
   - platform: rest
-    resource: 'http://192.168.1.254/CGI/mtn-agreement.cgi?ip=39&id=5'
+    resource: 'http://192.168.1.32/CGI/mtn-agreement.cgi?ip=39&id=5'
     name: 'MtnRpi2 Agreement5 Accept'
     value_template: '{{ value_json.agreement_accepted_time | timestamp_custom("%a %b %d @ %I:%M %p") }}'
     # value_template: {% if value_json.error %} {{ value_json.error }} {% else %} {{ value_json.agreement_accepted_time | timestamp_custom("%a %b %d @ %T %p") }} {% endif %}'
 
 sensor mtnrpi2_agreement5_finalize:
   - platform: rest
-    resource: 'http://192.168.1.254/CGI/mtn-agreement.cgi?ip=39&id=5'
+    resource: 'http://192.168.1.32/CGI/mtn-agreement.cgi?ip=39&id=5'
     name: 'MtnRpi2 Agreement5 Finalize'
     value_template: '{{ value_json.agreement_finalized_time | timestamp_custom("%a %b %d @ %I:%M %p") }}'
     # value_template: {% if value_json.error %} {{ value_json.error }} {% else %} {{ value_json.agreement_finalized_time | timestamp_custom("%a %b %d @ %T %p") }} {% endif %}'
 
 sensor mtnrpi2_agreement5_receive:
   - platform: rest
-    resource: 'http://192.168.1.254/CGI/mtn-agreement.cgi?ip=39&id=5'
+    resource: 'http://192.168.1.32/CGI/mtn-agreement.cgi?ip=39&id=5'
     name: 'MtnRpi2 Agreement5 Receive'
     value_template: '{{ value_json.agreement_data_received_time | timestamp_custom("%a %b %d @ %I:%M %p") }}'
     # value_template: {% if value_json.error %} {{ value_json.error }} {% else %} {{ value_json.agreement_data_received_time | timestamp_custom("%a %b %d @ %T %p") }} {% endif %}'
 
 sensor mtnrpi2_agreement5_start:
   - platform: rest
-    resource: 'http://192.168.1.254/CGI/mtn-agreement.cgi?ip=39&id=5'
+    resource: 'http://192.168.1.32/CGI/mtn-agreement.cgi?ip=39&id=5'
     name: 'MtnRpi2 Agreement5 Start'
     value_template: '{{ value_json.agreement_execution_start_time | timestamp_custom("%a %b %d @ %I:%M %p") }}'
     # value_template: {% if value_json.error %} {{ value_json.error }} {% else %} {{ value_json.agreement_execution_start_time | timestamp_custom("%a %b %d @ %T %p") }} {% endif %}'
@@ -1151,7 +1151,7 @@ sensor mtnrpi2_agreement5_start:
 
 sensor mtnrpi2_workloads_count:
   - platform: rest
-    resource: 'http://192.168.1.254/CGI/mtn-workload.cgi?ip=39'
+    resource: 'http://192.168.1.32/CGI/mtn-workload.cgi?ip=39'
     name: MtnRpi2 Workloads Count
     value_template: '{{ value_json.workloads | length }}'
 
@@ -1159,7 +1159,7 @@ sensor mtnrpi2_workloads_count:
 
 sensor mtnrpi2_publickey:
   - platform: rest
-    resource: 'http://192.168.1.254/CGI/mtn-publickey.cgi?ip=39'
+    resource: 'http://192.168.1.32/CGI/mtn-publickey.cgi?ip=39'
     name: MtnRpi2 Publickey
     value_template: '{{ value_json.pem | default("null") }}'
 
@@ -1167,37 +1167,37 @@ sensor mtnrpi2_publickey:
 
 sensor mtnrpi3_connectivity:
   - platform: rest
-    resource: 'http://192.168.1.254/CGI/mtn-status.cgi?ip=40'
+    resource: 'http://192.168.1.32/CGI/mtn-status.cgi?ip=40'
     name: MtnRpi3 Connectivity
     value_template: '{{ value_json.connectivity | default("null") }}'
 
 sensor mtnrpi3_exchange:
   - platform: rest
-    resource: 'http://192.168.1.254/CGI/mtn-status.cgi?ip=40'
+    resource: 'http://192.168.1.32/CGI/mtn-status.cgi?ip=40'
     name: MtnRpi3 Exchange
     value_template: '{{ value_json.configuration.exchange_api | default("null") }}'
 
 sensor mtnrpi3_balance:
   - platform: rest
-    resource: 'http://192.168.1.254/CGI/mtn-status.cgi?ip=40'
+    resource: 'http://192.168.1.32/CGI/mtn-status.cgi?ip=40'
     name: MtnRpi3 Balance
     value_template: '{{ value_json.geth.eth_balance | default("null") }}'
 
 sensor mtnrpi3_net_peer_count:
   - platform: rest
-    resource: 'http://192.168.1.254/CGI/mtn-status.cgi?ip=40'
+    resource: 'http://192.168.1.32/CGI/mtn-status.cgi?ip=40'
     name: MtnRpi3 Balance
     value_template: '{{ value_json.geth.net_peer_count | default("null") }}'
 
 sensor mtnrpi3_eth_syncing:
   - platform: rest
-    resource: 'http://192.168.1.254/CGI/mtn-status.cgi?ip=40'
+    resource: 'http://192.168.1.32/CGI/mtn-status.cgi?ip=40'
     name: MtnRpi3 Eth Syncing
     value_template: '{{ value_json.geth.eth_syncing | default("null") }}'
 
 sensor mtnrpi3_eth_blocknumber:
   - platform: rest
-    resource: 'http://192.168.1.254/CGI/mtn-status.cgi?ip=40'
+    resource: 'http://192.168.1.32/CGI/mtn-status.cgi?ip=40'
     name: MtnRpi3 Eth Blocknumber
     value_template: '{{ value_json.geth.eth_block_number | default("null") }}'
 
@@ -1205,13 +1205,13 @@ sensor mtnrpi3_eth_blocknumber:
 
 sensor mtnrpi3_device_accountid:
   - platform: rest
-    resource: 'http://192.168.1.254/CGI/mtn-device.cgi?ip=40'
+    resource: 'http://192.168.1.32/CGI/mtn-device.cgi?ip=40'
     name: MtnRpi3 Device AccountID
     value_template: '{{ value_json.account.id | default("null") }}'
 
 sensor mtnrpi3_device_name:
   - platform: rest
-    resource: 'http://192.168.1.254/CGI/mtn-device.cgi?ip=40'
+    resource: 'http://192.168.1.32/CGI/mtn-device.cgi?ip=40'
     name: MtnRpi3 Device Name
     value_template: '{{ value_json.name | default("null") }}'
 
@@ -1219,7 +1219,7 @@ sensor mtnrpi3_device_name:
 
 sensor mtnrpi3_attribute_count:
   - platform: rest
-    resource: 'http://192.168.1.254/CGI/mtn-attribute.cgi?ip=40'
+    resource: 'http://192.168.1.32/CGI/mtn-attribute.cgi?ip=40'
     name: MtnRpi3 Attribute Count
     value_template: '{{ value_json.attributes | length }}'
 
@@ -1227,13 +1227,13 @@ sensor mtnrpi3_attribute_count:
 
 sensor mtnrpi3_agreements_active_count:
   - platform: rest
-    resource: 'http://192.168.1.254/CGI/mtn-agreement.cgi?ip=40'
+    resource: 'http://192.168.1.32/CGI/mtn-agreement.cgi?ip=40'
     name: MtnRpi3 Agreements Active Count
     value_template: '{{ value_json.agreements.active | length }}'
 
 sensor mtnrpi3_agreements_archive_count:
   - platform: rest
-    resource: 'http://192.168.1.254/CGI/mtn-agreement.cgi?ip=40'
+    resource: 'http://192.168.1.32/CGI/mtn-agreement.cgi?ip=40'
     name: MtnRpi3 Agreements Archive Count
     value_template: '{{ value_json.agreements.archive | length }}'
 
@@ -1241,55 +1241,55 @@ sensor mtnrpi3_agreements_archive_count:
 
 sensor mtnrpi3_agreement0_name:
   - platform: rest
-    resource: 'http://192.168.1.254/CGI/mtn-agreement.cgi?ip=40&id=0'
+    resource: 'http://192.168.1.32/CGI/mtn-agreement.cgi?ip=40&id=0'
     name: 'MtnRpi3 Agreement0 Name'
     value_template: '{{ value_json.name | default("null") }}'
 
 sensor mtnrpi3_agreement0_id:
   - platform: rest
-    resource: 'http://192.168.1.254/CGI/mtn-agreement.cgi?ip=40&id=0'
+    resource: 'http://192.168.1.32/CGI/mtn-agreement.cgi?ip=40&id=0'
     name: 'MtnRpi3 Agreement0 ID'
     value_template: '{{ value_json.current_agreement_id | default("null") }}'
 
 sensor mtnrpi3_agreement0_protocol:
   - platform: rest
-    resource: 'http://192.168.1.254/CGI/mtn-agreement.cgi?ip=40&id=0'
+    resource: 'http://192.168.1.32/CGI/mtn-agreement.cgi?ip=40&id=0'
     name: MtnRpi3 Agreement0 Protocol
     value_template: '{{ value_json.agreement_protocol | default("null") }}'
 
 sensor mtnrpi3_agreement0_consumer:
   - platform: rest
-    resource: 'http://192.168.1.254/CGI/mtn-agreement.cgi?ip=40&id=0'
+    resource: 'http://192.168.1.32/CGI/mtn-agreement.cgi?ip=40&id=0'
     name: 'MtnRpi3 Agreement0 Consumer'
     value_template: '{{ value_json.consumer_id | default("null") }}'
 
 sensor mtnrpi3_agreement0_create:
   - platform: rest
-    resource: 'http://192.168.1.254/CGI/mtn-agreement.cgi?ip=40&id=0'
+    resource: 'http://192.168.1.32/CGI/mtn-agreement.cgi?ip=40&id=0'
     name: 'MtnRpi3 Agreement0 Create'
     value_template: '{{ value_json.agreement_creation_time | timestamp_custom("%a %b %d @ %I:%M %p") }}'
 
 sensor mtnrpi3_agreement0_accept:
   - platform: rest
-    resource: 'http://192.168.1.254/CGI/mtn-agreement.cgi?ip=40&id=0'
+    resource: 'http://192.168.1.32/CGI/mtn-agreement.cgi?ip=40&id=0'
     name: 'MtnRpi3 Agreement0 Accept'
     value_template: '{{ value_json.agreement_accepted_time | timestamp_custom("%a %b %d @ %I:%M %p") }}'
 
 sensor mtnrpi3_agreement0_finalize:
   - platform: rest
-    resource: 'http://192.168.1.254/CGI/mtn-agreement.cgi?ip=40&id=0'
+    resource: 'http://192.168.1.32/CGI/mtn-agreement.cgi?ip=40&id=0'
     name: 'MtnRpi3 Agreement0 Finalize'
     value_template: '{{ value_json.agreement_finalized_time | timestamp_custom("%a %b %d @ %I:%M %p") }}'
 
 sensor mtnrpi3_agreement0_receive:
   - platform: rest
-    resource: 'http://192.168.1.254/CGI/mtn-agreement.cgi?ip=40&id=0'
+    resource: 'http://192.168.1.32/CGI/mtn-agreement.cgi?ip=40&id=0'
     name: 'MtnRpi3 Agreement0 Receive'
     value_template: '{{ value_json.agreement_data_received_time | timestamp_custom("%a %b %d @ %I:%M %p") }}'
 
 sensor mtnrpi3_agreement0_start:
   - platform: rest
-    resource: 'http://192.168.1.254/CGI/mtn-agreement.cgi?ip=40&id=0'
+    resource: 'http://192.168.1.32/CGI/mtn-agreement.cgi?ip=40&id=0'
     name: 'MtnRpi3 Agreement0 Start'
     value_template: '{{ value_json.agreement_execution_start_time | timestamp_custom("%a %b %d @ %I:%M %p") }}'
 
@@ -1297,55 +1297,55 @@ sensor mtnrpi3_agreement0_start:
 
 sensor mtnrpi3_agreement1_name:
   - platform: rest
-    resource: 'http://192.168.1.254/CGI/mtn-agreement.cgi?ip=40&id=1'
+    resource: 'http://192.168.1.32/CGI/mtn-agreement.cgi?ip=40&id=1'
     name: 'MtnRpi3 Agreement1 Name'
     value_template: '{{ value_json.name | default("null") }}'
 
 sensor mtnrpi3_agreement1_id:
   - platform: rest
-    resource: 'http://192.168.1.254/CGI/mtn-agreement.cgi?ip=40&id=1'
+    resource: 'http://192.168.1.32/CGI/mtn-agreement.cgi?ip=40&id=1'
     name: 'MtnRpi3 Agreement1 ID'
     value_template: '{{ value_json.current_agreement_id | default("null") }}'
 
 sensor mtnrpi3_agreement1_protocol:
   - platform: rest
-    resource: 'http://192.168.1.254/CGI/mtn-agreement.cgi?ip=40&id=1'
+    resource: 'http://192.168.1.32/CGI/mtn-agreement.cgi?ip=40&id=1'
     name: MtnRpi3 Agreement1 Protocol
     value_template: '{{ value_json.agreement_protocol | default("null") }}'
 
 sensor mtnrpi3_agreement1_consumer:
   - platform: rest
-    resource: 'http://192.168.1.254/CGI/mtn-agreement.cgi?ip=40&id=1'
+    resource: 'http://192.168.1.32/CGI/mtn-agreement.cgi?ip=40&id=1'
     name: 'MtnRpi3 Agreement1 Consumer'
     value_template: '{{ value_json.consumer_id | default("null") }}'
 
 sensor mtnrpi3_agreement1_create:
   - platform: rest
-    resource: 'http://192.168.1.254/CGI/mtn-agreement.cgi?ip=40&id=1'
+    resource: 'http://192.168.1.32/CGI/mtn-agreement.cgi?ip=40&id=1'
     name: 'MtnRpi3 Agreement1 Create'
     value_template: '{{ value_json.agreement_creation_time | timestamp_custom("%a %b %d @ %I:%M %p") }}'
 
 sensor mtnrpi3_agreement1_accept:
   - platform: rest
-    resource: 'http://192.168.1.254/CGI/mtn-agreement.cgi?ip=40&id=1'
+    resource: 'http://192.168.1.32/CGI/mtn-agreement.cgi?ip=40&id=1'
     name: 'MtnRpi3 Agreement1 Accept'
     value_template: '{{ value_json.agreement_accepted_time | timestamp_custom("%a %b %d @ %I:%M %p") }}'
 
 sensor mtnrpi3_agreement1_finalize:
   - platform: rest
-    resource: 'http://192.168.1.254/CGI/mtn-agreement.cgi?ip=40&id=1'
+    resource: 'http://192.168.1.32/CGI/mtn-agreement.cgi?ip=40&id=1'
     name: 'MtnRpi3 Agreement1 Finalize'
     value_template: '{{ value_json.agreement_finalized_time | timestamp_custom("%a %b %d @ %I:%M %p") }}'
 
 sensor mtnrpi3_agreement1_receive:
   - platform: rest
-    resource: 'http://192.168.1.254/CGI/mtn-agreement.cgi?ip=40&id=1'
+    resource: 'http://192.168.1.32/CGI/mtn-agreement.cgi?ip=40&id=1'
     name: 'MtnRpi3 Agreement1 Receive'
     value_template: '{{ value_json.agreement_data_received_time | timestamp_custom("%a %b %d @ %I:%M %p") }}'
 
 sensor mtnrpi3_agreement1_start:
   - platform: rest
-    resource: 'http://192.168.1.254/CGI/mtn-agreement.cgi?ip=40&id=1'
+    resource: 'http://192.168.1.32/CGI/mtn-agreement.cgi?ip=40&id=1'
     name: 'MtnRpi3 Agreement1 Start'
     value_template: '{{ value_json.agreement_execution_start_time | timestamp_custom("%a %b %d @ %I:%M %p") }}'
 
@@ -1353,55 +1353,55 @@ sensor mtnrpi3_agreement1_start:
 
 sensor mtnrpi3_agreement2_name:
   - platform: rest
-    resource: 'http://192.168.1.254/CGI/mtn-agreement.cgi?ip=40&id=2'
+    resource: 'http://192.168.1.32/CGI/mtn-agreement.cgi?ip=40&id=2'
     name: 'MtnRpi3 Agreement2 Name'
     value_template: '{{ value_json.name | default("null") }}'
 
 sensor mtnrpi3_agreement2_id:
   - platform: rest
-    resource: 'http://192.168.1.254/CGI/mtn-agreement.cgi?ip=40&id=2'
+    resource: 'http://192.168.1.32/CGI/mtn-agreement.cgi?ip=40&id=2'
     name: 'MtnRpi3 Agreement2 ID'
     value_template: '{{ value_json.current_agreement_id | default("null") }}'
 
 sensor mtnrpi3_agreement2_protocol:
   - platform: rest
-    resource: 'http://192.168.1.254/CGI/mtn-agreement.cgi?ip=40&id=2'
+    resource: 'http://192.168.1.32/CGI/mtn-agreement.cgi?ip=40&id=2'
     name: MtnRpi3 Agreement2 Protocol
     value_template: '{{ value_json.agreement_protocol | default("null") }}'
 
 sensor mtnrpi3_agreement2_consumer:
   - platform: rest
-    resource: 'http://192.168.1.254/CGI/mtn-agreement.cgi?ip=40&id=2'
+    resource: 'http://192.168.1.32/CGI/mtn-agreement.cgi?ip=40&id=2'
     name: 'MtnRpi3 Agreement2 Consumer'
     value_template: '{{ value_json.consumer_id | default("null") }}'
 
 sensor mtnrpi3_agreement2_create:
   - platform: rest
-    resource: 'http://192.168.1.254/CGI/mtn-agreement.cgi?ip=40&id=2'
+    resource: 'http://192.168.1.32/CGI/mtn-agreement.cgi?ip=40&id=2'
     name: 'MtnRpi3 Agreement2 Create'
     value_template: '{{ value_json.agreement_creation_time | timestamp_custom("%a %b %d @ %I:%M %p") }}'
 
 sensor mtnrpi3_agreement2_accept:
   - platform: rest
-    resource: 'http://192.168.1.254/CGI/mtn-agreement.cgi?ip=40&id=2'
+    resource: 'http://192.168.1.32/CGI/mtn-agreement.cgi?ip=40&id=2'
     name: 'MtnRpi3 Agreement2 Accept'
     value_template: '{{ value_json.agreement_accepted_time | timestamp_custom("%a %b %d @ %I:%M %p") }}'
 
 sensor mtnrpi3_agreement2_finalize:
   - platform: rest
-    resource: 'http://192.168.1.254/CGI/mtn-agreement.cgi?ip=40&id=2'
+    resource: 'http://192.168.1.32/CGI/mtn-agreement.cgi?ip=40&id=2'
     name: 'MtnRpi3 Agreement2 Finalize'
     value_template: '{{ value_json.agreement_finalized_time | timestamp_custom("%a %b %d @ %I:%M %p") }}'
 
 sensor mtnrpi3_agreement2_receive:
   - platform: rest
-    resource: 'http://192.168.1.254/CGI/mtn-agreement.cgi?ip=40&id=2'
+    resource: 'http://192.168.1.32/CGI/mtn-agreement.cgi?ip=40&id=2'
     name: 'MtnRpi3 Agreement2 Receive'
     value_template: '{{ value_json.agreement_data_received_time | timestamp_custom("%a %b %d @ %I:%M %p") }}'
 
 sensor mtnrpi3_agreement2_start:
   - platform: rest
-    resource: 'http://192.168.1.254/CGI/mtn-agreement.cgi?ip=40&id=2'
+    resource: 'http://192.168.1.32/CGI/mtn-agreement.cgi?ip=40&id=2'
     name: 'MtnRpi3 Agreement2 Start'
     value_template: '{{ value_json.agreement_execution_start_time | timestamp_custom("%a %b %d @ %I:%M %p") }}'
 
@@ -1409,55 +1409,55 @@ sensor mtnrpi3_agreement2_start:
 
 sensor mtnrpi3_agreement3_name:
   - platform: rest
-    resource: 'http://192.168.1.254/CGI/mtn-agreement.cgi?ip=40&id=3'
+    resource: 'http://192.168.1.32/CGI/mtn-agreement.cgi?ip=40&id=3'
     name: 'MtnRpi3 Agreement3 Name'
     value_template: '{{ value_json.name | default("null") }}'
 
 sensor mtnrpi3_agreement3_id:
   - platform: rest
-    resource: 'http://192.168.1.254/CGI/mtn-agreement.cgi?ip=40&id=3'
+    resource: 'http://192.168.1.32/CGI/mtn-agreement.cgi?ip=40&id=3'
     name: 'MtnRpi3 Agreement3 ID'
     value_template: '{{ value_json.current_agreement_id | default("null") }}'
 
 sensor mtnrpi3_agreement3_protocol:
   - platform: rest
-    resource: 'http://192.168.1.254/CGI/mtn-agreement.cgi?ip=40&id=3'
+    resource: 'http://192.168.1.32/CGI/mtn-agreement.cgi?ip=40&id=3'
     name: MtnRpi3 Agreement3 Protocol
     value_template: '{{ value_json.agreement_protocol | default("null") }}'
 
 sensor mtnrpi3_agreement3_consumer:
   - platform: rest
-    resource: 'http://192.168.1.254/CGI/mtn-agreement.cgi?ip=40&id=3'
+    resource: 'http://192.168.1.32/CGI/mtn-agreement.cgi?ip=40&id=3'
     name: 'MtnRpi3 Agreement3 Consumer'
     value_template: '{{ value_json.consumer_id | default("null") }}'
 
 sensor mtnrpi3_agreement3_create:
   - platform: rest
-    resource: 'http://192.168.1.254/CGI/mtn-agreement.cgi?ip=40&id=3'
+    resource: 'http://192.168.1.32/CGI/mtn-agreement.cgi?ip=40&id=3'
     name: 'MtnRpi3 Agreement3 Create'
     value_template: '{{ value_json.agreement_creation_time | timestamp_custom("%a %b %d @ %I:%M %p") }}'
 
 sensor mtnrpi3_agreement3_accept:
   - platform: rest
-    resource: 'http://192.168.1.254/CGI/mtn-agreement.cgi?ip=40&id=3'
+    resource: 'http://192.168.1.32/CGI/mtn-agreement.cgi?ip=40&id=3'
     name: 'MtnRpi3 Agreement3 Accept'
     value_template: '{{ value_json.agreement_accepted_time | timestamp_custom("%a %b %d @ %I:%M %p") }}'
 
 sensor mtnrpi3_agreement3_finalize:
   - platform: rest
-    resource: 'http://192.168.1.254/CGI/mtn-agreement.cgi?ip=40&id=3'
+    resource: 'http://192.168.1.32/CGI/mtn-agreement.cgi?ip=40&id=3'
     name: 'MtnRpi3 Agreement3 Finalize'
     value_template: '{{ value_json.agreement_finalized_time | timestamp_custom("%a %b %d @ %I:%M %p") }}'
 
 sensor mtnrpi3_agreement3_receive:
   - platform: rest
-    resource: 'http://192.168.1.254/CGI/mtn-agreement.cgi?ip=40&id=3'
+    resource: 'http://192.168.1.32/CGI/mtn-agreement.cgi?ip=40&id=3'
     name: 'MtnRpi3 Agreement3 Receive'
     value_template: '{{ value_json.agreement_data_received_time | timestamp_custom("%a %b %d @ %I:%M %p") }}'
 
 sensor mtnrpi3_agreement3_start:
   - platform: rest
-    resource: 'http://192.168.1.254/CGI/mtn-agreement.cgi?ip=40&id=3'
+    resource: 'http://192.168.1.32/CGI/mtn-agreement.cgi?ip=40&id=3'
     name: 'MtnRpi3 Agreement3 Start'
     value_template: '{{ value_json.agreement_execution_start_time | timestamp_custom("%a %b %d @ %I:%M %p") }}'
 
@@ -1465,55 +1465,55 @@ sensor mtnrpi3_agreement3_start:
 
 sensor mtnrpi3_agreement4_name:
   - platform: rest
-    resource: 'http://192.168.1.254/CGI/mtn-agreement.cgi?ip=40&id=4'
+    resource: 'http://192.168.1.32/CGI/mtn-agreement.cgi?ip=40&id=4'
     name: 'MtnRpi3 Agreement4 Name'
     value_template: '{{ value_json.name | default("null") }}'
 
 sensor mtnrpi3_agreement4_id:
   - platform: rest
-    resource: 'http://192.168.1.254/CGI/mtn-agreement.cgi?ip=40&id=4'
+    resource: 'http://192.168.1.32/CGI/mtn-agreement.cgi?ip=40&id=4'
     name: 'MtnRpi3 Agreement4 ID'
     value_template: '{{ value_json.current_agreement_id | default("null") }}'
 
 sensor mtnrpi3_agreement4_protocol:
   - platform: rest
-    resource: 'http://192.168.1.254/CGI/mtn-agreement.cgi?ip=40&id=4'
+    resource: 'http://192.168.1.32/CGI/mtn-agreement.cgi?ip=40&id=4'
     name: MtnRpi3 Agreement4 Protocol
     value_template: '{{ value_json.agreement_protocol | default("null") }}'
 
 sensor mtnrpi3_agreement4_consumer:
   - platform: rest
-    resource: 'http://192.168.1.254/CGI/mtn-agreement.cgi?ip=40&id=4'
+    resource: 'http://192.168.1.32/CGI/mtn-agreement.cgi?ip=40&id=4'
     name: 'MtnRpi3 Agreement4 Consumer'
     value_template: '{{ value_json.consumer_id | default("null") }}'
 
 sensor mtnrpi3_agreement4_create:
   - platform: rest
-    resource: 'http://192.168.1.254/CGI/mtn-agreement.cgi?ip=40&id=4'
+    resource: 'http://192.168.1.32/CGI/mtn-agreement.cgi?ip=40&id=4'
     name: 'MtnRpi3 Agreement4 Create'
     value_template: '{{ value_json.agreement_creation_time | timestamp_custom("%a %b %d @ %I:%M %p") }}'
 
 sensor mtnrpi3_agreement4_accept:
   - platform: rest
-    resource: 'http://192.168.1.254/CGI/mtn-agreement.cgi?ip=40&id=4'
+    resource: 'http://192.168.1.32/CGI/mtn-agreement.cgi?ip=40&id=4'
     name: 'MtnRpi3 Agreement4 Accept'
     value_template: '{{ value_json.agreement_accepted_time | timestamp_custom("%a %b %d @ %I:%M %p") }}'
 
 sensor mtnrpi3_agreement4_finalize:
   - platform: rest
-    resource: 'http://192.168.1.254/CGI/mtn-agreement.cgi?ip=40&id=4'
+    resource: 'http://192.168.1.32/CGI/mtn-agreement.cgi?ip=40&id=4'
     name: 'MtnRpi3 Agreement4 Finalize'
     value_template: '{{ value_json.agreement_finalized_time | timestamp_custom("%a %b %d @ %I:%M %p") }}'
 
 sensor mtnrpi3_agreement4_receive:
   - platform: rest
-    resource: 'http://192.168.1.254/CGI/mtn-agreement.cgi?ip=40&id=4'
+    resource: 'http://192.168.1.32/CGI/mtn-agreement.cgi?ip=40&id=4'
     name: 'MtnRpi3 Agreement4 Receive'
     value_template: '{{ value_json.agreement_data_received_time | timestamp_custom("%a %b %d @ %I:%M %p") }}'
 
 sensor mtnrpi3_agreement4_start:
   - platform: rest
-    resource: 'http://192.168.1.254/CGI/mtn-agreement.cgi?ip=40&id=4'
+    resource: 'http://192.168.1.32/CGI/mtn-agreement.cgi?ip=40&id=4'
     name: 'MtnRpi3 Agreement4 Start'
     value_template: '{{ value_json.agreement_execution_start_time | timestamp_custom("%a %b %d @ %I:%M %p") }}'
 
@@ -1521,55 +1521,55 @@ sensor mtnrpi3_agreement4_start:
 
 sensor mtnrpi3_agreement5_name:
   - platform: rest
-    resource: 'http://192.168.1.254/CGI/mtn-agreement.cgi?ip=40&id=5'
+    resource: 'http://192.168.1.32/CGI/mtn-agreement.cgi?ip=40&id=5'
     name: 'MtnRpi3 Agreement5 Name'
     value_template: '{{ value_json.name | default("null") }}'
 
 sensor mtnrpi3_agreement5_id:
   - platform: rest
-    resource: 'http://192.168.1.254/CGI/mtn-agreement.cgi?ip=40&id=5'
+    resource: 'http://192.168.1.32/CGI/mtn-agreement.cgi?ip=40&id=5'
     name: 'MtnRpi3 Agreement5 ID'
     value_template: '{{ value_json.current_agreement_id | default("null") }}'
 
 sensor mtnrpi3_agreement5_protocol:
   - platform: rest
-    resource: 'http://192.168.1.254/CGI/mtn-agreement.cgi?ip=40&id=5'
+    resource: 'http://192.168.1.32/CGI/mtn-agreement.cgi?ip=40&id=5'
     name: MtnRpi3 Agreement5 Protocol
     value_template: '{{ value_json.agreement_protocol | default("null") }}'
 
 sensor mtnrpi3_agreement5_consumer:
   - platform: rest
-    resource: 'http://192.168.1.254/CGI/mtn-agreement.cgi?ip=40&id=5'
+    resource: 'http://192.168.1.32/CGI/mtn-agreement.cgi?ip=40&id=5'
     name: 'MtnRpi3 Agreement5 Consumer'
     value_template: '{{ value_json.consumer_id | default("null") }}'
 
 sensor mtnrpi3_agreement5_create:
   - platform: rest
-    resource: 'http://192.168.1.254/CGI/mtn-agreement.cgi?ip=40&id=5'
+    resource: 'http://192.168.1.32/CGI/mtn-agreement.cgi?ip=40&id=5'
     name: 'MtnRpi3 Agreement5 Create'
     value_template: '{{ value_json.agreement_creation_time | timestamp_custom("%a %b %d @ %I:%M %p") }}'
 
 sensor mtnrpi3_agreement5_accept:
   - platform: rest
-    resource: 'http://192.168.1.254/CGI/mtn-agreement.cgi?ip=40&id=5'
+    resource: 'http://192.168.1.32/CGI/mtn-agreement.cgi?ip=40&id=5'
     name: 'MtnRpi3 Agreement5 Accept'
     value_template: '{{ value_json.agreement_accepted_time | timestamp_custom("%a %b %d @ %I:%M %p") }}'
 
 sensor mtnrpi3_agreement5_finalize:
   - platform: rest
-    resource: 'http://192.168.1.254/CGI/mtn-agreement.cgi?ip=40&id=5'
+    resource: 'http://192.168.1.32/CGI/mtn-agreement.cgi?ip=40&id=5'
     name: 'MtnRpi3 Agreement5 Finalize'
     value_template: '{{ value_json.agreement_finalized_time | timestamp_custom("%a %b %d @ %I:%M %p") }}'
 
 sensor mtnrpi3_agreement5_receive:
   - platform: rest
-    resource: 'http://192.168.1.254/CGI/mtn-agreement.cgi?ip=40&id=5'
+    resource: 'http://192.168.1.32/CGI/mtn-agreement.cgi?ip=40&id=5'
     name: 'MtnRpi3 Agreement5 Receive'
     value_template: '{{ value_json.agreement_data_received_time | timestamp_custom("%a %b %d @ %I:%M %p") }}'
 
 sensor mtnrpi3_agreement5_start:
   - platform: rest
-    resource: 'http://192.168.1.254/CGI/mtn-agreement.cgi?ip=40&id=5'
+    resource: 'http://192.168.1.32/CGI/mtn-agreement.cgi?ip=40&id=5'
     name: 'MtnRpi3 Agreement5 Start'
     value_template: '{{ value_json.agreement_execution_start_time | timestamp_custom("%a %b %d @ %I:%M %p") }}'
 
@@ -1577,7 +1577,7 @@ sensor mtnrpi3_agreement5_start:
 
 sensor mtnrpi3_workloads_count:
   - platform: rest
-    resource: 'http://192.168.1.254/CGI/mtn-workload.cgi?ip=40'
+    resource: 'http://192.168.1.32/CGI/mtn-workload.cgi?ip=40'
     name: MtnRpi3 Workloads Count
     value_template: '{{ value_json.workloads | length }}'
 
@@ -1585,7 +1585,7 @@ sensor mtnrpi3_workloads_count:
 
 sensor mtnrpi3_publickey:
   - platform: rest
-    resource: 'http://192.168.1.254/CGI/mtn-publickey.cgi?ip=40'
+    resource: 'http://192.168.1.32/CGI/mtn-publickey.cgi?ip=40'
     name: MtnRpi3 Publickey
     value_template: '{{ value_json.pem | default("null") }}'
 
@@ -1959,6 +1959,12 @@ camera frontdoor_image_annotated:
     name: frontdoor_image_annotated
     icon: mdi:image
     topic: 'image-annotated/frontdoor'
+
+camera frontdoor_image_cropped:
+  - platform: mqtt
+    name: frontdoor_image_cropped
+    icon: mdi:image
+    topic: 'image-cropped/frontdoor'
 
 sensor frontdoor_empty_time:
   - platform: history_stats
