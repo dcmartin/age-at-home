@@ -458,6 +458,8 @@ history:
       - sensor.bathroom_busy_time
       - sensor.frontdoor_busy_time
       - sensor.road_busy_time
+      - sensor.yes_activity_time
+      - sensor.no_activity_time
       - sensor.play1_state
       - sensor.play3_state
       - device_tracker.davids_iphone
@@ -1621,12 +1623,14 @@ sensor last_how:
     icon: mdi:numeric
     state_topic: 'presence/+'
     name: last_how
+    expire_after: 30 # seconds
     value_template: '{{ value_json.score }}'
 
 sensor last_where:
   - platform: mqtt
     icon: mdi:house
     state_topic: 'presence/+'
+    expire_after: 30 # seconds
     name: last_where
     value_template: '{{ value_json.location }}'
 
@@ -1635,6 +1639,7 @@ sensor last_what:
     icon: mdi:human
     state_topic: 'presence/+'
     name: last_what
+    expire_after: 30 # seconds
     value_template: '{{ value_json.class }}'
 
 sensor last_who:
@@ -1642,6 +1647,7 @@ sensor last_who:
     icon: mdi:comment-question-outline
     state_topic: 'presence/+'
     name: last_who
+    expire_after: 30 # seconds
     value_template: '{{ value_json.model }}'
 
 sensor last_when:
@@ -1990,6 +1996,45 @@ sensor kitchen_busy_time:
     start: '{{ now().replace(hour=0).replace(minute=0).replace(second=0) }}'
     end: '{{ now() }}'
 
+sensor yes_activity_time:
+  - platform: history_stats
+    icon: mdi:timer
+    name: yes_activity_time
+    entity_id: binary_sensor.yes_activity
+    state: 'on'
+    type: ratio
+    start: '{{ now().replace(hour=0).replace(minute=0).replace(second=0) }}'
+    end: '{{ now() }}'
+
+sensor no_activity_time:
+  - platform: history_stats
+    icon: mdi:timer
+    name: no_activity_time
+    entity_id: binary_sensor.no_activity
+    state: 'on'
+    type: ratio
+    start: '{{ now().replace(hour=0).replace(minute=0).replace(second=0) }}'
+    end: '{{ now() }}'
+
+binary_sensor noactivity:
+  - platform: template
+    name: noactivity
+    sensors:
+      yes_activity:
+        entity_id:
+          - sensor.last_what
+        value_template: >
+          {{
+              states.sensor.last_what.state != 'unknown'
+          }}
+      no_activity:
+        entity_id:
+          - sensor.last_what
+        value_template: >
+          {{
+              states.sensor.last_what.state == 'unknown'
+          }}
+
 binary_sensor peopleinkitchen:
   - platform: template
     name: peopleinkitchen
@@ -2070,21 +2115,106 @@ group: !include groups.yaml
 # TESTING
 #
 
-automation track_david:
-  id: 'davids_iphone_home'
-  alias: 'david_home'
+automation keli_home:
+  id: 'kelis_iphone_home'
+  alias: 'keli_home'
   trigger:
     platform: state
-    entity_id: device_tracker.davids_iphone
+    entity_id: 
+      - device_tracker.kelis_iphone
+      - device_tracker.kelisiphone7
     to: 'home'
   action:
     - service: notify.notify
       data:
-        message: Hello, David!
-    - delay: 0:30
+        message: Keli is home
+
+automation david_home:
+  id: 'davids_iphone_home'
+  alias: 'david_home'
+  trigger:
+    platform: state
+    entity_id: 
+      - device_tracker.davids_iphone
+      - device_tracker.dcmsiphone
+    to: 'home'
+  action:
+    - service: notify.notify
+      data:
+        message: David is home
+    - delay: 0:30 # this is 30 minutes
     - service: notify.notify
       data:
         message: Still here?
+
+automation track_david:
+  id: 'davids_iphone_track'
+  alias: 'david_track'
+  trigger:
+    platform: state
+    entity_id: device_tracker.davids_iphone
+  action:
+    - service: notify.notify
+      data_template:
+        message: >
+          David just changed from {{ trigger.from_state.state }}
+          to {{ trigger.to_state.state }}
+
+automation track_aah_what:
+  id: 'aah_track_what'
+  alias: 'aah_what_track'
+  trigger:
+    platform: state
+    entity_id: sensor.last_what
+    from: 'unknown'
+  action:
+    - service: notify.notify
+      data_template:
+        message: >
+          {{ sensor.last_where }} just changed from {{ trigger.from_state.state }}
+          to {{ trigger.to_state.state }}
+
+input_boolean:
+  notify_home:
+    name: Notify when someone arrives home
+    initial: off
+    icon: mdi:account
+
+automation test_david_seen:
+  id: 'david_seen'
+  alias: david seen
+  trigger:
+    platform: state
+    entity_id: sensor.last_what
+    to: 'david'
+  condition:
+    condition: state
+    entity_id: input_boolean.notify_home
+    state: 'on'
+  action:
+    service: notify.pushbullet
+    data:
+      title: "DAVID"
+      message: "was seen"
+
+#automation sensor_offline:
+#  id: 'sensor_offline'
+#  alias: 'Notify if any AAH sensor is unknown for 10 minutes'
+#  trigger:
+#    platform: state
+#    entity_id:
+#      - sensor.kitchen_what
+#      - sensor.bathroom_what
+#      - sensor.frontdoor_what
+#      - sensor.road_what
+#    state: 'unknown'
+#    for:
+#      minutes: 10
+#  action:
+#    service: notify.notify
+#    data_template:
+#      message: >
+#          The {{ trigger.to_state.attributes.friendly_name }} is UNKNOWN
 
 # automation:
 #  - alias: track_david
