@@ -1,25 +1,59 @@
-#
-# TESTING
-#
 
-- id: track_david
-  alias: 'is david home'
-  initial_state: off
-  trigger:
-    - platform: state
-      entity_id: device_tracker.davids_iphone
-      to: 'home'
-  action:
-    - service: mqtt.publish
-      topic: '/presence/david'
-      payload: '{ "what":"david", "where":"home" }'
-#     payload_template: '{{ states.device_tracker.davids_iphone.state | default("unknown") }}'
-#     data_template:
-#       topic: '/dump/{{ trigger.platform }}'
-#       retain: false
-#       payload: >-
-#         {% set p = trigger.platform %}
-#         {{"trigger.platform: "}} {{ p }}{{- "\n" -}}
+#automation sensor_offline:
+#  id: 'sensor_offline'
+#  alias: 'Notify if any AAH sensor is unknown for 10 minutes'
+#  trigger:
+#    platform: state
+#    entity_id:
+#      - sensor.kitchen_what
+#      - sensor.bathroom_what
+#      - sensor.frontdoor_what
+#      - sensor.road_what
+#    state: 'unknown'
+#    for:
+#      minutes: 10
+#  action:
+#    service: notify.notify
+#    data_template:
+#      message: >
+#          The {{ trigger.to_state.attributes.friendly_name }} is UNKNOWN
+
+# automation:
+#  - alias: track_david
+#    initial_state: off
+#    trigger:
+#      - platform: state
+#        entity_id: device_tracker.davids_iphone
+#        to: 'home'
+#    action:
+#      - service: mqtt.publish
+#        topic: '/presence/david'
+#        payload: '{ "what":"david", "where":"home" }'
+#       payload_template: '{{ states.device_tracker.davids_iphone.state | default("unknown") }}'
+#       data_template:
+#         topic: '/dump/{{ trigger.platform }}'
+#         retain: false
+#         payload: >-
+#           {% set p = trigger.platform %}
+#           {{"trigger.platform: "}} {{ p }}{{- "\n" -}}
+#- id: track_david
+#  alias: 'is david home'
+#  initial_state: off
+#  trigger:
+#    - platform: state
+#      entity_id: device_tracker.davids_iphone
+#      to: 'home'
+#  action:
+#    - service: mqtt.publish
+#      topic: '/presence/david'
+#      payload: '{ "what":"david", "where":"home" }'
+#      payload_template: '{{ states.device_tracker.davids_iphone.state | default("unknown") }}'
+#      data_template:
+#        topic: '/dump/{{ trigger.platform }}'
+#        retain: false
+#        payload: >-
+#          {% set p = trigger.platform %}
+#          {{"trigger.platform: "}} {{ p }}{{- "\n" -}}
 
 #sonos_volume_limiter:
 #  id: sonos_volume_limiter

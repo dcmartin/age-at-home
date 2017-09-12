@@ -446,6 +446,7 @@ history:
       - binary_sensor.kitchen_wrong
       - sensor.david_plex
       - sensor.last_what
+      - sensor.last_where
       - sensor.kitchen_what
       - sensor.bathroom_what
       - sensor.frontdoor_what
@@ -462,8 +463,8 @@ history:
       - sensor.no_activity_time
       - sensor.play1_state
       - sensor.play3_state
-      - device_tracker.davids_iphone
-      - device_tracker.kelis_iphone
+      - device_tracker.dcmsiphone
+      - device_tracker.kelisiphone7
       - device_tracker.ellensiphone5
       - device_tracker.halisiphone
       - device_tracker.ianmartinsiphone
@@ -2111,32 +2112,13 @@ binary_sensor kitchen_test:
 group: !include groups.yaml
 
 # automation: !include automations.yaml
-#
-# TESTING
-#
-
-automation keli_home:
-  id: 'kelis_iphone_home'
-  alias: 'keli_home'
-  trigger:
-    platform: state
-    entity_id: 
-      - device_tracker.kelis_iphone
-      - device_tracker.kelisiphone7
-    to: 'home'
-  action:
-    - service: notify.notify
-      data:
-        message: Keli is home
 
 automation david_home:
   id: 'davids_iphone_home'
   alias: 'david_home'
   trigger:
     platform: state
-    entity_id: 
-      - device_tracker.davids_iphone
-      - device_tracker.dcmsiphone
+    entity_id: device_tracker.dcmsiphone
     to: 'home'
   action:
     - service: notify.notify
@@ -2147,90 +2129,89 @@ automation david_home:
       data:
         message: Still here?
 
-automation track_david:
-  id: 'davids_iphone_track'
-  alias: 'david_track'
+automation track_dcmsiphone:
+  id: 'track_dcmsiphone'
   trigger:
     platform: state
-    entity_id: device_tracker.davids_iphone
+    entity_id: device_tracker.dcmsiphone
   action:
     - service: notify.notify
       data_template:
         message: >
-          David just changed from {{ trigger.from_state.state }}
-          to {{ trigger.to_state.state }}
+          {% if trigger.to_state.state != trigger.from_state.state %} 
+          dcmsiphone just changed to {{ trigger.to_state.state }}
+          {% endif %}
 
-automation track_aah_what:
-  id: 'aah_track_what'
-  alias: 'aah_what_track'
+automation track_kelisiphone7:
+  id: 'track_kelisiphone7'
   trigger:
     platform: state
-    entity_id: sensor.last_what
-    from: 'unknown'
+    entity_id: device_tracker.kelisiphone7
   action:
     - service: notify.notify
       data_template:
         message: >
-          {{ sensor.last_where }} just changed from {{ trigger.from_state.state }}
-          to {{ trigger.to_state.state }}
+          {% if trigger.to_state.state != trigger.from_state.state %} 
+          kelisiphone7 just changed to {{ trigger.to_state.state }}
+          {% endif %}
 
-input_boolean:
-  notify_home:
-    name: Notify when someone arrives home
-    initial: off
-    icon: mdi:account
-
-automation test_david_seen:
-  id: 'david_seen'
-  alias: david seen
+automation track_rileysiphone5:
+  id: 'track_rileysiphone5'
   trigger:
     platform: state
-    entity_id: sensor.last_what
-    to: 'david'
-  condition:
-    condition: state
-    entity_id: input_boolean.notify_home
-    state: 'on'
+    entity_id: device_tracker.rileysiphone5
   action:
-    service: notify.pushbullet
-    data:
-      title: "DAVID"
-      message: "was seen"
+    - service: notify.notify
+      data_template:
+        message: >
+          {% if trigger.to_state.state != trigger.from_state.state %} 
+          rileysiphone5 just changed to {{ trigger.to_state.state }}
+          {% endif %}
 
-#automation sensor_offline:
-#  id: 'sensor_offline'
-#  alias: 'Notify if any AAH sensor is unknown for 10 minutes'
+automation track_ellensiphone5:
+  id: 'track_ellensiphone5'
+  trigger:
+    platform: state
+    entity_id: device_tracker.ellensiphone5
+  action:
+    - service: notify.notify
+      data_template:
+        message: >
+          {% if trigger.to_state.state != trigger.from_state.state %} 
+          ellensiphone5 just changed to {{ trigger.to_state.state }}
+          {% endif %}
+
+automation track_kitchen_what:
+  id: 'track_kitchen_what'
+  trigger:
+    platform: state
+    entity_id: sensor.kitchen_what
+  action:
+    - service: notify.notify
+      data_template:
+        message: Kitchen just changed to {{ trigger.to_state.state }}
+
+#
+#input_boolean test:
+#  notify_home:
+#    name: Notify when someone arrives home
+#    initial: on
+#    icon: mdi:account
+#
+#automation test_david_seen:
+#  id: 'david_seen'
+#  alias: david seen
 #  trigger:
 #    platform: state
-#    entity_id:
-#      - sensor.kitchen_what
-#      - sensor.bathroom_what
-#      - sensor.frontdoor_what
-#      - sensor.road_what
-#    state: 'unknown'
-#    for:
-#      minutes: 10
+#    entity_id: sensor.last_what
+#    to: 'david'
+#  condition:
+#    condition: state
+#    entity_id: input_boolean.notify_home
+#    state: 'on'
 #  action:
-#    service: notify.notify
-#    data_template:
-#      message: >
-#          The {{ trigger.to_state.attributes.friendly_name }} is UNKNOWN
-
-# automation:
-#  - alias: track_david
-#    initial_state: off
-#    trigger:
-#      - platform: state
-#        entity_id: device_tracker.davids_iphone
-#        to: 'home'
-#    action:
-#      - service: mqtt.publish
-#        topic: '/presence/david'
-#        payload: '{ "what":"david", "where":"home" }'
-#       payload_template: '{{ states.device_tracker.davids_iphone.state | default("unknown") }}'
-#       data_template:
-#         topic: '/dump/{{ trigger.platform }}'
-#         retain: false
-#         payload: >-
-#           {% set p = trigger.platform %}
-#           {{"trigger.platform: "}} {{ p }}{{- "\n" -}}
+#    service: notify.pushbullet
+#    data:
+#      title: "DAVID"
+#      message: "was seen"
+#
