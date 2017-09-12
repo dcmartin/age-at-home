@@ -1,4 +1,118 @@
+- id: 'david_home'
+  alias: 'david_home'
+  trigger:
+    platform: state
+    entity_id: device_tracker.dcmsiphone
+    to: 'home'
+  action:
+    - service: notify.notify
+      data:
+        message: David is home
+    - delay: 0:30 # this is 30 minutes
+    - service: notify.notify
+      data:
+        message: Just checking!
 
+- id: 'notify_david'
+  alias: 'notify_david'
+  trigger:
+    platform: state
+    entity_id: device_tracker.dcmsiphone
+  action:
+    - service: notify.notify
+      data_template:
+        message: >
+          {% if trigger.to_state.state != trigger.from_state.state %} 
+          David's location just changed to {{ trigger.to_state.state }}
+          {% endif %}
+
+- id: 'notify_keli'
+  alias: 'notify_keli'
+  trigger:
+    platform: state
+    entity_id: device_tracker.kelisiphone7
+  action:
+    - service: notify.notify
+      data_template:
+        message: >
+          {% if trigger.to_state.state != trigger.from_state.state %} 
+          Keli's location just changed to {{ trigger.to_state.state }}
+          {% endif %}
+
+- id: 'notify_riley'
+  alias: 'notify_riley'
+  trigger:
+    platform: state
+    entity_id: device_tracker.rileysiphone5
+  action:
+    - service: notify.notify
+      data_template:
+        message: >
+          {% if trigger.to_state.state != trigger.from_state.state %} 
+          Riley's location just changed to {{ trigger.to_state.state }}
+          {% endif %}
+
+- id: 'notify_ellen'
+  alias: 'notify_ellen'
+  trigger:
+    platform: state
+    entity_id: device_tracker.ellensiphone5
+  action:
+    - service: notify.notify
+      data_template:
+        message: >
+          {% if trigger.to_state.state != trigger.from_state.state %} 
+          Ellen's location just changed to {{ trigger.to_state.state }}
+          {% endif %}
+
+- id: 'mqtt_david'
+  alias: 'mqtt_david'
+  trigger:
+    platform: state
+    entity_id: device_tracker.dcmsiphone
+  action: 
+    - service: mqtt.publish
+      data:
+        topic: 'david/location'
+        payload_template: >
+          {{ '{"what":"David","where":"home","when":"',now(),'","who":"',states(device_tracker.dcmsiphone).attributes.source_type,'"}' }}
+
+- id: 'notify_what_kitchen'
+  alias: 'notify_what_kitchen'
+  trigger:
+    platform: state
+    entity_id: sensor.kitchen_what
+  action:
+    - service: mqtt.publish
+      data:
+        topic: 'what/kitchen'
+        payload_template: >
+          {{ trigger.to_state.state }}
+
+#
+#input_boolean test:
+#  notify_home:
+#    name: Notify when someone arrives home
+#    initial: on
+#    icon: mdi:account
+#
+#automation test_david_seen:
+#  id: 'david_seen'
+#  alias: david seen
+#  trigger:
+#    platform: state
+#    entity_id: sensor.last_what
+#    to: 'david'
+#  condition:
+#    condition: state
+#    entity_id: input_boolean.notify_home
+#    state: 'on'
+#  action:
+#    service: notify.pushbullet
+#    data:
+#      title: "DAVID"
+#      message: "was seen"
+#
 #automation sensor_offline:
 #  id: 'sensor_offline'
 #  alias: 'Notify if any AAH sensor is unknown for 10 minutes'
@@ -19,7 +133,7 @@
 #          The {{ trigger.to_state.attributes.friendly_name }} is UNKNOWN
 
 # automation:
-#  - alias: track_david
+#  - alias: notify_david
 #    initial_state: off
 #    trigger:
 #      - platform: state
@@ -36,7 +150,7 @@
 #         payload: >-
 #           {% set p = trigger.platform %}
 #           {{"trigger.platform: "}} {{ p }}{{- "\n" -}}
-#- id: track_david
+#- id: notify_david
 #  alias: 'is david home'
 #  initial_state: off
 #  trigger:
