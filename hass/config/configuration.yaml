@@ -668,10 +668,23 @@ device_tracker dt_nmap:
   - platform: nmap_tracker
     hosts: 192.168.1.1/24
     home_interval: 10
-    track_new_devices: no
+    track_new_devices: yes
     consider_home: 180
     exclude:
      - 192.168.1.26
+
+sensor device_tracker_template:
+  - platform: template
+    sensors:
+      all_devices:
+        entity_id: states.device_tracker
+        value_template: >
+          {% for state in states.device_tracker -%}
+            {%- if loop.first -%} {"devices":[
+            {%- elif loop.last -%},
+            {%- else -%},
+            {%- endif -%} {"name":"{{state.name|lower}}","state":"{{state.state}}","attributes":"{{state.attributes}}"}
+          {%- endfor -%}]}
 
 #
 # WUNDERGROUND (WEATHER UNDERGROUND)
@@ -1739,7 +1752,7 @@ sensor kitchen_empty_time:
 sensor kitchen_json:
   - platform: template
     sensors:
-      kitchen_presence_state:
+      kitchen_presence:
         entity_id: sensor.presence_kitchen
         value_template: '{{ states.sensor.presence_kitchen.state }}'
 

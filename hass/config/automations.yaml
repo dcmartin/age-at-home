@@ -1,8 +1,22 @@
-- id: 'david_home'
-  alias: 'david_home'
+- id: 'device_report'
+  alias: 'device_report'
+  initial_state: true
   trigger:
     platform: state
-    entity_id: device_tracker.dcmsiphone
+    entity_id: sensor.all_devices
+  action: 
+    - service: mqtt.publish
+      data:
+        topic: 'devices/all'
+        payload_template: >
+          {{ states.sensor.all_devices.state }}
+
+- id: 'david_home'
+  alias: 'david_home'
+  initial_state: true
+  trigger:
+    platform: state
+    entity_id: device_tracker.davids_iphone
     to: 'home'
   action:
     - service: notify.notify
@@ -15,9 +29,10 @@
 
 - id: 'notify_david'
   alias: 'notify_david'
+  initial_state: true
   trigger:
     platform: state
-    entity_id: device_tracker.dcmsiphone
+    entity_id: device_tracker.dcmsiphone7
   action:
     - service: notify.notify
       data_template:
@@ -28,6 +43,7 @@
 
 - id: 'notify_keli'
   alias: 'notify_keli'
+  initial_state: true
   trigger:
     platform: state
     entity_id: device_tracker.kelisiphone7
@@ -41,6 +57,7 @@
 
 - id: 'notify_riley'
   alias: 'notify_riley'
+  initial_state: true
   trigger:
     platform: state
     entity_id: device_tracker.rileysiphone5
@@ -54,6 +71,7 @@
 
 - id: 'notify_ellen'
   alias: 'notify_ellen'
+  initial_state: true
   trigger:
     platform: state
     entity_id: device_tracker.ellensiphone5
@@ -67,18 +85,23 @@
 
 - id: 'mqtt_david'
   alias: 'mqtt_david'
+  initial_state: true
   trigger:
     platform: state
-    entity_id: device_tracker.dcmsiphone
+    entity_id: device_tracker.dcmsiphone7
   action: 
     - service: mqtt.publish
       data:
         topic: 'david/location'
         payload_template: >
-          {{ '{"what":"David","where":"home","when":"',now(),'","who":"',states(device_tracker.dcmsiphone).attributes.source_type,'"}' }}
+          {{ trigger.to_state.state }} # WORKED
+          # {{ states.device_tracker.dcmsiphone7.attributes }}
+          # {{ state.device_tracker.dcmsiphone7.attributes }}
+          # {{ '{"what":"David","where":"home","when":"',now(),'","who":"',states(device_tracker.dcmsiphone).attributes.source_type,'"}' }}
 
-- id: 'notify_what_kitchen'
-  alias: 'notify_what_kitchen'
+- id: 'mqtt_what_kitchen'
+  alias: 'mqtt_what_kitchen'
+  initial_state: true
   trigger:
     platform: state
     entity_id: sensor.kitchen_what
