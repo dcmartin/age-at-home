@@ -85,23 +85,94 @@ sun:
   elevation: 827
 
 sensor solar:
-  - platform: template
-    sensors:
-      solar_angle:
+  platform: template
+  sensors:
+    - solar_angle:
         value_template: '{{ states.sun.sun.attributes.elevation }}'
         friendly_name: 'Sun angle'
         unit_of_measurement: 'degrees'
-      sunrise:
+    - sunrise:
         value_template: '{{ strptime(states.sun.sun.attributes.next_rising,"%Y-%m-%dT%T%Z" ) | timestamp_custom("%I:%M %p") }}'
-      sunset:
+    - sunset:
         value_template: '{{ strptime(states.sun.sun.attributes.next_setting,"%Y-%m-%dT%T%Z" ) | timestamp_custom("%I:%M %p") }}'
-        # 2017-08-31T13:36:56+00:00
 
-#
-# FFMPEG MOTION DETECT TEST
-#
+###
+### HORIZON
+###
 
-ffmpeg:
+#open_horizon:
+#  user: dcmartin
+#  password: !secret horizon_password
+
+###
+### WATSON IOT PLATFORM
+###
+
+#watson_iotp:
+#  org_id: hk31l6
+#  auth_method: token
+#  device_type: ageathome
+#  device_id: rough-fog
+#  auth_token: !secret wiotp_auth_token
+
+###
+### MOTION PACKAGE AS "ADD-ON"
+###
+
+#motion rough-fog:
+#  name: kitchen
+#  server: 192.168.1.39
+#  webcontrol_port: 8080
+#  stream_port: 8081
+#  username: !secret motion_username
+#  password: !secret motion_password
+#  broker: 192.168.1.26
+
+#binary_sensor motion_rpi2_onoff:
+#  platform: motion
+#  locate_motion_mode: off
+#  locate_motion_style: box
+#  threshold: 1500
+#  threshold_tune: on
+
+#camera motion_rpi2:
+#  platform: motion
+#  text_right: %Y-%m-%d\n%T-%q
+#  text_left: (not defined)
+#  text_changes: off
+#  text_event: %Y%m%d%H%M%S
+#  text_double: off
+#  noise_level: 32
+#  noise_tune: on
+#  despeckle_filter: EedDl
+#  area_detect: (not defined)
+#  mask_file: (not defined)
+#  smart_mask_speed: 0
+#  lightswitch: 0
+#  minimum_motion_frames: 1
+#  pre_capture: 0
+#  post_capture: 0
+#  event_gap: 5
+#  max_movie_time: 0
+#  emulate_motion: off
+#  output_pictures: center
+#  output_debug_pictures: off
+#  quality: 100
+#  picture_type: jpeg
+#  ffmpeg_output_movies: off
+#  ffmpeg_output_debug_movies: off
+#  ffmpeg_timelapse: 0
+#  ffmpeg_timelapse_mode: daily
+#  ffmpeg_bps: 500000
+#  ffmpeg_variable_bitrate: 0
+#  ffmpeg_video_codec: mpeg4
+#  ffmpeg_deinterlace: off
+#  stream_port: 8081
+#  stream_quality: 50
+#  stream_motion: off
+#  stream_maxrate: 1
+#  stream_localhost: off
+#  stream_limit: 0
 
 binary_sensor backyardmotion:
   - platform: ffmpeg_motion
@@ -117,12 +188,6 @@ binary_sensor backyardmotion:
     # repeats: 0
     # repeat_time: 0
     # extra_arguments:
-# not yet (threw error)
-# python_script:
-
-# have to figure this one out
-# recorder:
-#   db_url: !secret my_sql_url
 
 #
 # SONOS
