@@ -638,24 +638,24 @@ wcv80n_backyard:
 
 # iPhones
 
-davids_iphone:
+davids_iphone_lan:
   mac: D0:C5:F3:82:F1:ED
-  name: davids_iphone
+  name: davids_iphone_lan
   icon: mdi:cellphone-iphone
   hide_if_away: false
   track: true
   vendor: Apple, Inc.
 
-kelis_iphone:
-  name: kelis_iphone
+kelis_iphone_lan:
+  name: kelis_iphone_lan
   mac: 20:AB:37:E2:B9:9C
   icon: mdi:cellphone-iphone
   hide_if_away: false
   track: true
   vendor: Apple, Inc.
 
-ellens_iphone:
-  name: ellens_iphone
+ellens_iphone_lan:
+  name: ellens_iphone_lan
   mac: D8:CF:9C:1B:54:98
   icon: mdi:cellphone-iphone
   hide_if_away: false

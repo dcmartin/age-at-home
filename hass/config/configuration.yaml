@@ -35,6 +35,10 @@ frontend:
 config:
 logger: !include logger.yaml
 
+group: !include groups.yaml
+
+automation: !include automations.yaml
+
 #
 # PANEL IFRAME(S)
 #
@@ -87,22 +91,43 @@ sun:
 sensor solar:
   platform: template
   sensors:
-    - solar_angle:
-        value_template: '{{ states.sun.sun.attributes.elevation }}'
-        friendly_name: 'Sun angle'
-        unit_of_measurement: 'degrees'
-    - sunrise:
-        value_template: '{{ strptime(states.sun.sun.attributes.next_rising,"%Y-%m-%dT%T%Z" ) | timestamp_custom("%I:%M %p") }}'
-    - sunset:
-        value_template: '{{ strptime(states.sun.sun.attributes.next_setting,"%Y-%m-%dT%T%Z" ) | timestamp_custom("%I:%M %p") }}'
+    solar_angle:
+      value_template: '{{ states.sun.sun.attributes.elevation }}'
+      friendly_name: 'Sun angle'
+      unit_of_measurement: 'degrees'
+    sunrise:
+      value_template: '{{ strptime(states.sun.sun.attributes.next_rising,"%Y-%m-%dT%T%Z" ) | timestamp_custom("%I:%M %p") }}'
+    sunset:
+      value_template: '{{ strptime(states.sun.sun.attributes.next_setting,"%Y-%m-%dT%T%Z" ) | timestamp_custom("%I:%M %p") }}'
 
 ###
 ### HORIZON
 ###
 
-#open_horizon:
-#  user: dcmartin
+#horizon:
+#  username: dcmartin
 #  password: !secret horizon_password
+#  wallet: !secret horizon_wallet
+#  publicid: !secret horizon_public_id
+#  workload:
+#    - sdr
+#            type: realtek
+#    - gps
+#            accuracy: 1000 # meters (fuzzed)
+#    - netspeed
+#            location: automatic
+#        - purpleair
+#            username: !secret purpleair_username
+#            password: !secret purpleair_password
+#    - motion
+#            event_gap: 5         
+#        locate_mode: on
+#        output_pictures: center
+#            threshold: 1500
+#                threshold_tune: on
+#                mqtt_host: homeassistant.dcmartin.com
+#                mqtt_picture: on
+#                stream_port: 8081
 
 ###
 ### WATSON IOT PLATFORM
@@ -114,6 +139,13 @@ sensor solar:
 #  device_type: ageathome
 #  device_id: rough-fog
 #  auth_token: !secret wiotp_auth_token
+# NEW w/ HORIZON
+#  wiotp_org_id: hk3116
+#  wiotp_api_key: !secret wiotp_api_key
+#  wiotp_api_auth_token: !secret wiotp_auth_token
+#  wiotp_device_type: ageathome
+#  wiotp_device_auth_token: !secret wiotp_device_auth_token
+#  hzn_device_id: {{ states.horizon.attributes.device_id }} 
 
 ###
 ### MOTION PACKAGE AS "ADD-ON"
@@ -506,9 +538,6 @@ history:
   include:
     entities:
       - sensor.solar_angle
-      - binary_sensor.keli_in_kitchen
-      - binary_sensor.david_in_kitchen
-      - binary_sensor.kitchen_wrong
       - sensor.david_plex
       - sensor.last_what
       - sensor.last_where
@@ -520,20 +549,22 @@ history:
       - sensor.bathroom_empty_time
       - sensor.frontdoor_empty_time
       - sensor.road_empty_time
-      - sensor.kitchen_busy_time
-      - sensor.bathroom_busy_time
-      - sensor.frontdoor_busy_time
-      - sensor.road_busy_time
       - sensor.yes_activity_time
       - sensor.no_activity_time
       - sensor.play1_state
       - sensor.play3_state
-      - device_tracker.dcmsiphone
+      - device_tracker.dcmsiphone7
       - device_tracker.kelisiphone7
       - device_tracker.ellensiphone5
       - device_tracker.halisiphone
       - device_tracker.ianmartinsiphone
       - device_tracker.rileysiphone5
+      - binary_sensor.family_detected
+      - binary_sensor.family_in_kitchen
+      - binary_sensor.family_in_bathroom
+      - binary_sensor.family_at_frontdoor
+      - binary_sensor.family_on_road
+      - binary_sensor.not_family
 
 # View all events in a logbook
 logbook:
@@ -700,13 +731,13 @@ camera wcv80n_dogpond:
     username: !secret wcv80n_username
     password: !secret wcv80n_password
 
-camera wcv80n_poolhousestereo:
-  - platform: mjpeg
-    mjpeg_url: http://192.168.1.181/img/video.mjpeg
-    still_image_url: http://192.168.1.181/img/snapshot.cgi
-    name: wcv80n_poolhousestereo
-    username: !secret wcv80n_username
-    password: !secret wcv80n_password
+#camera wcv80n_poolhousestereo:
+#  - platform: mjpeg
+#    mjpeg_url: http://192.168.1.181/img/video.mjpeg
+#    still_image_url: http://192.168.1.181/img/snapshot.cgi
+#    name: wcv80n_poolhousestereo
+#    username: !secret wcv80n_username
+#    password: !secret wcv80n_password
 
 camera wcv80n_diningroom:
   - platform: mjpeg
@@ -738,18 +769,98 @@ device_tracker dt_nmap:
     exclude:
      - 192.168.1.26
 
-sensor device_tracker_template:
+###
+### STATE TEMPLATES
+###
+
+sensor state_template:
   - platform: template
     sensors:
-      all_devices:
-        entity_id: states.device_tracker
+#      all_automations:
+#        entity_id: states.automation
+#        value_template: >
+#          {% for state in states.automation -%}
+#            {%- if loop.first -%}{"automations":[
+#            {%- else -%},
+#            {%- endif -%} {"name":"{{state.name|lower}}","state":"{{state.state}}","attributes":"{{state.attributes}}"}
+#          {%- endfor -%}]}
+      all_binary_sensors:
+        entity_id: states.binary_sensor
         value_template: >
-          {% for state in states.device_tracker -%}
-            {%- if loop.first -%} {"devices":[
-            {%- elif loop.last -%},
+          {% for state in states.binary_sensor -%}
+            {%- if loop.first -%} {"binary_sensors":[
             {%- else -%},
             {%- endif -%} {"name":"{{state.name|lower}}","state":"{{state.state}}","attributes":"{{state.attributes}}"}
           {%- endfor -%}]}
+      all_cameras:
+        entity_id: states.camera
+        value_template: >
+          {% for state in states.camera -%}
+            {%- if loop.first -%}{"cameras":[
+            {%- else -%},
+            {%- endif -%} {"name":"{{state.name|lower}}","state":"{{state.state}}","attributes":"{{state.attributes}}"}
+          {%- endfor -%}]}
+      all_device_trackers: # SPECIAL CASE
+        entity_id: states.device_tracker
+        value_template: >
+         {% for state in states.device_tracker -%}
+           {%- if loop.first -%}{"device_trackers":[
+           {%- elif loop.last -%}
+             {%- if state.attributes.source_type != None -%}
+               {"name":"{{ state.name | lower }}","state":"{{state.state}}","attributes":"{{ state.attributes}}"}
+             {%- endif -%}
+           {%- else -%}
+             {%- if state.attributes.source_type != None -%}
+               {"name":"{{ state.name | lower }}","state":"{{state.state}}","attributes":"{{ state.attributes}}"},
+             {%- endif -%}
+           {%- endif -%}
+          {%- endfor -%}]}
+      all_media_players:
+        entity_id: states.media_player
+        value_template: >
+          {% for state in states.media_player -%}
+            {%- if loop.first -%}{"media_players":[
+            {%- else -%},
+            {%- endif -%} {"name":"{{state.name|lower}}","state":"{{state.state}}","attributes":"{{state.attributes}}"}
+          {%- endfor -%}]}
+      all_zones:
+        entity_id: states.zone
+        value_template: >
+          {% for state in states.zone -%}
+            {%- if loop.first -%} {"zones":[
+            {%- else -%},
+            {%- endif -%} {"name":"{{state.name|lower}}","state":"{{state.state}}","attributes":"{{state.attributes}}"}
+          {%- endfor -%}]}
+#      all_states: # SPECIAL CASE
+#        entity_id: states.state
+#        value_template: >
+#         {% for state in states -%}
+#           {%- if loop.first -%}{"states":[
+#           {%- elif loop.last -%}
+#             {%- if ("all" not in (state.name|lower)) -%}
+#               {"name":"{{ state.name | lower }}","state":"{{state.state}}","attributes":"{{ state.attributes}}"}
+#             {%- endif -%}
+#           {%- else -%}
+#             {%- if ("all" not in (state.name|lower)) -%}
+#               {"name":"{{ state.name | lower }}","state":"{{state.state}}","attributes":"{{ state.attributes}}"},
+#             {%- endif -%}
+#           {%- endif -%}
+#          {%- endfor -%}]}
+#      all_sensors: # SPECIAL CASE
+#        entity_id: states.sensor
+#        value_template: >
+#          {% for state in states.sensor -%}
+#           {%- if loop.first -%}{"sensors":[
+#           {%- elif loop.last -%}
+#             {%- if ("all" not in (state.name|lower)) -%}
+#               {"name":"{{ state.name | lower }}","state":"{{state.state}}","attributes":"{{ state.attributes}}"}
+#             {%- endif -%}
+#           {%- else -%}
+#             {%- if ("all" not in (state.name|lower)) -%}
+#               {"name":"{{ state.name | lower }}","state":"{{state.state}}","attributes":"{{ state.attributes}}"},
+#             {%- endif -%}
+#           {%- endif -%}
+#          {%- endfor -%}]}
 
 #
 # WUNDERGROUND (WEATHER UNDERGROUND)
@@ -788,7 +899,7 @@ sensor external_ip:
     value_template: '{{ value_json.ip }}'
 
 ###
-### HORIZON STATUS
+### HORIZON
 ###
 
 sensor mtnrpi2_connectivity:
@@ -863,6 +974,22 @@ sensor mtnrpi2_agreements_archive_count:
     name: MtnRpi2 Agreements Archive Count
     value_template: '{{ value_json.agreements.archive | length }}'
 
+# HORIZON WORKLOAD
+
+sensor mtnrpi2_workloads_count:
+  - platform: rest
+    resource: 'http://192.168.1.32/CGI/mtn-workload.cgi?ip=39'
+    name: MtnRpi2 Workloads Count
+    value_template: '{{ value_json.workloads | length }}'
+
+# HORIZON PUBLICKEY
+
+sensor mtnrpi2_publickey:
+  - platform: rest
+    resource: 'http://192.168.1.32/CGI/mtn-publickey.cgi?ip=39'
+    name: MtnRpi2 Publickey
+    value_template: '{{ value_json.pem | default("null") }}'
+
 # AGREEMENT #0
 
 sensor mtnrpi2_agreement0_name:
@@ -870,7 +997,7 @@ sensor mtnrpi2_agreement0_name:
     resource: 'http://192.168.1.32/CGI/mtn-agreement.cgi?ip=39&id=0'
     name: 'MtnRpi2 Agreement0 Name'
     friendly_name: 'Name'
-    value_template: '{{ value_json.name | default("null") }}'
+    value_template: '{{ value_json.name }}'
 
 sensor mtnrpi2_agreement0_id:
   - platform: rest
@@ -897,36 +1024,81 @@ sensor mtnrpi2_agreement0_create:
   - platform: rest
     resource: 'http://192.168.1.32/CGI/mtn-agreement.cgi?ip=39&id=0'
     name: 'MtnRpi2 Agreement0 Create'
-    friendly_name: 'Created'
-    value_template: '{{ value_json.agreement_creation_time | timestamp_custom("%a %b %d @ %I:%M %p") }}'
+    # value_template: '{{ value_json.agreement_creation_time | timestamp_custom("%a %b %d @ %I:%M %p") }}'
+    value_template: >
+      {%- if (states.sensor.mtnrpi2_agreements_active_count != None) -%}
+        {%- if (states.sensor.mtnrpi2_agreements_active_count.state | int) > 0 -%}
+          {{ value_json.agreement_creation_time | timestamp_custom("%a %b %d @ %I:%M %p") }}
+        {%- else -%}
+          {{ 'no agreement' }}
+        {%- endif -%}
+      {%- else -%}
+        {{ 'no agreement' }}
+      {%- endif -%}
 
 sensor mtnrpi2_agreement0_accept:
   - platform: rest
     resource: 'http://192.168.1.32/CGI/mtn-agreement.cgi?ip=39&id=0'
     name: 'MtnRpi2 Agreement0 Accept'
-    friendly_name: 'Accepted'
-    value_template: '{{ value_json.agreement_accepted_time | timestamp_custom("%a %b %d @ %I:%M %p") }}'
+    # value_template: '{{ value_json.agreement_accepted_time | timestamp_custom("%a %b %d @ %I:%M %p") }}'
+    value_template: >
+      {%- if (states.sensor.mtnrpi2_agreements_active_count != None) -%}
+        {%- if (states.sensor.mtnrpi2_agreements_active_count.state | int) > 0 -%}
+          {{ value_json.agreement_accepted_time | timestamp_custom("%a %b %d @ %I:%M %p") }}
+        {%- else -%}
+          {{ 'no agreement' }}
+        {%- endif -%}
+      {%- else -%}
+        {{ 'no agreement' }}
+      {%- endif -%}
 
 sensor mtnrpi2_agreement0_finalize:
   - platform: rest
     resource: 'http://192.168.1.32/CGI/mtn-agreement.cgi?ip=39&id=0'
     name: 'MtnRpi2 Agreement0 Finalize'
-    friendly_name: 'Finalized'
-    value_template: '{{ value_json.agreement_finalized_time | timestamp_custom("%a %b %d @ %I:%M %p") }}'
+    # value_template: '{{ value_json.agreement_finalized_time | timestamp_custom("%a %b %d @ %I:%M %p") }}'
+    value_template: >
+      {%- if (states.sensor.mtnrpi2_agreements_active_count != None) -%}
+        {%- if (states.sensor.mtnrpi2_agreements_active_count.state | int) > 0 -%}
+          {{ value_json.agreement_finalized_time | timestamp_custom("%a %b %d @ %I:%M %p") }}
+        {%- else -%}
+          {{ 'no agreement' }}
+        {%- endif -%}
+      {%- else -%}
+        {{ 'no agreement' }}
+      {%- endif -%}
 
 sensor mtnrpi2_agreement0_receive:
   - platform: rest
     resource: 'http://192.168.1.32/CGI/mtn-agreement.cgi?ip=39&id=0'
     name: 'MtnRpi2 Agreement0 Receive'
-    friendly_name: 'Received'
-    value_template: '{{ value_json.agreement_data_received_time | timestamp_custom("%a %b %d @ %I:%M %p") }}'
+    # value_template: '{{ value_json.agreement_data_received_time | timestamp_custom("%a %b %d @ %I:%M %p") }}'
+    value_template: >
+      {%- if (states.sensor.mtnrpi2_agreements_active_count != None) -%}
+        {%- if (states.sensor.mtnrpi2_agreements_active_count.state | int) > 0 -%}
+          {{ value_json.agreement_data_received_time | timestamp_custom("%a %b %d @ %I:%M %p") }}
+        {%- else -%}
+          {{ 'no agreement' }}
+        {%- endif -%}
+      {%- else -%}
+        {{ 'no agreement' }}
+      {%- endif -%}
 
 sensor mtnrpi2_agreement0_start:
   - platform: rest
     resource: 'http://192.168.1.32/CGI/mtn-agreement.cgi?ip=39&id=0'
-    name: 'MtnRpi2 Agreement0 Start'
-    friendly_name: 'Started'
-    value_template: '{{ value_json.agreement_execution_start_time | timestamp_custom("%a %b %d @ %I:%M %p") }}'
+    name: 'MtnRpi2 Agreement3 Start'
+    # value_template: '{{ value_json.agreement_execution_start_time | timestamp_custom("%a %b %d @ %I:%M %p") }}'
+    value_template: >
+      {%- if (states.sensor.mtnrpi2_agreements_active_count != None) -%}
+        {%- if (states.sensor.mtnrpi2_agreements_active_count.state | int) > 3 -%}
+          {{ value_json.agreement_execution_start_time | timestamp_custom("%a %b %d @ %I:%M %p") }}
+        {%- else -%}
+          {{ 'no agreement' }}
+        {%- endif -%}
+      {%- else -%}
+        {{ 'no agreement' }}
+      {%- endif -%}
 
 # AGREEMENT #1
 
@@ -958,31 +1130,81 @@ sensor mtnrpi2_agreement1_create:
   - platform: rest
     resource: 'http://192.168.1.32/CGI/mtn-agreement.cgi?ip=39&id=1'
     name: 'MtnRpi2 Agreement1 Create'
-    value_template: '{{ value_json.agreement_creation_time | timestamp_custom("%a %b %d @ %I:%M %p") }}'
+    # value_template: '{{ value_json.agreement_creation_time | timestamp_custom("%a %b %d @ %I:%M %p") }}'
+    value_template: >
+      {%- if (states.sensor.mtnrpi2_agreements_active_count != None) -%}
+        {%- if (states.sensor.mtnrpi2_agreements_active_count.state | int) > 1 -%}
+          {{ value_json.agreement_creation_time | timestamp_custom("%a %b %d @ %I:%M %p") }}
+        {%- else -%}
+          {{ 'no agreement' }}
+        {%- endif -%}
+      {%- else -%}
+        {{ 'no agreement' }}
+      {%- endif -%}
 
 sensor mtnrpi2_agreement1_accept:
   - platform: rest
     resource: 'http://192.168.1.32/CGI/mtn-agreement.cgi?ip=39&id=1'
     name: 'MtnRpi2 Agreement1 Accept'
-    value_template: '{{ value_json.agreement_accepted_time | timestamp_custom("%a %b %d @ %I:%M %p") }}'
+    # value_template: '{{ value_json.agreement_accepted_time | timestamp_custom("%a %b %d @ %I:%M %p") }}'
+    value_template: >
+      {%- if (states.sensor.mtnrpi2_agreements_active_count != None) -%}
+        {%- if (states.sensor.mtnrpi2_agreements_active_count.state | int) > 1 -%}
+          {{ value_json.agreement_accepted_time | timestamp_custom("%a %b %d @ %I:%M %p") }}
+        {%- else -%}
+          {{ 'no agreement' }}
+        {%- endif -%}
+      {%- else -%}
+        {{ 'no agreement' }}
+      {%- endif -%}
 
 sensor mtnrpi2_agreement1_finalize:
   - platform: rest
-    resource: 'http://192.168.1.32/CGI/mtn-agreement.cgi?ip=39&id=1'
+    resource: 'http://392.168.1.32/CGI/mtn-agreement.cgi?ip=39&id=1'
     name: 'MtnRpi2 Agreement1 Finalize'
-    value_template: '{{ value_json.agreement_finalized_time | timestamp_custom("%a %b %d @ %I:%M %p") }}'
+    # value_template: '{{ value_json.agreement_finalized_time | timestamp_custom("%a %b %d @ %I:%M %p") }}'
+    value_template: >
+      {%- if (states.sensor.mtnrpi2_agreements_active_count != None) -%}
+        {%- if (states.sensor.mtnrpi2_agreements_active_count.state | int) > 1 -%}
+          {{ value_json.agreement_finalized_time | timestamp_custom("%a %b %d @ %I:%M %p") }}
+        {%- else -%}
+          {{ 'no agreement' }}
+        {%- endif -%}
+      {%- else -%}
+        {{ 'no agreement' }}
+      {%- endif -%}
 
 sensor mtnrpi2_agreement1_receive:
   - platform: rest
     resource: 'http://192.168.1.32/CGI/mtn-agreement.cgi?ip=39&id=1'
     name: 'MtnRpi2 Agreement1 Receive'
-    value_template: '{{ value_json.agreement_data_received_time | timestamp_custom("%a %b %d @ %I:%M %p") }}'
+    # value_template: '{{ value_json.agreement_data_received_time | timestamp_custom("%a %b %d @ %I:%M %p") }}'
+    value_template: >
+      {%- if (states.sensor.mtnrpi2_agreements_active_count != None) -%}
+        {%- if (states.sensor.mtnrpi2_agreements_active_count.state | int) > 1 -%}
+          {{ value_json.agreement_data_received_time | timestamp_custom("%a %b %d @ %I:%M %p") }}
+        {%- else -%}
+          {{ 'no agreement' }}
+        {%- endif -%}
+      {%- else -%}
+        {{ 'no agreement' }}
+      {%- endif -%}
 
 sensor mtnrpi2_agreement1_start:
   - platform: rest
     resource: 'http://192.168.1.32/CGI/mtn-agreement.cgi?ip=39&id=1'
     name: 'MtnRpi2 Agreement1 Start'
-    value_template: '{{ value_json.agreement_execution_start_time | timestamp_custom("%a %b %d @ %I:%M %p") }}'
+    # value_template: '{{ value_json.agreement_execution_start_time | timestamp_custom("%a %b %d @ %I:%M %p") }}'
+    value_template: >
+      {%- if (states.sensor.mtnrpi2_agreements_active_count != None) -%}
+        {%- if (states.sensor.mtnrpi2_agreements_active_count.state | int) > 1 -%}
+          {{ value_json.agreement_execution_start_time | timestamp_custom("%a %b %d @ %I:%M %p") }}
+        {%- else -%}
+          {{ 'no agreement' }}
+        {%- endif -%}
+      {%- else -%}
+        {{ 'no agreement' }}
+      {%- endif -%}
 
 # AGREEMENT #2
 
@@ -1014,31 +1236,81 @@ sensor mtnrpi2_agreement2_create:
   - platform: rest
     resource: 'http://192.168.1.32/CGI/mtn-agreement.cgi?ip=39&id=2'
     name: 'MtnRpi2 Agreement2 Create'
-    value_template: '{{ value_json.agreement_creation_time | timestamp_custom("%a %b %d @ %I:%M %p") }}'
+    # value_template: '{{ value_json.agreement_creation_time | timestamp_custom("%a %b %d @ %I:%M %p") }}'
+    value_template: >
+      {%- if (states.sensor.mtnrpi2_agreements_active_count != None) -%}
+        {%- if (states.sensor.mtnrpi2_agreements_active_count.state | int) > 2 -%}
+          {{ value_json.agreement_creation_time | timestamp_custom("%a %b %d @ %I:%M %p") }}
+        {%- else -%}
+          {{ 'no agreement' }}
+        {%- endif -%}
+      {%- else -%}
+        {{ 'no agreement' }}
+      {%- endif -%}
 
 sensor mtnrpi2_agreement2_accept:
   - platform: rest
     resource: 'http://192.168.1.32/CGI/mtn-agreement.cgi?ip=39&id=2'
     name: 'MtnRpi2 Agreement2 Accept'
-    value_template: '{{ value_json.agreement_accepted_time | timestamp_custom("%a %b %d @ %I:%M %p") }}'
+    # value_template: '{{ value_json.agreement_accepted_time | timestamp_custom("%a %b %d @ %I:%M %p") }}'
+    value_template: >
+      {%- if (states.sensor.mtnrpi2_agreements_active_count != None) -%}
+        {%- if (states.sensor.mtnrpi2_agreements_active_count.state | int) > 2 -%}
+          {{ value_json.agreement_accepted_time | timestamp_custom("%a %b %d @ %I:%M %p") }}
+        {%- else -%}
+          {{ 'no agreement' }}
+        {%- endif -%}
+      {%- else -%}
+        {{ 'no agreement' }}
+      {%- endif -%}
 
 sensor mtnrpi2_agreement2_finalize:
   - platform: rest
     resource: 'http://192.168.1.32/CGI/mtn-agreement.cgi?ip=39&id=2'
     name: 'MtnRpi2 Agreement2 Finalize'
-    value_template: '{{ value_json.agreement_finalized_time | timestamp_custom("%a %b %d @ %I:%M %p") }}'
+    # value_template: '{{ value_json.agreement_finalized_time | timestamp_custom("%a %b %d @ %I:%M %p") }}'
+    value_template: >
+      {%- if (states.sensor.mtnrpi2_agreements_active_count != None) -%}
+        {%- if (states.sensor.mtnrpi2_agreements_active_count.state | int) > 2 -%}
+          {{ value_json.agreement_finalized_time | timestamp_custom("%a %b %d @ %I:%M %p") }}
+        {%- else -%}
+          {{ 'no agreement' }}
+        {%- endif -%}
+      {%- else -%}
+        {{ 'no agreement' }}
+      {%- endif -%}
 
 sensor mtnrpi2_agreement2_receive:
   - platform: rest
     resource: 'http://192.168.1.32/CGI/mtn-agreement.cgi?ip=39&id=2'
     name: 'MtnRpi2 Agreement2 Receive'
-    value_template: '{{ value_json.agreement_data_received_time | timestamp_custom("%a %b %d @ %I:%M %p") }}'
+    # value_template: '{{ value_json.agreement_data_received_time | timestamp_custom("%a %b %d @ %I:%M %p") }}'
+    value_template: >
+      {%- if (states.sensor.mtnrpi2_agreements_active_count != None) -%}
+        {%- if (states.sensor.mtnrpi2_agreements_active_count.state | int) > 2 -%}
+          {{ value_json.agreement_data_received_time | timestamp_custom("%a %b %d @ %I:%M %p") }}
+        {%- else -%}
+          {{ 'no agreement' }}
+        {%- endif -%}
+      {%- else -%}
+        {{ 'no agreement' }}
+      {%- endif -%}
 
 sensor mtnrpi2_agreement2_start:
   - platform: rest
     resource: 'http://192.168.1.32/CGI/mtn-agreement.cgi?ip=39&id=2'
     name: 'MtnRpi2 Agreement2 Start'
-    value_template: '{{ value_json.agreement_execution_start_time | timestamp_custom("%a %b %d @ %I:%M %p") }}'
+    # value_template: '{{ value_json.agreement_execution_start_time | timestamp_custom("%a %b %d @ %I:%M %p") }}'
+    value_template: >
+      {%- if (states.sensor.mtnrpi2_agreements_active_count != None) -%}
+        {%- if (states.sensor.mtnrpi2_agreements_active_count.state | int) > 2 -%}
+          {{ value_json.agreement_execution_start_time | timestamp_custom("%a %b %d @ %I:%M %p") }}
+        {%- else -%}
+          {{ 'no agreement' }}
+        {%- endif -%}
+      {%- else -%}
+        {{ 'no agreement' }}
+      {%- endif -%}
 
 # AGREEMENT #3
 
@@ -1070,31 +1342,81 @@ sensor mtnrpi2_agreement3_create:
   - platform: rest
     resource: 'http://192.168.1.32/CGI/mtn-agreement.cgi?ip=39&id=3'
     name: 'MtnRpi2 Agreement3 Create'
-    value_template: '{{ value_json.agreement_creation_time | timestamp_custom("%a %b %d @ %I:%M %p") }}'
+    # value_template: '{{ value_json.agreement_creation_time | timestamp_custom("%a %b %d @ %I:%M %p") }}'
+    value_template: >
+      {%- if (states.sensor.mtnrpi2_agreements_active_count != None) -%}
+        {%- if (states.sensor.mtnrpi2_agreements_active_count.state | int) > 3 -%}
+          {{ value_json.agreement_creation_time | timestamp_custom("%a %b %d @ %I:%M %p") }}
+        {%- else -%}
+          {{ 'no agreement' }}
+        {%- endif -%}
+      {%- else -%}
+        {{ 'no agreement' }}
+      {%- endif -%}
 
 sensor mtnrpi2_agreement3_accept:
   - platform: rest
     resource: 'http://192.168.1.32/CGI/mtn-agreement.cgi?ip=39&id=3'
     name: 'MtnRpi2 Agreement3 Accept'
-    value_template: '{{ value_json.agreement_accepted_time | timestamp_custom("%a %b %d @ %I:%M %p") }}'
+    # value_template: '{{ value_json.agreement_accepted_time | timestamp_custom("%a %b %d @ %I:%M %p") }}'
+    value_template: >
+      {%- if (states.sensor.mtnrpi2_agreements_active_count != None) -%}
+        {%- if (states.sensor.mtnrpi2_agreements_active_count.state | int) > 3 -%}
+          {{ value_json.agreement_accepted_time | timestamp_custom("%a %b %d @ %I:%M %p") }}
+        {%- else -%}
+          {{ 'no agreement' }}
+        {%- endif -%}
+      {%- else -%}
+        {{ 'no agreement' }}
+      {%- endif -%}
 
 sensor mtnrpi2_agreement3_finalize:
   - platform: rest
     resource: 'http://192.168.1.32/CGI/mtn-agreement.cgi?ip=39&id=3'
     name: 'MtnRpi2 Agreement3 Finalize'
-    value_template: '{{ value_json.agreement_finalized_time | timestamp_custom("%a %b %d @ %I:%M %p") }}'
+    # value_template: '{{ value_json.agreement_finalized_time | timestamp_custom("%a %b %d @ %I:%M %p") }}'
+    value_template: >
+      {%- if (states.sensor.mtnrpi2_agreements_active_count != None) -%}
+        {%- if (states.sensor.mtnrpi2_agreements_active_count.state | int) > 3 -%}
+          {{ value_json.agreement_finalized_time | timestamp_custom("%a %b %d @ %I:%M %p") }}
+        {%- else -%}
+          {{ 'no agreement' }}
+        {%- endif -%}
+      {%- else -%}
+        {{ 'no agreement' }}
+      {%- endif -%}
 
 sensor mtnrpi2_agreement3_receive:
   - platform: rest
     resource: 'http://192.168.1.32/CGI/mtn-agreement.cgi?ip=39&id=3'
     name: 'MtnRpi2 Agreement3 Receive'
-    value_template: '{{ value_json.agreement_data_received_time | timestamp_custom("%a %b %d @ %I:%M %p") }}'
+    # value_template: '{{ value_json.agreement_data_received_time | timestamp_custom("%a %b %d @ %I:%M %p") }}'
+    value_template: >
+      {%- if (states.sensor.mtnrpi2_agreements_active_count != None) -%}
+        {%- if (states.sensor.mtnrpi2_agreements_active_count.state | int) > 3 -%}
+          {{ value_json.agreement_data_received_time | timestamp_custom("%a %b %d @ %I:%M %p") }}
+        {%- else -%}
+          {{ 'no agreement' }}
+        {%- endif -%}
+      {%- else -%}
+        {{ 'no agreement' }}
+      {%- endif -%}
 
 sensor mtnrpi2_agreement3_start:
   - platform: rest
     resource: 'http://192.168.1.32/CGI/mtn-agreement.cgi?ip=39&id=3'
     name: 'MtnRpi2 Agreement3 Start'
-    value_template: '{{ value_json.agreement_execution_start_time | timestamp_custom("%a %b %d @ %I:%M %p") }}'
+    # value_template: '{{ value_json.agreement_execution_start_time | timestamp_custom("%a %b %d @ %I:%M %p") }}'
+    value_template: >
+      {%- if (states.sensor.mtnrpi2_agreements_active_count != None) -%}
+        {%- if (states.sensor.mtnrpi2_agreements_active_count.state | int) > 3 -%}
+          {{ value_json.agreement_execution_start_time | timestamp_custom("%a %b %d @ %I:%M %p") }}
+        {%- else -%}
+          {{ 'no agreement' }}
+        {%- endif -%}
+      {%- else -%}
+        {{ 'no agreement' }}
+      {%- endif -%}
 
 # AGREEMENT #4
 
@@ -1126,45 +1448,83 @@ sensor mtnrpi2_agreement4_create:
   - platform: rest
     resource: 'http://192.168.1.32/CGI/mtn-agreement.cgi?ip=39&id=4'
     name: 'MtnRpi2 Agreement4 Create'
-    value_template: '{{ value_json.agreement_creation_time | timestamp_custom("%a %b %d @ %I:%M %p") }}'
+    # value_template: '{{ value_json.agreement_creation_time | timestamp_custom("%a %b %d @ %I:%M %p") }}'
+    value_template: >
+      {%- if (states.sensor.mtnrpi2_agreements_active_count != None) -%}
+        {%- if (states.sensor.mtnrpi2_agreements_active_count.state | int) > 4 -%}
+          {{ value_json.agreement_creation_time | timestamp_custom("%a %b %d @ %I:%M %p") }}
+        {%- else -%}
+          {{ 'no agreement' }}
+        {%- endif -%}
+      {%- else -%}
+        {{ 'no agreement' }}
+      {%- endif -%}
 
 sensor mtnrpi2_agreement4_accept:
   - platform: rest
     resource: 'http://192.168.1.32/CGI/mtn-agreement.cgi?ip=39&id=4'
     name: 'MtnRpi2 Agreement4 Accept'
-    value_template: '{{ value_json.agreement_accepted_time | timestamp_custom("%a %b %d @ %I:%M %p") }}'
+    # value_template: '{{ value_json.agreement_accepted_time | timestamp_custom("%a %b %d @ %I:%M %p") }}'
+    value_template: >
+      {%- if (states.sensor.mtnrpi2_agreements_active_count != None) -%}
+        {%- if (states.sensor.mtnrpi2_agreements_active_count.state | int) > 4 -%}
+          {{ value_json.agreement_accepted_time | timestamp_custom("%a %b %d @ %I:%M %p") }}
+        {%- else -%}
+          {{ 'no agreement' }}
+        {%- endif -%}
+      {%- else -%}
+        {{ 'no agreement' }}
+      {%- endif -%}
 
 sensor mtnrpi2_agreement4_finalize:
   - platform: rest
     resource: 'http://192.168.1.32/CGI/mtn-agreement.cgi?ip=39&id=4'
     name: 'MtnRpi2 Agreement4 Finalize'
-    value_template: '{{ value_json.agreement_finalized_time | timestamp_custom("%a %b %d @ %I:%M %p") }}'
+    # value_template: '{{ value_json.agreement_finalized_time | timestamp_custom("%a %b %d @ %I:%M %p") }}'
+    value_template: >
+      {%- if (states.sensor.mtnrpi2_agreements_active_count != None) -%}
+        {%- if (states.sensor.mtnrpi2_agreements_active_count.state | int) > 4 -%}
+          {{ value_json.agreement_finalized_time | timestamp_custom("%a %b %d @ %I:%M %p") }}
+        {%- else -%}
+          {{ 'no agreement' }}
+        {%- endif -%}
+      {%- else -%}
+        {{ 'no agreement' }}
+      {%- endif -%}
 
 sensor mtnrpi2_agreement4_receive:
   - platform: rest
     resource: 'http://192.168.1.32/CGI/mtn-agreement.cgi?ip=39&id=4'
     name: 'MtnRpi2 Agreement4 Receive'
-    value_template: '{{ value_json.agreement_data_received_time | timestamp_custom("%a %b %d @ %I:%M %p") }}'
+    # value_template: '{{ value_json.agreement_data_received_time | timestamp_custom("%a %b %d @ %I:%M %p") }}'
+    value_template: >
+      {%- if (states.sensor.mtnrpi2_agreements_active_count != None) -%}
+        {%- if (states.sensor.mtnrpi2_agreements_active_count.state | int) > 4 -%}
+          {{ value_json.agreement_data_received_time | timestamp_custom("%a %b %d @ %I:%M %p") }}
+        {%- else -%}
+          {{ 'no agreement' }}
+        {%- endif -%}
+      {%- else -%}
+        {{ 'no agreement' }}
+      {%- endif -%}
 
 sensor mtnrpi2_agreement4_start:
   - platform: rest
     resource: 'http://192.168.1.32/CGI/mtn-agreement.cgi?ip=39&id=4'
     name: 'MtnRpi2 Agreement4 Start'
-    value_template: '{{ value_json.agreement_execution_start_time | timestamp_custom("%a %b %d @ %I:%M %p") }}'
+    # value_template: '{{ value_json.agreement_execution_start_time | timestamp_custom("%a %b %d @ %I:%M %p") }}'
+    value_template: >
+      {%- if (states.sensor.mtnrpi2_agreements_active_count != None) -%}
+        {%- if (states.sensor.mtnrpi2_agreements_active_count.state | int) > 4 -%}
+          {{ value_json.agreement_execution_start_time | timestamp_custom("%a %b %d @ %I:%M %p") }}
+        {%- else -%}
+          {{ 'no agreement' }}
+        {%- endif -%}
+      {%- else -%}
+        {{ 'no agreement' }}
+      {%- endif -%}
 
 # AGREEMENT #5
-
-sensor mtnrpi2_agreement5:
-  - platform: rest
-    resource: 'http://192.168.1.32/CGI/mtn-agreement.cgi?ip=39&id=5'
-    name: 'MtnRpi2 Agreement5'
-
-sensor mtnrpi2_agreements:
-  - platform: template
-    sensors:
-      agreement5_name:
-        entity_id: sensor.mtnrpi2_agreement5
-        value_template: '{{ states.sensor.mtnrpi2_agreement5.state["name"] }}'
 
 sensor mtnrpi2_agreement5_name:
   - platform: rest
@@ -1177,503 +1537,157 @@ sensor mtnrpi2_agreement5_id:
     resource: 'http://192.168.1.32/CGI/mtn-agreement.cgi?ip=39&id=5'
     name: 'MtnRpi2 Agreement5 ID'
     value_template: '{{ value_json.current_agreement_id | default("null") }}'
-    # value_template: '{% if value_json.error %} {{ value_json.error }} {% else %} {{ value_json.current_agreement_id }} {% endif %}'
 
 sensor mtnrpi2_agreement5_protocol:
   - platform: rest
     resource: 'http://192.168.1.32/CGI/mtn-agreement.cgi?ip=39&id=5'
     name: MtnRpi2 Agreement5 Protocol
     value_template: '{{ value_json.agreement_protocol | default("null") }}'
-    # value_template: '{% if value_json.error %} {{ value_json.error }} {% else %} {{ value_json.agreement_protocol }} {% endif %}'
 
 sensor mtnrpi2_agreement5_consumer:
   - platform: rest
     resource: 'http://192.168.1.32/CGI/mtn-agreement.cgi?ip=39&id=5'
     name: 'MtnRpi2 Agreement5 Consumer'
     value_template: '{{ value_json.consumer_id | default("null") }}'
-    # value_template: {% if value_json.error %} {{ value_json.error }} {% else %} {{ value_json.consumer_id }} {% endif %}'
 
 sensor mtnrpi2_agreement5_create:
   - platform: rest
     resource: 'http://192.168.1.32/CGI/mtn-agreement.cgi?ip=39&id=5'
     name: 'MtnRpi2 Agreement5 Create'
-    value_template: '{{ value_json.agreement_creation_time | timestamp_custom("%a %b %d @ %I:%M %p") }}'
-    # value_template: {% if value_json.error %} {{ value_json.error }} {% else %} {{ value_json.agreement_creation_time | timestamp_custom("%a %b %d @ %T %p") }} {% endif %}'
+    # value_template: '{{ value_json.agreement_creation_time | timestamp_custom("%a %b %d @ %I:%M %p") }}'
+    value_template: >
+      {%- if (states.sensor.mtnrpi2_agreements_active_count != None) -%}
+        {%- if (states.sensor.mtnrpi2_agreements_active_count.state | int) > 5 -%}
+          {{ value_json.agreement_creation_time | timestamp_custom("%a %b %d @ %I:%M %p") }}
+        {%- else -%}
+          {{ 'no agreement' }}
+        {%- endif -%}
+      {%- else -%}
+        {{ 'no agreement' }}
+      {%- endif -%}
 
 sensor mtnrpi2_agreement5_accept:
   - platform: rest
     resource: 'http://192.168.1.32/CGI/mtn-agreement.cgi?ip=39&id=5'
     name: 'MtnRpi2 Agreement5 Accept'
-    value_template: '{{ value_json.agreement_accepted_time | timestamp_custom("%a %b %d @ %I:%M %p") }}'
-    # value_template: {% if value_json.error %} {{ value_json.error }} {% else %} {{ value_json.agreement_accepted_time | timestamp_custom("%a %b %d @ %T %p") }} {% endif %}'
+    # value_template: '{{ value_json.agreement_accepted_time | timestamp_custom("%a %b %d @ %I:%M %p") }}'
+    value_template: >
+      {%- if (states.sensor.mtnrpi2_agreements_active_count != None) -%}
+        {%- if (states.sensor.mtnrpi2_agreements_active_count.state | int) > 5 -%}
+          {{ value_json.agreement_accepted_time | timestamp_custom("%a %b %d @ %I:%M %p") }}
+        {%- else -%}
+          {{ 'no agreement' }}
+        {%- endif -%}
+      {%- else -%}
+        {{ 'no agreement' }}
+      {%- endif -%}
 
 sensor mtnrpi2_agreement5_finalize:
   - platform: rest
     resource: 'http://192.168.1.32/CGI/mtn-agreement.cgi?ip=39&id=5'
     name: 'MtnRpi2 Agreement5 Finalize'
-    value_template: '{{ value_json.agreement_finalized_time | timestamp_custom("%a %b %d @ %I:%M %p") }}'
-    # value_template: {% if value_json.error %} {{ value_json.error }} {% else %} {{ value_json.agreement_finalized_time | timestamp_custom("%a %b %d @ %T %p") }} {% endif %}'
+    # value_template: '{{ value_json.agreement_finalized_time | timestamp_custom("%a %b %d @ %I:%M %p") }}'
+    value_template: >
+      {%- if (states.sensor.mtnrpi2_agreements_active_count != None) -%}
+        {%- if (states.sensor.mtnrpi2_agreements_active_count.state | int) > 5 -%}
+          {{ value_json.agreement_finalized_time | timestamp_custom("%a %b %d @ %I:%M %p") }}
+        {%- else -%}
+          {{ 'no agreement' }}
+        {%- endif -%}
+      {%- else -%}
+        {{ 'no agreement' }}
+      {%- endif -%}
 
 sensor mtnrpi2_agreement5_receive:
   - platform: rest
     resource: 'http://192.168.1.32/CGI/mtn-agreement.cgi?ip=39&id=5'
     name: 'MtnRpi2 Agreement5 Receive'
-    value_template: '{{ value_json.agreement_data_received_time | timestamp_custom("%a %b %d @ %I:%M %p") }}'
-    # value_template: {% if value_json.error %} {{ value_json.error }} {% else %} {{ value_json.agreement_data_received_time | timestamp_custom("%a %b %d @ %T %p") }} {% endif %}'
+    # value_template: '{{ value_json.agreement_data_received_time | timestamp_custom("%a %b %d @ %I:%M %p") }}'
+    value_template: >
+      {%- if (states.sensor.mtnrpi2_agreements_active_count != None) -%}
+        {%- if (states.sensor.mtnrpi2_agreements_active_count.state | int) > 5 -%}
+          {{ value_json.agreement_data_received_time | timestamp_custom("%a %b %d @ %I:%M %p") }}
+        {%- else -%}
+          {{ 'no agreement' }}
+        {%- endif -%}
+      {%- else -%}
+        {{ 'no agreement' }}
+      {%- endif -%}
 
 sensor mtnrpi2_agreement5_start:
   - platform: rest
     resource: 'http://192.168.1.32/CGI/mtn-agreement.cgi?ip=39&id=5'
     name: 'MtnRpi2 Agreement5 Start'
-    value_template: '{{ value_json.agreement_execution_start_time | timestamp_custom("%a %b %d @ %I:%M %p") }}'
-    # value_template: {% if value_json.error %} {{ value_json.error }} {% else %} {{ value_json.agreement_execution_start_time | timestamp_custom("%a %b %d @ %T %p") }} {% endif %}'
-
-# HORIZON WORKLOAD
-
-sensor mtnrpi2_workloads_count:
-  - platform: rest
-    resource: 'http://192.168.1.32/CGI/mtn-workload.cgi?ip=39'
-    name: MtnRpi2 Workloads Count
-    value_template: '{{ value_json.workloads | length }}'
-
-# HORIZON PUBLICKEY
-
-sensor mtnrpi2_publickey:
-  - platform: rest
-    resource: 'http://192.168.1.32/CGI/mtn-publickey.cgi?ip=39'
-    name: MtnRpi2 Publickey
-    value_template: '{{ value_json.pem | default("null") }}'
-
-# include as above for mtnrpi3
-
-sensor mtnrpi3_connectivity:
-  - platform: rest
-    resource: 'http://192.168.1.32/CGI/mtn-status.cgi?ip=40'
-    name: MtnRpi3 Connectivity
-    value_template: '{{ value_json.connectivity | default("null") }}'
-
-sensor mtnrpi3_exchange:
-  - platform: rest
-    resource: 'http://192.168.1.32/CGI/mtn-status.cgi?ip=40'
-    name: MtnRpi3 Exchange
-    value_template: '{{ value_json.configuration.exchange_api | default("null") }}'
-
-sensor mtnrpi3_balance:
-  - platform: rest
-    resource: 'http://192.168.1.32/CGI/mtn-status.cgi?ip=40'
-    name: MtnRpi3 Balance
-    value_template: '{{ value_json.geth.eth_balance | default("null") }}'
-
-sensor mtnrpi3_net_peer_count:
-  - platform: rest
-    resource: 'http://192.168.1.32/CGI/mtn-status.cgi?ip=40'
-    name: MtnRpi3 Balance
-    value_template: '{{ value_json.geth.net_peer_count | default("null") }}'
-
-sensor mtnrpi3_eth_syncing:
-  - platform: rest
-    resource: 'http://192.168.1.32/CGI/mtn-status.cgi?ip=40'
-    name: MtnRpi3 Eth Syncing
-    value_template: '{{ value_json.geth.eth_syncing | default("null") }}'
-
-sensor mtnrpi3_eth_blocknumber:
-  - platform: rest
-    resource: 'http://192.168.1.32/CGI/mtn-status.cgi?ip=40'
-    name: MtnRpi3 Eth Blocknumber
-    value_template: '{{ value_json.geth.eth_block_number | default("null") }}'
-
-# HORIZON DEVICE
-
-sensor mtnrpi3_device_accountid:
-  - platform: rest
-    resource: 'http://192.168.1.32/CGI/mtn-device.cgi?ip=40'
-    name: MtnRpi3 Device AccountID
-    value_template: '{{ value_json.account.id | default("null") }}'
-
-sensor mtnrpi3_device_name:
-  - platform: rest
-    resource: 'http://192.168.1.32/CGI/mtn-device.cgi?ip=40'
-    name: MtnRpi3 Device Name
-    value_template: '{{ value_json.name | default("null") }}'
-
-# HORIZON SERVICE/ATTRIBUTE
-
-sensor mtnrpi3_attribute_count:
-  - platform: rest
-    resource: 'http://192.168.1.32/CGI/mtn-attribute.cgi?ip=40'
-    name: MtnRpi3 Attribute Count
-    value_template: '{{ value_json.attributes | length }}'
-
-# HORIZON AGREEMENT
-
-sensor mtnrpi3_agreements_active_count:
-  - platform: rest
-    resource: 'http://192.168.1.32/CGI/mtn-agreement.cgi?ip=40'
-    name: MtnRpi3 Agreements Active Count
-    value_template: '{{ value_json.agreements.active | length }}'
-
-sensor mtnrpi3_agreements_archive_count:
-  - platform: rest
-    resource: 'http://192.168.1.32/CGI/mtn-agreement.cgi?ip=40'
-    name: MtnRpi3 Agreements Archive Count
-    value_template: '{{ value_json.agreements.archive | length }}'
-
-# AGREEMENT #0
-
-sensor mtnrpi3_agreement0_name:
-  - platform: rest
-    resource: 'http://192.168.1.32/CGI/mtn-agreement.cgi?ip=40&id=0'
-    name: 'MtnRpi3 Agreement0 Name'
-    value_template: '{{ value_json.name | default("null") }}'
-
-sensor mtnrpi3_agreement0_id:
-  - platform: rest
-    resource: 'http://192.168.1.32/CGI/mtn-agreement.cgi?ip=40&id=0'
-    name: 'MtnRpi3 Agreement0 ID'
-    value_template: '{{ value_json.current_agreement_id | default("null") }}'
-
-sensor mtnrpi3_agreement0_protocol:
-  - platform: rest
-    resource: 'http://192.168.1.32/CGI/mtn-agreement.cgi?ip=40&id=0'
-    name: MtnRpi3 Agreement0 Protocol
-    value_template: '{{ value_json.agreement_protocol | default("null") }}'
-
-sensor mtnrpi3_agreement0_consumer:
-  - platform: rest
-    resource: 'http://192.168.1.32/CGI/mtn-agreement.cgi?ip=40&id=0'
-    name: 'MtnRpi3 Agreement0 Consumer'
-    value_template: '{{ value_json.consumer_id | default("null") }}'
-
-sensor mtnrpi3_agreement0_create:
-  - platform: rest
-    resource: 'http://192.168.1.32/CGI/mtn-agreement.cgi?ip=40&id=0'
-    name: 'MtnRpi3 Agreement0 Create'
-    value_template: '{{ value_json.agreement_creation_time | timestamp_custom("%a %b %d @ %I:%M %p") }}'
-
-sensor mtnrpi3_agreement0_accept:
-  - platform: rest
-    resource: 'http://192.168.1.32/CGI/mtn-agreement.cgi?ip=40&id=0'
-    name: 'MtnRpi3 Agreement0 Accept'
-    value_template: '{{ value_json.agreement_accepted_time | timestamp_custom("%a %b %d @ %I:%M %p") }}'
-
-sensor mtnrpi3_agreement0_finalize:
-  - platform: rest
-    resource: 'http://192.168.1.32/CGI/mtn-agreement.cgi?ip=40&id=0'
-    name: 'MtnRpi3 Agreement0 Finalize'
-    value_template: '{{ value_json.agreement_finalized_time | timestamp_custom("%a %b %d @ %I:%M %p") }}'
-
-sensor mtnrpi3_agreement0_receive:
-  - platform: rest
-    resource: 'http://192.168.1.32/CGI/mtn-agreement.cgi?ip=40&id=0'
-    name: 'MtnRpi3 Agreement0 Receive'
-    value_template: '{{ value_json.agreement_data_received_time | timestamp_custom("%a %b %d @ %I:%M %p") }}'
-
-sensor mtnrpi3_agreement0_start:
-  - platform: rest
-    resource: 'http://192.168.1.32/CGI/mtn-agreement.cgi?ip=40&id=0'
-    name: 'MtnRpi3 Agreement0 Start'
-    value_template: '{{ value_json.agreement_execution_start_time | timestamp_custom("%a %b %d @ %I:%M %p") }}'
-
-# AGREEMENT #1
-
-sensor mtnrpi3_agreement1_name:
-  - platform: rest
-    resource: 'http://192.168.1.32/CGI/mtn-agreement.cgi?ip=40&id=1'
-    name: 'MtnRpi3 Agreement1 Name'
-    value_template: '{{ value_json.name | default("null") }}'
-
-sensor mtnrpi3_agreement1_id:
-  - platform: rest
-    resource: 'http://192.168.1.32/CGI/mtn-agreement.cgi?ip=40&id=1'
-    name: 'MtnRpi3 Agreement1 ID'
-    value_template: '{{ value_json.current_agreement_id | default("null") }}'
-
-sensor mtnrpi3_agreement1_protocol:
-  - platform: rest
-    resource: 'http://192.168.1.32/CGI/mtn-agreement.cgi?ip=40&id=1'
-    name: MtnRpi3 Agreement1 Protocol
-    value_template: '{{ value_json.agreement_protocol | default("null") }}'
-
-sensor mtnrpi3_agreement1_consumer:
-  - platform: rest
-    resource: 'http://192.168.1.32/CGI/mtn-agreement.cgi?ip=40&id=1'
-    name: 'MtnRpi3 Agreement1 Consumer'
-    value_template: '{{ value_json.consumer_id | default("null") }}'
-
-sensor mtnrpi3_agreement1_create:
-  - platform: rest
-    resource: 'http://192.168.1.32/CGI/mtn-agreement.cgi?ip=40&id=1'
-    name: 'MtnRpi3 Agreement1 Create'
-    value_template: '{{ value_json.agreement_creation_time | timestamp_custom("%a %b %d @ %I:%M %p") }}'
-
-sensor mtnrpi3_agreement1_accept:
-  - platform: rest
-    resource: 'http://192.168.1.32/CGI/mtn-agreement.cgi?ip=40&id=1'
-    name: 'MtnRpi3 Agreement1 Accept'
-    value_template: '{{ value_json.agreement_accepted_time | timestamp_custom("%a %b %d @ %I:%M %p") }}'
-
-sensor mtnrpi3_agreement1_finalize:
-  - platform: rest
-    resource: 'http://192.168.1.32/CGI/mtn-agreement.cgi?ip=40&id=1'
-    name: 'MtnRpi3 Agreement1 Finalize'
-    value_template: '{{ value_json.agreement_finalized_time | timestamp_custom("%a %b %d @ %I:%M %p") }}'
-
-sensor mtnrpi3_agreement1_receive:
-  - platform: rest
-    resource: 'http://192.168.1.32/CGI/mtn-agreement.cgi?ip=40&id=1'
-    name: 'MtnRpi3 Agreement1 Receive'
-    value_template: '{{ value_json.agreement_data_received_time | timestamp_custom("%a %b %d @ %I:%M %p") }}'
-
-sensor mtnrpi3_agreement1_start:
-  - platform: rest
-    resource: 'http://192.168.1.32/CGI/mtn-agreement.cgi?ip=40&id=1'
-    name: 'MtnRpi3 Agreement1 Start'
-    value_template: '{{ value_json.agreement_execution_start_time | timestamp_custom("%a %b %d @ %I:%M %p") }}'
-
-# AGREEMENT #2
-
-sensor mtnrpi3_agreement2_name:
-  - platform: rest
-    resource: 'http://192.168.1.32/CGI/mtn-agreement.cgi?ip=40&id=2'
-    name: 'MtnRpi3 Agreement2 Name'
-    value_template: '{{ value_json.name | default("null") }}'
-
-sensor mtnrpi3_agreement2_id:
-  - platform: rest
-    resource: 'http://192.168.1.32/CGI/mtn-agreement.cgi?ip=40&id=2'
-    name: 'MtnRpi3 Agreement2 ID'
-    value_template: '{{ value_json.current_agreement_id | default("null") }}'
-
-sensor mtnrpi3_agreement2_protocol:
-  - platform: rest
-    resource: 'http://192.168.1.32/CGI/mtn-agreement.cgi?ip=40&id=2'
-    name: MtnRpi3 Agreement2 Protocol
-    value_template: '{{ value_json.agreement_protocol | default("null") }}'
-
-sensor mtnrpi3_agreement2_consumer:
-  - platform: rest
-    resource: 'http://192.168.1.32/CGI/mtn-agreement.cgi?ip=40&id=2'
-    name: 'MtnRpi3 Agreement2 Consumer'
-    value_template: '{{ value_json.consumer_id | default("null") }}'
-
-sensor mtnrpi3_agreement2_create:
-  - platform: rest
-    resource: 'http://192.168.1.32/CGI/mtn-agreement.cgi?ip=40&id=2'
-    name: 'MtnRpi3 Agreement2 Create'
-    value_template: '{{ value_json.agreement_creation_time | timestamp_custom("%a %b %d @ %I:%M %p") }}'
-
-sensor mtnrpi3_agreement2_accept:
-  - platform: rest
-    resource: 'http://192.168.1.32/CGI/mtn-agreement.cgi?ip=40&id=2'
-    name: 'MtnRpi3 Agreement2 Accept'
-    value_template: '{{ value_json.agreement_accepted_time | timestamp_custom("%a %b %d @ %I:%M %p") }}'
-
-sensor mtnrpi3_agreement2_finalize:
-  - platform: rest
-    resource: 'http://192.168.1.32/CGI/mtn-agreement.cgi?ip=40&id=2'
-    name: 'MtnRpi3 Agreement2 Finalize'
-    value_template: '{{ value_json.agreement_finalized_time | timestamp_custom("%a %b %d @ %I:%M %p") }}'
-
-sensor mtnrpi3_agreement2_receive:
-  - platform: rest
-    resource: 'http://192.168.1.32/CGI/mtn-agreement.cgi?ip=40&id=2'
-    name: 'MtnRpi3 Agreement2 Receive'
-    value_template: '{{ value_json.agreement_data_received_time | timestamp_custom("%a %b %d @ %I:%M %p") }}'
-
-sensor mtnrpi3_agreement2_start:
-  - platform: rest
-    resource: 'http://192.168.1.32/CGI/mtn-agreement.cgi?ip=40&id=2'
-    name: 'MtnRpi3 Agreement2 Start'
-    value_template: '{{ value_json.agreement_execution_start_time | timestamp_custom("%a %b %d @ %I:%M %p") }}'
-
-# AGREEMENT #3
-
-sensor mtnrpi3_agreement3_name:
-  - platform: rest
-    resource: 'http://192.168.1.32/CGI/mtn-agreement.cgi?ip=40&id=3'
-    name: 'MtnRpi3 Agreement3 Name'
-    value_template: '{{ value_json.name | default("null") }}'
-
-sensor mtnrpi3_agreement3_id:
-  - platform: rest
-    resource: 'http://192.168.1.32/CGI/mtn-agreement.cgi?ip=40&id=3'
-    name: 'MtnRpi3 Agreement3 ID'
-    value_template: '{{ value_json.current_agreement_id | default("null") }}'
-
-sensor mtnrpi3_agreement3_protocol:
-  - platform: rest
-    resource: 'http://192.168.1.32/CGI/mtn-agreement.cgi?ip=40&id=3'
-    name: MtnRpi3 Agreement3 Protocol
-    value_template: '{{ value_json.agreement_protocol | default("null") }}'
-
-sensor mtnrpi3_agreement3_consumer:
-  - platform: rest
-    resource: 'http://192.168.1.32/CGI/mtn-agreement.cgi?ip=40&id=3'
-    name: 'MtnRpi3 Agreement3 Consumer'
-    value_template: '{{ value_json.consumer_id | default("null") }}'
-
-sensor mtnrpi3_agreement3_create:
-  - platform: rest
-    resource: 'http://192.168.1.32/CGI/mtn-agreement.cgi?ip=40&id=3'
-    name: 'MtnRpi3 Agreement3 Create'
-    value_template: '{{ value_json.agreement_creation_time | timestamp_custom("%a %b %d @ %I:%M %p") }}'
-
-sensor mtnrpi3_agreement3_accept:
-  - platform: rest
-    resource: 'http://192.168.1.32/CGI/mtn-agreement.cgi?ip=40&id=3'
-    name: 'MtnRpi3 Agreement3 Accept'
-    value_template: '{{ value_json.agreement_accepted_time | timestamp_custom("%a %b %d @ %I:%M %p") }}'
-
-sensor mtnrpi3_agreement3_finalize:
-  - platform: rest
-    resource: 'http://192.168.1.32/CGI/mtn-agreement.cgi?ip=40&id=3'
-    name: 'MtnRpi3 Agreement3 Finalize'
-    value_template: '{{ value_json.agreement_finalized_time | timestamp_custom("%a %b %d @ %I:%M %p") }}'
-
-sensor mtnrpi3_agreement3_receive:
-  - platform: rest
-    resource: 'http://192.168.1.32/CGI/mtn-agreement.cgi?ip=40&id=3'
-    name: 'MtnRpi3 Agreement3 Receive'
-    value_template: '{{ value_json.agreement_data_received_time | timestamp_custom("%a %b %d @ %I:%M %p") }}'
-
-sensor mtnrpi3_agreement3_start:
-  - platform: rest
-    resource: 'http://192.168.1.32/CGI/mtn-agreement.cgi?ip=40&id=3'
-    name: 'MtnRpi3 Agreement3 Start'
-    value_template: '{{ value_json.agreement_execution_start_time | timestamp_custom("%a %b %d @ %I:%M %p") }}'
-
-# AGREEMENT #4
-
-sensor mtnrpi3_agreement4_name:
-  - platform: rest
-    resource: 'http://192.168.1.32/CGI/mtn-agreement.cgi?ip=40&id=4'
-    name: 'MtnRpi3 Agreement4 Name'
-    value_template: '{{ value_json.name | default("null") }}'
-
-sensor mtnrpi3_agreement4_id:
-  - platform: rest
-    resource: 'http://192.168.1.32/CGI/mtn-agreement.cgi?ip=40&id=4'
-    name: 'MtnRpi3 Agreement4 ID'
-    value_template: '{{ value_json.current_agreement_id | default("null") }}'
-
-sensor mtnrpi3_agreement4_protocol:
-  - platform: rest
-    resource: 'http://192.168.1.32/CGI/mtn-agreement.cgi?ip=40&id=4'
-    name: MtnRpi3 Agreement4 Protocol
-    value_template: '{{ value_json.agreement_protocol | default("null") }}'
-
-sensor mtnrpi3_agreement4_consumer:
-  - platform: rest
-    resource: 'http://192.168.1.32/CGI/mtn-agreement.cgi?ip=40&id=4'
-    name: 'MtnRpi3 Agreement4 Consumer'
-    value_template: '{{ value_json.consumer_id | default("null") }}'
-
-sensor mtnrpi3_agreement4_create:
-  - platform: rest
-    resource: 'http://192.168.1.32/CGI/mtn-agreement.cgi?ip=40&id=4'
-    name: 'MtnRpi3 Agreement4 Create'
-    value_template: '{{ value_json.agreement_creation_time | timestamp_custom("%a %b %d @ %I:%M %p") }}'
-
-sensor mtnrpi3_agreement4_accept:
-  - platform: rest
-    resource: 'http://192.168.1.32/CGI/mtn-agreement.cgi?ip=40&id=4'
-    name: 'MtnRpi3 Agreement4 Accept'
-    value_template: '{{ value_json.agreement_accepted_time | timestamp_custom("%a %b %d @ %I:%M %p") }}'
-
-sensor mtnrpi3_agreement4_finalize:
-  - platform: rest
-    resource: 'http://192.168.1.32/CGI/mtn-agreement.cgi?ip=40&id=4'
-    name: 'MtnRpi3 Agreement4 Finalize'
-    value_template: '{{ value_json.agreement_finalized_time | timestamp_custom("%a %b %d @ %I:%M %p") }}'
-
-sensor mtnrpi3_agreement4_receive:
-  - platform: rest
-    resource: 'http://192.168.1.32/CGI/mtn-agreement.cgi?ip=40&id=4'
-    name: 'MtnRpi3 Agreement4 Receive'
-    value_template: '{{ value_json.agreement_data_received_time | timestamp_custom("%a %b %d @ %I:%M %p") }}'
-
-sensor mtnrpi3_agreement4_start:
-  - platform: rest
-    resource: 'http://192.168.1.32/CGI/mtn-agreement.cgi?ip=40&id=4'
-    name: 'MtnRpi3 Agreement4 Start'
-    value_template: '{{ value_json.agreement_execution_start_time | timestamp_custom("%a %b %d @ %I:%M %p") }}'
-
-# AGREEMENT #5
-
-sensor mtnrpi3_agreement5_name:
-  - platform: rest
-    resource: 'http://192.168.1.32/CGI/mtn-agreement.cgi?ip=40&id=5'
-    name: 'MtnRpi3 Agreement5 Name'
-    value_template: '{{ value_json.name | default("null") }}'
-
-sensor mtnrpi3_agreement5_id:
-  - platform: rest
-    resource: 'http://192.168.1.32/CGI/mtn-agreement.cgi?ip=40&id=5'
-    name: 'MtnRpi3 Agreement5 ID'
-    value_template: '{{ value_json.current_agreement_id | default("null") }}'
-
-sensor mtnrpi3_agreement5_protocol:
-  - platform: rest
-    resource: 'http://192.168.1.32/CGI/mtn-agreement.cgi?ip=40&id=5'
-    name: MtnRpi3 Agreement5 Protocol
-    value_template: '{{ value_json.agreement_protocol | default("null") }}'
-
-sensor mtnrpi3_agreement5_consumer:
-  - platform: rest
-    resource: 'http://192.168.1.32/CGI/mtn-agreement.cgi?ip=40&id=5'
-    name: 'MtnRpi3 Agreement5 Consumer'
-    value_template: '{{ value_json.consumer_id | default("null") }}'
-
-sensor mtnrpi3_agreement5_create:
-  - platform: rest
-    resource: 'http://192.168.1.32/CGI/mtn-agreement.cgi?ip=40&id=5'
-    name: 'MtnRpi3 Agreement5 Create'
-    value_template: '{{ value_json.agreement_creation_time | timestamp_custom("%a %b %d @ %I:%M %p") }}'
-
-sensor mtnrpi3_agreement5_accept:
-  - platform: rest
-    resource: 'http://192.168.1.32/CGI/mtn-agreement.cgi?ip=40&id=5'
-    name: 'MtnRpi3 Agreement5 Accept'
-    value_template: '{{ value_json.agreement_accepted_time | timestamp_custom("%a %b %d @ %I:%M %p") }}'
-
-sensor mtnrpi3_agreement5_finalize:
-  - platform: rest
-    resource: 'http://192.168.1.32/CGI/mtn-agreement.cgi?ip=40&id=5'
-    name: 'MtnRpi3 Agreement5 Finalize'
-    value_template: '{{ value_json.agreement_finalized_time | timestamp_custom("%a %b %d @ %I:%M %p") }}'
-
-sensor mtnrpi3_agreement5_receive:
-  - platform: rest
-    resource: 'http://192.168.1.32/CGI/mtn-agreement.cgi?ip=40&id=5'
-    name: 'MtnRpi3 Agreement5 Receive'
-    value_template: '{{ value_json.agreement_data_received_time | timestamp_custom("%a %b %d @ %I:%M %p") }}'
-
-sensor mtnrpi3_agreement5_start:
-  - platform: rest
-    resource: 'http://192.168.1.32/CGI/mtn-agreement.cgi?ip=40&id=5'
-    name: 'MtnRpi3 Agreement5 Start'
-    value_template: '{{ value_json.agreement_execution_start_time | timestamp_custom("%a %b %d @ %I:%M %p") }}'
-
-# HORIZON WORKLOAD
-
-sensor mtnrpi3_workloads_count:
-  - platform: rest
-    resource: 'http://192.168.1.32/CGI/mtn-workload.cgi?ip=40'
-    name: MtnRpi3 Workloads Count
-    value_template: '{{ value_json.workloads | length }}'
-
-# HORIZON PUBLICKEY
-
-sensor mtnrpi3_publickey:
-  - platform: rest
-    resource: 'http://192.168.1.32/CGI/mtn-publickey.cgi?ip=40'
-    name: MtnRpi3 Publickey
-    value_template: '{{ value_json.pem | default("null") }}'
+    # value_template: '{{ value_json.agreement_execution_start_time | timestamp_custom("%a %b %d @ %I:%M %p") }}'
+    value_template: >
+      {%- if (states.sensor.mtnrpi2_agreements_active_count != None) -%}
+        {%- if (states.sensor.mtnrpi2_agreements_active_count.state | int) > 5 -%}
+          {{ value_json.agreement_execution_start_time | timestamp_custom("%a %b %d @ %I:%M %p") }}
+        {%- else -%}
+          {{ 'no agreement' }}
+        {%- endif -%}
+      {%- else -%}
+        {{ 'no agreement' }}
+      {%- endif -%}
 
 ###
 ### AGE-AT-HOME
 ###
 
+##
+## CAMERAS (motion package)
+##
+
+camera kitchen_camera:
+  - platform: mjpeg
+    name: kitchen_camera
+    mjpeg_url: http://192.168.1.34:8081/
+
+camera bathroom_camera:
+  - platform: mjpeg
+    name: bathroom_camera
+    mjpeg_url: http://192.168.1.35:8081/
+
+camera road_camera:
+  - platform: mjpeg
+    name: road_camera
+    mjpeg_url: http://192.168.1.36:8081/
+
+camera frontdoor_camera:   
+  - platform: mjpeg
+    name: frontdoor_camera
+    mjpeg_url: http://192.168.1.37:8081/
+
+##
+## STATUS CATCHERS
+##
+
+sensor status_david:
+  - platform: mqtt
+    name: status_david
+    state_topic: '+/david/#'
+    # value_template: '{{ json_value }}'
+
+sensor status_cameras:
+  - platform: mqtt
+    name: status_cameras
+    state_topic: 'state/camera/+'
+
+sensor status_device_trackers:
+  - platform: mqtt
+    name: status_device_trackers
+    state_topic: 'state/device_tracker/+'
+
+automation status_automations:
+  - platform: mqtt
+    name: status_automations
+    state_topic: 'state/automation/+'
+
+##
+## LAST PRESENCE (MQTT)
+##
+
+# CAMERAS (JPEG)
 camera last_image:
   - platform: mqtt
     name: last_image
@@ -1690,6 +1704,13 @@ camera last_image_cropped:
     icon: mdi:image
     topic: 'image-cropped/+'
 
+# DATA (JSON)
+sensor presence_last:
+  - platform: mqtt
+    expire_after: 30 # MOTION_EVENT_GAP == 5 (seconds)
+    name: presence_last
+    state_topic: 'presence/+'
+
 sensor last_ago:
   - platform: mqtt
     name: last_ago
@@ -1702,14 +1723,12 @@ sensor last_how:
     icon: mdi:numeric
     state_topic: 'presence/+'
     name: last_how
-    expire_after: 30 # seconds
     value_template: '{{ value_json.score }}'
 
 sensor last_where:
   - platform: mqtt
     icon: mdi:house
     state_topic: 'presence/+'
-    expire_after: 30 # seconds
     name: last_where
     value_template: '{{ value_json.location }}'
 
@@ -1718,7 +1737,6 @@ sensor last_what:
     icon: mdi:human
     state_topic: 'presence/+'
     name: last_what
-    expire_after: 30 # seconds
     value_template: '{{ value_json.class }}'
 
 sensor last_who:
@@ -1726,7 +1744,6 @@ sensor last_who:
     icon: mdi:comment-question-outline
     state_topic: 'presence/+'
     name: last_who
-    expire_after: 30 # seconds
     value_template: '{{ value_json.model }}'
 
 sensor last_when:
@@ -1740,15 +1757,11 @@ sensor last_when:
 ## KITCHEN
 ##
 
-camera kitchen_camera:
-  - platform: mjpeg
-    name: kitchen_camera
-    mjpeg_url: http://192.168.1.34:8081/
-
+# DATA (JSON)
 sensor presence_kitchen:
   - platform: mqtt
+    expire_after: 30 # seconds
     name: presence_kitchen
-    icon: mdi:human
     state_topic: 'presence/kitchen'
 
 sensor kitchen_what:
@@ -1786,6 +1799,7 @@ sensor kitchen_ago:
     state_topic: 'presence/kitchen'
     value_template: '{{ (now().timestamp() | int) - value_json.date }}'
 
+# CAMERA (JPEG)
 camera kitchen_image:
   - platform: mqtt
     name: kitchen_image
@@ -1802,52 +1816,25 @@ camera kitchen_image_cropped:
     icon: mdi:image
     topic: 'image-cropped/kitchen'
 
+# EMPTY TIME
 sensor kitchen_empty_time:
   - platform: history_stats
     icon: mdi:timer
     name: kitchen_empty_time
-    entity_id: sensor.kitchen_what
+    entity_id: sensor.presence_kitchen # expires
     state: 'unknown'
     type: time
     start: '{{ now().replace(hour=0).replace(minute=0).replace(second=0) }}'
     end: '{{ now() }}'
 
-# TEMPLATE sensors - why no work?
-
-sensor kitchen_json:
-  - platform: template
-    sensors:
-      kitchen_presence:
-        entity_id: sensor.presence_kitchen
-        value_template: '{{ states.sensor.presence_kitchen.state }}'
-
-sensor kitchen_attributes:
-  - platform: template
-    sensors:
-      kitchen_date:
-        entity_id: sensor.kitchen_presence
-        value_template: '{{ states.sensor.kitchen_presence.state.date | timestamp_custom("%I:%M %p") }}'
-      kitchen_class:
-        entity_id: sensor.kitchen_presence
-        value_template: '{{ states.sensor.kitchen_presence.state.class }}'
-      kitchen_model:
-        entity_id: sensor.kitchen_presence
-        value_template: '{{ states.sensor.kitchen_presence.state.model }}'
-      kitchen_score:
-        entity_id: sensor.kitchen_presence
-        value_template: '{{ states.sensor.kitchen_presence.state.score }}'
-
 ##
 ## BATHROOM
 ##
 
-camera bathroom_camera:
-  - platform: mjpeg
-    name: bathroom_camera
-    mjpeg_url: http://192.168.1.35:8081/
-
+# DATA (JSON)
 sensor presence_bathroom:
   - platform: mqtt
+    expire_after: 30 # MOTION_EVENT_GAP == 5 (seconds)
     name: presence_bathroom
     state_topic: 'presence/bathroom'
 
@@ -1882,6 +1869,7 @@ sensor bathroom_ago:
     state_topic: 'presence/bathroom'
     value_template: '{{ (now().timestamp() | int) - value_json.date }}'
 
+# CAMERA (JPEG)
 camera bathroom_image:
   - platform: mqtt
     name: bathroom_image
@@ -1897,11 +1885,12 @@ camera bathroom_image_cropped:
     name: bathroom_image_cropped
     topic: 'image-cropped/bathroom'
 
+# EMPTY TIME
 sensor bathroom_empty_time:
   - platform: history_stats
     icon: mdi:timer
     name: bathroom_empty_time
-    entity_id: sensor.bathroom_what
+    entity_id: sensor.presence_bathroom # expires
     state: 'unknown'
     type: time
     start: '{{ now().replace(hour=0).replace(minute=0).replace(second=0) }}'
@@ -1911,15 +1900,11 @@ sensor bathroom_empty_time:
 ## ROAD
 ##
 
-camera road_camera:
-  - platform: mjpeg
-    name: road_camera
-    mjpeg_url: http://192.168.1.36:8081/
-
+# DATA (JSON)
 sensor presence_road:
   - platform: mqtt
+    expire_after: 30 # seconds
     name: presence_road
-    icon: mdi:human
     state_topic: 'presence/road'
 
 sensor road_what:
@@ -1957,6 +1942,7 @@ sensor road_ago:
     state_topic: 'presence/road'
     value_template: '{{ (now().timestamp() | int) - value_json.date }}'
 
+# CAMERA (JPEG)
 camera road_image:
   - platform: mqtt
     name: road_image
@@ -1973,11 +1959,12 @@ camera road_image_cropped:
     name: road_image_cropped
     topic: 'image-cropped/road'
 
+# EMPTY TIME
 sensor road_empty_time:
   - platform: history_stats
     icon: mdi:timer
     name: road_empty_time
-    entity_id: sensor.road_what
+    entity_id: sensor.presence_road # expires
     state: 'unknown'
     type: time
     start: '{{ now().replace(hour=0).replace(minute=0).replace(second=0) }}'
@@ -1987,15 +1974,11 @@ sensor road_empty_time:
 ## FRONTDOOR
 ##
 
-camera frontdoor_camera:   
-  - platform: mjpeg
-    name: frontdoor_camera
-    mjpeg_url: http://192.168.1.37:8081/
-
+# DATA (JSON)
 sensor presence_frontdoor:
   - platform: mqtt
+    expire_after: 30 # seconds
     name: presence_frontdoor
-    icon: mdi:human
     state_topic: 'presence/frontdoor'
 
 sensor frontdoor_what:
@@ -2039,6 +2022,7 @@ camera frontdoor_image:
     icon: mdi:image
     topic: 'image/frontdoor'
 
+# CAMERA (JPEG)
 camera frontdoor_image_annotated:
   - platform: mqtt
     name: frontdoor_image_annotated
@@ -2051,29 +2035,20 @@ camera frontdoor_image_cropped:
     icon: mdi:image
     topic: 'image-cropped/frontdoor'
 
+# EMPTY TIME
 sensor frontdoor_empty_time:
   - platform: history_stats
     icon: mdi:timer
     name: frontdoor_empty_time
-    entity_id: sensor.frontdoor_what
+    entity_id: sensor.presence_frontdoor # expires
     state: 'unknown'
     type: time
     start: '{{ now().replace(hour=0).replace(minute=0).replace(second=0) }}'
     end: '{{ now() }}'
 
 #
-# PRESENCE
+# DETECT ACTIVITY
 #
-
-sensor kitchen_busy_time:
-  - platform: history_stats
-    icon: mdi:timer
-    name: kitchen_busy_time
-    entity_id: binary_sensor.people_in_kitchen
-    state: 'on'
-    type: ratio
-    start: '{{ now().replace(hour=0).replace(minute=0).replace(second=0) }}'
-    end: '{{ now() }}'
 
 sensor yes_activity_time:
   - platform: history_stats
@@ -2095,9 +2070,8 @@ sensor no_activity_time:
     start: '{{ now().replace(hour=0).replace(minute=0).replace(second=0) }}'
     end: '{{ now() }}'
 
-binary_sensor noactivity:
+binary_sensor activity_template:
   - platform: template
-    name: noactivity
     sensors:
       yes_activity:
         entity_id:
@@ -2114,79 +2088,91 @@ binary_sensor noactivity:
               states.sensor.last_what.state == 'unknown'
           }}
 
-binary_sensor peopleinkitchen:
-  - platform: template
-    name: peopleinkitchen
-    sensors:
-      people_in_kitchen:
-        entity_id:
-          - sensor.kitchen_what
-        value_template: >
-          {{
-              states.sensor.kitchen_what.state == 'david'
-            or
-              states.sensor.kitchen_what.state == 'keli'
-            or
-              states.sensor.kitchen_what.state == 'hali'
-            or
-              states.sensor.kitchen_what.state == 'ian'
-            or
-              states.sensor.kitchen_what.state == 'riley'
-            or
-              states.sensor.kitchen_what.state == 'ellen'
-          }}
+#
+# DETECT FAMILY
+#
 
-binary_sensor kitchen_validate:
+binary_sensor family_template:
   - platform: template
     sensors:
-      kitchen_wrong:
+      family_in_kitchen:
         entity_id:
-          - sensor.kitchen_what
+          - sensor.last_what
+          - sensor.last_where
+        value_template: >
+          {{ ( states.sensor.last_what.state == 'david' or
+               states.sensor.last_what.state == 'keli' or
+               states.sensor.last_what.state == 'hali' or
+               states.sensor.last_what.state == 'ian' or
+               states.sensor.last_what.state == 'riley' or
+               states.sensor.last_what.state == 'ellen' ) and 
+             ( states.sensor.last_where.state == 'kitchen' ) }}
+      family_in_bathroom:
+        entity_id:
+          - sensor.last_what
+          - sensor.last_where
+        value_template: >
+          {{ ( states.sensor.last_what.state == 'david' or
+               states.sensor.last_what.state == 'keli' or
+               states.sensor.last_what.state == 'hali' or
+               states.sensor.last_what.state == 'ian' or
+               states.sensor.last_what.state == 'riley' or
+               states.sensor.last_what.state == 'ellen' ) and 
+             ( states.sensor.last_where.state == 'kitchen' ) }}
+      family_at_frontdoor:
+        entity_id:
+          - sensor.last_what
+          - sensor.last_where
+        value_template: >
+          {{ ( states.sensor.last_what.state == 'david' or
+               states.sensor.last_what.state == 'keli' or
+               states.sensor.last_what.state == 'hali' or
+               states.sensor.last_what.state == 'ian' or
+               states.sensor.last_what.state == 'riley' or
+               states.sensor.last_what.state == 'ellen' ) and 
+             ( states.sensor.last_where.state == 'frontdoor' ) }}
+      family_on_road:
+        entity_id:
+          - sensor.last_what
+          - sensor.last_where
+        value_template: >
+          {{ ( states.sensor.last_what.state == 'martin_c70' or
+               states.sensor.last_what.state == 'martin_c30' or
+               states.sensor.last_what.state == 'martin_suburban' or
+               states.sensor.last_what.state == 'martin_sprinter' or
+               states.sensor.last_what.state == 'martin_xc90' or
+               states.sensor.last_what.state == 'martin_rtv1100' ) and 
+             ( states.sensor.last_where.state == 'road' ) }}
+      not_family:
+        entity_id:
+          - sensor.last_what
+          - sensor.last_where
           - device_tracker.ellensiphone5
-          - device_tracker.davids_iphone
+          - device_tracker.dcmsiphone7
           - device_tracker.rileysiphone5
           - device_tracker.ianmartinsiphone
           - device_tracker.halisiphone
+          - device_tracker.kelisiphone7
         value_template: >
-          {{
-            ( states.device_tracker.davids_iphone.state != 'home' and states.sensor.kitchen_what.state == 'david' )
-            or
-            ( states.device_tracker.kelis_iphone.state != 'home' and states.sensor.kitchen_what.state == 'keli' )
-            or
-            ( states.device_tracker.halisiphone.state != 'home' and states.sensor.kitchen_what.state == 'hali' )
-            or
-            ( states.device_tracker.ianmartinsiphone.state != 'home' and states.sensor.kitchen_what.state == 'ian' )
-            or
-            ( states.device_tracker.rileysiphone5.state != 'home' and states.sensor.kitchen_what.state == 'riley' )
-            or
-            ( states.device_tracker.ellensiphone5.state != 'home' and states.sensor.kitchen_what.state == 'ellen' )
-          }}
+          {{ (( states.device_tracker.dcmsiphone7.state != 'home' and states.sensor.last_what.state == 'david' ) or
+             ( states.device_tracker.kelisiphone7.state != 'home' and states.sensor.last_what.state == 'keli' ) or
+             ( states.device_tracker.halisiphone.state != 'home' and states.sensor.last_what.state == 'hali' ) or
+             ( states.device_tracker.ianmartinsiphone.state != 'home' and states.sensor.last_what.state == 'ian' ) or
+             ( states.device_tracker.rileysiphone5.state != 'home' and states.sensor.last_what.state == 'riley' ) or
+             ( states.device_tracker.ellensiphone5.state != 'home' and states.sensor.last_what.state == 'ellen' )) and ( states.sensor.last_where.state != 'road' ) }}
 
-binary_sensor kitchen_test:
+binary_sensor detected_template:
   - platform: template
     sensors:
-      david_in_kitchen:
+      family_detected:
         entity_id:
-          - sensor.kitchen_what
-          - device_tracker.davids_iphone
+          - binary_sensor.family_in_kitchen
+          - binary_sensor.family_in_bathroom
+          - binary_sensor.family_at_frontdoor
+          - binary_sensor.family_on_road
         value_template: >
-          {{
-            states.device_tracker.davids_iphone.state == 'home' and
-            states.sensor.kitchen_what.state == 'david'
-          }}
-      keli_in_kitchen:
-        friendly_name: keli in kitchen
-        entity_id:
-          - sensor.kitchen_what
-          - device_tracker.kelis_iphone
-        value_template: >
-          {{
-            states.device_tracker.kelis_iphone.state == 'home' and
-            states.sensor.kitchen_what.state == 'keli'
-          }}
+          {{ states.binary_sensor.family_in_kitchen == true or
+             states.binary_sensor.family_in_bathroom == true or 
+             states.binary_sensor.family_at_frontdoor == true or 
+             states.binary_sensor.family_on_road == true }}
 
-# INCLUDE STUFF
-
-group: !include groups.yaml
-
-automation: !include automations.yaml
