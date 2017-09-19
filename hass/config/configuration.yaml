@@ -10,6 +10,8 @@ homeassistant:
   unit_system: imperial
   # Pick yours from here: http://en.wikipedia.org/wiki/List_of_tz_database_time_zones
   time_zone: America/Los_Angeles
+  # customize
+  customize: !include customize.yaml
 
 http:
   api_password: !secret http_api_password
@@ -215,6 +217,27 @@ binary_sensor backyardmotion:
     # repeats: 0
     # repeat_time: 0
     # extra_arguments:
+
+sensor state_template:
+  - platform: template
+    sensors:
+      all_devices:
+        entity_id: states.device_tracker
+        value_template: >
+          {%- for state in states.device_tracker -%}
+            {%- if loop.first -%}{"date":{{(now().timestamp()|int)}},"devices":[
+            {%- else -%},
+            {%- endif -%}
+            {"name":"{{state.name|lower}}","state":"{{state.state}}",
+            {%- if state.attributes.source_type == "gps" -%}
+               "gps":"{{state.attributes.latitude,state.attributes.longitude}}",
+               "status":"{{state.attributes.device_status}}"
+            {%- elif state.attributes.source_type == "router" -%}
+               "status":"online"
+            {%- else -%}
+               "status":"offline"
+            {%- endif -%}}
+          {%- endfor -%}]}
 
 #
 # SONOS
@@ -2079,11 +2102,12 @@ binary_sensor family_template:
           - device_tracker.kelisiphone7
         value_template: >
           {{ (( states.device_tracker.dcmsiphone7.state != 'home' and states.sensor.last_what.state == 'david' ) or
-             ( states.device_tracker.kelisiphone7.state != 'home' and states.sensor.last_what.state == 'keli' ) or
-             ( states.device_tracker.halisiphone.state != 'home' and states.sensor.last_what.state == 'hali' ) or
-             ( states.device_tracker.ianmartinsiphone.state != 'home' and states.sensor.last_what.state == 'ian' ) or
-             ( states.device_tracker.rileysiphone5.state != 'home' and states.sensor.last_what.state == 'riley' ) or
-             ( states.device_tracker.ellensiphone5.state != 'home' and states.sensor.last_what.state == 'ellen' )) and ( states.sensor.last_where.state != 'road' ) }}
+              ( states.device_tracker.kelisiphone7.state != 'home' and states.sensor.last_what.state == 'keli' ) or
+              ( states.device_tracker.halisiphone.state != 'home' and states.sensor.last_what.state == 'hali' ) or
+              ( states.device_tracker.ianmartinsiphone.state != 'home' and states.sensor.last_what.state == 'ian' ) or
+              ( states.device_tracker.rileysiphone5.state != 'home' and states.sensor.last_what.state == 'riley' ) or
+              ( states.device_tracker.ellensiphone5.state != 'home' and states.sensor.last_what.state == 'ellen' )) 
+             and ( states.sensor.last_where.state != 'road' ) }}
 
 binary_sensor detected_template:
   - platform: template
@@ -2095,10 +2119,21 @@ binary_sensor detected_template:
           - binary_sensor.family_at_frontdoor
           - binary_sensor.family_on_road
         value_template: >
-          {{ states.binary_sensor.family_in_kitchen == true or
-             states.binary_sensor.family_in_bathroom == true or 
-             states.binary_sensor.family_at_frontdoor == true or 
-             states.binary_sensor.family_on_road == true }}
+          {{ states.binary_sensor.family_in_kitchen == 'on' or
+             states.binary_sensor.family_in_bathroom == 'on' or 
+             states.binary_sensor.family_at_frontdoor == 'on' or 
+             states.binary_sensor.family_on_road == 'on' }}
+
+binary_sensor bayesian_test:
+  - platform: 'bayesian'
+    name: bayesian_test
+    prior: 0.1
+    observations:
+      - entity_id: family_detected
+        prob_given_true: 0.6
+        prob_given_false: 0.2
+        platform: 'state'
+        to_state: 'on'
 
 logger: !include logger.yaml
 group: !include groups.yaml
@@ -2115,38 +2150,29 @@ automation my_automations:
 # iOS NOTIFICATIONS
 #
 
-- id: notify_davids_iphone
-  alias: 'notify_davids_iphone'
-  initial_state: 'on'
-  trigger:
-    platform: state
-    entity_id: device_tracker.davids_iphone_lan
-    to: 'home'
-  action:
-    - service: notify.notify
-      data_template:
-        message: >
-          {% if trigger.to_state.state != trigger.from_state.state %} 
-            David's iPhone is now on the LAN at {{ trigger.to_state.state }}
-          {% endif %}
-
 - id: notify_david
   alias: 'notify_david'
   initial_state: 'on'
   trigger:
-    platform: state
-    entity_id: device_tracker.dcmsiphone7
-#  condition:
-#    platform: time
-#    after: '06:00'
-#    before: '22:00'
+    - platform: state
+      entity_id: device_tracker.dcmsiphone7
+    - platform: state
+      entity_id: device_tracker.davids_iphone
+  condition: 
+    condition: and
+    conditions:
+      - condition: time
+        after: '06:00'
+      - condition: time
+        before: '22:00'
+      - condition: template
+        value_template: >
+          {{ trigger.from_state != None and trigger.to_state.state != trigger.from_state.state }}
   action:
     - service: notify.notify
       data_template:
         message: >
-          {% if trigger.from_state != None and trigger.to_state.state != trigger.from_state.state %} 
-          David's location just changed from {{ trigger.from_state.state }} to {{ trigger.to_state.state }}
-          {% endif %}
+          {{ trigger.entity_id }}'s location just changed from {{ trigger.from_state.state }} to {{ trigger.to_state.state }}
 
 - id: notify_ellen
   alias: 'notify_ellen'
@@ -2154,17 +2180,21 @@ automation my_automations:
   trigger:
     platform: state
     entity_id: device_tracker.ellensiphone5
-#  condition:
-#    platform: time
-#    after: '06:00'
-#    before: '22:00'
+  condition: 
+    condition: and
+    conditions:
+      - condition: time
+        after: '06:00'
+      - condition: time
+        before: '22:00'
+      - condition: template
+        value_template: >
+          {{ trigger.from_state != None and trigger.to_state.state != trigger.from_state.state }}
   action:
     - service: notify.notify
       data_template:
         message: >
-          {% if trigger.from_state != None and trigger.to_state.state != trigger.from_state.state %} 
-          Ellen's location just changed from {{ trigger.from_state.state }} to {{ trigger.to_state.state }}
-          {% endif %}
+          {{ trigger.entity_id }}'s location just changed from {{ trigger.from_state.state }} to {{ trigger.to_state.state }}
 
 - id: notify_keli
   alias: 'notify_keli'
@@ -2172,17 +2202,21 @@ automation my_automations:
   trigger:
     platform: state
     entity_id: device_tracker.kelisiphone7
-#  condition:
-#    platform: time
-#    after: '06:00'
-#    before: '22:00'
+  condition: 
+    condition: and
+    conditions:
+      - condition: time
+        after: '06:00'
+      - condition: time
+        before: '22:00'
+      - condition: template
+        value_template: >
+          {{ trigger.from_state != None and trigger.to_state.state != trigger.from_state.state }}
   action:
     - service: notify.notify
       data_template:
         message: >
-          {% if trigger.from_state != None and trigger.to_state.state != trigger.from_state.state %} 
-          Keli's location just changed from {{ trigger.from_state.state }} to {{ trigger.to_state.state }}
-          {% endif %}
+          {{ trigger.entity_id }}'s location just changed from {{ trigger.from_state.state }} to {{ trigger.to_state.state }}
 
 - id: notify_riley
   alias: 'notify_riley'
@@ -2190,23 +2224,28 @@ automation my_automations:
   trigger:
     platform: state
     entity_id: device_tracker.rileysiphone5
-#  condition:
-#    platform: time
-#    after: '06:00'
-#    before: '22:00'
+  condition: 
+    condition: and
+    conditions:
+      - condition: time
+        after: '06:00'
+      - condition: time
+        before: '22:00'
+      - condition: template
+        value_template: >
+          {{ trigger.from_state != None and trigger.to_state.state != trigger.from_state.state }}
   action:
     - service: notify.notify
       data_template:
         message: >
-          {% if trigger.from_state != None and trigger.to_state.state != trigger.from_state.state %} 
-          Riley's location just changed from {{ trigger.from_state.state }} to {{ trigger.to_state.state }}
-          {% endif %}
+          {{ trigger.entity_id }}'s location just changed from {{ trigger.from_state.state }} to {{ trigger.to_state.state }}
 
 #
 # MQTT
 #
-- id: mqtt_family_detected
-  alias: 'mqtt_family_detected'
+
+- id: aah_family_detected
+  alias: 'aah_family_detected'
   initial_state: 'on'
   trigger:
     platform: state
@@ -2219,19 +2258,19 @@ automation my_automations:
         payload: >
           {"what":"family","date:",{{(now().timestamp()|int)}},"state":"{{ trigger.to_state.state }}"}
 
-#- id: mqtt_david
-#  alias: 'mqtt_david'
-#  initial_state: 'on'
-#  trigger:
-#    platform: state
-#    entity_id: device_tracker.davidsiphone7
-#  action: 
-#    - service: mqtt.publish
-#      data:
-#        topic: 'what/david/#'
-#        payload_template: >
-#          {{ trigger.to_state.state }}
-#
+- id: aah_device_detected
+  alias: 'aah_device_detected'
+  initial_state: 'on'
+  trigger:
+    platform: state
+    entity_id: group.iphones
+  action: 
+    - service: mqtt.publish
+      data_template:
+        topic: 'what/{{trigger.entity_id}}'
+        payload: >
+          {"what":"{{trigger.entity_id}}","date":{{(now().timestamp()|int)}},"state":"{{trigger.to_state.state}}"
+
 #- id: aah_mqtt_camera_offline
 #  alias: 'Notify if any AAH sensor is unknown for 10 minutes'
 #  trigger:

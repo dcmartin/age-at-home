@@ -195,8 +195,6 @@ ageathome_cameras:
     - camera.road_camera
     - camera.bathroom_camera
 
-# SUMMARY
-
 ageathome_devices:
   name: 'AgeAtHome Devices'
   icon: mdi:lan-connect
@@ -213,6 +211,10 @@ ageathome_empty_time:
     - sensor.bathroom_empty_time
     - sensor.road_empty_time
     - sensor.frontdoor_empty_time
+    - sensor.no_activity_time
+    - sensor.yes_activity_time
+    - binary_sensor.no_activity
+    - binary_sensor.yes_activity
 
 ageathome_last:
   name: 'AgeAtHome Last'
@@ -545,6 +547,7 @@ weather_today:
     - sensor.pws_wind_dir
     - sensor.pws_wind_gust_mph
     - sensor.pws_wind_mph
+
 webcam_status:
   name: WebCam Status
   entities:
@@ -579,7 +582,7 @@ iphones:
     - device_tracker.davidsipadmini
     - device_tracker.davidcsapple_watch
     - device_tracker.kelisiphone7
-    - device_tracker.dcmsiphone
+    - device_tracker.dcmsiphone7
     - device_tracker.ellensiphone5
     - device_tracker.halisiphone
     - device_tracker.ianmartinsiphone
