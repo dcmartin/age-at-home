@@ -9,3 +9,5 @@ sudo docker cp $dir/config/automations.yaml homeassistant:/config/automations.ya
 sudo docker cp $dir/config/templates.yaml homeassistant:/config/templates.yaml
 sudo docker cp $dir/config/logger.yaml homeassistant:/config/logger.yaml 
 sudo docker cp $dir/config/secrets.yaml homeassistant:/config/secrets.yaml 
+sudo docker cp $dir/config/customize.yaml homeassistant:/config/customize.yaml 
+sudo docker cp $dir/addons/ homeassistant:/addons/
