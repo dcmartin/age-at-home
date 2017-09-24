@@ -34,7 +34,7 @@ if (! -e "$data") then
   # data of interest
   set fields = "METRO3,FMR,ROOMS,VALUE,BEDRMS,FMTBEDRMS,FMTMETRO3"
   # get a sample
-  echo "Cutting $fields from $data"
+  echo "Cutting $fields from $data and cleaning VALUE to non-negative"
   csvcut -c "$fields" "$out" \
     | csvgrep -c VALUE -i -m - \
     >! "$data.$$"
@@ -43,8 +43,8 @@ if (! -e "$data") then
     rm -f "$data.$$"
     exit
   endif
-  echo "Parsing FMTBEDRMS into BDRMS,BTRMS,EXTRA"
-  cat "$data.$$" |  sed "s/'\([0-9]*\) \([0-9]*\)[BRStudio]*\([+]*\)'/\1,\2,'\3'/" | sed 's/FMTBEDRMS/BDRMS,BTRMS,EXTRA/' | csvgrep -c BTRMS -r "[0-9]" | csvclean -v
+  echo "Parsing FMTBEDRMS into BDRMS,BTRMS,EXTRA and cleaning BTRMS to [0-9]"
+  cat "$data.$$" | sed "s/'\([0-9]*\) \([0-9]*\)[BRStudio]*\([+]*\)'/\1,\2,'\3'/" | sed 's/FMTBEDRMS/BDRMS,BTRMS,EXTRA/' | csvgrep -c BTRMS -r "[0-9]" | csvclean -v
   if ($status != 0 || ! -e "stdin_out.csv") then
     echo "Failed"
     rm -f "$data.$$" "stdin_out.csv"
