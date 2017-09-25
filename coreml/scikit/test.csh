@@ -60,5 +60,12 @@ python convert.py
 
 file "houses.mlmodel"
 
+set osver = ( `defaults read loginwindow SystemVersionStampAsString` )
+
+if ("$osver:r:r" == "10" && "$osver:r:e" == "13") then
+  python predict.py
+else
+  echo "Prediction requires macOS 10.13 ($osver)"
+endif
 cleanup:
   rm -f "*$$*"
