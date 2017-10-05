@@ -65,6 +65,10 @@ panel_iframe:
     title: 'mtn_rpi3'
     icon: mdi:image-filter-hdr
     url: 'http://192.168.1.40/dashboard'
+  terminal:
+    title: Terminal
+    icon: mdi:console
+    url: 'http://192.168.1.26:7681'
 
 #
 # MQTT
@@ -93,9 +97,9 @@ sensor solar:
       friendly_name: 'Sun angle'
       unit_of_measurement: 'degrees'
     sunrise:
-      value_template: '{{ strptime(states.sun.sun.attributes.next_rising,"%Y-%m-%dT%T%Z" ) | timestamp_custom("%I:%M %p") }}'
+      value_template: '{{ as_timestamp(states.sun.sun.attributes.next_rising) | timestamp_custom("%I:%M %p") }}'
     sunset:
-      value_template: '{{ strptime(states.sun.sun.attributes.next_setting,"%Y-%m-%dT%T%Z" ) | timestamp_custom("%I:%M %p") }}'
+      value_template: '{{ as_timestamp(states.sun.sun.attributes.next_setting) | timestamp_custom("%I:%M %p") }}'
 
 ###
 ### HORIZON
@@ -164,6 +168,10 @@ sensor solar:
 #  threshold: 1500
 #  threshold_tune: on
 
+#
+# MOTION PACKAGE w/ EXPOSED OPTIONS
+#
+
 #camera motion_rpi2:
 #  platform: motion
 #  text_right: %Y-%m-%d\n%T-%q
@@ -203,13 +211,13 @@ sensor solar:
 #  stream_localhost: off
 #  stream_limit: 0
 
-binary_sensor backyardmotion:
-  - platform: ffmpeg_motion
-    input: !secret backyardvideo
-    name: backyardmotion
-    device_class: motion
-    initial_state: false
-    changes: 5
+#binary_sensor backyardmotion:
+#  - platform: ffmpeg_motion
+#    input: !secret backyardvideo
+#    name: backyardmotion
+#    device_class: motion
+#    initial_state: false
+#    changes: 5
     # ffmpeg_bin: /usr/bin/ffmpeg
     # ffmpeg_bin: /usr/bin/avconv
     # extra_arguments: -pred 1 -q:v 2
@@ -454,7 +462,7 @@ zone fazenda:
   icon: mdi:home
   latitude: 37.174815
   longitude: -121.816325
-  radius: 100
+  radius: 125
   track_ios: true
 
 # school zones
@@ -541,34 +549,42 @@ history:
       - media_player
   include:
     entities:
-      - sensor.solar_angle
       - sensor.david_plex
-      - sensor.last_what
-      - sensor.last_where
-      - sensor.kitchen_what
-      - sensor.bathroom_what
-      - sensor.frontdoor_what
-      - sensor.road_what
-      - sensor.kitchen_empty_time
-      - sensor.bathroom_empty_time
-      - sensor.frontdoor_empty_time
-      - sensor.road_empty_time
-      - sensor.yes_activity_time
-      - sensor.no_activity_time
-      - sensor.play1_state
-      - sensor.play3_state
+      - binary_sensor.family_at_frontdoor
+      - binary_sensor.family_detected
+      - binary_sensor.family_in_bathroom
+      - binary_sensor.family_in_kitchen
+      - binary_sensor.family_on_road
+      - binary_sensor.exterior_motion
+      - binary_sensor.interior_motion
+      - sensor.bathroom_motion
+      - sensor.frontdoor_motion
+      - sensor.kitchen_motion
+      - sensor.road_motion
+      - binary_sensor.not_family
+      - binary_sensor.bayesian_test
       - device_tracker.dcmsiphone7
-      - device_tracker.kelisiphone7
       - device_tracker.ellensiphone5
       - device_tracker.halisiphone
       - device_tracker.ianmartinsiphone
+      - device_tracker.kelisiphone7
       - device_tracker.rileysiphone5
-      - binary_sensor.family_detected
-      - binary_sensor.family_in_kitchen
-      - binary_sensor.family_in_bathroom
-      - binary_sensor.family_at_frontdoor
-      - binary_sensor.family_on_road
-      - binary_sensor.not_family
+      - sensor.bathroom_what
+      - sensor.frontdoor_what
+      - sensor.kitchen_what
+      - sensor.road_what
+      - sensor.last_what
+      - sensor.last_when
+      - sensor.last_where
+      - sensor.play1_state
+      - sensor.play3_state
+      - sensor.solar_angle
+      - sensor.no_activity_time
+      - sensor.yes_activity_time
+      - sensor.bathroom_empty_time
+      - sensor.frontdoor_empty_time
+      - sensor.kitchen_empty_time
+      - sensor.road_empty_time
 
 # View all events in a logbook
 logbook:
@@ -807,7 +823,10 @@ sensor external_ip:
   - platform: rest
     resource: http://ip.jsontest.com
     name: externalip
-    value_template: '{{ value_json.ip }}'
+    value_template: >
+      {%- if value_json is defined -%} 
+        {{ value_json.ip | default("null") }}
+      {%- else -%} 0 {%- endif -%}
 
 ###
 ### HORIZON
@@ -817,63 +836,95 @@ sensor mtnrpi2_connectivity:
   - platform: rest
     resource: 'http://192.168.1.32/CGI/mtn-status.cgi?ip=39'
     name: MtnRpi2 Connectivity
-    value_template: '{{ value_json.connectivity | default("null") }}'
+    value_template: >
+      {%- if value_json is defined -%} {{ value_json.connectivity | default("null") }}
+      {%- else -%} 0 {%- endif -%}
 
 sensor mtnrpi2_exchange:
   - platform: rest
     resource: 'http://192.168.1.32/CGI/mtn-status.cgi?ip=39'
     name: MtnRpi2 Exchange
-    value_template: '{{ value_json.configuration.exchange_api | default("null") }}'
+    value_template: >
+      {%- if value_json is defined -%} {{ value_json.configuration.exchange_api | default("null") }}
+      {%- else -%} 0 {%- endif -%}
+
+
+## GETH
 
 sensor mtnrpi2_balance:
   - platform: rest
     resource: 'http://192.168.1.32/CGI/mtn-status.cgi?ip=39'
     name: MtnRpi2 Balance
-    value_template: '{{ value_json.geth[0].eth_balance | default("null") }}'
+    value_template: >
+      {%- if value_json is defined and value_json.geth != [] -%} 
+        {{ value_json.geth[0].eth_balance | default(0) }}
+      {%- else -%} 0 {%- endif -%}
 
 sensor mtnrpi2_net_peer_count:
   - platform: rest
     resource: 'http://192.168.1.32/CGI/mtn-status.cgi?ip=39'
     name: MtnRpi2 Net Peer Count
-    value_template: '{{ value_json.geth[0].net_peer_count | default("null") }}'
+    value_template: >
+      {%- if value_json is defined and value_json.geth != [] -%} 
+        {{ value_json.geth[0].net_peer_count | default("null") }}
+        {{ value_json.geth[0].eth_balance | default(0) }}
+      {%- else -%} 0 {%- endif -%}
 
 sensor mtnrpi2_eth_syncing:
   - platform: rest
     resource: 'http://192.168.1.32/CGI/mtn-status.cgi?ip=39'
     name: MtnRpi2 Eth Syncing
-    value_template: '{{ value_json.geth[0].eth_syncing | default("null") }}'
+    value_template: >
+      {%- if value_json is defined and value_json.geth != [] -%} 
+        {{ value_json.geth[0].eth_syncing | default("null") }}
+      {%- else -%} 0 {%- endif -%}
 
 sensor mtnrpi2_eth_blocknumber:
   - platform: rest
     resource: 'http://192.168.1.32/CGI/mtn-status.cgi?ip=39'
     name: MtnRpi2 Eth Blocknumber
-    value_template: '{{ value_json.geth[0].eth_block_number | default("null") }}'
+    value_template: >
+      {%- if value_json is defined and value_json.geth != [] -%} 
+        {{ value_json.geth[0].eth_block_number | default("null") }}
+      {%- else -%} 0 {%- endif -%}
 
 sensor mtnrpi2_eth_account:
   - platform: rest
     resource: 'http://192.168.1.32/CGI/mtn-status.cgi?ip=39'
     name: MtnRpi2 Eth Account
-    value_template: '{{ value_json.geth[0].eth_accounts[0] | default("null") }}'
+    value_template: >
+      {%- if value_json is defined and value_json.geth != [] -%} 
+        {{ value_json.geth[0].eth_accounts[0] | default("null") }}
+      {%- else -%} 0 {%- endif -%}
 
 # HORIZON DEVICE
 
-sensor mtnrpi2_device_accountid:
+sensor mtnrpi2_device_id:
   - platform: rest
     resource: 'http://192.168.1.32/CGI/mtn-device.cgi?ip=39'
     name: MtnRpi2 Device AccountID
-    value_template: '{{ value_json.account.id | default("null") }}'
+    value_template: >
+      {%- if value_json is defined -%} 
+        {{ value_json.id | default("null") }}
+      {%- else -%} 0 {%- endif -%}
 
-sensor mtnrpi2_device_email:
+sensor mtnrpi2_device_organization:
   - platform: rest
     resource: 'http://192.168.1.32/CGI/mtn-device.cgi?ip=39'
-    name: MtnRpi2 Device Email
-    value_template: '{{ value_json.account.email | default("null") }}'
+    name: MtnRpi2 Device Organization
+    value_template: >
+      {%- if value_json is defined -%} 
+        {{ value_json.organization | default("null") }}
+      {%- else -%} 0 {%- endif -%}
 
 sensor mtnrpi2_device_name:
   - platform: rest
     resource: 'http://192.168.1.32/CGI/mtn-device.cgi?ip=39'
     name: MtnRpi2 Device Name
-    value_template: '{{ value_json.name | default("null") }}'
+    value_template: >
+      {%- if value_json is defined -%} 
+        {{ value_json.name | default("null") }}
+      {%- else -%} 0 {%- endif -%}
 
 # HORIZON SERVICE/ATTRIBUTE
 
@@ -881,7 +932,10 @@ sensor mtnrpi2_attribute_count:
   - platform: rest
     resource: 'http://192.168.1.32/CGI/mtn-attribute.cgi?ip=39'
     name: MtnRpi2 Attribute Count
-    value_template: '{{ value_json.attributes | length }}'
+    value_template: >
+      {%- if value_json is defined -%} 
+        {{ ( value_json.attributes | length ) | default(0)  }}
+      {%- else -%} 0 {%- endif -%}
 
 # HORIZON AGREEMENT
 
@@ -889,13 +943,19 @@ sensor mtnrpi2_agreements_active_count:
   - platform: rest
     resource: 'http://192.168.1.32/CGI/mtn-agreement.cgi?ip=39'
     name: MtnRpi2 Agreements Active Count
-    value_template: '{{ value_json.agreements.active | length }}'
+    value_template: >
+      {%- if value_json is defined -%} 
+        {{ ( value_json.agreements.active | length ) | default(0) }}
+      {%- else -%} 0 {%- endif -%}
 
 sensor mtnrpi2_agreements_archive_count:
   - platform: rest
     resource: 'http://192.168.1.32/CGI/mtn-agreement.cgi?ip=39'
     name: MtnRpi2 Agreements Archive Count
-    value_template: '{{ value_json.agreements.archive | length }}'
+    value_template: >
+      {%- if value_json is defined -%} 
+        {{ ( value_json.agreements.archive | length ) | default(0) }}
+      {%- else -%} 0 {%- endif -%}
 
 # HORIZON WORKLOAD
 
@@ -903,7 +963,10 @@ sensor mtnrpi2_workloads_count:
   - platform: rest
     resource: 'http://192.168.1.32/CGI/mtn-workload.cgi?ip=39'
     name: MtnRpi2 Workloads Count
-    value_template: '{{ value_json.workloads | length }}'
+    value_template: >
+      {%- if value_json is defined -%} 
+        {{ ( value_json.workloads | length ) | default(0) }}
+      {%- else -%} 0 {%- endif -%}
 
 # HORIZON PUBLICKEY
 
@@ -911,7 +974,10 @@ sensor mtnrpi2_publickey:
   - platform: rest
     resource: 'http://192.168.1.32/CGI/mtn-publickey.cgi?ip=39'
     name: MtnRpi2 Publickey
-    value_template: '{{ value_json.pem | default("null") }}'
+    value_template: >
+      {%- if value_json is defined -%} 
+        {{ value_json.pem | default("null") }}
+      {%- else -%} null {%- endif -%}
 
 # AGREEMENT #0
 
@@ -920,34 +986,45 @@ sensor mtnrpi2_agreement0_name:
     resource: 'http://192.168.1.32/CGI/mtn-agreement.cgi?ip=39&id=0'
     name: 'MtnRpi2 Agreement0 Name'
     friendly_name: 'Name'
-    value_template: '{{ value_json.name }}'
+    value_template: >
+      {%- if value_json is defined -%} 
+        {{ value_json.name }}
+      {%- else -%} null {%- endif -%}
 
 sensor mtnrpi2_agreement0_id:
   - platform: rest
     resource: 'http://192.168.1.32/CGI/mtn-agreement.cgi?ip=39&id=0'
     name: 'MtnRpi2 Agreement0 ID'
     friendly_name: 'AgreementID'
-    value_template: '{{ value_json.current_agreement_id | default("null") }}'
+    value_template: >
+      {%- if value_json is defined -%} 
+        {{ value_json.current_agreement_id | default("null") }}
+      {%- else -%} null {%- endif -%}
 
 sensor mtnrpi2_agreement0_protocol:
   - platform: rest
     resource: 'http://192.168.1.32/CGI/mtn-agreement.cgi?ip=39&id=0'
     name: MtnRpi2 Agreement0 Protocol
     friendly_name: 'Protocol'
-    value_template: '{{ value_json.agreement_protocol | default("null") }}'
+    value_template: >
+      {%- if value_json is defined -%} 
+        {{ value_json.agreement_protocol | default("null") }}
+      {%- else -%} null {%- endif -%}
 
 sensor mtnrpi2_agreement0_consumer:
   - platform: rest
     resource: 'http://192.168.1.32/CGI/mtn-agreement.cgi?ip=39&id=0'
     name: 'MtnRpi2 Agreement0 Consumer'
     friendly_name: 'Consumer'
-    value_template: '{{ value_json.consumer_id | default("null") }}'
+    value_template: >
+      {%- if value_json is defined -%} 
+        {{ value_json.consumer_id | default("null") }}
+      {%- else -%} null {%- endif -%}
 
 sensor mtnrpi2_agreement0_create:
   - platform: rest
     resource: 'http://192.168.1.32/CGI/mtn-agreement.cgi?ip=39&id=0'
     name: 'MtnRpi2 Agreement0 Create'
-    # value_template: '{{ value_json.agreement_creation_time | timestamp_custom("%a %b %d @ %I:%M %p") }}'
     value_template: >
       {%- if (states.sensor.mtnrpi2_agreements_active_count != None) -%}
         {%- if (states.sensor.mtnrpi2_agreements_active_count.state | int) > 0 -%}
@@ -963,9 +1040,8 @@ sensor mtnrpi2_agreement0_accept:
   - platform: rest
     resource: 'http://192.168.1.32/CGI/mtn-agreement.cgi?ip=39&id=0'
     name: 'MtnRpi2 Agreement0 Accept'
-    # value_template: '{{ value_json.agreement_accepted_time | timestamp_custom("%a %b %d @ %I:%M %p") }}'
     value_template: >
-      {%- if (states.sensor.mtnrpi2_agreements_active_count != None) -%}
+      {%- if value_json is defined and (states.sensor.mtnrpi2_agreements_active_count != None) -%}
         {%- if (states.sensor.mtnrpi2_agreements_active_count.state | int) > 0 -%}
           {{ value_json.agreement_accepted_time | timestamp_custom("%a %b %d @ %I:%M %p") }}
         {%- else -%}
@@ -979,9 +1055,8 @@ sensor mtnrpi2_agreement0_finalize:
   - platform: rest
     resource: 'http://192.168.1.32/CGI/mtn-agreement.cgi?ip=39&id=0'
     name: 'MtnRpi2 Agreement0 Finalize'
-    # value_template: '{{ value_json.agreement_finalized_time | timestamp_custom("%a %b %d @ %I:%M %p") }}'
     value_template: >
-      {%- if (states.sensor.mtnrpi2_agreements_active_count != None) -%}
+      {%- if value_json is defined and (states.sensor.mtnrpi2_agreements_active_count != None) -%}
         {%- if (states.sensor.mtnrpi2_agreements_active_count.state | int) > 0 -%}
           {{ value_json.agreement_finalized_time | timestamp_custom("%a %b %d @ %I:%M %p") }}
         {%- else -%}
@@ -997,7 +1072,7 @@ sensor mtnrpi2_agreement0_receive:
     name: 'MtnRpi2 Agreement0 Receive'
     # value_template: '{{ value_json.agreement_data_received_time | timestamp_custom("%a %b %d @ %I:%M %p") }}'
     value_template: >
-      {%- if (states.sensor.mtnrpi2_agreements_active_count != None) -%}
+      {%- if value_json is defined and (states.sensor.mtnrpi2_agreements_active_count != None) -%}
         {%- if (states.sensor.mtnrpi2_agreements_active_count.state | int) > 0 -%}
           {{ value_json.agreement_data_received_time | timestamp_custom("%a %b %d @ %I:%M %p") }}
         {%- else -%}
@@ -1013,7 +1088,7 @@ sensor mtnrpi2_agreement0_start:
     name: 'MtnRpi2 Agreement3 Start'
     # value_template: '{{ value_json.agreement_execution_start_time | timestamp_custom("%a %b %d @ %I:%M %p") }}'
     value_template: >
-      {%- if (states.sensor.mtnrpi2_agreements_active_count != None) -%}
+      {%- if value_json is defined and (states.sensor.mtnrpi2_agreements_active_count != None) -%}
         {%- if (states.sensor.mtnrpi2_agreements_active_count.state | int) > 3 -%}
           {{ value_json.agreement_execution_start_time | timestamp_custom("%a %b %d @ %I:%M %p") }}
         {%- else -%}
@@ -1053,7 +1128,6 @@ sensor mtnrpi2_agreement1_create:
   - platform: rest
     resource: 'http://192.168.1.32/CGI/mtn-agreement.cgi?ip=39&id=1'
     name: 'MtnRpi2 Agreement1 Create'
-    # value_template: '{{ value_json.agreement_creation_time | timestamp_custom("%a %b %d @ %I:%M %p") }}'
     value_template: >
       {%- if (states.sensor.mtnrpi2_agreements_active_count != None) -%}
         {%- if (states.sensor.mtnrpi2_agreements_active_count.state | int) > 1 -%}
@@ -1159,7 +1233,6 @@ sensor mtnrpi2_agreement2_create:
   - platform: rest
     resource: 'http://192.168.1.32/CGI/mtn-agreement.cgi?ip=39&id=2'
     name: 'MtnRpi2 Agreement2 Create'
-    # value_template: '{{ value_json.agreement_creation_time | timestamp_custom("%a %b %d @ %I:%M %p") }}'
     value_template: >
       {%- if (states.sensor.mtnrpi2_agreements_active_count != None) -%}
         {%- if (states.sensor.mtnrpi2_agreements_active_count.state | int) > 2 -%}
@@ -1265,7 +1338,6 @@ sensor mtnrpi2_agreement3_create:
   - platform: rest
     resource: 'http://192.168.1.32/CGI/mtn-agreement.cgi?ip=39&id=3'
     name: 'MtnRpi2 Agreement3 Create'
-    # value_template: '{{ value_json.agreement_creation_time | timestamp_custom("%a %b %d @ %I:%M %p") }}'
     value_template: >
       {%- if (states.sensor.mtnrpi2_agreements_active_count != None) -%}
         {%- if (states.sensor.mtnrpi2_agreements_active_count.state | int) > 3 -%}
@@ -1371,7 +1443,6 @@ sensor mtnrpi2_agreement4_create:
   - platform: rest
     resource: 'http://192.168.1.32/CGI/mtn-agreement.cgi?ip=39&id=4'
     name: 'MtnRpi2 Agreement4 Create'
-    # value_template: '{{ value_json.agreement_creation_time | timestamp_custom("%a %b %d @ %I:%M %p") }}'
     value_template: >
       {%- if (states.sensor.mtnrpi2_agreements_active_count != None) -%}
         {%- if (states.sensor.mtnrpi2_agreements_active_count.state | int) > 4 -%}
@@ -1477,7 +1548,6 @@ sensor mtnrpi2_agreement5_create:
   - platform: rest
     resource: 'http://192.168.1.32/CGI/mtn-agreement.cgi?ip=39&id=5'
     name: 'MtnRpi2 Agreement5 Create'
-    # value_template: '{{ value_json.agreement_creation_time | timestamp_custom("%a %b %d @ %I:%M %p") }}'
     value_template: >
       {%- if (states.sensor.mtnrpi2_agreements_active_count != None) -%}
         {%- if (states.sensor.mtnrpi2_agreements_active_count.state | int) > 5 -%}
@@ -1589,49 +1659,120 @@ sensor count_automations:
   - platform: mqtt
     name: count_automations
     state_topic: 'state/automation/+'
-    value_template: '{{ value_json.entities | length  }}'
+    value_template: >
+      {{ value_json['items'] | length }}
 
 sensor count_binary_sensors:
   - platform: mqtt
     name: count_binary_sensors
     state_topic: 'state/binary_sensor/+'
-    value_template: '{{ value_json.entities | length  }}'
+    value_template: >
+      {{ value_json['items'] | length }}
 
 sensor count_cameras:
   - platform: mqtt
     name: count_cameras
     state_topic: 'state/camera/+'
-    value_template: '{{ value_json.entities | length  }}'
+    value_template: >
+      {{ value_json['items'] | length }}
 
 sensor count_device_trackers:
   - platform: mqtt
     name: count_device_trackers
     state_topic: 'state/device_tracker/+'
-    value_template: '{{ value_json.entities | length  }}'
+    value_template: >
+      {{ value_json['items'] | length }}
+
+sensor triggered_template:
+  - platform: template
+    sensors:
+      triggered_device_trackers:
+        entity_id: automation.publish_device_trackers
+        value_template: >
+         {{ as_timestamp(states.automation.publish_device_trackers.attributes.last_triggered) | timestamp_custom("%a %b %d @ %I:%M %p") }}
 
 sensor count_media_players:
   - platform: mqtt
     name: count_media_players
     state_topic: 'state/media_player/+'
-    value_template: '{{ value_json.entities | length  }}'
+    value_template: >
+      {{ value_json['items'] | length }}
 
 sensor count_sensors:
   - platform: mqtt
     name: count_sensors
     state_topic: 'state/sensor/+'
-    value_template: '{{ value_json.entities | length  }}'
+    value_template: >
+      {{ value_json['items'] | length }}
 
 sensor count_zones:
   - platform: mqtt
     name: count_zones
     state_topic: 'state/zone/+'
-    value_template: '{{ value_json.entities | length  }}'
+    value_template: >
+      {{ value_json['items'] | length }}
 
 ##
-## LAST PRESENCE (MQTT)
+## LAST ACTIVITY
 ##
+
+sensor last_what:
+  - platform: mqtt
+    state_topic: 'presence/+'
+    name: last_what
+    value_template: '{% if value_json is defined %} {{ value_json.class }} {% else %} "nothing" {% endif %}'
+
+sensor last_who:
+  - platform: mqtt
+    state_topic: 'presence/+'
+    name: last_who
+    value_template: '{% if value_json is defined %} {{ value_json.model }} {% else %} "nobody" {% endif %}'
+
+sensor last_why:
+  - platform: mqtt
+    state_topic: 'presence/+'
+    name: last_why
+    value_template: '{% if value_json is defined %} {{ value_json.score }} {% else %} 0.0 {% endif %}'
+
+sensor last_date:
+  - platform: mqtt
+    state_topic: 'presence/+'
+    name: last_why
+    value_template: '{% if value_json is defined -%} {{ value_json.date|int }} {%- else -%} -1 {%- endif -%}'
+
+sensor last_where:
+  - platform: mqtt
+    state_topic: 'presence/+'
+    name: last_where
+    value_template: '{% if value_json is defined %} {{ value_json.location }} {% else %} "nowhere" {% endif %}'
+
+sensor last_ago:
+  - platform: mqtt
+    state_topic: 'presence/+'
+    name: last_ago
+    unit_of_measurement: seconds
+    value_template: '{% if value_json is defined %} {{ (now().timestamp()|int) - (value_json.date|int) }} {% else %} 0 {% endif %}'
+    icon_template: >-
+      {% if (states.sensor.last_ago|int) > 300 %}
+        mdi:timer-off
+      {% else %}
+        mdi:timer
+      {% endif %}
+
+sensor last_when:
+  - platform: mqtt
+    state_topic: 'presence/+'
+    name: last_when
+    value_template: '{% if value_json is defined %} {{ value_json.date | timestamp_custom("%a %b %d @ %I:%M %p") }} {% else %} "never" {% endif %}'
+    icon_template: >-
+      {% if ((states.sensor.last_date.state|int) | timestamp_custom("%p")) == "PM" %}
+        mdi:weather-night
+      {% else %}
+        mdi:weather-sunny
+      {% endif %}
 
 # CAMERAS (JPEG)
+
 camera last_image:
   - platform: mqtt
     name: last_image
@@ -1648,99 +1789,37 @@ camera last_image_cropped:
     icon: mdi:image
     topic: 'image-cropped/+'
 
-# LAST
-
-sensor last_ago:
-  - platform: mqtt
-    name: last_ago
-    unit_of_measurement: seconds
-    state_topic: 'presence/+'
-    value_template: '{{ (now().timestamp() | int) - value_json.date }}'
-
-sensor last_how:
-  - platform: mqtt
-    icon: mdi:numeric
-    state_topic: 'presence/+'
-    name: last_how
-    value_template: '{{ value_json.score }}'
-
-sensor last_where:
-  - platform: mqtt
-    icon: mdi:house
-    state_topic: 'presence/+'
-    name: last_where
-    value_template: '{{ value_json.location }}'
-
-sensor last_what:
-  - platform: mqtt
-    icon: mdi:human
-    state_topic: 'presence/+'
-    name: last_what
-    value_template: '{{ value_json.class }}'
-
-sensor last_who:
-  - platform: mqtt
-    icon: mdi:comment-question-outline
-    state_topic: 'presence/+'
-    name: last_who
-    value_template: '{{ value_json.model }}'
-
-sensor last_when:
-  - platform: mqtt
-    icon: mdi:clock
-    state_topic: 'presence/+'
-    name: last_when
-    value_template: '{{ value_json.date | timestamp_custom("%a %b %d @ %I:%M %p") }}'
-
 ##
 ## KITCHEN
 ##
 
-# DATA (JSON)
-sensor presence_kitchen:
-  - platform: mqtt
-    expire_after: 30 # seconds
-    name: presence_kitchen
-    state_topic: 'presence/kitchen'
-    value_template: >
-      {{ value != "unknown" }}
-
 sensor kitchen_what:
   - platform: mqtt
     name: kitchen_what
-    icon: mdi:human-greeting
     state_topic: 'presence/kitchen'
-    value_template: '{{ value_json.class | default("nothing") }}'
+    value_template: '{% if value_json is defined %} {{ value_json.class }} {% else %} "nothing" {% endif %}'
 
 sensor kitchen_who:
   - platform: mqtt
     name: kitchen_who
-    icon: mdi:human-greeting
     state_topic: 'presence/kitchen'
-    value_template: '{{ value_json.model | default("none") }}'
+    value_template: '{% if value_json is defined %} {{ value_json.model }} {% else %} "nobody" {% endif %}'
 
 sensor kitchen_why:
   - platform: mqtt
     name: kitchen_why
+    state_topic: 'presence/kitchen'
+    value_template: '{% if value_json is defined %} {{ value_json.score }} {% else %} 0.0 {% endif %}'
+
+sensor kitchen_date:
+  - platform: mqtt
+    name: kitchen_date
     icon: mdi:human-greeting
     state_topic: 'presence/kitchen'
-    value_template: '{{ value_json.score | default(0.0) }}'
-
-sensor kitchen_when:
-  - platform: mqtt
-    name: kitchen_when
-    icon: mdi:human-greeting
-    state_topic: 'presence/kitchen'
-    value_template: '{{ value_json.date | timestamp_custom("%I:%M %p") }}'
-
-sensor kitchen_ago:
-  - platform: mqtt
-    name: kitchen_ago
-    unit_of_measurement: seconds
-    state_topic: 'presence/kitchen'
-    value_template: '{{ (now().timestamp() | int) - value_json.date }}'
+    value_template: '{% if value_json is defined %} {{ value_json.date|int }} {% else %} -1 {% endif %}'
 
 # CAMERA (JPEG)
+
 camera kitchen_image:
   - platform: mqtt
     name: kitchen_image
@@ -1757,62 +1836,37 @@ camera kitchen_image_cropped:
     icon: mdi:image
     topic: 'image-cropped/kitchen'
 
-# EMPTY TIME
-sensor kitchen_empty_time:
-  - platform: history_stats
-    icon: mdi:timer
-    name: kitchen_empty_time
-    entity_id: sensor.presence_kitchen # expires
-    state: False
-    type: time
-    start: '{{ now().replace(hour=0).replace(minute=0).replace(second=0) }}'
-    end: '{{ now() }}'
-
 ##
 ## BATHROOM
 ##
-
-# DATA (JSON)
-sensor presence_bathroom:
-  - platform: mqtt
-    expire_after: 30 # MOTION_EVENT_GAP == 5 (seconds)
-    name: presence_bathroom
-    state_topic: 'presence/bathroom'
-    value_template: >
-      {{ value != "unknown" }}
 
 sensor bathroom_what:
   - platform: mqtt
     name: bathroom_what
     state_topic: 'presence/bathroom'
-    value_template: '{{ value_json.class | default("nothing") }}'
+    value_template: '{% if value_json is defined %} {{ value_json.class }} {% else %} "nothing" {% endif %}'
 
 sensor bathroom_who:
   - platform: mqtt
     name: bathroom_who
     state_topic: 'presence/bathroom'
-    value_template: '{{ value_json.model | default("none") }}'
+    value_template: '{% if value_json is defined %} {{ value_json.model }} {% else %} "nobody" {% endif %}'
 
 sensor bathroom_why:
   - platform: mqtt
     name: bathroom_why
     state_topic: 'presence/bathroom'
-    value_template: '{{ value_json.score | default(0.0) }}'
+    value_template: '{% if value_json is defined %} {{ value_json.score }} {% else %} 0.0 {% endif %}'
 
-sensor bathroom_when:
+sensor bathroom_date:
   - platform: mqtt
-    name: bathroom_when
+    name: bathroom_date
+    icon: mdi:human-greeting
     state_topic: 'presence/bathroom'
-    value_template: '{{ value_json.date | timestamp_custom("%I:%M %p") }}'
-
-sensor bathroom_ago:
-  - platform: mqtt
-    name: bathroom_ago
-    unit_of_measurement: seconds
-    state_topic: 'presence/bathroom'
-    value_template: '{{ (now().timestamp() | int) - value_json.date }}'
+    value_template: '{% if value_json is defined %} {{ value_json.date|int }} {% else %} -1 {% endif %}'
 
 # CAMERA (JPEG)
+
 camera bathroom_image:
   - platform: mqtt
     name: bathroom_image
@@ -1828,66 +1882,37 @@ camera bathroom_image_cropped:
     name: bathroom_image_cropped
     topic: 'image-cropped/bathroom'
 
-# EMPTY TIME
-sensor bathroom_empty_time:
-  - platform: history_stats
-    icon: mdi:timer
-    name: bathroom_empty_time
-    entity_id: sensor.presence_bathroom # expires
-    state: False
-    type: time
-    start: '{{ now().replace(hour=0).replace(minute=0).replace(second=0) }}'
-    end: '{{ now() }}'
-
 ##
 ## ROAD
 ##
 
-# DATA (JSON)
-sensor presence_road:
-  - platform: mqtt
-    expire_after: 30 # seconds
-    name: presence_road
-    state_topic: 'presence/road'
-    value_template: >
-      {{ value != "unknown" }}
-
 sensor road_what:
   - platform: mqtt
     name: road_what
-    icon: mdi:human-greeting
     state_topic: 'presence/road'
-    value_template: '{{ value_json.class | default("nothing") }}'
+    value_template: '{% if value_json is defined %} {{ value_json.class }} {% else %} "nothing" {% endif %}'
 
 sensor road_who:
   - platform: mqtt
     name: road_who
-    icon: mdi:human-greeting
     state_topic: 'presence/road'
-    value_template: '{{ value_json.model | default("none") }}'
+    value_template: '{% if value_json is defined %} {{ value_json.model }} {% else %} "nobody" {% endif %}'
 
 sensor road_why:
   - platform: mqtt
     name: road_why
+    state_topic: 'presence/road'
+    value_template: '{% if value_json is defined %} {{ value_json.score }} {% else %} 0.0 {% endif %}'
+
+sensor road_date:
+  - platform: mqtt
+    name: road_date
     icon: mdi:human-greeting
     state_topic: 'presence/road'
-    value_template: '{{ value_json.score | default(0.0) }}'
-
-sensor road_when:
-  - platform: mqtt
-    name: road_when
-    icon: mdi:human-greeting
-    state_topic: 'presence/road'
-    value_template: '{{ value_json.date | timestamp_custom("%I:%M %p") }}'
-
-sensor road_ago:
-  - platform: mqtt
-    name: road_ago
-    unit_of_measurement: seconds
-    state_topic: 'presence/road'
-    value_template: '{{ (now().timestamp() | int) - value_json.date }}'
+    value_template: '{% if value_json is defined %} {{ value_json.date|int }} {% else %} -1 {% endif %}'
 
 # CAMERA (JPEG)
+
 camera road_image:
   - platform: mqtt
     name: road_image
@@ -1904,64 +1929,132 @@ camera road_image_cropped:
     name: road_image_cropped
     topic: 'image-cropped/road'
 
-# EMPTY TIME
-sensor road_empty_time:
-  - platform: history_stats
-    icon: mdi:timer
-    name: road_empty_time
-    entity_id: sensor.presence_road # expires
-    state: False
-    type: time
-    start: '{{ now().replace(hour=0).replace(minute=0).replace(second=0) }}'
-    end: '{{ now() }}'
- 
 ##
 ## FRONTDOOR
 ##
 
-# DATA (JSON)
-sensor presence_frontdoor:
-  - platform: mqtt
-    expire_after: 30 # seconds
-    name: presence_frontdoor
-    state_topic: 'presence/frontdoor'
-    value_template: >
-      {{ value != "unknown" }}
-
 sensor frontdoor_what:
   - platform: mqtt
     name: frontdoor_what
-    icon: mdi:human-greeting
     state_topic: 'presence/frontdoor'
-    value_template: '{{ value_json.class | default("nothing") }}'
+    value_template: '{% if value_json is defined %} {{ value_json.class }} {% else %} "nothing" {% endif %}'
 
 sensor frontdoor_who:
   - platform: mqtt
     name: frontdoor_who
-    icon: mdi:human-greeting
     state_topic: 'presence/frontdoor'
-    value_template: '{{ value_json.model | default("none") }}'
+    value_template: '{% if value_json is defined %} {{ value_json.model }} {% else %} "nobody" {% endif %}'
 
 sensor frontdoor_why:
   - platform: mqtt
     name: frontdoor_why
+    state_topic: 'presence/frontdoor'
+    value_template: '{% if value_json is defined %} {{ value_json.score }} {% else %} 0.0 {% endif %}'
+
+sensor frontdoor_date:
+  - platform: mqtt
+    name: frontdoor_date
     icon: mdi:human-greeting
     state_topic: 'presence/frontdoor'
-    value_template: '{{ value_json.score | default(0.0) }}'
+    value_template: '{% if value_json is defined %} {{ value_json.date|int }} {% else %} -1 {% endif %}'
 
-sensor frontdoor_when:
-  - platform: mqtt
-    name: frontdoor_when
-    icon: mdi:human-greeting
-    state_topic: 'presence/frontdoor'
-    value_template: '{{ value_json.date | timestamp_custom("%I:%M %p") }}'
+## OLD
 
-sensor frontdoor_ago:
+sensor kitchen_ago1:
   - platform: mqtt
-    name: frontdoor_ago
+    state_topic: 'presence/kitchen'
+    name: kitchen_ago1
     unit_of_measurement: seconds
+    value_template: '{% if value_json is defined %} {{ (now().timestamp()|int) - (value_json.date|int) }} {% else %} -1 {% endif %}'
+    icon_template: >-
+      {%- if (states.sensor.kitchen_ago1.state|int) > 300 -%}
+      mdi:timer-off {% else %} mdi:timer {% endif %}
+
+sensor bathroom_ago1:
+  - platform: mqtt
+    state_topic: 'presence/bathroom'
+    name: bathroom_ago1
+    unit_of_measurement: seconds
+    value_template: '{% if value_json is defined %} {{ (now().timestamp()|int) - (value_json.date|int) }} {% else %} -1 {% endif %}'
+    icon_template: >-
+      {%- if (states.sensor.bathroom_ago1.state|int) > 300 -%}
+      mdi:timer-off {% else %} mdi:timer {% endif %}
+
+sensor frontdoor_ago1:
+  - platform: mqtt
     state_topic: 'presence/frontdoor'
-    value_template: '{{ (now().timestamp() | int) - value_json.date }}'
+    name: frontdoor_ago1
+    unit_of_measurement: seconds
+    value_template: '{% if value_json is defined %} {{ (now().timestamp()|int) - (value_json.date|int) }} {% else %} -1 {% endif %}'
+    icon_template: >-
+      {% if (states.sensor.frontdoor_ago1.state|int) > 300 %}
+        mdi:timer-off
+      {% else %}
+        mdi:timer
+      {% endif %}
+
+sensor road_ago1:
+  - platform: mqtt
+    state_topic: 'presence/road'
+    name: road_ago1
+    unit_of_measurement: seconds
+    value_template: '{% if value_json is defined %} {{ (now().timestamp()|int) - (value_json.date|int) }} {% else %} -1 {% endif %}'
+    icon_template: >-
+      {% if (states.sensor.road_ago1.state|int) > 300 %}
+        mdi:timer-off
+      {% else %}
+        mdi:timer
+      {% endif %}
+
+sensor kitchen_when1:
+  - platform: mqtt
+    state_topic: 'presence/kitchen'
+    name: kitchen_when1
+    value_template: '{% if value_json is defined %} {{ value_json.date | timestamp_custom("%a %b %d @ %I:%M %p") }} {% else %} "never" {% endif %}'
+    icon_template: >-
+      {% if ((states.sensor.kitchen_date.state|int) | timestamp_custom("%p")) == "PM" %}
+        mdi:weather-night
+      {% else %}
+        mdi:weather-sunny
+      {% endif %}
+
+sensor bathroom_when1:
+  - platform: mqtt
+    state_topic: 'presence/bathroom'
+    name: bathroom_when1
+    value_template: '{% if value_json is defined %} {{ value_json.date | timestamp_custom("%a %b %d @ %I:%M %p") }} {% else %} "never" {% endif %}'
+    icon_template: >-
+      {% if ((states.sensor.bathroom_date.state|int) | timestamp_custom("%p")) == "PM" %}
+        mdi:weather-night
+      {% else %}
+        mdi:weather-sunny
+      {% endif %}
+
+sensor frontdoor_when1:
+  - platform: mqtt
+    state_topic: 'presence/frontdoor'
+    name: frontdoor_when1
+    value_template: '{% if value_json is defined %} {{ value_json.date | timestamp_custom("%a %b %d @ %I:%M %p") }} {% else %} "never" {% endif %}'
+    icon_template: >-
+      {% if ((states.sensor.frontdoor_date.state|int) | timestamp_custom("%p")) == "PM" %}
+        mdi:weather-night
+      {% else %}
+        mdi:weather-sunny
+      {% endif %}
+
+sensor road_when1:
+  - platform: mqtt
+    state_topic: 'presence/road'
+    name: road_when1
+    value_template: '{% if value_json is defined %} {{ value_json.date | timestamp_custom("%a %b %d @ %I:%M %p") }} {% else %} "never" {% endif %}'
+    icon_template: >-
+      {% if ((states.sensor.road_date.state|int) | timestamp_custom("%p")) == "PM" %}
+        mdi:weather-night
+      {% else %}
+        mdi:weather-sunny
+      {% endif %}
+
+# CAMERA (JPEG)
 
 camera frontdoor_image:
   - platform: mqtt
@@ -1969,7 +2062,6 @@ camera frontdoor_image:
     icon: mdi:image
     topic: 'image/frontdoor'
 
-# CAMERA (JPEG)
 camera frontdoor_image_annotated:
   - platform: mqtt
     name: frontdoor_image_annotated
@@ -1982,62 +2074,155 @@ camera frontdoor_image_cropped:
     icon: mdi:image
     topic: 'image-cropped/frontdoor'
 
-# EMPTY TIME
-sensor frontdoor_empty_time:
+##
+## BINARY MOTION SENSORS (EXPIRE)
+##
+
+sensor aah_motion_template:
+  - platform: template
+    sensors:
+      kitchen_ago:
+        unit_of_measurement: seconds
+        entity_id:
+          - sensor.kitchen_date
+        value_template: '{%- if states.sensor.kitchen_date is defined -%} {{ (now().timestamp()|int) - (states.sensor.kitchen_date.state|int) }} {%- else -%} -1 {%- endif -%}'
+        icon_template: '{%- if (states.sensor.bathroom_ago.state|int) > 300 -%} mdi:timer-off {%- else -%} mdi:timer {%- endif -%}'
+      kitchen_when:
+        entity_id:
+          - sensor.kitchen_date
+        value_template: '{% if states.sensor.kitchen_date is defined %} {{ (states.sensor.kitchen_date.state|int) | timestamp_custom("%a %b %d @ %I:%M %p") }} {% else %} "never" {% endif %}'
+        icon_template: '{%-if ((states.sensor.kitchen_date.state|int) | timestamp_custom("%p")) == "PM" -%} mdi:weather-night {%- else -%} mdi:weather-sunny {%- endif -%}'
+      bathroom_ago:
+        unit_of_measurement: seconds
+        entity_id:
+          - sensor.bathroom_date
+        value_template: '{%- if states.sensor.bathroom_date is defined -%} {{ (now().timestamp()|int) - (states.sensor.bathroom_date.state|int) }} {%- else -%} -1 {%- endif -%}'
+        icon_template: '{%- if (states.sensor.bathroom_ago.state|int) > 300 -%} mdi:timer-off {%- else -%} mdi:timer {%- endif -%}'
+      bathroom_when:
+        entity_id:
+          - sensor.bathroom_date
+        value_template: '{% if states.sensor.bathroom_date is defined %} {{ (states.sensor.bathroom_date.state|int) | timestamp_custom("%a %b %d @ %I:%M %p") }} {% else %} "never" {% endif %}'
+        icon_template: '{%-if ((states.sensor.bathroom_date.state|int) | timestamp_custom("%p")) == "PM" -%} mdi:weather-night {%- else -%} mdi:weather-sunny {%- endif -%}'
+      frontdoor_ago:
+        unit_of_measurement: seconds
+        entity_id:
+          - sensor.frontdoor_date
+        value_template: '{%- if states.sensor.frontdoor_date is defined -%} {{ (now().timestamp()|int) - (states.sensor.frontdoor_date.state|int) }} {%- else -%} -1 {%- endif -%}'
+        icon_template: '{%- if (states.sensor.bathroom_ago.state|int) > 300 -%} mdi:timer-off {%- else -%} mdi:timer {%- endif -%}'
+      frontdoor_when:
+        entity_id:
+          - sensor.frontdoor_date
+        value_template: '{% if states.sensor.frontdoor_date is defined %} {{ (states.sensor.frontdoor_date.state|int) | timestamp_custom("%a %b %d @ %I:%M %p") }} {% else %} "never" {% endif %}'
+        icon_template: '{%-if ((states.sensor.frontdoor_date.state|int) | timestamp_custom("%p")) == "PM" -%} mdi:weather-night {%- else -%} mdi:weather-sunny {%- endif -%}'
+      road_ago:
+        unit_of_measurement: seconds
+        entity_id:
+          - sensor.road_date
+        value_template: '{%- if states.sensor.road_date is defined -%} {{ (now().timestamp()|int) - (states.sensor.road_date.state|int) }} {%- else -%} -1 {%- endif -%}'
+        icon_template: '{%- if (states.sensor.bathroom_ago.state|int) > 300 -%} mdi:timer-off {%- else -%} mdi:timer {%- endif -%}'
+      road_when:
+        entity_id:
+          - sensor.road_date
+        value_template: '{% if states.sensor.road_date is defined %} {{ (states.sensor.road_date.state|int) | timestamp_custom("%a %b %d @ %I:%M %p") }} {% else %} "never" {% endif %}'
+        icon_template: '{%-if ((states.sensor.road_date.state|int) | timestamp_custom("%p")) == "PM" -%} mdi:weather-night {%- else -%} mdi:weather-sunny {%- endif -%}'
+
+binary_sensor motion_sensors:
+  - platform: template
+    sensors:
+      kitchen_motion:
+        entity_id:
+          - sensor.kitchen_ago
+        value_template: >
+          {% if states.sensor.kitchen_ago is defined and (states.sensor.kitchen_ago.state|int) >= 0 and (states.sensor.kitchen_ago.state|int) <= 30 %} True {%- else -%} False {%- endif -%}
+      bathroom_motion:
+        entity_id:
+          - sensor.bathroom_ago
+        value_template: >
+          {% if states.sensor.bathroom_ago is defined and (states.sensor.bathroom_ago.state|int) >= 0 and (states.sensor.bathroom_ago.state|int) <= 30 %} True {%- else -%} False {%- endif -%}
+      frontdoor_motion:
+        entity_id:
+          - sensor.frontdoor_ago
+        value_template: >
+          {% if states.sensor.frontdoor_ago is defined and (states.sensor.frontdoor_ago.state|int) >= 0 and (states.sensor.frontdoor_ago.state|int) <= 30 %} True {%- else -%} False {%- endif -%}
+      road_motion:
+        entity_id:
+          - sensor.road_ago
+        value_template: >
+          {% if states.sensor.road_ago is defined and (states.sensor.road_ago.state|int) >= 0 and (states.sensor.road_ago.state|int) <= 30 %} True {%- else -%} False {%- endif -%}
+
+##
+## HISTORICAL STATISTICS
+##
+
+sensor kitchen_event_count:
+  - platform: history_stats
+    name: kitchen_event_count
+    entity_id: binary_sensor.kitchen_motion
+    state: True
+    unit_of_measurement: 'events'
+    type: count
+    start: '{{ now().replace(hour=0).replace(minute=0).replace(second=0) }}'
+    end: '{{ now() }}'
+
+sensor kitchen_empty_time:
   - platform: history_stats
     icon: mdi:timer
-    name: frontdoor_empty_time
-    entity_id: sensor.presence_frontdoor # expires
-    state: False
+    name: kitchen_empty_time
+    entity_id: binary_sensor.kitchen_motion # expires
+    state: True
     type: time
     start: '{{ now().replace(hour=0).replace(minute=0).replace(second=0) }}'
     end: '{{ now() }}'
 
-#
-# DETECT ACTIVITY
-#
-
-sensor yes_activity_time:
+sensor bathroom_empty_time:
   - platform: history_stats
     icon: mdi:timer
-    name: yes_activity_time
-    entity_id: binary_sensor.yes_activity
-    state: 'on'
-    type: ratio
+    name: bathroom_empty_time
+    entity_id: sensor.bathroom_motion # expires
+    state: True
+    type: time
     start: '{{ now().replace(hour=0).replace(minute=0).replace(second=0) }}'
     end: '{{ now() }}'
 
-sensor no_activity_time:
+sensor frontdoor_empty_time:
   - platform: history_stats
     icon: mdi:timer
-    name: no_activity_time
-    entity_id: binary_sensor.no_activity
-    state: 'on'
-    type: ratio
+    name: frontdoor_empty_time
+    entity_id: sensor.frontdoor_motion # expires
+    state: True
+    type: time
     start: '{{ now().replace(hour=0).replace(minute=0).replace(second=0) }}'
     end: '{{ now() }}'
+
+sensor road_empty_time:
+  - platform: history_stats
+    icon: mdi:timer
+    name: road_empty_time
+    entity_id: sensor.road_motion # expires
+    state: True
+    type: time
+    start: '{{ now().replace(hour=0).replace(minute=0).replace(second=0) }}'
+    end: '{{ now() }}'
+ 
+#
+# DETECT FAMILY
+#
 
 binary_sensor activity_template:
   - platform: template
     sensors:
-      yes_activity:
+      interior_motion:
         entity_id:
-          - sensor.last_what
+          - binary_sensor.kitchen_motion
+          - binary_sensor.bathroom_motion
+          - binary_sensor.frontdoor_motion
         value_template: >
-          {{
-              states.sensor.last_what.state != 'unknown'
-          }}
-      no_activity:
+          {{ states.binary_sensor.kitchen_motion.state or states.binary_sensor.bathroom_motion.state or states.binary_sensor.frontdoor_motion.state }} 
+      exterior_motion:
         entity_id:
-          - sensor.last_what
+          - binary_sensor.road_motion
         value_template: >
-          {{
-              states.sensor.last_what.state == 'unknown'
-          }}
-
-#
-# DETECT FAMILY
-#
+          {{ states.binary_sensor.road_motion.state }}
 
 binary_sensor family_template:
   - platform: template
@@ -2065,7 +2250,7 @@ binary_sensor family_template:
                states.sensor.last_what.state == 'ian' or
                states.sensor.last_what.state == 'riley' or
                states.sensor.last_what.state == 'ellen' ) and 
-             ( states.sensor.last_where.state == 'kitchen' ) }}
+             ( states.sensor.last_where.state == 'bathroom' ) }}
       family_at_frontdoor:
         entity_id:
           - sensor.last_what
@@ -2090,6 +2275,10 @@ binary_sensor family_template:
                states.sensor.last_what.state == 'martin_xc90' or
                states.sensor.last_what.state == 'martin_rtv1100' ) and 
              ( states.sensor.last_where.state == 'road' ) }}
+
+binary_sensor detected_template:
+  - platform: template
+    sensors:
       not_family:
         entity_id:
           - sensor.last_what
@@ -2108,10 +2297,6 @@ binary_sensor family_template:
               ( states.device_tracker.rileysiphone5.state != 'home' and states.sensor.last_what.state == 'riley' ) or
               ( states.device_tracker.ellensiphone5.state != 'home' and states.sensor.last_what.state == 'ellen' )) 
              and ( states.sensor.last_where.state != 'road' ) }}
-
-binary_sensor detected_template:
-  - platform: template
-    sensors:
       family_detected:
         entity_id:
           - binary_sensor.family_in_kitchen
@@ -2119,17 +2304,55 @@ binary_sensor detected_template:
           - binary_sensor.family_at_frontdoor
           - binary_sensor.family_on_road
         value_template: >
-          {{ states.binary_sensor.family_in_kitchen == 'on' or
-             states.binary_sensor.family_in_bathroom == 'on' or 
-             states.binary_sensor.family_at_frontdoor == 'on' or 
-             states.binary_sensor.family_on_road == 'on' }}
+          {{ states.binary_sensor.family_in_kitchen.state == 'on' or
+             states.binary_sensor.family_in_bathroom.state == 'on' or 
+             states.binary_sensor.family_at_frontdoor.state == 'on' or 
+             states.binary_sensor.family_on_road.state == 'on' }}
+      yes_activity:
+        entity_id:
+          - binary_sensor.interior_motion
+        value_template: >
+          {{ states.binary_sensor.interior_motion.state == 'on' }}
+      no_activity:
+        entity_id:
+          - binary_sensor.interior_motion
+        value_template: >
+          {{ states.binary_sensor.interior_motion.state == 'off' }}
+
+#
+# TIME ACTIVITY
+#
+
+sensor yes_activity_time:
+  - platform: history_stats
+    icon: mdi:timer
+    name: yes_activity_time
+    entity_id: binary_sensor.yes_activity
+    state: 'on'
+    type: ratio
+    start: '{{ now().replace(hour=0).replace(minute=0).replace(second=0) }}'
+    end: '{{ now() }}'
+
+sensor no_activity_time:
+  - platform: history_stats
+    icon: mdi:timer
+    name: no_activity_time
+    entity_id: binary_sensor.no_activity
+    state: 'on'
+    type: ratio
+    start: '{{ now().replace(hour=0).replace(minute=0).replace(second=0) }}'
+    end: '{{ now() }}'
+
+#
+# BAYESIAN
+#
 
 binary_sensor bayesian_test:
-  - platform: 'bayesian'
+  - platform: bayesian
     name: bayesian_test
     prior: 0.1
     observations:
-      - entity_id: family_detected
+      - entity_id: binary_sensor.interior_motion
         prob_given_true: 0.6
         prob_given_false: 0.2
         platform: 'state'
@@ -2138,405 +2361,133 @@ binary_sensor bayesian_test:
 logger: !include logger.yaml
 group: !include groups.yaml
 
+###
+### CONFIGURATION AND DISCOVERY
+###
+
+binary_sensor aah_device_template:
+  platform: template
+  sensors:
+    aah_online_kitchen:
+      entity_id:
+        - device_tracker.roughfog
+      value_template: >
+        {{ states.device_tracker.roughfog != None and
+           states.device_tracker.roughfog.state != None and
+           states.device_tracker.roughfog.state == 'home' }}
+    aah_online_bathroom:
+      entity_id:
+        - device_tracker.dampcloud
+      value_template: >
+        {{ states.device_tracker.dampcloud != None and
+           states.device_tracker.dampcloud.state != None and
+           states.device_tracker.dampcloud.state == 'home' }}
+    aah_online_frontdoor:
+      entity_id:
+        - device_tracker.roughwind
+      value_template: >
+        {{ states.device_tracker.roughwind != None and
+           states.device_tracker.roughwind.state != None and
+           states.device_tracker.roughwind.state == 'home' }}
+    aah_online_road:
+      entity_id:
+        - device_tracker.roughfog
+      value_template: >
+        {{ states.device_tracker.quietwater != None and
+           states.device_tracker.quietwater.state != None and
+           states.device_tracker.quietwater.state == 'home' }}
+
+binary_sensor aah_template:
+  - platform: template
+    sensors:
+      aah_discovery_complete:
+        entity_id: 
+          - sensor.aah_discovery
+        value_template: >
+          {{ states.binary_sensor.aah_discovery != None and
+             states.binary_sensor.aah_discovery.state != 'unknown' and
+             states.binary_sensor.aah_discovery.attributes != None and
+             states.binary_sensor.aah_discovery.attributes.url != None and
+             states.binary_sensor.aah_discovery.attributes.url != 'null' }}
+      aah_config_complete:
+        entity_id: 
+          - sensor.aah_config
+        value_template: >
+          {{ states.binary_sensor.aah_config != None and
+             states.binary_sensor.aah_config.state != 'unknown' and
+             states.binary_sensor.aah_config.attributes != None and
+             states.binary_sensor.aah_config.attributes.vr_apikey != None and
+             states.binary_sensor.aah_config.attributes.vr_apikey != 'null' }}
+
+##
+## SWITCHS
+##
+
+switch kitchen_power:
+  - platform: mqtt
+    name: kitchen_power
+    state_topic: "state/sensor/kitchen/power"
+    availability_topic: "control/kitchen/power/+"
+    command_topic: "control/kitchen/power/set"
+    payload_on: "ON"
+    payload_off: "OFF"
+    optimistic: false
+    qos: 0
+    retain: true
+
+switch kitchen_power_template:
+  platform: template
+  switches:
+    kitchen:
+      value_template: "{{ is_state('sensor.aah_online_kitchen', 'on') }}"
+      turn_on:
+        service: switch.turn_on
+        data:
+          entity_id: switch.kitchen_power
+      turn_off:
+        service: switch.turn_off
+        data:
+          entity_id: switch.kitchen_power
+
+input_slider:
+  auto_light_minutes:
+    name: Minutes after sunset
+    icon: mdi:timer
+    initial: 30
+    min: 0
+    max: 120
+    step: 10
+  auto_light_duration:
+    name: Duration hours
+    icon: mdi:timer
+    initial: 4
+    min: 0
+    max: 8
+    step: 0.5
+
+sensor slider:
+  - platform: template
+    sensors:
+      auto_light_start:
+        friendly_name: 'Lights on at'
+        value_template: '{{ (as_timestamp(states.sun.sun.attributes.next_setting) + (states("input_slider.auto_light_minutes") | int)  * 60)  | timestamp_custom("%H:%M") }}'
+      auto_light_stop:
+        friendly_name: 'Lights out at'
+        value_template: '{{ ( as_timestamp(states.sun.sun.attributes.next_setting) + (states("input_slider.auto_light_minutes") | int)  * 60 + (states("input_slider.auto_light_duration") | float) * 60 * 60  )  | timestamp_custom("%H:%M") }}'
+      auto_light_minutes:
+        friendly_name: 'Lights on '
+        value_template: '{{ "%d minutes after sunset" | format(states("input_slider.auto_light_minutes") | int) }}'
+      auto_light_duration:
+        friendly_name: 'Lights on for'
+        value_template: '{{ "%0.1f hours" | format(states("input_slider.auto_light_duration") | float) }}'
+  - platform: time_date
+    display_options:
+      - 'time'
+
 ##
 ## AUTOMATIONS
 ##
 
-# automation: !include automations.yaml
+automation: !include automations.yaml
 
-automation my_automations:
-
-#
-# iOS NOTIFICATIONS
-#
-
-- id: notify_david
-  alias: 'notify_david'
-  initial_state: 'on'
-  trigger:
-    - platform: state
-      entity_id: device_tracker.dcmsiphone7
-    - platform: state
-      entity_id: device_tracker.davids_iphone
-  condition: 
-    condition: and
-    conditions:
-      - condition: time
-        after: '06:00'
-      - condition: time
-        before: '22:00'
-      - condition: template
-        value_template: >
-          {{ trigger.from_state != None and trigger.to_state.state != trigger.from_state.state }}
-  action:
-    - service: notify.notify
-      data_template:
-        message: >
-          {{ trigger.entity_id }}'s location just changed from {{ trigger.from_state.state }} to {{ trigger.to_state.state }}
-
-- id: notify_ellen
-  alias: 'notify_ellen'
-  initial_state: 'on'
-  trigger:
-    platform: state
-    entity_id: device_tracker.ellensiphone5
-  condition: 
-    condition: and
-    conditions:
-      - condition: time
-        after: '06:00'
-      - condition: time
-        before: '22:00'
-      - condition: template
-        value_template: >
-          {{ trigger.from_state != None and trigger.to_state.state != trigger.from_state.state }}
-  action:
-    - service: notify.notify
-      data_template:
-        message: >
-          {{ trigger.entity_id }}'s location just changed from {{ trigger.from_state.state }} to {{ trigger.to_state.state }}
-
-- id: notify_keli
-  alias: 'notify_keli'
-  initial_state: 'on'
-  trigger:
-    platform: state
-    entity_id: device_tracker.kelisiphone7
-  condition: 
-    condition: and
-    conditions:
-      - condition: time
-        after: '06:00'
-      - condition: time
-        before: '22:00'
-      - condition: template
-        value_template: >
-          {{ trigger.from_state != None and trigger.to_state.state != trigger.from_state.state }}
-  action:
-    - service: notify.notify
-      data_template:
-        message: >
-          {{ trigger.entity_id }}'s location just changed from {{ trigger.from_state.state }} to {{ trigger.to_state.state }}
-
-- id: notify_riley
-  alias: 'notify_riley'
-  initial_state: 'on'
-  trigger:
-    platform: state
-    entity_id: device_tracker.rileysiphone5
-  condition: 
-    condition: and
-    conditions:
-      - condition: time
-        after: '06:00'
-      - condition: time
-        before: '22:00'
-      - condition: template
-        value_template: >
-          {{ trigger.from_state != None and trigger.to_state.state != trigger.from_state.state }}
-  action:
-    - service: notify.notify
-      data_template:
-        message: >
-          {{ trigger.entity_id }}'s location just changed from {{ trigger.from_state.state }} to {{ trigger.to_state.state }}
-
-#
-# MQTT
-#
-
-- id: aah_family_detected
-  alias: 'aah_family_detected'
-  initial_state: 'on'
-  trigger:
-    platform: state
-    entity_id: binary_sensor.family_detected
-    to: 'on'
-  action:
-    - service: mqtt.publish
-      data_template:
-        topic: 'what/family'
-        payload: >
-          {"what":"family","date:",{{(now().timestamp()|int)}},"state":"{{ trigger.to_state.state }}"}
-
-- id: aah_device_detected
-  alias: 'aah_device_detected'
-  initial_state: 'on'
-  trigger:
-    platform: state
-    entity_id: group.iphones
-  action: 
-    - service: mqtt.publish
-      data_template:
-        topic: 'what/{{trigger.entity_id}}'
-        payload: >
-          {"what":"{{trigger.entity_id}}","date":{{(now().timestamp()|int)}},"state":"{{trigger.to_state.state}}"
-
-#- id: aah_mqtt_camera_offline
-#  alias: 'Notify if any AAH sensor is unknown for 10 minutes'
-#  trigger:
-#    platform: state
-#    entity_id:
-#      - sensor.kitchen_camera
-#      - sensor.bathroom_camera
-#      - sensor.frontdoor_camera
-#      - sensor.road_camera
-#    state: None
-#    for:
-#      minutes: 10
-#  action:
-#    - service: mqtt.publish
-#      data_template:
-#        topic: 'device/camera/{{trigger.to_state.attributes.friendly_name}}'
-#        payload: >
-#          {"device":"{{ trigger.to_state.attributes.friendly_name }}","status":"offline"}
-#
-#- id: aah_notify_lowscore
-#  alias: very low score
-#  trigger:
-#    platform: numeric_state
-#    entity_id: sensor.last_why
-#    below: 0.50
-#  action:
-#    - service: notify.notify
-#      data_template:
-#        message: >
-#          VERY LOW {{ states.sensor.last_who }} saw {{ states.sensor.last_what }} {{ states.sensor.last_why }}
-#
-#- id: aah_notify_highscore
-#  alias: very high score
-#  trigger:
-#    platform: numeric_state
-#    entity_id: sensor.last_why
-#    above: 0.99
-#  action:
-#    - service: notify.notify
-#      data_template:
-#        message: >
-#          VERY HIGH {{ states.sensor.last_who }} saw {{ states.sensor.last_what }} {{ states.sensor.last_why }}
-#
-#- id: sonos_volume_limiter
-#  alias: Sonos Volume Limiter
-#  initial_state: True
-#  hide_entity: False
-#  trigger:
-#    platform: numeric_state
-#    entity_id: media_player.play1
-#    value_template: '{{ state.attributes.volume_level }}'
-#    above: 0.35
-#  condition:
-#    platform: time
-#    after: '08:00:00'
-#    before: '20:00:00'
-#  action:
-#    - service: media_player.volume_set
-#      data_template:
-#        entity_id: media_player.play1
-#        volume_level: 0.34
-
-##
-## DUMPS
-##
-
-- id: dump_automations
-  alias: 'dump_automations'
-  initial_state: 'on'
-  trigger:
-    - platform: template
-      value_template: '{{ states.automation != None }}'
-    - platform: state
-      entity_id: states.automation
-  action:
-    - service: mqtt.publish
-      data_template:
-        topic: 'state/automation/all'
-        payload: >
-          {%- for state in states.automation -%}
-            {%- if loop.first -%}{"domain":"automation","date":{{ (now().timestamp()|int) }},"entities":[
-            {%- else -%},
-            {%- endif -%} {"name":"{{state.name|lower}}","state":"{{state.state}}","attributes":"{{state.attributes}}"}
-          {%- endfor -%}]}
-
-- id: dump_binary_sensors
-  alias: 'dump_binary_sensors'
-  initial_state: 'on'
-  trigger:
-    - platform: template
-      value_template: '{{ states.binary_sensor != None }}'
-    - platform: state
-      entity_id: states.binary_sensor
-  action: 
-    - service: mqtt.publish
-      data_template:
-        topic: 'state/binary_sensor/all'
-        payload: >
-          {% for state in states.binary_sensor -%}
-            {%- if loop.first -%} {"domain":"binary_sensor","date":{{ (now().timestamp()|int) }},"entities":[
-            {%- else -%},
-            {%- endif -%} {"name":"{{state.name|lower}}","state":"{{state.state}}","attributes":"{{state.attributes}}"}
-          {%- endfor -%}]}
-
-- id: dump_cameras
-  alias: 'dump_cameras'
-  initial_state: 'on'
-  trigger:
-    - platform: template
-      value_template: '{{ states.camera != None }}'
-    - platform: state
-      entity_id: states.camera
-  action: 
-    - service: mqtt.publish
-      data_template:
-        topic: 'state/camera/all'
-        payload: >
-          {% for state in states.camera -%}
-            {%- if loop.first -%}{"domain":"camera","date":{{ (now().timestamp()|int) }},"entities":[
-            {%- else -%},
-            {%- endif -%} {"name":"{{state.name|lower}}","state":"{{state.state}}","attributes":"{{state.attributes}}"}
-          {%- endfor -%}]}
-
-- id: dump_device_trackers
-  alias: 'dump_device_trackers'
-  initial_state: 'on'
-  trigger:
-    - platform: template
-      value_template: '{{ states.device_tracker != None }}'
-    - platform: state
-      entity_id: states.device_tracker
-  action: 
-    - service: mqtt.publish
-      data_template:
-        topic: 'state/device_tracker/all'
-        payload: >
-         {% for state in states.device_tracker -%}
-           {%- if loop.first -%}{"domain":"device_tracker","date":{{ (now().timestamp()|int) }},"entities":[
-           {%- elif loop.last -%}
-             {%- if state.attributes.source_type != None -%}
-               {"name":"{{ state.name | lower }}","state":"{{state.state}}","attributes":"{{ state.attributes}}"}
-             {%- endif -%}
-           {%- else -%}
-             {%- if state.attributes.source_type != None -%}
-               {"name":"{{ state.name | lower }}","state":"{{state.state}}","attributes":"{{ state.attributes}}"},
-             {%- endif -%}
-           {%- endif -%}
-          {%- endfor -%}]}
-
-- id: dump_media_players
-  alias: 'dump_media_players'
-  initial_state: 'on'
-  trigger:
-    - platform: template
-      value_template: '{{ states.media_player != None }}'
-    - platform: state
-      entity_id: states.media_player
-  action: 
-    - service: mqtt.publish
-      data_template:
-        topic: 'state/media_player/all'
-        payload: >
-          {% for state in states.media_player -%}
-            {%- if loop.first -%}{"domain":"media_player","date":{{ (now().timestamp()|int) }},"entities":[
-            {%- else -%},
-            {%- endif -%} {"name":"{{state.name|lower}}","state":"{{state.state}}","attributes":"{{state.attributes}}"}
-          {%- endfor -%}]}
-
-- id: dump_sensors
-  alias: 'dump_sensors'
-  initial_state: 'on'
-  trigger:
-    - platform: template
-      value_template: '{{ states.sensor != None }}'
-    - platform: state
-      entity_id: states.sensor
-  action: 
-    - service: mqtt.publish
-      data_template:
-        topic: 'state/sensor/all'
-        payload: >
-         {% for state in states.sensor -%}
-           {%- if loop.first -%}{"domain":"sensor","date":{{ (now().timestamp()|int) }},"entities":[
-           {%- elif loop.last -%}
-             {"name":"{{ state.name | lower }}","state":"{{state.state}}"}
-           {%- else -%}
-             {"name":"{{ state.name | lower }}","state":"{{state.state}}"},
-           {%- endif -%}
-          {%- endfor -%}]}
-
-- id: dump_zones
-  alias: 'dump_zones'
-  initial_state: 'on'
-  trigger:
-    - platform: template
-      value_template: '{{ states.zone != None }}'
-    - platform: state
-      entity_id: states.zone
-  action: 
-    - service: mqtt.publish
-      data_template:
-        topic: 'state/zone/all'
-        payload: >
-          {% for state in states.zone -%}
-            {%- if loop.first -%} {"domain":"zone","date":{{ (now().timestamp()|int) }},"entities":[
-            {%- else -%},
-            {%- endif -%} {"name":"{{state.name|lower}}","state":"{{state.state}}","attributes":"{{state.attributes}}"}
-          {%- endfor -%}]}
-
-- id: debug_trigger
-  alias: debug_trigger
-  initial_state: on
-  trigger:
-    - platform: state
-      entity_id: states.automation
-  action:
-    - service: mqtt.publish
-      data_template:
-        topic: 'debug/{{ trigger.platform }}/{{ trigger.entity_id }}'
-        retain: false
-        payload: >-
-          {%- macro dumpState(statePrefix, stateObj) -%}
-            {{statePrefix ~ ": "}} {{- stateObj.state }}{{- "\n" -}}
-            {{statePrefix ~ ".entity_id: "}} {{- stateObj.entity_id }}{{- "\n" -}}
-            {{statePrefix ~ ".domain: "}} {{- stateObj.domain }}{{- "\n" -}}
-            {{statePrefix ~ ".object_id: "}} {{- stateObj.object_id }}{{- "\n" -}}
-            {{statePrefix ~ ".name: "}} {{- stateObj.name }}{{- "\n" -}}
-            {{statePrefix ~ ".last_updated: "}} {{- stateObj.last_updated }}{{- "\n" -}}
-            {{statePrefix ~ ".last_changed: "}} {{- stateObj.last_changed }}{{- "\n" -}}
-            {%- for attrib in stateObj.attributes | sort() %}
-              {%- if attrib is defined -%}
-              {{- statePrefix ~ ".attributes." ~ attrib ~ ": " -}} {{- stateObj.attributes[attrib] -}}
-              {{- "\n" -}}
-              {%- endif -%}
-            {%- endfor -%}
-          {%- endmacro -%}
-          {% set p = trigger.platform %}
-          {{"trigger.platform: "}} {{ p }}{{- "\n" -}}
-          {%- if p == "mqtt" -%}
-            {{"trigger.topic: "}} {{ trigger.topic }}{{- "\n" -}}
-            {{"trigger.payload: "}} {{ trigger.payload }}{{- "\n" -}}
-            {{"trigger.payload_json: "}} {{ trigger.payload_json }}{{- "\n" -}}
-            {{"trigger.qos: "}} {{ trigger.qos }}{{- "\n" -}}
-            {%- endif -%}
-            {%- if p == "event" or p == "sun" or p == "zone" -%}
-            {{"trigger.event: "}} {{ trigger.event }}{{- "\n" -}}
-          {%- endif -%}
-          {%- if p == "numeric_state" -%}
-            {{"trigger.above: "}} {{ trigger.above }}{{- "\n" -}}
-            {{"trigger.below: "}} {{trigger.below }}{{- "\n" -}}
-          {%- endif -%}
-          {%- if p == "state" -%}
-            {{"trigger.for: "}} {{ trigger.for }}{{- "\n" -}}
-          {%- endif -%}
-          {%- if p == "time" -%}
-            {{"trigger.now: "}} {{ trigger.now }}{{- "\n" -}}
-          {%- endif -%}
-          {%- if p == "zone" -%}
-            {{"trigger.zone: "}} {{ trigger.zone }}{{- "\n" -}}
-          {%- endif -%}
-          {%- if p == "state" or p == "numeric_state" or p == "template" or p == "zone" -%}
-            {{"trigger.entity_id: "}} {{ trigger.entity_id }}{{- "\n" -}}{{- "\n" -}}
-            {{"trigger.from_state: "}} {{- "\n" -}}
-            -------------------{{- "\n" -}}
-            {{ dumpState("trigger.from_state", trigger.from_state) }} {{- "\n" -}}
-            trigger.to_state:{{- "\n" -}}
-            -----------------{{- "\n" -}}
-            {{ dumpState("trigger.to_state", trigger.to_state) }}
-          {%- endif -%}
+# automation my_automations:
