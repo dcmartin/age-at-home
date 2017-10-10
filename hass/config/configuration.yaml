@@ -255,35 +255,35 @@ media_player sonos:
   - platform: sonos
 
 sensor sonos_play1:
-  - platform: template
-    sensors:
-      play1_state:
-        entity_id: media_player.play1
-        value_template: '{{ states.media_player.play1.state }}'
-      play1_volume:
-        entity_id: media_player.play1
-        value_template: '{{ states.media_player.play1.attributes.volume_level }}'
-      play1_volume_muted:
-        entity_id: media_player.play1
-        value_template: '{{ states.media_player.play1.attributes.volume_muted }}'
-      play1_media_content_id:
-        entity_id: media_player.play1
-        value_template: '{{ states.media_player.play1.attributes.media_content_id }}'
-      play1_media_content_type:
-        entity_id: media_player.play1
-        value_template: '{{ states.media_player.play1.attributes.media_content_type }}'
-      play1_media_duration:
-        entity_id: media_player.play1
-        value_template: '{{ states.media_player.play1.attributes.media_duration }}'
-      play1_media_title:
-        entity_id: media_player.play1
-        value_template: '{{ states.media_player.play1.attributes.media_title }}'
-      play1_media_artist:
-        entity_id: media_player.play1
-        value_template: '{{ states.media_player.play1.attributes.media_artist }}'
-      play1_media_album_name:
-        entity_id: media_player.play1
-        value_template: '{{ states.media_player.play1.attributes.media_album_name }}'
+  platform: template
+  sensors:
+    play1_state:
+      entity_id: media_player.play1
+      value_template: '{{ states.media_player.play1.state }}'
+    play1_volume:
+      entity_id: media_player.play1
+      value_template: '{{ states.media_player.play1.attributes.volume_level }}'
+    play1_volume_muted:
+      entity_id: media_player.play1
+      value_template: '{{ states.media_player.play1.attributes.volume_muted }}'
+    play1_media_content_id:
+      entity_id: media_player.play1
+      value_template: '{{ states.media_player.play1.attributes.media_content_id }}'
+    play1_media_content_type:
+      entity_id: media_player.play1
+      value_template: '{{ states.media_player.play1.attributes.media_content_type }}'
+    play1_media_duration:
+      entity_id: media_player.play1
+      value_template: '{{ states.media_player.play1.attributes.media_duration }}'
+    play1_media_title:
+      entity_id: media_player.play1
+      value_template: '{{ states.media_player.play1.attributes.media_title }}'
+    play1_media_artist:
+      entity_id: media_player.play1
+      value_template: '{{ states.media_player.play1.attributes.media_artist }}'
+    play1_media_album_name:
+      entity_id: media_player.play1
+      value_template: '{{ states.media_player.play1.attributes.media_album_name }}'
 
 sensor sonos_play3:
   - platform: template
@@ -379,32 +379,28 @@ notify ios:
 # ZONES
 
 zone jimjanaustin:
-  name: jimjanaustin
-  friendly_name: "Jim Jan Austin"
+  name: "Jim Jan Austin"
   latitude: 30.49788338485368
   longitude: -97.7739577124575
   radius: 200
   track_ios: true
 
 zone nannyshouse:
-  name: nannyshouse
-  friendly_name: "Nannys House"
+  name: "Nannys House"
   latitude: 30.391078
   longitude: -97.694590
   radius: 200
   track_ios: true
 
 zone austincity:
-  name: austincity
-  friendly_name: "Austin City"
+  name: "Austin City"
   latitude: 30.266187
   longitude: -97.743503
   radius: 15000
   track_ios: true
 
 zone southsanjose:
-  name: southsanjose
-  friendly_name: 'South San Jose'
+  name: 'South San Jose'
   icon: mdi:home
   latitude: 37.242386
   longitude: -121.874724
@@ -412,8 +408,7 @@ zone southsanjose:
   track_ios: true
 
 zone chicagoland:
-  name: chicagoland
-  friendly_name: 'Chicago-Land'
+  name: 'Chicago-Land'
   icon: mdi:home
   latitude: 42.013780
   longitude: -87.063821
@@ -421,8 +416,7 @@ zone chicagoland:
   track_ios: true
 
 zone westernspring:
-  name: westernsprings
-  friendly_name: 'Western Springs, IL'
+  name: 'Western Springs, IL'
   icon: mdi:home
   latitude: 41.811889
   longitude: -87.901608
@@ -430,8 +424,7 @@ zone westernspring:
   track_ios: true
 
 zone magicianlake:
-  name: magicianlake
-  friendly_name: 'Magician Lake'
+  name: 'Magician Lake'
   icon: mdi:home
   latitude: 42.071890
   longitude: -86.152227
@@ -439,8 +432,7 @@ zone magicianlake:
   track_ios: true
 
 zone newzealand:
-  name: newzealand
-  friendly_name: 'New Zealand'
+  name: 'New Zealand'
   icon: mdi:home
   latitude: -37.89431844841493
   longitude: 175.4656750337923
@@ -448,17 +440,15 @@ zone newzealand:
   track_ios: true
 
 zone fortcollins:
-  name: fortcollins
-  friendly_name: 'Fort Collins, CO'
+  name: 'Fort Collins, CO'
   icon: mdi:home
   latitude: 40.5786172734845
   longitude: -105.0849671207992
   radius: 10000
   track_ios: true
 
-zone fazenda:
+zone home:
   name: home
-  friendly_name: 'Fazenda da Saudades'
   icon: mdi:home
   latitude: 37.174815
   longitude: -121.816325
@@ -468,8 +458,7 @@ zone fazenda:
 # school zones
 
 zone leland:
-  name: zoneleland
-  friendly_name: 'Leland High School'
+  name: 'Leland High School'
   icon: mdi:school
   radius: 250
   latitude: 37.217712
@@ -477,8 +466,7 @@ zone leland:
   track_ios: true
 
 zone presentation:
-  name: zonepresentation
-  friendly_name: 'Presentation High School'
+  name: 'Presentation High School'
   icon: mdi:school
   radius: 250
   latitude: 37.283350
@@ -488,8 +476,7 @@ zone presentation:
 # work zones
 
 zone arc:
-  name: zonearc
-  friendly_name: 'IBM Almaden'
+  name: 'IBM Almaden'
   icon: mdi:domain
   radius: 250
   latitude: 37.211072
@@ -497,8 +484,7 @@ zone arc:
   track_ios: true
 
 zone svl:
-  name: zonesvl
-  friendly_name: 'IBM Silicon Valley'
+  name: 'IBM Silicon Valley'
   icon: mdi:domain
   radius: 250
   latitude: 37.196352
@@ -508,8 +494,7 @@ zone svl:
 # well known locations
 
 zone safeway:
-  name: zonesafeway
-  friendly_name: 'Safeway Shopping Center'
+  name: 'Safeway Shopping Center'
   icon: mdi:store
   radius: 100
   latitude: 37.219579
@@ -562,7 +547,7 @@ history:
       - sensor.kitchen_motion
       - sensor.road_motion
       - binary_sensor.not_family
-      - binary_sensor.bayesian_test
+      - binary_sensor.david_home
       - device_tracker.dcmsiphone7
       - device_tracker.ellensiphone5
       - device_tracker.halisiphone
@@ -573,6 +558,11 @@ history:
       - sensor.frontdoor_what
       - sensor.kitchen_what
       - sensor.road_what
+      - sensor.bathroom_ago
+      - sensor.frontdoor_ago
+      - sensor.kitchen_ago
+      - sensor.road_ago
+      - sensor.last_ago
       - sensor.last_what
       - sensor.last_when
       - sensor.last_where
@@ -581,10 +571,14 @@ history:
       - sensor.solar_angle
       - sensor.no_activity_time
       - sensor.yes_activity_time
-      - sensor.bathroom_empty_time
-      - sensor.frontdoor_empty_time
-      - sensor.kitchen_empty_time
-      - sensor.road_empty_time
+      - sensor.bathroom_daily_time
+      - sensor.frontdoor_daily_time
+      - sensor.kitchen_daily_time
+      - sensor.road_daily_time
+      - sensor.bathroom_daily_count
+      - sensor.frontdoor_daily_count
+      - sensor.kitchen_daily_count
+      - sensor.road_daily_count
 
 # View all events in a logbook
 logbook:
@@ -1660,28 +1654,28 @@ sensor count_automations:
     name: count_automations
     state_topic: 'state/automation/+'
     value_template: >
-      {{ value_json['items'] | length }}
+      {% if value_json is defined %} {{ value_json['items'] | length }} {% else %} 0 {% endif %}
 
 sensor count_binary_sensors:
   - platform: mqtt
     name: count_binary_sensors
     state_topic: 'state/binary_sensor/+'
     value_template: >
-      {{ value_json['items'] | length }}
+      {% if value_json is defined %} {{ value_json['items'] | length }} {% else %} 0 {% endif %}
 
 sensor count_cameras:
   - platform: mqtt
     name: count_cameras
     state_topic: 'state/camera/+'
     value_template: >
-      {{ value_json['items'] | length }}
+      {% if value_json is defined %} {{ value_json['items'] | length }} {% else %} 0 {% endif %}
 
 sensor count_device_trackers:
   - platform: mqtt
     name: count_device_trackers
     state_topic: 'state/device_tracker/+'
     value_template: >
-      {{ value_json['items'] | length }}
+      {% if value_json is defined %} {{ value_json['items'] | length }} {% else %} 0 {% endif %}
 
 sensor triggered_template:
   - platform: template
@@ -1696,21 +1690,21 @@ sensor count_media_players:
     name: count_media_players
     state_topic: 'state/media_player/+'
     value_template: >
-      {{ value_json['items'] | length }}
+      {% if value_json is defined %} {{ value_json['items'] | length }} {% else %} 0 {% endif %}
 
 sensor count_sensors:
   - platform: mqtt
     name: count_sensors
     state_topic: 'state/sensor/+'
     value_template: >
-      {{ value_json['items'] | length }}
+      {% if value_json is defined %} {{ value_json['items'] | length }} {% else %} 0 {% endif %}
 
 sensor count_zones:
   - platform: mqtt
     name: count_zones
     state_topic: 'state/zone/+'
     value_template: >
-      {{ value_json['items'] | length }}
+      {% if value_json is defined %} {{ value_json['items'] | length }} {% else %} 0 {% endif %}
 
 ##
 ## LAST ACTIVITY
@@ -1751,7 +1745,7 @@ sensor last_ago:
     state_topic: 'presence/+'
     name: last_ago
     unit_of_measurement: seconds
-    value_template: '{% if value_json is defined %} {{ (now().timestamp()|int) - (value_json.date|int) }} {% else %} 0 {% endif %}'
+    value_template: '{% if value_json is defined %} {{ (now().timestamp()|int) - (value_json.date|int) }} {% else %} -1 {% endif %}'
     icon_template: >-
       {% if (states.sensor.last_ago|int) > 300 %}
         mdi:timer-off
@@ -1930,6 +1924,42 @@ camera road_image_cropped:
     topic: 'image-cropped/road'
 
 ##
+## BINARY MOTION SENSORS (MQTT w/ EXPIRE)
+##
+
+binary_sensor kitchen_active:
+  platform: mqtt
+  name: kitchen_active
+  state_topic: 'presence/kitchen'
+  device_class: motion
+  expire_after: 30
+  value_template: '{% if value_json is defined %} "ON" {% else %} "OFF" {% endif %}'
+
+binary_sensor bathroom_active:
+  platform: mqtt
+  name: bathroom_active
+  state_topic: 'presence/bathroom'
+  device_class: motion
+  expire_after: 30
+  value_template: '{% if value_json is defined %} "ON" {% else %} "OFF" {% endif %}'
+
+binary_sensor frontdoor_active:
+  platform: mqtt
+  name: frontdoor_active
+  state_topic: 'presence/frontdoor'
+  device_class: motion
+  expire_after: 30
+  value_template: '{% if value_json is defined %} "ON" {% else %} "OFF" {% endif %}'
+
+binary_sensor road_active:
+  platform: mqtt
+  name: road_active
+  state_topic: 'presence/road'
+  device_class: motion
+  expire_after: 30
+  value_template: '{% if value_json is defined %} "ON" {% else %} "OFF" {% endif %}'
+
+##
 ## FRONTDOOR
 ##
 
@@ -1958,102 +1988,6 @@ sensor frontdoor_date:
     state_topic: 'presence/frontdoor'
     value_template: '{% if value_json is defined %} {{ value_json.date|int }} {% else %} -1 {% endif %}'
 
-## OLD
-
-sensor kitchen_ago1:
-  - platform: mqtt
-    state_topic: 'presence/kitchen'
-    name: kitchen_ago1
-    unit_of_measurement: seconds
-    value_template: '{% if value_json is defined %} {{ (now().timestamp()|int) - (value_json.date|int) }} {% else %} -1 {% endif %}'
-    icon_template: >-
-      {%- if (states.sensor.kitchen_ago1.state|int) > 300 -%}
-      mdi:timer-off {% else %} mdi:timer {% endif %}
-
-sensor bathroom_ago1:
-  - platform: mqtt
-    state_topic: 'presence/bathroom'
-    name: bathroom_ago1
-    unit_of_measurement: seconds
-    value_template: '{% if value_json is defined %} {{ (now().timestamp()|int) - (value_json.date|int) }} {% else %} -1 {% endif %}'
-    icon_template: >-
-      {%- if (states.sensor.bathroom_ago1.state|int) > 300 -%}
-      mdi:timer-off {% else %} mdi:timer {% endif %}
-
-sensor frontdoor_ago1:
-  - platform: mqtt
-    state_topic: 'presence/frontdoor'
-    name: frontdoor_ago1
-    unit_of_measurement: seconds
-    value_template: '{% if value_json is defined %} {{ (now().timestamp()|int) - (value_json.date|int) }} {% else %} -1 {% endif %}'
-    icon_template: >-
-      {% if (states.sensor.frontdoor_ago1.state|int) > 300 %}
-        mdi:timer-off
-      {% else %}
-        mdi:timer
-      {% endif %}
-
-sensor road_ago1:
-  - platform: mqtt
-    state_topic: 'presence/road'
-    name: road_ago1
-    unit_of_measurement: seconds
-    value_template: '{% if value_json is defined %} {{ (now().timestamp()|int) - (value_json.date|int) }} {% else %} -1 {% endif %}'
-    icon_template: >-
-      {% if (states.sensor.road_ago1.state|int) > 300 %}
-        mdi:timer-off
-      {% else %}
-        mdi:timer
-      {% endif %}
-
-sensor kitchen_when1:
-  - platform: mqtt
-    state_topic: 'presence/kitchen'
-    name: kitchen_when1
-    value_template: '{% if value_json is defined %} {{ value_json.date | timestamp_custom("%a %b %d @ %I:%M %p") }} {% else %} "never" {% endif %}'
-    icon_template: >-
-      {% if ((states.sensor.kitchen_date.state|int) | timestamp_custom("%p")) == "PM" %}
-        mdi:weather-night
-      {% else %}
-        mdi:weather-sunny
-      {% endif %}
-
-sensor bathroom_when1:
-  - platform: mqtt
-    state_topic: 'presence/bathroom'
-    name: bathroom_when1
-    value_template: '{% if value_json is defined %} {{ value_json.date | timestamp_custom("%a %b %d @ %I:%M %p") }} {% else %} "never" {% endif %}'
-    icon_template: >-
-      {% if ((states.sensor.bathroom_date.state|int) | timestamp_custom("%p")) == "PM" %}
-        mdi:weather-night
-      {% else %}
-        mdi:weather-sunny
-      {% endif %}
-
-sensor frontdoor_when1:
-  - platform: mqtt
-    state_topic: 'presence/frontdoor'
-    name: frontdoor_when1
-    value_template: '{% if value_json is defined %} {{ value_json.date | timestamp_custom("%a %b %d @ %I:%M %p") }} {% else %} "never" {% endif %}'
-    icon_template: >-
-      {% if ((states.sensor.frontdoor_date.state|int) | timestamp_custom("%p")) == "PM" %}
-        mdi:weather-night
-      {% else %}
-        mdi:weather-sunny
-      {% endif %}
-
-sensor road_when1:
-  - platform: mqtt
-    state_topic: 'presence/road'
-    name: road_when1
-    value_template: '{% if value_json is defined %} {{ value_json.date | timestamp_custom("%a %b %d @ %I:%M %p") }} {% else %} "never" {% endif %}'
-    icon_template: >-
-      {% if ((states.sensor.road_date.state|int) | timestamp_custom("%p")) == "PM" %}
-        mdi:weather-night
-      {% else %}
-        mdi:weather-sunny
-      {% endif %}
-
 # CAMERA (JPEG)
 
 camera frontdoor_image:
@@ -2074,251 +2008,278 @@ camera frontdoor_image_cropped:
     icon: mdi:image
     topic: 'image-cropped/frontdoor'
 
-##
-## BINARY MOTION SENSORS (EXPIRE)
-##
+## MOTION SENSORS 
 
-sensor aah_motion_template:
-  - platform: template
-    sensors:
-      kitchen_ago:
-        unit_of_measurement: seconds
-        entity_id:
-          - sensor.kitchen_date
-        value_template: '{%- if states.sensor.kitchen_date is defined -%} {{ (now().timestamp()|int) - (states.sensor.kitchen_date.state|int) }} {%- else -%} -1 {%- endif -%}'
-        icon_template: '{%- if (states.sensor.bathroom_ago.state|int) > 300 -%} mdi:timer-off {%- else -%} mdi:timer {%- endif -%}'
-      kitchen_when:
-        entity_id:
-          - sensor.kitchen_date
-        value_template: '{% if states.sensor.kitchen_date is defined %} {{ (states.sensor.kitchen_date.state|int) | timestamp_custom("%a %b %d @ %I:%M %p") }} {% else %} "never" {% endif %}'
-        icon_template: '{%-if ((states.sensor.kitchen_date.state|int) | timestamp_custom("%p")) == "PM" -%} mdi:weather-night {%- else -%} mdi:weather-sunny {%- endif -%}'
-      bathroom_ago:
-        unit_of_measurement: seconds
-        entity_id:
-          - sensor.bathroom_date
-        value_template: '{%- if states.sensor.bathroom_date is defined -%} {{ (now().timestamp()|int) - (states.sensor.bathroom_date.state|int) }} {%- else -%} -1 {%- endif -%}'
-        icon_template: '{%- if (states.sensor.bathroom_ago.state|int) > 300 -%} mdi:timer-off {%- else -%} mdi:timer {%- endif -%}'
-      bathroom_when:
-        entity_id:
-          - sensor.bathroom_date
-        value_template: '{% if states.sensor.bathroom_date is defined %} {{ (states.sensor.bathroom_date.state|int) | timestamp_custom("%a %b %d @ %I:%M %p") }} {% else %} "never" {% endif %}'
-        icon_template: '{%-if ((states.sensor.bathroom_date.state|int) | timestamp_custom("%p")) == "PM" -%} mdi:weather-night {%- else -%} mdi:weather-sunny {%- endif -%}'
-      frontdoor_ago:
-        unit_of_measurement: seconds
-        entity_id:
-          - sensor.frontdoor_date
-        value_template: '{%- if states.sensor.frontdoor_date is defined -%} {{ (now().timestamp()|int) - (states.sensor.frontdoor_date.state|int) }} {%- else -%} -1 {%- endif -%}'
-        icon_template: '{%- if (states.sensor.bathroom_ago.state|int) > 300 -%} mdi:timer-off {%- else -%} mdi:timer {%- endif -%}'
-      frontdoor_when:
-        entity_id:
-          - sensor.frontdoor_date
-        value_template: '{% if states.sensor.frontdoor_date is defined %} {{ (states.sensor.frontdoor_date.state|int) | timestamp_custom("%a %b %d @ %I:%M %p") }} {% else %} "never" {% endif %}'
-        icon_template: '{%-if ((states.sensor.frontdoor_date.state|int) | timestamp_custom("%p")) == "PM" -%} mdi:weather-night {%- else -%} mdi:weather-sunny {%- endif -%}'
-      road_ago:
-        unit_of_measurement: seconds
-        entity_id:
-          - sensor.road_date
-        value_template: '{%- if states.sensor.road_date is defined -%} {{ (now().timestamp()|int) - (states.sensor.road_date.state|int) }} {%- else -%} -1 {%- endif -%}'
-        icon_template: '{%- if (states.sensor.bathroom_ago.state|int) > 300 -%} mdi:timer-off {%- else -%} mdi:timer {%- endif -%}'
-      road_when:
-        entity_id:
-          - sensor.road_date
-        value_template: '{% if states.sensor.road_date is defined %} {{ (states.sensor.road_date.state|int) | timestamp_custom("%a %b %d @ %I:%M %p") }} {% else %} "never" {% endif %}'
-        icon_template: '{%-if ((states.sensor.road_date.state|int) | timestamp_custom("%p")) == "PM" -%} mdi:weather-night {%- else -%} mdi:weather-sunny {%- endif -%}'
-
-binary_sensor motion_sensors:
-  - platform: template
-    sensors:
-      kitchen_motion:
-        entity_id:
-          - sensor.kitchen_ago
-        value_template: >
-          {% if states.sensor.kitchen_ago is defined and (states.sensor.kitchen_ago.state|int) >= 0 and (states.sensor.kitchen_ago.state|int) <= 30 %} True {%- else -%} False {%- endif -%}
-      bathroom_motion:
-        entity_id:
-          - sensor.bathroom_ago
-        value_template: >
-          {% if states.sensor.bathroom_ago is defined and (states.sensor.bathroom_ago.state|int) >= 0 and (states.sensor.bathroom_ago.state|int) <= 30 %} True {%- else -%} False {%- endif -%}
-      frontdoor_motion:
-        entity_id:
-          - sensor.frontdoor_ago
-        value_template: >
-          {% if states.sensor.frontdoor_ago is defined and (states.sensor.frontdoor_ago.state|int) >= 0 and (states.sensor.frontdoor_ago.state|int) <= 30 %} True {%- else -%} False {%- endif -%}
-      road_motion:
-        entity_id:
-          - sensor.road_ago
-        value_template: >
-          {% if states.sensor.road_ago is defined and (states.sensor.road_ago.state|int) >= 0 and (states.sensor.road_ago.state|int) <= 30 %} True {%- else -%} False {%- endif -%}
+sensor motion_sensors:
+  platform: template
+  sensors:
+    kitchen_ago:
+      unit_of_measurement: seconds
+      value_template: '{{ (now().timestamp()|int) - (states.sensor.kitchen_date.state|int) }}'
+      icon_template: '{%- if (states.sensor.kitchen_ago.state|int) > 300 -%} mdi:timer-off {%- else -%} mdi:timer {%- endif -%}'
+    bathroom_ago:
+      unit_of_measurement: seconds
+      value_template: '{{ (now().timestamp()|int) - (states.sensor.bathroom_date.state|int) }}'
+      icon_template: '{%- if (states.sensor.bathroom_ago.state|int) > 300 -%} mdi:timer-off {%- else -%} mdi:timer {%- endif -%}'
+    frontdoor_ago:
+      unit_of_measurement: seconds
+      value_template: '{{ (now().timestamp()|int) - (states.sensor.frontdoor_date.state|int) }}'
+      icon_template: '{%- if (states.sensor.frontdoor_ago.state|int) > 300 -%} mdi:timer-off {%- else -%} mdi:timer {%- endif -%}'
+    road_ago:
+      unit_of_measurement: seconds
+      value_template: '{{ (now().timestamp()|int) - (states.sensor.road_date.state|int) }}'
+      icon_template: '{%- if (states.sensor.road_ago.state|int) > 300 -%} mdi:timer-off {%- else -%} mdi:timer {%- endif -%}'
+    kitchen_when:
+      entity_id: sensor.kitchen_date
+      value_template: '{{ (states.sensor.kitchen_date.state|int) | timestamp_custom("%a %b %d @ %I:%M %p") }}'
+      icon_template: '{%-if ((states.sensor.kitchen_date.state|int) | timestamp_custom("%p")) == "PM" -%} mdi:weather-night {%- else -%} mdi:weather-sunny {%- endif -%}'
+    bathroom_when:
+      entity_id: sensor.bathroom_date
+      value_template: '{{ (states.sensor.bathroom_date.state|int) | timestamp_custom("%a %b %d @ %I:%M %p") }}'
+      icon_template: '{%-if ((states.sensor.bathroom_date.state|int) | timestamp_custom("%p")) == "PM" -%} mdi:weather-night {%- else -%} mdi:weather-sunny {%- endif -%}'
+    frontdoor_when:
+      entity_id: sensor.frontdoor_date
+      value_template: '{{ (states.sensor.frontdoor_date.state|int) | timestamp_custom("%a %b %d @ %I:%M %p") }}'
+      icon_template: '{%-if ((states.sensor.frontdoor_date.state|int) | timestamp_custom("%p")) == "PM" -%} mdi:weather-night {%- else -%} mdi:weather-sunny {%- endif -%}'
+    road_when:
+      entity_id: sensor.road_date
+      value_template: '{{ (states.sensor.road_date.state|int) | timestamp_custom("%a %b %d @ %I:%M %p") }}'
+      icon_template: '{%-if ((states.sensor.road_date.state|int) | timestamp_custom("%p")) == "PM" -%} mdi:weather-night {%- else -%} mdi:weather-sunny {%- endif -%}'
 
 ##
+## BINARY MOTION SENSORS
+##
+
+binary_sensor motion_binary_sensors:
+  platform: template
+  sensors:
+    kitchen_motion:
+      entity_id: 
+        - sensor.kitchen_ago
+        - binary_sensor.kitchen_active
+      device_class: motion
+      value_template: >
+        {% if (states.binary_sensor.frontdoor_active is defined) and (states.sensor.kitchen_ago.state|int) >= 0 and (states.sensor.kitchen_ago.state|int) <= 30 %} True {%- else -%} False {%- endif -%}
+    bathroom_motion:
+      entity_id:
+        - sensor.bathroom_ago
+        - binary_sensor.bathroom_active
+      device_class: motion
+      value_template: >
+        {% if (states.binary_sensor.frontdoor_active is defined) and (states.sensor.bathroom_ago.state|int) >= 0 and (states.sensor.bathroom_ago.state|int) <= 30 %} True {%- else -%} False {%- endif -%}
+    frontdoor_motion:
+      entity_id: 
+        - sensor.frontdoor_ago
+        - binary_sensor.frontdoor_active
+      device_class: motion
+      value_template: >
+        {% if (states.binary_sensor.frontdoor_active is defined) and (states.sensor.frontdoor_ago.state|int) >= 0 and (states.sensor.frontdoor_ago.state|int) <= 30 %} True {%- else -%} False {%- endif -%}
+    road_motion:
+      entity_id: 
+        - sensor.road_ago
+        - binary_sensor.road_active
+      device_class: motion
+      value_template: >
+        {% if (states.binary_sensor.frontdoor_active is defined) and (states.sensor.road_ago.state|int) >= 0 and (states.sensor.road_ago.state|int) <= 30 %} True {%- else -%} False {%- endif -%}
+
+binary_sensor interior_exterior_binary_sensors:
+  platform: template
+  sensors:
+    interior_motion:
+      entity_id:
+        - binary_sensor.kitchen_motion
+        - binary_sensor.bathroom_motion
+        - binary_sensor.frontdoor_motion
+      value_template: >
+        {%- if states.binary_sensor.kitchen_motion.state or states.binary_sensor.bathroom_motion.state or states.binary_sensor.frontdoor_motion.state -%} True {%- else -%} False {%- endif -%}
+    exterior_motion:
+      entity_id: binary_sensor.road_motion
+      value_template: >
+        {{ states.binary_sensor.road_motion.state }}
+
+binary_sensor family_binary_sensors:
+  platform: template
+  sensors:
+    family_in_kitchen:
+      entity_id:
+        - sensor.last_what
+        - sensor.last_where
+      value_template: >
+        {{ ( states.sensor.last_what.state == 'david' or
+             states.sensor.last_what.state == 'keli' or
+             states.sensor.last_what.state == 'hali' or
+             states.sensor.last_what.state == 'ian' or
+             states.sensor.last_what.state == 'riley' or
+             states.sensor.last_what.state == 'ellen' ) and 
+           ( states.sensor.last_where.state == 'kitchen' ) }}
+    family_in_bathroom:
+      entity_id:
+        - sensor.last_what
+        - sensor.last_where
+      value_template: >
+        {{ ( states.sensor.last_what.state == 'david' or
+             states.sensor.last_what.state == 'keli' or
+             states.sensor.last_what.state == 'hali' or
+             states.sensor.last_what.state == 'ian' or
+             states.sensor.last_what.state == 'riley' or
+             states.sensor.last_what.state == 'ellen' ) and 
+           ( states.sensor.last_where.state == 'bathroom' ) }}
+    family_at_frontdoor:
+      entity_id:
+        - sensor.last_what
+        - sensor.last_where
+      value_template: >
+        {{ ( states.sensor.last_what.state == 'david' or
+             states.sensor.last_what.state == 'keli' or
+             states.sensor.last_what.state == 'hali' or
+             states.sensor.last_what.state == 'ian' or
+             states.sensor.last_what.state == 'riley' or
+             states.sensor.last_what.state == 'ellen' ) and 
+           ( states.sensor.last_where.state == 'frontdoor' ) }}
+    family_on_road:
+      entity_id:
+        - sensor.last_what
+        - sensor.last_where
+      value_template: >
+        {% if ( states.sensor.last_what.state == 'martin_c70' or
+             states.sensor.last_what.state == 'martin_c30' or
+             states.sensor.last_what.state == 'martin_suburban' or
+             states.sensor.last_what.state == 'martin_sprinter' or
+             states.sensor.last_what.state == 'martin_xc90' or
+             states.sensor.last_what.state == 'martin_rtv1100' ) and 
+           ( states.sensor.last_where.state == 'road' ) %} True {% else %} False {% endif %}
+
+binary_sensor yes_no_activity_binary_sensors:
+  platform: template
+  sensors:
+    yes_activity:
+      entity_id: binary_sensor.interior_motion
+      value_template: >
+        {{ states.binary_sensor.interior_motion.state == 'on' }}
+    no_activity:
+      entity_id: binary_sensor.interior_motion
+      value_template: >
+        {{ states.binary_sensor.interior_motion.state == 'off' }}
+
+binary_sensor family_not_binary_sensors:
+  platform: template
+  sensors:
+    family_detected:
+      entity_id:
+        - binary_sensor.family_in_kitchen
+        - binary_sensor.family_in_bathroom
+        - binary_sensor.family_at_frontdoor
+        - binary_sensor.family_on_road
+      value_template: >
+        {%- if states.binary_sensor.family_in_kitchen.state 
+               or states.binary_sensor.family_in_bathroom.state 
+               or states.binary_sensor.family_at_frontdoor.state 
+               or states.binary_sensor.family_on_road.state %} 
+               True {%- else -%} False {%- endif -%}
+    not_family:
+      entity_id:
+        - sensor.last_what
+        - sensor.last_where
+        - device_tracker.ellensiphone5
+        - device_tracker.dcmsiphone7
+        - device_tracker.rileysiphone5
+        - device_tracker.ianmartinsiphone
+        - device_tracker.halisiphone
+        - device_tracker.kelisiphone7
+      value_template: >
+        {{ (( states.device_tracker.dcmsiphone7.state != 'home' and states.sensor.last_what.state == 'david' ) or
+            ( states.device_tracker.kelisiphone7.state != 'home' and states.sensor.last_what.state == 'keli' ) or
+            ( states.device_tracker.halisiphone.state != 'home' and states.sensor.last_what.state == 'hali' ) or
+            ( states.device_tracker.ianmartinsiphone.state != 'home' and states.sensor.last_what.state == 'ian' ) or
+            ( states.device_tracker.rileysiphone5.state != 'home' and states.sensor.last_what.state == 'riley' ) or
+            ( states.device_tracker.ellensiphone5.state != 'home' and states.sensor.last_what.state == 'ellen' )) 
+           and ( states.sensor.last_where.state != 'road' ) }}
+
 ## HISTORICAL STATISTICS
-##
 
-sensor kitchen_event_count:
+# DAILY COUNT
+
+sensor kitchen_daily_count:
   - platform: history_stats
-    name: kitchen_event_count
-    entity_id: binary_sensor.kitchen_motion
+    name: kitchen_daily_count
+    entity_id: binary_sensor.kitchen_active # (w/in last 30 seconds)
     state: True
     unit_of_measurement: 'events'
     type: count
     start: '{{ now().replace(hour=0).replace(minute=0).replace(second=0) }}'
     end: '{{ now() }}'
 
-sensor kitchen_empty_time:
+sensor bathroom_daily_count:
+  - platform: history_stats
+    name: bathroom_daily_count
+    entity_id: binary_sensor.bathroom_active # (w/in last 30 seconds)
+    state: True
+    unit_of_measurement: 'events'
+    type: count
+    start: '{{ now().replace(hour=0).replace(minute=0).replace(second=0) }}'
+    end: '{{ now() }}'
+
+sensor frontdoor_daily_count:
+  - platform: history_stats
+    name: frontdoor_daily_count
+    entity_id: binary_sensor.frontdoor_active # (w/in last 30 seconds)
+    state: True
+    unit_of_measurement: 'events'
+    type: count
+    start: '{{ now().replace(hour=0).replace(minute=0).replace(second=0) }}'
+    end: '{{ now() }}'
+
+sensor road_daily_count:
+  - platform: history_stats
+    name: road_daily_count
+    entity_id: binary_sensor.road_active # (w/in last 30 seconds)
+    state: True
+    unit_of_measurement: 'events'
+    type: count
+    start: '{{ now().replace(hour=0).replace(minute=0).replace(second=0) }}'
+    end: '{{ now() }}'
+
+## DAILY TIME
+
+sensor kitchen_daily_time:
   - platform: history_stats
     icon: mdi:timer
-    name: kitchen_empty_time
-    entity_id: binary_sensor.kitchen_motion # expires
+    name: kitchen_daily_time
+    entity_id: binary_sensor.kitchen_active # (w/in last 30 seconds)
     state: True
     type: time
     start: '{{ now().replace(hour=0).replace(minute=0).replace(second=0) }}'
     end: '{{ now() }}'
 
-sensor bathroom_empty_time:
+sensor bathroom_daily_time:
   - platform: history_stats
     icon: mdi:timer
-    name: bathroom_empty_time
-    entity_id: sensor.bathroom_motion # expires
+    name: bathroom_daily_time
+    entity_id: sensor.bathroom_active # (w/in last 30 seconds)
     state: True
     type: time
     start: '{{ now().replace(hour=0).replace(minute=0).replace(second=0) }}'
     end: '{{ now() }}'
 
-sensor frontdoor_empty_time:
+sensor frontdoor_daily_time:
   - platform: history_stats
     icon: mdi:timer
-    name: frontdoor_empty_time
-    entity_id: sensor.frontdoor_motion # expires
+    name: frontdoor_daily_time
+    entity_id: sensor.frontdoor_active # (w/in last 30 seconds)
     state: True
     type: time
     start: '{{ now().replace(hour=0).replace(minute=0).replace(second=0) }}'
     end: '{{ now() }}'
 
-sensor road_empty_time:
+sensor road_daily_time:
   - platform: history_stats
     icon: mdi:timer
-    name: road_empty_time
-    entity_id: sensor.road_motion # expires
+    name: road_daily_time
+    entity_id: sensor.road_active # (w/in last 30 seconds) 
     state: True
     type: time
     start: '{{ now().replace(hour=0).replace(minute=0).replace(second=0) }}'
     end: '{{ now() }}'
- 
-#
-# DETECT FAMILY
-#
-
-binary_sensor activity_template:
-  - platform: template
-    sensors:
-      interior_motion:
-        entity_id:
-          - binary_sensor.kitchen_motion
-          - binary_sensor.bathroom_motion
-          - binary_sensor.frontdoor_motion
-        value_template: >
-          {{ states.binary_sensor.kitchen_motion.state or states.binary_sensor.bathroom_motion.state or states.binary_sensor.frontdoor_motion.state }} 
-      exterior_motion:
-        entity_id:
-          - binary_sensor.road_motion
-        value_template: >
-          {{ states.binary_sensor.road_motion.state }}
-
-binary_sensor family_template:
-  - platform: template
-    sensors:
-      family_in_kitchen:
-        entity_id:
-          - sensor.last_what
-          - sensor.last_where
-        value_template: >
-          {{ ( states.sensor.last_what.state == 'david' or
-               states.sensor.last_what.state == 'keli' or
-               states.sensor.last_what.state == 'hali' or
-               states.sensor.last_what.state == 'ian' or
-               states.sensor.last_what.state == 'riley' or
-               states.sensor.last_what.state == 'ellen' ) and 
-             ( states.sensor.last_where.state == 'kitchen' ) }}
-      family_in_bathroom:
-        entity_id:
-          - sensor.last_what
-          - sensor.last_where
-        value_template: >
-          {{ ( states.sensor.last_what.state == 'david' or
-               states.sensor.last_what.state == 'keli' or
-               states.sensor.last_what.state == 'hali' or
-               states.sensor.last_what.state == 'ian' or
-               states.sensor.last_what.state == 'riley' or
-               states.sensor.last_what.state == 'ellen' ) and 
-             ( states.sensor.last_where.state == 'bathroom' ) }}
-      family_at_frontdoor:
-        entity_id:
-          - sensor.last_what
-          - sensor.last_where
-        value_template: >
-          {{ ( states.sensor.last_what.state == 'david' or
-               states.sensor.last_what.state == 'keli' or
-               states.sensor.last_what.state == 'hali' or
-               states.sensor.last_what.state == 'ian' or
-               states.sensor.last_what.state == 'riley' or
-               states.sensor.last_what.state == 'ellen' ) and 
-             ( states.sensor.last_where.state == 'frontdoor' ) }}
-      family_on_road:
-        entity_id:
-          - sensor.last_what
-          - sensor.last_where
-        value_template: >
-          {{ ( states.sensor.last_what.state == 'martin_c70' or
-               states.sensor.last_what.state == 'martin_c30' or
-               states.sensor.last_what.state == 'martin_suburban' or
-               states.sensor.last_what.state == 'martin_sprinter' or
-               states.sensor.last_what.state == 'martin_xc90' or
-               states.sensor.last_what.state == 'martin_rtv1100' ) and 
-             ( states.sensor.last_where.state == 'road' ) }}
-
-binary_sensor detected_template:
-  - platform: template
-    sensors:
-      not_family:
-        entity_id:
-          - sensor.last_what
-          - sensor.last_where
-          - device_tracker.ellensiphone5
-          - device_tracker.dcmsiphone7
-          - device_tracker.rileysiphone5
-          - device_tracker.ianmartinsiphone
-          - device_tracker.halisiphone
-          - device_tracker.kelisiphone7
-        value_template: >
-          {{ (( states.device_tracker.dcmsiphone7.state != 'home' and states.sensor.last_what.state == 'david' ) or
-              ( states.device_tracker.kelisiphone7.state != 'home' and states.sensor.last_what.state == 'keli' ) or
-              ( states.device_tracker.halisiphone.state != 'home' and states.sensor.last_what.state == 'hali' ) or
-              ( states.device_tracker.ianmartinsiphone.state != 'home' and states.sensor.last_what.state == 'ian' ) or
-              ( states.device_tracker.rileysiphone5.state != 'home' and states.sensor.last_what.state == 'riley' ) or
-              ( states.device_tracker.ellensiphone5.state != 'home' and states.sensor.last_what.state == 'ellen' )) 
-             and ( states.sensor.last_where.state != 'road' ) }}
-      family_detected:
-        entity_id:
-          - binary_sensor.family_in_kitchen
-          - binary_sensor.family_in_bathroom
-          - binary_sensor.family_at_frontdoor
-          - binary_sensor.family_on_road
-        value_template: >
-          {{ states.binary_sensor.family_in_kitchen.state == 'on' or
-             states.binary_sensor.family_in_bathroom.state == 'on' or 
-             states.binary_sensor.family_at_frontdoor.state == 'on' or 
-             states.binary_sensor.family_on_road.state == 'on' }}
-      yes_activity:
-        entity_id:
-          - binary_sensor.interior_motion
-        value_template: >
-          {{ states.binary_sensor.interior_motion.state == 'on' }}
-      no_activity:
-        entity_id:
-          - binary_sensor.interior_motion
-        value_template: >
-          {{ states.binary_sensor.interior_motion.state == 'off' }}
-
 #
 # TIME ACTIVITY
 #
@@ -2347,16 +2308,85 @@ sensor no_activity_time:
 # BAYESIAN
 #
 
-binary_sensor bayesian_test:
+binary_sensor david_home:
   - platform: bayesian
-    name: bayesian_test
-    prior: 0.1
+    name: david_home
+    prior: 0.75
     observations:
-      - entity_id: binary_sensor.interior_motion
-        prob_given_true: 0.6
+      - entity_id: device_tracker.davids_iphone
+        prob_given_true: 0.9
+        prob_given_false: 0.1
+        platform: 'state'
+        to_state: 'home'
+      - entity_id: device_tracker.dcmsiphone7
+        prob_given_true: 0.8
         prob_given_false: 0.2
         platform: 'state'
-        to_state: 'on'
+        to_state: 'home'
+      - entity_id: device_tracker.davidcsapple_watch
+        prob_given_true: 0.8
+        prob_given_false: 0.2
+        platform: 'state'
+        to_state: 'home'
+      - entity_id: device_tracker.davidpro
+        prob_given_true: 0.5
+        prob_given_false: 0.5
+        platform: 'state'
+        to_state: 'home'
+      - entity_id: sensor.kitchen_what
+        prob_given_true: 0.5
+        prob_given_false: 0.5
+        platform: 'state'
+        to_state: 'david'
+      - entity_id: sensor.bathroom_what
+        prob_given_true: 0.5
+        prob_given_false: 0.5
+        platform: 'state'
+        to_state: 'david'
+      - entity_id: sensor.frontdoor_what
+        prob_given_true: 0.5
+        prob_given_false: 0.5
+        platform: 'state'
+        to_state: 'david'
+      - entity_id: sensor.road_what
+        prob_given_true: 0.7
+        prob_given_false: 0.3
+        platform: 'state'
+        to_state: 'martin_c70'
+
+sensor location_template:
+  platform: template
+  sensors:
+    david_location:
+      entity_id:
+        - device_tracker.davids_iphone
+        - device_tracker.dcmsiphone7
+      value_template: >
+        {% if states.device_tracker.davids_iphone is defined and states.device_tracker.davids_iphone.state != 'home' %}
+          {% if states.device_tracker.dcmsiphone7 is defined and states.device_tracker.dcmsiphone7.state != 'home' %}
+            {{ states.device_tracker.dcmsiphone7.state }}
+          {% else %} Home {% endif %}
+        {% else %} Home {% endif %}
+    keli_location:
+      entity_id: device_tracker.kelisiphone7
+      friendly_name: "Keli location"
+      value_template: '{% if states.device_tracker.kelisiphone7 is defined %} {{ states.device_tracker.kelisiphone7.state }} {% else %} "unknown" {% endif %}'
+    hali_location:
+      entity_id: device_tracker.halisiphone 
+      friendly_name: "Hali location"
+      value_template: '{% if states.device_tracker.halisiphone is defined %} {{ states.device_tracker.halisiphone.state }} {% else %} "unknown" {% endif %}'
+    ian_location:
+      entity_id: device_tracker.ianmartinsiphone 
+      friendly_name: "Ian location"
+      value_template: '{% if states.device_tracker.ianmartinsiphone is defined %} {{ states.device_tracker.ianmartinsiphone.state }} {% else %} "unknown" {% endif %}'
+    riley_location:
+      entity_id: device_tracker.rileysiphone5
+      friendly_name: "Riley location"
+      value_template: '{% if states.device_tracker.rileysiphone5 is defined %} {{ states.device_tracker.rileysiphone5.state }} {% else %} "unknown" {% endif %}'
+    ellen_location:
+      entity_id: device_tracker.ellensiphone5
+      friendly_name: "Ellen location"
+      value_template: '{% if states.device_tracker.ellensiphone5 is defined %} {{ states.device_tracker.ellensiphone5.state }} {% else %} "unknown" {% endif %}'
 
 logger: !include logger.yaml
 group: !include groups.yaml

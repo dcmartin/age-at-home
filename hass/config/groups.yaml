@@ -7,9 +7,35 @@ default_view:
   name: Default View
   icon: mdi:home-variant
   entities:
+    - group.people
     - group.iphones
     - group.weather_today
     - camera.wuradar
+      
+people:
+  name: People
+  entities:
+    - sensor.david_location
+    - sensor.keli_location
+    - sensor.hali_location
+    - sensor.ian_location
+    - sensor.riley_location
+    - sensor.ellen_location
+
+iphones:
+  name: iPhones
+  entities:
+    - device_tracker.kelis_iphone
+    - device_tracker.davids_iphone
+    - device_tracker.ellens_iphone
+    - device_tracker.davidsipadmini
+    - device_tracker.davidcsapple_watch
+    - device_tracker.kelisiphone7
+    - device_tracker.dcmsiphone7
+    - device_tracker.ellensiphone5
+    - device_tracker.halisiphone
+    - device_tracker.ianmartinsiphone
+    - device_tracker.rileysiphone5
 
 #
 # PLAY1
@@ -34,6 +60,45 @@ play3_view:
   entities:
     - media_player.play3
     - group.sonos_play3
+
+sensor_counts:
+  view: no
+  name: Sensor Counts
+  icon: mdi:sensor
+  entities:
+    - sensor.count_binary_sensors
+    - sensor.count_cameras
+    - sensor.count_device_trackers
+    - sensor.count_media_players
+    - sensor.count_sensors
+    - sensor.count_zones
+
+motion_detection:
+  view: no
+  name: Motion Detection
+  icon: mdi:sensor
+  entities:
+    - binary_sensor.kitchen_motion
+    - binary_sensor.bathroom_motion
+    - binary_sensor.frontdoor_motion
+    - binary_sensor.road_motion
+    - binary_sensor.kitchen_active
+    - binary_sensor.bathroom_active
+    - binary_sensor.frontdoor_active
+    - binary_sensor.road_active
+    - binary_sensor.interior_motion
+    - binary_sensor.exterior_motion
+    - binary_sensor.family_at_frontdoor
+    - binary_sensor.family_in_bathroom
+    - binary_sensor.family_in_kitchen
+    - binary_sensor.family_on_road
+    - binary_sensor.family_detected
+    - binary_sensor.david_in_kitchen
+    - binary_sensor.keli_in_kitchen
+    - binary_sensor.no_activity
+    - binary_sensor.yes_activity
+    - binary_sensor.kitchen_wrong
+    - binary_sensor.david_home
 
 #
 # HORIZON
@@ -61,8 +126,8 @@ mtnrpi2_status:
   entities:
     - device_tracker.mtn_rpi2
     - sensor.mtnrpi2_device_name
-    - sensor.mtnrpi2_device_accountid
-    - sensor.mtnrpi2_device_email
+    - sensor.mtnrpi2_device_id
+    - sensor.mtnrpi2_device_organization
     - sensor.mtnrpi2_balance
     - sensor.mtnrpi2_net_peer_count
     - sensor.mtnrpi2_exchange
@@ -174,6 +239,24 @@ mtnrpi2_attribute:
 # AGE-AT-HOME
 #
 
+ageathome_family:
+  view: no
+  name: aah_family
+  entities:
+    - sensor.david
+    - sensor.keli
+    - sensor.hali
+    - sensor.ian
+    - sensor.riley
+    - sensor.ellen
+
+ageathome_people:
+  view: no
+  name: aah_people
+  entities:
+    - group.aah_family
+    - sensor.miriam
+
 ageathome_view:
   view: yes
   name: AgeAtHome View
@@ -183,7 +266,8 @@ ageathome_view:
     - group.ageathome_last
     - group.ageathome_what
     - group.ageathome_ago
-    - group.ageathome_empty_time
+    - group.ageathome_activity
+    - group.motion_detection
 
 ageathome_cameras:
   view: yes
@@ -204,17 +288,21 @@ ageathome_devices:
     - device_tracker.dampcloud
     - device_tracker.roughwind
 
-ageathome_empty_time:
-  name: 'AgeAtHome Empty'
+ageathome_activity:
+  name: 'AgeAtHome Activity'
   entities:
-    - sensor.kitchen_empty_time
-    - sensor.bathroom_empty_time
-    - sensor.road_empty_time
-    - sensor.frontdoor_empty_time
+    - sensor.kitchen_daily_time
+    - sensor.bathroom_daily_time
+    - sensor.road_daily_time
+    - sensor.frontdoor_daily_time
+    - sensor.kitchen_daily_count
+    - sensor.bathroom_daily_count
+    - sensor.road_daily_count
+    - sensor.frontdoor_daily_count
     - sensor.no_activity_time
     - sensor.yes_activity_time
-    - binary_sensor.no_activity
     - binary_sensor.yes_activity
+    - binary_sensor.no_activity
 
 ageathome_last:
   name: 'AgeAtHome Last'
@@ -243,6 +331,10 @@ ageathome_ago:
     - sensor.bathroom_ago
     - sensor.road_ago
     - sensor.frontdoor_ago
+    - sensor.kitchen_when
+    - sensor.bathroom_when
+    - sensor.road_when
+    - sensor.frontdoor_when
 
 # KITCHEN
 
@@ -257,7 +349,7 @@ ageathome_kitchen_view:
     - group.ageathome_notin_kitchen
 
 ageathome_kitchen_details:
-  name: AgeAtHome Kitchen Details
+  name: ageathome_kitchen_details
   entities:
     - sensor.kitchen_who
     - sensor.kitchen_what
@@ -265,9 +357,7 @@ ageathome_kitchen_details:
     - sensor.kitchen_why
     - sensor.kitchen_ago
     - sensor.kitchen_empty_time
-    - binary_sensor.kitchen_wrong
-    - binary_sensor.keli_in_kitchen
-    - binary_sensor.david_in_kitchen
+    - sensor.kitchen_event_count
 
 ageathome_notin_kitchen:
   name: 'AgeAtHome NotIn Kitchen'
@@ -453,6 +543,8 @@ status_view:
     - group.network_status
     - group.tivo_status
     - group.webcam_status
+    - group.sensor_counts
+    - group.security
 
 sonos_play1:
   name: Sonos PLAY1
@@ -539,6 +631,7 @@ weather_today:
     - sun.sun
     - sensor.solar_angle
     - sensor.sunrise
+    - sensor.sunset
     - sensor.pws_weather
     - sensor.pws_feelslike_f
     - sensor.pws_precip_today_in
@@ -573,17 +666,10 @@ webcam_status:
     - device_tracker.wcv80n_upperpath
     - device_tracker.wcv80n_woodshed
 
-iphones:
-  name: iPhones
+security:
+  name: security
   entities:
-    - device_tracker.kelis_iphone
-    - device_tracker.davids_iphone
-    - device_tracker.ellens_iphone
-    - device_tracker.davidsipadmini
-    - device_tracker.davidcsapple_watch
-    - device_tracker.kelisiphone7
-    - device_tracker.dcmsiphone7
-    - device_tracker.ellensiphone5
-    - device_tracker.halisiphone
-    - device_tracker.ianmartinsiphone
-    - device_tracker.rileysiphone5
+    - input_boolean.panic
+    - input_boolean.night_mode
+    - input_boolean.voice_alerts
+    - input_boolean.visitor

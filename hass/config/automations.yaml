@@ -1,48 +1,73 @@
-- id: mqtt_david
-  alias: 'mqtt_david'
-  initial_state: 'on'
+- id: auto_light_on_enabled
+  alias: auto_light_on_enabled
   trigger:
     platform: state
-    entity_id: device_tracker.davidsiphone7
-  action: 
-    - service: mqtt.publish
-      data:
-        topic: 'what/david/#'
-        payload_template: >
-          {{ trigger.to_state.state }}
-
-- id: notify_davids_iphone
-  alias: 'notify_davids_iphone'
-  initial_state: 'on'
-  trigger:
-    platform: state
-    entity_id: device_tracker.davids_iphone_lan
-    to: 'home'
+    entity_id: input_slider.auto_light_minutes, input_slider.auto_light_duration
   action:
-    - service: notify.notify
-      data_template:
-        message: >
-          {% if trigger.to_state.state != trigger.from_state.state %} 
-            David's iPhone is now on the LAN at {{ trigger.to_state.state }}
-          {% endif %}
+  - service: homeassistant.turn_on
+    data:
+      entity_id:
+        - automation.auto_light_on
+  - service: homeassistant.turn_on
+    data:
+      entity_id:
+        - automation.auto_light_off
+
+- id: auto_light_on
+  alias: auto_light_on
+  initial_state: True
+  trigger:
+    - platform: time
+      minutes: '/1'
+      seconds: 10
+  condition:
+    - condition: template
+      value_template: '{{ (now().strftime("%s") | int | timestamp_custom("%H:%M")) == states.sensor.auto_light_start.state }}'
+  action:
+    - service: homeassistant.turn_on
+      entity_id: "group.lights"
+
+- id: auto_light_off
+  alias: auto_light_off
+  initial_state: True
+  trigger:
+    - platform: time
+      minutes: '/1'
+      seconds: 10
+  condition:
+    - condition: template
+      value_template: '{{ (now().strftime("%s") | int | timestamp_custom("%H:%M")) == states.sensor.auto_light_stop.state }}'
+  action:
+    - service: homeassistant.turn_off
+      entity_id: "group.lights"
+
+#
+# iOS NOTIFICATIONS
+#
 
 - id: notify_david
   alias: 'notify_david'
   initial_state: 'on'
   trigger:
-    platform: state
-    entity_id: device_tracker.dcmsiphone7
-  condition:
-    platform: time
-    after: '06:00'
-    before: '22:00'
+    - platform: state
+      entity_id: device_tracker.dcmsiphone7
+    - platform: state
+      entity_id: device_tracker.davids_iphone
+  condition: 
+    condition: and
+    conditions:
+      - condition: time
+        after: '06:00'
+      - condition: time
+        before: '22:00'
+      - condition: template
+        value_template: >
+          {{ trigger.from_state != None and trigger.to_state.state != trigger.from_state.state }}
   action:
     - service: notify.notify
       data_template:
         message: >
-          {% if trigger.from_state != None and trigger.to_state.state != trigger.from_state.state %} 
-          David's location just changed from {{ trigger.from_state.state }} to {{ trigger.to_state.state }}
-          {% endif %}
+          {{ trigger.entity_id }}'s location just changed from {{ trigger.from_state.state }} to {{ trigger.to_state.state }}
 
 - id: notify_ellen
   alias: 'notify_ellen'
@@ -50,17 +75,21 @@
   trigger:
     platform: state
     entity_id: device_tracker.ellensiphone5
-  condition:
-    platform: time
-    after: '06:00'
-    before: '22:00'
+  condition: 
+    condition: and
+    conditions:
+      - condition: time
+        after: '06:00'
+      - condition: time
+        before: '22:00'
+      - condition: template
+        value_template: >
+          {{ trigger.from_state != None and trigger.to_state.state != trigger.from_state.state }}
   action:
     - service: notify.notify
       data_template:
         message: >
-          {% if trigger.from_state != None and trigger.to_state.state != trigger.from_state.state %} 
-          Ellen's location just changed from {{ trigger.from_state.state }} to {{ trigger.to_state.state }}
-          {% endif %}
+          {{ trigger.entity_id }}'s location just changed from {{ trigger.from_state.state }} to {{ trigger.to_state.state }}
 
 - id: notify_keli
   alias: 'notify_keli'
@@ -68,17 +97,21 @@
   trigger:
     platform: state
     entity_id: device_tracker.kelisiphone7
-  condition:
-    platform: time
-    after: '06:00'
-    before: '22:00'
+  condition: 
+    condition: and
+    conditions:
+      - condition: time
+        after: '06:00'
+      - condition: time
+        before: '22:00'
+      - condition: template
+        value_template: >
+          {{ trigger.from_state != None and trigger.to_state.state != trigger.from_state.state }}
   action:
     - service: notify.notify
       data_template:
         message: >
-          {% if trigger.from_state != None and trigger.to_state.state != trigger.from_state.state %} 
-          Keli's location just changed from {{ trigger.from_state.state }} to {{ trigger.to_state.state }}
-          {% endif %}
+          {{ trigger.entity_id }}'s location just changed from {{ trigger.from_state.state }} to {{ trigger.to_state.state }}
 
 - id: notify_riley
   alias: 'notify_riley'
@@ -86,258 +119,290 @@
   trigger:
     platform: state
     entity_id: device_tracker.rileysiphone5
-  condition:
-    platform: time
-    after: '06:00'
-    before: '22:00'
+  condition: 
+    condition: and
+    conditions:
+      - condition: time
+        after: '06:00'
+      - condition: time
+        before: '22:00'
+      - condition: template
+        value_template: >
+          {{ trigger.from_state != None and trigger.to_state.state != trigger.from_state.state }}
   action:
     - service: notify.notify
       data_template:
         message: >
-          {% if trigger.from_state != None and trigger.to_state.state != trigger.from_state.state %} 
-          Riley's location just changed from {{ trigger.from_state.state }} to {{ trigger.to_state.state }}
-          {% endif %}
+          {{ trigger.entity_id }}'s location just changed from {{ trigger.from_state.state }} to {{ trigger.to_state.state }}
 
-- id: aah_mqtt_presence_last
-  alias: 'mqtt_presence_last'
+#
+# MQTT
+#
+
+- id: aah_family_detected
+  alias: 'aah_family_detected'
   initial_state: 'on'
   trigger:
     platform: state
-    entity_id: sensor.presence_last
-  action:
-    - service: mqtt.publish
-      data:
-        topic: 'what/last'
-        payload_template: >
-          {{ trigger.to_state.state }}
-
-- id: aah_mqtt_camera_offline
-  alias: 'Notify if any AAH sensor is unknown for 10 minutes'
-  trigger:
-    platform: state
-    entity_id:
-      - sensor.kitchen_camera
-      - sensor.bathroom_camera
-      - sensor.frontdoor_camera
-      - sensor.road_camera
-    state: None
-    for:
-      minutes: 10
+    entity_id: binary_sensor.family_detected
+    to: 'on'
   action:
     - service: mqtt.publish
       data_template:
-        topic: 'device/camera/{{trigger.to_state.attributes.friendly_name}}'
+        topic: 'what/family'
         payload: >
-          {"device":"{{ trigger.to_state.attributes.friendly_name }}","status":"offline"}
+          {"what":"family","date:",{{(now().timestamp()|int)}},"state":"{{ trigger.to_state.state }}"}
 
-- id: aah_notify_lowscore
-  alias: very low score
-  trigger:
-    platform: numeric_state
-    entity_id: sensor.last_why
-    below: 0.50
-  action:
-    - service: notify.notify
-      data_template:
-        message: >
-          VERY LOW {{ states.sensor.last_who }} saw {{ states.sensor.last_what }} {{ states.sensor.last_why }}
-
-- id: aah_notify_highscore
-  alias: very high score
-  trigger:
-    platform: numeric_state
-    entity_id: sensor.last_why
-    above: 0.99
-  action:
-    - service: notify.notify
-      data_template:
-        message: >
-          VERY HIGH {{ states.sensor.last_who }} saw {{ states.sensor.last_what }} {{ states.sensor.last_why }}
-
-- id: sonos_volume_limiter
-  alias: Sonos Volume Limiter
-  initial_state: True
-  hide_entity: False
-  trigger:
-    platform: numeric_state
-    entity_id: media_player.play1
-    value_template: '{{ state.attributes.volume_level }}'
-    above: 0.35
-  condition:
-    platform: time
-    after: '08:00:00'
-    before: '20:00:00'
-  action:
-    - service: media_player.volume_set
-      data_template:
-        entity_id: media_player.play1
-        volume_level: 0.34
-
-- id: dump_automations
-  alias: 'dump_automations'
+- id: aah_device_detected
+  alias: 'aah_device_detected'
   initial_state: 'on'
   trigger:
     platform: state
-    entity_id: states.automation
+    entity_id: group.iphones
   action: 
     - service: mqtt.publish
       data_template:
-        topic: 'state/automation/all' # topic: '{{ trigger.platform }}/{{ trigger.entity_id.name }}/all'
+        topic: 'what/{{trigger.entity_id}}'
         payload: >
-          {% for state in states.automation -%}
-            {%- if loop.first -%}{"automations":[
-            {%- else -%},
-            {%- endif -%} {"name":"{{state.name|lower}}","state":"{{state.state}}","attributes":"{{state.attributes}}"}
-          {%- endfor -%}]}
+          {"what":"{{trigger.entity_id}}","date":{{(now().timestamp()|int)}},"state":"{{trigger.to_state.state}}"
 
-- id: dump_binary_sensors
-  alias: 'dump_binary_sensors'
+#- id: aah_mqtt_camera_offline
+#  alias: 'Notify if any AAH sensor is unknown for 10 minutes'
+#  trigger:
+#    platform: state
+#    entity_id:
+#      - sensor.kitchen_camera
+#      - sensor.bathroom_camera
+#      - sensor.frontdoor_camera
+#      - sensor.road_camera
+#    state: None
+#    for:
+#      minutes: 10
+#  action:
+#    - service: mqtt.publish
+#      data_template:
+#        topic: 'device/camera/{{trigger.to_state.attributes.friendly_name}}'
+#        payload: >
+#          {"device":"{{ trigger.to_state.attributes.friendly_name }}","status":"offline"}
+#
+#- id: aah_notify_lowscore
+#  alias: very low score
+#  trigger:
+#    platform: numeric_state
+#    entity_id: sensor.last_why
+#    below: 0.50
+#  action:
+#    - service: notify.notify
+#      data_template:
+#        message: >
+#          VERY LOW {{ states.sensor.last_who }} saw {{ states.sensor.last_what }} {{ states.sensor.last_why }}
+#
+#- id: aah_notify_highscore
+#  alias: very high score
+#  trigger:
+#    platform: numeric_state
+#    entity_id: sensor.last_why
+#    above: 0.99
+#  action:
+#    - service: notify.notify
+#      data_template:
+#        message: >
+#          VERY HIGH {{ states.sensor.last_who }} saw {{ states.sensor.last_what }} {{ states.sensor.last_why }}
+#
+#- id: sonos_volume_limiter
+#  alias: Sonos Volume Limiter
+#  initial_state: True
+#  hide_entity: False
+#  trigger:
+#    platform: numeric_state
+#    entity_id: media_player.play1
+#    value_template: '{{ state.attributes.volume_level }}'
+#    above: 0.35
+#  condition:
+#    platform: time
+#    after: '08:00:00'
+#    before: '20:00:00'
+#  action:
+#    - service: media_player.volume_set
+#      data_template:
+#        entity_id: media_player.play1
+#        volume_level: 0.34
+
+##
+## DUMPS
+##
+
+- id: publish_automations
+  alias: 'publish_automations'
   initial_state: 'on'
   trigger:
-    platform: state
-    entity_id: states.binary_sensor
+    - platform: template
+      value_template: '{{ states.automation != None }}'
+    - platform: state
+      entity_id: states.automation
+  action:
+    - service: mqtt.publish
+      data_template:
+        topic: 'state/automation/all'
+        payload: >
+          {%- for state in states.automation -%}
+            {%- if loop.first -%}{"category":"automation","date":{{ (now().timestamp()|int) }},"items":[
+            {%- else -%},
+            {%- endif -%} {"name":"{{state.name|lower}}","state":"{{state.state}}","last_triggerd":"{{state.attributes.last_triggered}}"}
+          {%- endfor -%}]}
+
+- id: publish_binary_sensors
+  alias: 'publish_binary_sensors'
+  initial_state: 'on'
+  trigger:
+    - platform: template
+      value_template: '{{ states.binary_sensor != None }}'
+    - platform: state
+      entity_id: states.binary_sensor
   action: 
     - service: mqtt.publish
       data_template:
         topic: 'state/binary_sensor/all'
         payload: >
           {% for state in states.binary_sensor -%}
-            {%- if loop.first -%} {"binary_sensors":[
+            {%- if loop.first -%} {"category":"binary_sensor","date":{{ (now().timestamp()|int) }},"items":[
             {%- else -%},
-            {%- endif -%} {"name":"{{state.name|lower}}","state":"{{state.state}}","attributes":"{{state.attributes}}"}
+            {%- endif -%} {"name":"{{state.name|lower}}","state":"{{state.state}}","attributes":{{state.attributes|length}}}
           {%- endfor -%}]}
 
-- id: dump_cameras
-  alias: 'dump_cameras'
+- id: publish_cameras
+  alias: 'publish_cameras'
   initial_state: 'on'
   trigger:
-    platform: state
-    entity_id: states.camera
+    - platform: template
+      value_template: '{{ states.camera != None }}'
+    - platform: state
+      entity_id: states.camera
   action: 
     - service: mqtt.publish
       data_template:
-        topic: 'state/binary_sensor/all'
+        topic: 'state/camera/all'
         payload: >
           {% for state in states.camera -%}
-            {%- if loop.first -%}{"cameras":[
+            {%- if loop.first -%}{"category":"camera","date":{{ (now().timestamp()|int) }},"items":[
             {%- else -%},
-            {%- endif -%} {"name":"{{state.name|lower}}","state":"{{state.state}}","attributes":"{{state.attributes}}"}
+            {%- endif -%} {"name":"{{state.name|lower}}","state":"{{state.state}}","attributes":{{state.attributes|length}}}
           {%- endfor -%}]}
 
-- id: dump_device_trackers
-  alias: 'dump_device_trackers'
+- id: publish_device_trackers
+  alias: 'publish_device_trackers'
   initial_state: 'on'
   trigger:
-    platform: state
-    entity_id: states.device_tracker
+    - platform: template
+      value_template: '{{ states.device_tracker != None }}'
+    - platform: state
+      entity_id: states.device_tracker
   action: 
     - service: mqtt.publish
       data_template:
-        topic: 'state/binary_sensor/all'
+        topic: 'state/device_tracker/all'
         payload: >
          {% for state in states.device_tracker -%}
-           {%- if loop.first -%}{"device_trackers":[
+           {%- if loop.first -%}{"category":"device_tracker","date":{{ (now().timestamp()|int) }},"items":[
            {%- elif loop.last -%}
              {%- if state.attributes.source_type != None -%}
-               {"name":"{{ state.name | lower }}","state":"{{state.state}}","attributes":"{{ state.attributes}}"}
+               {"name":"{{ state.name | lower }}","state":"{{state.state}}","attributes":{{ state.attributes|length}}}
              {%- endif -%}
            {%- else -%}
              {%- if state.attributes.source_type != None -%}
-               {"name":"{{ state.name | lower }}","state":"{{state.state}}","attributes":"{{ state.attributes}}"},
+               {"name":"{{ state.name | lower }}","state":"{{state.state}}","attributes":{{ state.attributes|length}}},
              {%- endif -%}
            {%- endif -%}
           {%- endfor -%}]}
 
-- id: mqtt_all_media_players_payload_template
-  alias: 'mqtt_all_media_players_payload_template'
+- id: publish_media_players
+  alias: 'publish_media_players'
   initial_state: 'on'
   trigger:
-    platform: state
-    entity_id: states.all_media_players
-  action: 
-    - service: mqtt.publish
-      data:
-        topic: 'state/media_player/all'
-        payload_template: >
-            {{states.all_media_players.state}}
-
-- id: mqtt_media_players_payload_template_script
-  alias: 'mqtt_all_media_players_payload_template_script'
-  initial_state: 'on'
-  trigger:
-    platform: state
-    entity_id: states.all_media_players
-  action: 
-    - service: mqtt.publish
-      data:
-        topic: 'state/media_player/all'
-        payload_template: >
-          {% for state in states.media_player -%}
-            {%- if loop.first -%}{"media_players":[
-            {%- else -%},
-            {%- endif -%} {"name":"{{state.name|lower}}","state":"{{state.state}}","attributes":"{{state.attributes}}"}
-          {%- endfor -%}]}
-
-- id: dump_media_players
-  alias: 'dump_media_players'
-  initial_state: 'on'
-  trigger:
-    platform: state
-    entity_id: states.media_player
+    - platform: template
+      value_template: '{{ states.media_player != None }}'
+    - platform: state
+      entity_id: states.media_player
   action: 
     - service: mqtt.publish
       data_template:
         topic: 'state/media_player/all'
         payload: >
           {% for state in states.media_player -%}
-            {%- if loop.first -%}{"media_players":[
+            {%- if loop.first -%}{"category":"media_player","date":{{ (now().timestamp()|int) }},"items":[
             {%- else -%},
-            {%- endif -%} {"name":"{{state.name|lower}}","state":"{{state.state}}","attributes":"{{state.attributes}}"}
+            {%- endif -%} {"name":"{{state.name|lower}}","state":"{{state.state}}","attributes":{{state.attributes|length}}}
           {%- endfor -%}]}
 
-- id: dump_sensors
-  alias: 'dump_sensors'
+- id: publish_sensors
+  alias: 'publish_sensors'
   initial_state: 'on'
   trigger:
-    platform: state
-    entity_id: states.sensor
+    - platform: template
+      value_template: '{{ states.sensor != None }}'
+    - platform: state
+      entity_id: states.sensor
   action: 
     - service: mqtt.publish
       data_template:
         topic: 'state/sensor/all'
         payload: >
-          {% for state in states.sensor -%}
-            {%- if loop.first -%} {"sensors":[
-            {%- else -%},
-            {%- endif -%} {"name":"{{state.name|lower}}","state":"{{state.state}}","attributes":"{{state.attributes}}"}
+         {% for state in states.sensor -%}
+           {%- if loop.first -%}{"category":"sensor","date":{{ (now().timestamp()|int) }},"items":[
+           {%- elif loop.last -%}
+             {"name":"{{ state.name | lower | urlencode }}","state":"{{ state.state }}"}
+           {%- else -%}
+             {"name":"{{ state.name | lower | urlencode }}","state":"{{ state.state }}"},
+           {%- endif -%}
           {%- endfor -%}]}
 
-- id: dump_zones
-  alias: 'dump_zones'
+- id: publish_zones
+  alias: 'publish_zones'
   initial_state: 'on'
   trigger:
-    platform: state
-    entity_id: states.zone
+    - platform: template
+      value_template: '{{ states.zone != None }}'
+    - platform: state
+      entity_id: states.zone
   action: 
     - service: mqtt.publish
       data_template:
         topic: 'state/zone/all'
         payload: >
           {% for state in states.zone -%}
-            {%- if loop.first -%} {"zones":[
+            {%- if loop.first -%} {"category":"zone","date":{{ (now().timestamp()|int) }},"items":[
             {%- else -%},
-            {%- endif -%} {"name":"{{state.name|lower}}","state":"{{state.state}}","attributes":"{{state.attributes}}"}
+            {%- endif -%} {"name":"{{state.name|lower}}","state":"{{state.state}}","attributes":{"radius":{{state.attributes.radius}},"latitude":{{state.attributes.latitude}},"longitude":{{state.attributes.longitude}} }}
           {%- endfor -%}]}
 
-- id: dump_states
-  alias: dump_states
+- id: publish_states
+  alias: 'publish_states'
+  initial_state: 'on'
   trigger:
-    platform: state
-    entity_id: states.AllStates
+    - platform: template
+      value_template: '{{ states.state != None }}'
+    - platform: state
+      entity_id: states.state
+  action: 
+    - service: mqtt.publish
+      data_template:
+        topic: 'state/all'
+        payload: >
+          {%- for i in states -%}
+            {%- if loop.first -%}[{%- elif loop.last -%}]{%- else -%},{%- endif -%}
+            {"name":"{{ i.name }}","domain":"{{ i.domain }}"}
+          {%- endfor -%}
+
+- id: debug_automation
+  alias: debug_automation
+  initial_state: on
+  trigger:
+    - platform: state
+      entity_id: states.automation
   action:
     - service: mqtt.publish
       data_template:
-        topic: '{{ trigger.platform }}/{{ trigger.entity_id }}/all'
+        topic: 'debug/{{ trigger.platform }}/{{ trigger.entity_id }}'
         retain: false
         payload: >-
           {%- macro dumpState(statePrefix, stateObj) -%}
