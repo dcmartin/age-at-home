@@ -32,6 +32,8 @@ if ($#argv > 1) then
     set percentages = ( $percentages $t )
     @ i++
   end
+else
+  set total = 100
 endif
 
 if ($?total) then
@@ -61,10 +63,10 @@ echo '[ENV] ARRAY_SIZE (' "$ARRAY_SIZE" ')'
 @ i = 1
 set existing = ()
 while ($i <= $#percentages)
-  if (! -e "$device.$i.$percentages[$i].txt") then
+  if (! -e "$device.$i.$percentages[$i].map") then
     break
   else
-    set existing = ( $existing "$device.$i.$percentages[$i].txt" )
+    set existing = ( $existing "$device.$i.$percentages[$i].map" )
   endif
   @ i++
 end
@@ -184,15 +186,15 @@ while ($r <= $ARRAY_SIZE)
   @ r ++
 end
 
-rm -f "$TMP/$$.txt"
+rm -f "$TMP/$$.map"
 @ g = 1
 while ($g <= $#set_array)
   set sid = $set_array[$g] 
   set cid = $class_array[$g]
-  echo "$cid $sid" >>! "$TMP/$$.txt"
+  echo "$cid $sid" >>! "$TMP/$$.map"
   @ g++
 end
-set assign = ( `sort "$TMP/$$.txt" | awk '{ print $2 }'` )
+set assign = ( `sort "$TMP/$$.map" | awk '{ print $2 }'` )
 
 
 # TESTING
@@ -266,7 +268,7 @@ foreach c ( $classes )
 
       set q = `awk -v seed="$seed" 'BEGIN{srand(seed);print int(1.0+rand()*'"$ARRAY_SIZE"'-1+1)}'`
       echo -n "$assign[$q] "
-      echo "$tid $cno" >>! "$TMP/$0:t.$assign[$q].txt"
+      echo "$tid $cno" >>! "$TMP/$0:t.$assign[$q].map"
     end
     echo ''
     rm -f "$TMP/$0:t.path"
@@ -288,7 +290,7 @@ end
 
 @ i = 1
 while ($i <= $#percentages)
-  set bfile = "$TMP/$0:t.$i.txt"
+  set bfile = "$TMP/$0:t.$i.map"
 
   if (! -e "$bfile") then
     echo "[ERROR] no file $bfile"
@@ -311,7 +313,7 @@ while ($i <= $#percentages)
     endif
     @ j++
   end
-  set dfile = "$device.$i.$percentages[$i].txt"
+  set dfile = "$device.$i.$percentages[$i].map"
   echo "[INFO] $dfile " `echo "$nl" | awk '{ printf("%d, %.2f%%\n", $1, $1 / '"$total"' * 100.0) }'`
   mv -f "$bfile" "$dfile"
   @ i++
@@ -334,7 +336,7 @@ set entries = ()
 
 @ r = 1
 while ($r <= $#percentages)
-  set sfile = "$device.$r.$percentages[$r].txt"
+  set sfile = "$device.$r.$percentages[$r].map"
   set lfile = "$device.$r.$percentages[$r].lmdb"
 
   set counts = ( $counts `wc -l "$sfile" | awk '{ print $1 }'` )
