@@ -16,16 +16,21 @@ if ($status != 0) then
   exit 1
 endif
 
+command -v python3 >& /dev/null
+if ($status != 0) then
+  echo "[ERROR] Please install python3 first; try using http://brew.sh (brew install python3)"
+  exit 1
+endif
+
 # check OpenStack Swift client
 set version = ( `swift --version |& awk '{ print $1 }'` )
 if ( "$version" =~ "python*" ) then
   echo "Swift installed ($version)"
 else
   echo "INSTALLING Swift client using pip; system may prompt for password"
-  sudo easy_install pip >& /dev/null
-  sudo pip install python-swiftclient >& /dev/null
-  sudo pip install python-keystoneclient >& /dev/null
-  echo "DONE installing Swift client""
+  pip3 install python-swiftclient >& /dev/null
+  pip3 install python-keystoneclient >& /dev/null
+  echo "DONE installing Swift client"
 endif
 
 #
