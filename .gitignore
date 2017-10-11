@@ -1,4 +1,2 @@
-.cloudant_id.json
-node_modules
+.git
 .DS_Store
-.node.red-flow.json
