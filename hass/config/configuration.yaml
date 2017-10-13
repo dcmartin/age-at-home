@@ -1714,6 +1714,7 @@ sensor last_what:
   - platform: mqtt
     state_topic: 'presence/+'
     name: last_what
+    expire_after: 30
     value_template: '{% if value_json is defined %} {{ value_json.class }} {% else %} "nothing" {% endif %}'
 
 sensor last_who:
@@ -1731,7 +1732,7 @@ sensor last_why:
 sensor last_date:
   - platform: mqtt
     state_topic: 'presence/+'
-    name: last_why
+    name: last_date
     value_template: '{% if value_json is defined -%} {{ value_json.date|int }} {%- else -%} -1 {%- endif -%}'
 
 sensor last_where:
@@ -1739,19 +1740,6 @@ sensor last_where:
     state_topic: 'presence/+'
     name: last_where
     value_template: '{% if value_json is defined %} {{ value_json.location }} {% else %} "nowhere" {% endif %}'
-
-sensor last_ago:
-  - platform: mqtt
-    state_topic: 'presence/+'
-    name: last_ago
-    unit_of_measurement: seconds
-    value_template: '{% if value_json is defined %} {{ (now().timestamp()|int) - (value_json.date|int) }} {% else %} -1 {% endif %}'
-    icon_template: >-
-      {% if (states.sensor.last_ago|int) > 300 %}
-        mdi:timer-off
-      {% else %}
-        mdi:timer
-      {% endif %}
 
 sensor last_when:
   - platform: mqtt
@@ -1787,9 +1775,16 @@ camera last_image_cropped:
 ## KITCHEN
 ##
 
+sensor kitchen_last:
+  - platform: mqtt
+    name: kitchen_last
+    state_topic: 'presence/kitchen'
+    value_template: '{% if value_json is defined %} {{ value_json.class }} {% else %} "nothing" {% endif %}'
+
 sensor kitchen_what:
   - platform: mqtt
     name: kitchen_what
+    expire_after: 30
     state_topic: 'presence/kitchen'
     value_template: '{% if value_json is defined %} {{ value_json.class }} {% else %} "nothing" {% endif %}'
 
@@ -1837,6 +1832,7 @@ camera kitchen_image_cropped:
 sensor bathroom_what:
   - platform: mqtt
     name: bathroom_what
+    expire_after: 30
     state_topic: 'presence/bathroom'
     value_template: '{% if value_json is defined %} {{ value_json.class }} {% else %} "nothing" {% endif %}'
 
@@ -1883,6 +1879,7 @@ camera bathroom_image_cropped:
 sensor road_what:
   - platform: mqtt
     name: road_what
+    expire_after: 30
     state_topic: 'presence/road'
     value_template: '{% if value_json is defined %} {{ value_json.class }} {% else %} "nothing" {% endif %}'
 
@@ -1966,6 +1963,7 @@ binary_sensor road_active:
 sensor frontdoor_what:
   - platform: mqtt
     name: frontdoor_what
+    expire_after: 30
     state_topic: 'presence/frontdoor'
     value_template: '{% if value_json is defined %} {{ value_json.class }} {% else %} "nothing" {% endif %}'
 
@@ -2013,19 +2011,38 @@ camera frontdoor_image_cropped:
 sensor motion_sensors:
   platform: template
   sensors:
+    last_ago:
+      entity_id:
+        - sensor.last_date
+        - sun.sun
+      unit_of_measurement: seconds
+      value_template: '{{ (now().timestamp()|int) - (states.sensor.last_date.state|int) }}'
+      icon_template: '{% if (states.sensor.last_ago|int) > 300 %} mdi:timer-off {% else %} mdi:timer {% endif %}'
     kitchen_ago:
+      entity_id: 
+        - sensor.kitchen_date
+        - sun.sun
       unit_of_measurement: seconds
       value_template: '{{ (now().timestamp()|int) - (states.sensor.kitchen_date.state|int) }}'
       icon_template: '{%- if (states.sensor.kitchen_ago.state|int) > 300 -%} mdi:timer-off {%- else -%} mdi:timer {%- endif -%}'
     bathroom_ago:
+      entity_id: 
+        - sensor.bathroom_date
+        - sun.sun
       unit_of_measurement: seconds
       value_template: '{{ (now().timestamp()|int) - (states.sensor.bathroom_date.state|int) }}'
       icon_template: '{%- if (states.sensor.bathroom_ago.state|int) > 300 -%} mdi:timer-off {%- else -%} mdi:timer {%- endif -%}'
     frontdoor_ago:
+      entity_id: 
+        - sensor.frontdoor_date
+        - sun.sun
       unit_of_measurement: seconds
       value_template: '{{ (now().timestamp()|int) - (states.sensor.frontdoor_date.state|int) }}'
       icon_template: '{%- if (states.sensor.frontdoor_ago.state|int) > 300 -%} mdi:timer-off {%- else -%} mdi:timer {%- endif -%}'
     road_ago:
+      entity_id: 
+        - sensor.road_date
+        - sun.sun
       unit_of_measurement: seconds
       value_template: '{{ (now().timestamp()|int) - (states.sensor.road_date.state|int) }}'
       icon_template: '{%- if (states.sensor.road_ago.state|int) > 300 -%} mdi:timer-off {%- else -%} mdi:timer {%- endif -%}'
@@ -2090,10 +2107,15 @@ binary_sensor interior_exterior_binary_sensors:
         - binary_sensor.kitchen_motion
         - binary_sensor.bathroom_motion
         - binary_sensor.frontdoor_motion
+        - sensor.kitchen_ago
+        - sensor.bathroom_ago
+        - sensor.frontdoor_ago
       value_template: >
         {%- if states.binary_sensor.kitchen_motion.state or states.binary_sensor.bathroom_motion.state or states.binary_sensor.frontdoor_motion.state -%} True {%- else -%} False {%- endif -%}
     exterior_motion:
-      entity_id: binary_sensor.road_motion
+      entity_id:
+        - binary_sensor.road_motion
+        - sensor.road_ago
       value_template: >
         {{ states.binary_sensor.road_motion.state }}
 
@@ -2104,6 +2126,7 @@ binary_sensor family_binary_sensors:
       entity_id:
         - sensor.last_what
         - sensor.last_where
+        - sensor.last_ago
       value_template: >
         {{ ( states.sensor.last_what.state == 'david' or
              states.sensor.last_what.state == 'keli' or
@@ -2111,7 +2134,8 @@ binary_sensor family_binary_sensors:
              states.sensor.last_what.state == 'ian' or
              states.sensor.last_what.state == 'riley' or
              states.sensor.last_what.state == 'ellen' ) and 
-           ( states.sensor.last_where.state == 'kitchen' ) }}
+           ( states.sensor.last_where.state == 'kitchen' ) and 
+           ( (states.sensor.last_ago.state|int) < 30 ) }}
     family_in_bathroom:
       entity_id:
         - sensor.last_what
@@ -2123,7 +2147,8 @@ binary_sensor family_binary_sensors:
              states.sensor.last_what.state == 'ian' or
              states.sensor.last_what.state == 'riley' or
              states.sensor.last_what.state == 'ellen' ) and 
-           ( states.sensor.last_where.state == 'bathroom' ) }}
+           ( states.sensor.last_where.state == 'bathroom' ) and
+           ( (states.sensor.last_ago.state|int) < 30 ) }}
     family_at_frontdoor:
       entity_id:
         - sensor.last_what
@@ -2135,19 +2160,21 @@ binary_sensor family_binary_sensors:
              states.sensor.last_what.state == 'ian' or
              states.sensor.last_what.state == 'riley' or
              states.sensor.last_what.state == 'ellen' ) and 
-           ( states.sensor.last_where.state == 'frontdoor' ) }}
+           ( states.sensor.last_where.state == 'frontdoor' ) and
+           ( (states.sensor.last_ago.state|int) < 30 ) }}
     family_on_road:
       entity_id:
         - sensor.last_what
         - sensor.last_where
       value_template: >
-        {% if ( states.sensor.last_what.state == 'martin_c70' or
+        {{ ( states.sensor.last_what.state == 'martin_c70' or
              states.sensor.last_what.state == 'martin_c30' or
              states.sensor.last_what.state == 'martin_suburban' or
              states.sensor.last_what.state == 'martin_sprinter' or
              states.sensor.last_what.state == 'martin_xc90' or
              states.sensor.last_what.state == 'martin_rtv1100' ) and 
-           ( states.sensor.last_where.state == 'road' ) %} True {% else %} False {% endif %}
+           ( states.sensor.last_where.state == 'road' ) and
+           ( (states.sensor.last_ago.state|int) < 30 ) }}
 
 binary_sensor yes_no_activity_binary_sensors:
   platform: template

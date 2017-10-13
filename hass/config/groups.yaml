@@ -36,7 +36,7 @@ iphones:
     - device_tracker.ellensiphone5
     - device_tracker.halisiphone
     - device_tracker.ianmartinsiphone
-    - device_tracker.rileysiphone6
+    - device_tracker.rileysiphone5
 
 #
 # PLAY1
@@ -353,7 +353,7 @@ ageathome_kitchen_details:
   name: ageathome_kitchen_details
   entities:
     - sensor.kitchen_who
-    - sensor.kitchen_what
+    - sensor.kitchen_last
     - sensor.kitchen_when
     - sensor.kitchen_why
     - sensor.kitchen_ago
@@ -388,7 +388,7 @@ ageathome_bathroom_details:
   icon: mdi:bathroom-scale
   entities:
     - sensor.bathroom_who
-    - sensor.bathroom_what
+    - sensor.bathroom_last
     - sensor.bathroom_when
     - sensor.bathroom_why
     - sensor.bathroom_ago
@@ -422,7 +422,7 @@ ageathome_frontdoor_details:
   icon: mdi:home-outline
   entities:
     - sensor.frontdoor_who
-    - sensor.frontdoor_what
+    - sensor.frontdoor_last
     - sensor.frontdoor_when
     - sensor.frontdoor_why
     - sensor.frontdoor_ago
@@ -456,7 +456,7 @@ ageathome_road_details:
   icon: mdi:road
   entities:
     - sensor.road_who
-    - sensor.road_what
+    - sensor.road_last
     - sensor.road_when
     - sensor.road_why
     - sensor.road_ago

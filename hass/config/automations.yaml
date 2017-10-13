@@ -74,7 +74,9 @@
   initial_state: 'on'
   trigger:
     platform: state
-    entity_id: device_tracker.ellensiphone5
+    entity_id: 
+      - device_tracker.ellensiphone5
+      - device_tracker.ellens_iphone
   condition: 
     condition: and
     conditions:
@@ -96,7 +98,9 @@
   initial_state: 'on'
   trigger:
     platform: state
-    entity_id: device_tracker.kelisiphone7
+    entity_id: 
+      - device_tracker.kelisiphone7
+      - device_tracker.kelis_iphone
   condition: 
     condition: and
     conditions:
@@ -118,7 +122,9 @@
   initial_state: 'on'
   trigger:
     platform: state
-    entity_id: device_tracker.rileysiphone5
+    entity_id: 
+      - device_tracker.rileysiphone5
+      - device_tracker.rileys_iphone
   condition: 
     condition: and
     conditions:
