@@ -2,12 +2,38 @@
 
 set dir = "$cwd/$0:h"
 
-sudo docker cp $dir/config/known_devices.yaml homeassistant:/config/known_devices.yaml
-sudo docker cp $dir/config/configuration.yaml homeassistant:/config/configuration.yaml
-sudo docker cp $dir/config/groups.yaml homeassistant:/config/groups.yaml
-sudo docker cp $dir/config/automations.yaml homeassistant:/config/automations.yaml
-sudo docker cp $dir/config/templates.yaml homeassistant:/config/templates.yaml
-sudo docker cp $dir/config/logger.yaml homeassistant:/config/logger.yaml 
-sudo docker cp $dir/config/secrets.yaml homeassistant:/config/secrets.yaml 
-sudo docker cp $dir/config/customize.yaml homeassistant:/config/customize.yaml 
-sudo docker cp $dir/addons/ homeassistant:/addons/
+if ($?share == 0) set share = "/usr/share/hassio"
+if ($?config == 0) set config = "$share/homeassistant"
+if ($?addons == 0) set addons = "$share/addons/local"
+
+# copy CONFIGURATION
+set files = ( known_devices.yaml configuration.yaml groups.yaml automations.yaml templates.yaml logger.yaml customize.yaml secrets.yaml )
+echo -n "Copying configuration ["
+foreach file ( $files )
+  echo -n "$file "
+  cp "$dir/config/$file" "$config/$file"
+end
+echo "]"
+
+# copy ADDONS
+foreach i ( "$dir"/addons/* )
+  echo -n "Copying $i:t ["
+  if (-d "$i") then
+    mkdir -p "$addons/$i:t"
+    foreach j ( "$i"/* )
+      echo -n "$j:t "
+      if (-d "$j") then
+        mkdir -p "$addons/$i:t/$j:t"
+        foreach k ( "$j"/* )
+          echo -n "$k:t "
+          cp "$k" "$addons"/"$i:t"/"$j:t"/"$k:t"
+        end
+      else
+        cp "$j" "$addons"/"$i:t"/"$j:t"
+      endif
+    end
+  else
+    cp "$j" "$addons"/"$i:t"/"$j:t"
+  endif
+  echo "]"
+end
