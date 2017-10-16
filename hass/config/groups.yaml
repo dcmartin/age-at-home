@@ -36,7 +36,7 @@ iphones:
     - device_tracker.ellensiphone5
     - device_tracker.halisiphone
     - device_tracker.ianmartinsiphone
-    - device_tracker.rileysiphone5
+    - device_tracker.rileysiphone6
 
 #
 # PLAY1
@@ -79,27 +79,34 @@ motion_detection:
   name: Motion Detection
   icon: mdi:sensor
   entities:
-    - binary_sensor.kitchen_motion
-    - binary_sensor.bathroom_motion
-    - binary_sensor.frontdoor_motion
-    - binary_sensor.road_motion
-    - binary_sensor.kitchen_active
-    - binary_sensor.bathroom_active
-    - binary_sensor.frontdoor_active
-    - binary_sensor.road_active
-    - binary_sensor.interior_motion
-    - binary_sensor.exterior_motion
-    - binary_sensor.family_at_frontdoor
-    - binary_sensor.family_in_bathroom
-    - binary_sensor.family_in_kitchen
-    - binary_sensor.family_on_road
+    - sensor.bathroom_last
+    - sensor.bathroom_ago
+    - sensor.frontdoor_last
+    - sensor.frontdoor_ago
+    - sensor.kitchen_ago
+    - sensor.kitchen_last
+    - sensor.road_last
+    - sensor.road_ago
+
+
+family_detection:
+  view: no
+  name: Family Detection
+  icon: mdi:sensor
+  entities:
+    - binary_sensor.family_frontdoor
     - binary_sensor.family_detected
-    - binary_sensor.david_in_kitchen
-    - binary_sensor.keli_in_kitchen
-    - binary_sensor.no_activity
-    - binary_sensor.yes_activity
-    - binary_sensor.kitchen_wrong
+    - binary_sensor.family_bathroom
+    - binary_sensor.family_kitchen
+    - binary_sensor.family_road
+    - binary_sensor.david_kitchen
+    - binary_sensor.keli_kitchen
     - binary_sensor.david_home
+    - binary_sensor.keli_home
+    - binary_sensor.hali_home
+    - binary_sensor.ian_home
+    - binary_sensor.riley_home
+    - binary_sensor.ellen_home
 
 #
 # HORIZON
@@ -265,10 +272,11 @@ ageathome_view:
   entities:
     - group.ageathome_devices
     - group.ageathome_last
-    - group.ageathome_what
     - group.ageathome_ago
-    - group.ageathome_activity
+    - group.ageathome_active
+    - group.ageathome_motion
     - group.motion_detection
+    - group.family_detection
 
 ageathome_cameras:
   view: yes
@@ -289,21 +297,49 @@ ageathome_devices:
     - device_tracker.dampcloud
     - device_tracker.roughwind
 
-ageathome_activity:
-  name: 'AgeAtHome Activity'
+ageathome_active:
+  name: 'AgeAtHome Active'
   entities:
-    - sensor.kitchen_daily_time
-    - sensor.bathroom_daily_time
-    - sensor.road_daily_time
-    - sensor.frontdoor_daily_time
-    - sensor.kitchen_daily_count
-    - sensor.bathroom_daily_count
-    - sensor.road_daily_count
-    - sensor.frontdoor_daily_count
-    - sensor.no_activity_time
-    - sensor.yes_activity_time
-    - binary_sensor.yes_activity
-    - binary_sensor.no_activity
+    - binary_sensor.yes_active
+    - binary_sensor.no_active
+    - binary_sensor.interior_active
+    - binary_sensor.exterior_active
+    - binary_sensor.bathroom_active
+    - binary_sensor.frontdoor_active
+    - binary_sensor.kitchen_active
+    - binary_sensor.road_active
+    - sensor.no_active_time
+    - sensor.yes_active_time
+    - sensor.bathroom_active_time
+    - sensor.bathroom_active_count
+    - sensor.frontdoor_active_time
+    - sensor.frontdoor_active_count
+    - sensor.kitchen_active_time
+    - sensor.kitchen_active_count
+    - sensor.road_active_time
+    - sensor.road_active_count
+
+ageathome_motion:
+  name: 'AgeAtHome Motion'
+  entities:
+    - binary_sensor.yes_motion
+    - binary_sensor.no_motion
+    - binary_sensor.interior_motion
+    - binary_sensor.exterior_motion
+    - binary_sensor.bathroom_motion
+    - binary_sensor.frontdoor_motion
+    - binary_sensor.kitchen_motion
+    - binary_sensor.road_motion
+    - sensor.no_motion_ratio
+    - sensor.yes_motion_ratio
+    - sensor.bathroom_motion_time
+    - sensor.bathroom_motion_count
+    - sensor.frontdoor_motion_time
+    - sensor.frontdoor_motion_count
+    - sensor.kitchen_motion_time
+    - sensor.kitchen_motion_count
+    - sensor.road_motion_time
+    - sensor.road_motion_count
 
 ageathome_last:
   name: 'AgeAtHome Last'
@@ -316,22 +352,20 @@ ageathome_last:
     - sensor.last_when
     - sensor.last_how
     - sensor.last_ago
-
-ageathome_what:
-  name: 'AgeAtHome What'
-  entities:
-    - sensor.kitchen_what
-    - sensor.bathroom_what
-    - sensor.road_what
-    - sensor.frontdoor_what
+    - sensor.kitchen_last
+    - sensor.bathroom_last
+    - sensor.road_last
+    - sensor.frontdoor_last
 
 ageathome_ago:
   name: 'AgeAtHome Ago'
   entities:
     - sensor.kitchen_ago
     - sensor.bathroom_ago
-    - sensor.road_ago
     - sensor.frontdoor_ago
+    - sensor.road_ago
+    - sensor.interior_ago
+    - sensor.exterior_ago
     - sensor.kitchen_when
     - sensor.bathroom_when
     - sensor.road_when
@@ -353,7 +387,7 @@ ageathome_kitchen_details:
   name: ageathome_kitchen_details
   entities:
     - sensor.kitchen_who
-    - sensor.kitchen_last
+    - sensor.kitchen_what
     - sensor.kitchen_when
     - sensor.kitchen_why
     - sensor.kitchen_ago
@@ -388,7 +422,7 @@ ageathome_bathroom_details:
   icon: mdi:bathroom-scale
   entities:
     - sensor.bathroom_who
-    - sensor.bathroom_last
+    - sensor.bathroom_what
     - sensor.bathroom_when
     - sensor.bathroom_why
     - sensor.bathroom_ago
@@ -422,7 +456,7 @@ ageathome_frontdoor_details:
   icon: mdi:home-outline
   entities:
     - sensor.frontdoor_who
-    - sensor.frontdoor_last
+    - sensor.frontdoor_what
     - sensor.frontdoor_when
     - sensor.frontdoor_why
     - sensor.frontdoor_ago
@@ -456,7 +490,7 @@ ageathome_road_details:
   icon: mdi:road
   entities:
     - sensor.road_who
-    - sensor.road_last
+    - sensor.road_what
     - sensor.road_when
     - sensor.road_why
     - sensor.road_ago
