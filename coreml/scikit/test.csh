@@ -2,7 +2,33 @@
 
 onintr cleanup
 
-pip install -U sklearn scipy pandas
+command -v csvstat >& /dev/null
+if ($status != 0) then
+  echo "[ERROR] Please install csvkit first; clone https://github.com/wireservice/csvkit.git; then pip3 install .
+  exit 1
+endif
+
+command -v jq >& /dev/null
+if ($status != 0) then
+  echo "[ERROR] Please install jq first; try using http://brew.sh (brew install jq)"
+  exit 1
+endif
+
+command -v curl >& /dev/null
+if ($status != 0) then
+  echo "[ERROR] Please install curl first; try using http://brew.sh (brew install curl)"
+  exit 1
+endif
+
+command -v python3 >& /dev/null
+if ($status != 0) then
+  echo "[ERROR] Please install python3 first; try using http://brew.sh (brew install python3)"
+  exit 1
+endif
+
+sudo -H pip install -U sklearn scipy pandas
+
+sudo -H pip install coremltools
 
 if ($?data == 0) set data = "houses.csv"
 if ($?samplesize == 0) set samplesize = 100
@@ -62,7 +88,7 @@ file "houses.mlmodel"
 
 set osver = ( `defaults read loginwindow SystemVersionStampAsString` )
 
-if ("$osver:r:r" == "10" && "$osver:r:e" == "13") then
+if ("$osver:r" >= "10" && "$osver:e" >= "13") then
   python predict.py
 else
   echo "Prediction requires macOS 10.13 ($osver)"
