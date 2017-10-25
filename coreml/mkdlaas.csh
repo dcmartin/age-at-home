@@ -1,72 +1,33 @@
 #!/bin/csh -fb
 
-# uncomment for production
+# comment for production
 setenv DEBUG true
-# setenv DELETE true
-setenv VERBOSE "--verbose"
 
-## HOMEBREW (http://brew.sh)
-command -v brew >& /dev/null
-if ($status != 0) then
-  echo "$0:t $$ -- [WARN] HomeBrew not installed; trying " `bash /usr/bin/ruby -e "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install)"` >& /dev/stderr
-  rehash
-endif
+###
+### CONTENT SOURCE
+###
 
-## JQ
-command -v jq >& /dev/null
-if ($status != 0) then
-  echo "$0:t $$ -- [WARN] jq not found; trying `brew install jq`" >& /dev/stderr
-  rehash
-endif
-
-## PYTHON3
-command -v python3 >& /dev/null
-if ($status != 0) then
-  echo "$0:t $$ -- [WARN] python3 not found; trying `brew install python3`" >& /dev/stderr
-  rehash
-endif
-
-## CURL
-command -v curl >& /dev/null
-if ($status != 0) then
-  echo "$0:t $$ -- [WARN] curl not found; trying `brew install curl`" >& /dev/stderr
-  rehash
-endif
-
-## CURL SSL
-set config = ( `curl-config --configure` )
-set sslver = ( `echo "$config" | sed 's/.*--with-ssl=\([^ ]*\).*/\1/'` )
-if ("$sslver" == "$config") then
-  echo "$0:t $$ - [ERROR] curl not configured with SSL support" >& /dev/stderr
-  exit 1
-else
-  set sslver = "$sslver:t"
-endif
-if (! -e "/usr/local/opt/$sslver") then
-  echo "$0:t $$ - [WARN] SSL /usr/local/opt/$sslver not found; trying `brew install $sslver`" >& /dev/stderr
-endif
-
-## CAFFE
-if ($?CAFFE == 0) setenv CAFFE "$0:h/caffe"
-if ($?DEBUG) echo '[ENV] CAFFE (' "$CAFFE" ')' >& /dev/stderr
-
-if (! -e "$CAFFE") then
-  echo "$0:t $$ -- [ERROR] please install BLVC Caffe in ($CAFFE); trying `$0:h/mkcaffe.csh`"" >& /dev/stderr
+if ($?ROOTDIR == 0) setenv ROOTDIR /var/lib/age-at-home/label
+if ($?DEBUG) echo '[ENV] ROOTDIR (' "$ROOTDIR" ')' >& /dev/stderr
+if (! -e "$ROOTDIR" || ! -d "$ROOTDIR") then
+  echo "$0:t $$ -- [ERROR] directory $ROOTDIR is not available" >& /dev/stderr
   exit 1
 endif
 
-if (! -e "$0:h/mklmdb.csh") then
-  echo "$0:t $$ -- [ERROR] mklmdb.csh not found ($0:h/mklmdb.csh)" >& /dev/stderr
-  exit
-endif
+###
+### PREREQUISITE CHECK
+###
 
-# path to source directory
-if ($?AAH_HOME == 0) setenv AAH_HOME /var/lib/age-at-home/label
-if ($?DEBUG) echo '[ENV] AAH_HOME (' "$AAH_HOME" ')' >& /dev/stderr
-if (! -e "$AAH_HOME" || ! -d "$AAH_HOME") then
-  echo "$0:t $$ -- [ERROR] directory $AAH_HOME is not available" >& /dev/stderr
-  exit 1
-endif
+$0:h/mkreqs.csh >& /dev/stderr
+
+# ALEXNET by default
+if ($?PRETRAINED_MODEL == 0) set PRETRAINED_MODEL = "http://dl.caffe.berkeleyvision.org/bvlc_alexnet.caffemodel"
+
+####
+####
+#### START (PROCESS ARGUMENTS)
+####
+####
 
 if ($?DEBUG) echo "$0:t $$ -- [debug] $0 $argv ($#argv)" >& /dev/stderr
 
@@ -74,6 +35,8 @@ if ($?DEBUG) echo "$0:t $$ -- [debug] $0 $argv ($#argv)" >& /dev/stderr
 if ($#argv > 0) then
   set device = "$argv[1]"
 endif
+if ($?device == 0) set device = "rough-fog"
+if ($?DEBUG) echo "$0:t $$ -- [ARG] device ($device)" >& /dev/stderr
 
 # get percentages
 if ($#argv > 1) then
@@ -86,9 +49,11 @@ if ($#argv > 1) then
     set percentages = ( $percentages $t )
     @ i++
   end
-else
-  set total = 100
 endif
+if ($?percentages == 0) then
+  set percentages = ( 75 25 )
+endif
+if ($?DEBUG) echo "$0:t $$ -- [ARG] <device> percentages ($percentages)" >& /dev/stderr
 
 if ($?total) then
   if ($total != 100) then
@@ -96,56 +61,94 @@ if ($?total) then
     exit
   endif
 endif
-if ($?percentages == 0) then
-  set percentages = ( 75 25 )
+
+####
+####
+#### DATA (LMDB & MAPS)
+####
+####
+
+# validate executable
+if (! -e "$0:h/mklmdb.csh") then
+  echo "$0:t $$ -- [ERROR] mklmdb.csh not found ($0:h/mklmdb.csh)" >& /dev/stderr
+  exit
 endif
 
-if ($?DEBUG) echo "$0:t $$ -- [ARGS] --percentages ($percentages)" >& /dev/stderr
+##
+## CREATE LMDB and MAPS from directory ($ROOTDIR)
+##
 
-if ($?device == 0) set device = "rough-fog"
-if ($?DEBUG) echo "$0:t $$ -- [ARGS] --device ($device)" >& /dev/stderr
+if ($?DEBUG) echo "$0:t $$ -- CALLING $0:h/mklmdb.csh [ device: $device; percentages: $percentages ]" >& /dev/stderr
+set json = ( `$0:h/mklmdb.csh $device $percentages | jq '.'` )
+if ($?json) then
+  if ($#json && "$json" != "null") then
+    set dlaasjob = ( `echo "$json" | jq -r '.name'` )
 
-# get ID for the output
-set lid = ( `$0:h/mklmdb.csh $device $percentages | jq '.'` ) >& /dev/null
-
-if ($?DEBUG) echo "$0:t $$ -- [debug] successfully processed input: $lid" >& /dev/stderr
-
-set maps = ( `echo "$lid" | jq -r '.maps[].file' ` )
-if ($?DEBUG) echo "$0:t $$ -- [debug] maps = ( $maps )"
-
-set data = ( `echo "$lid" | jq -r '.data[].file' ` )
-if ($?DEBUG) echo "$0:t $$ -- [debug] data = ( $data )"
-
-set mids = ( `echo "$lid" | jq -r '.maps[].id' ` )
-set dids = ( `echo "$lid" | jq -r '.data[].id' ` )
-
-set entries = ()
-foreach d ( $data )
- if (-e "$d" && -d "$d") then
-    set entries = ( $entries `mdb_stat "$d" | egrep "Entries: " | awk -F: '{ print $2 }'` )
-    @ total_entries += $entries[$#entries]
-  else
-    echo "$0:t $$ -- [ERROR] FAILURE - $d does not exist or is not a directory" >& /dev/stderr
+    if ($#dlaasjob && "$dlaasjob" != "null") then
+      set thisdir = ( `jq -r '.thisdir' "$dlaasjob.json"` )
+      if (-e "$thisdir" && -d "$thisdir" && -e "$thisdir/$dlaasjob.json") then
+        if ($?DEBUG) echo "$0:t $$ -- [debug] successfully created LMDB ($dlaasjob)" >& /dev/stderr
+      else
+        unset thisdir
+      endif
+    else
+      unset dlaasjob
+    endif
+endif
+# both should be good
+if ($?thisdir == 0 || $?dlaasjob == 0) then
+    echo "$0:t $$ -- [ERROR] mklmdb.csh failed: { $json }" >& /dev/stderr
+    cat /tmp/$0:t.$$.log >& /dev/stderr
+    rm -f /tmp/$0:t.$$.log
     exit 1
-  endif
-end
+endif
+if ($?DEBUG) echo "$0:t $$ -- JOB $json" >& /dev/stderr
 
+###
+### TEST DATA & MAPS (OPTIONAL)
+###
+
+set count = ( `jq -r '.count' "$dlaasjob.json"` )
+if ($?DEBUG) echo "$0:t $$ -- [debug] $dlaasjob samples = $count" >& /dev/stderr
+rm -f /tmp/$0:t.$$.log
+
+# check the maps
+set maps = ( `jq -r '.maps[].file' "$dlaasjob.json"` )
 foreach m ( $maps )
-  if (-e "$m") then
-    set c = `awk '{ print $2 }' $m | sort | uniq | wc -l`
-    if ($?classes) then
-      if ($c != $classes) then
-        echo "$0:t $$ -- [ERROR] FAILURE - $m class counts not equal ($c,$classes)" >& /dev/stderr
+  if (-e "$thisdir/$m") then
+    set mcc = `awk '{ print $2 }' "$thisdir/$m" | sort | uniq | wc -l`
+    if ($?mapclasscount) then
+      if ($mcc != $mapclasscount) then
+        echo "$0:t $$ -- [ERROR] FAILURE - $m class counts not equal ($mcc,$mapclasscount)" >& /dev/stderr
         exit 1
       endif
     endif
-    set classes = $c
+    set mapclasscount = $mcc
   else 
-    echo "$0:t $$ -- [ERROR] FAILURE - $m does not exist" >& /dev/stderr
+    echo "$0:t $$ -- [ERROR] FAILURE - $thisdir/$m does not exist" >& /dev/stderr
     exit 1
   endif
 end
 
+# check the data
+set data = ( `jq -r '.data[].file' "$dlaasjob.json"` )
+@ total_entries = 0
+set entries = ()
+foreach d ( $data )
+ if (-e "$thisdir/$d" && -d "$thisdir/$d") then
+    set entries = ( $entries `mdb_stat "$thisdir/$d" | egrep "Entries: " | awk -F: '{ print $2 }'` )
+    @ total_entries += $entries[$#entries]
+  else
+    echo "$0:t $$ -- [ERROR] FAILURE - $thisdir/$d does not exist or is not a directory" >& /dev/stderr
+    exit 1
+  endif
+end
+if ($total_entries != $count) then
+  echo "$0:t $$ -- [ERROR] FAILURE - data count ($total_entries) does not equal specification ($count)" >& /dev/stderr
+  exit
+endif
+
+# report on distribution 
 if ($#entries) then
   @ i = 1
   while ($?DEBUG && $i <= $#entries)
@@ -156,375 +159,325 @@ else
   echo "$0:t $$ -- [ERROR] no entries ???" >& /dev/stderr
   exit 1
 endif
+  
+####
+####
+#### DLAAS MODEL
+####
+####
 
-##
-## TEST IF PRE-REQUISITES ARE INSTALLED
-##
+model:
 
-# check OpenStack Swift client
-set version = ( `swift --version |& awk '{ print $1 }'` )
-if ( "$version" =~ "python*" ) then
-  if ($?DEBUG) echo "$0:t $$ -- [debug] Swift installed ($version)"
-else
-  echo "INSTALLING Swift client using pip; system may prompt for password"
-  pip3 install python-swiftclient >& /dev/null
-  pip3 install python-keystoneclient >& /dev/null
-  echo "DONE installing Swift client"
-endif
-
-##
-## FIND CREDENTIALS
-##
-
-if ($?CREDENTIALS == 0) set CREDENTIALS = ~/.watson.objectstore.json
-
-if (-e "$CREDENTIALS") then
-  set auth_url = ( `jq -r '.auth_url' "$CREDENTIALS"` )
-  set domainId = ( `jq -r '.domainId' "$CREDENTIALS"` )
-  set domainName = ( `jq -r '.domainName' "$CREDENTIALS"` )
-  set password = ( `jq -r '.password' "$CREDENTIALS"` )
-  set project = ( `jq -r '.project' "$CREDENTIALS"` )
-  set projectId = ( `jq -r '.projectId' "$CREDENTIALS"` )
-  set region = ( `jq -r '.region' "$CREDENTIALS"` )
-  set role = ( `jq -r '.role' "$CREDENTIALS"` )
-  set userId = ( `jq -r '.userId' "$CREDENTIALS"` )
-  set username = ( `jq -r '.username' "$CREDENTIALS"` )
-else
-  echo "$0:t $$ -- [ERROR] no credentials found: $CREDENTIALS"
+# sanity check
+if ($?dlaasjob == 0 || $?thisdir == 0) then
+  echo "$0:t $$ -- [ERROR] no DLAASJOB" >& /dev/stderr
+  exit 1
+else if (! -e "$thisdir/$dlaasjob.json") then
+  echo "$0:t $$ -- [ERROR] cannot find $thisdir/$dlaasjob.json" >& /dev/stderr
   exit 1
 endif
 
-# BASE OPENSTACK VERSION; NOT IN CREDENTIALS
-setenv OS_IDENTITY_API_VERSION 3
-setenv OS_AUTH_VERSION 3
+# get prior model
+set model = ( `jq -r '.model?' "$dlaasjob.json"` )
+if ($#model <= 1) then
+  set model = '{"type":"caffe","version":"1.0-py2","name":"'"$dlaasjob"'"}'
+endif
 
 ###
-### interrogate SWIFT CONNECT WITH 'stat' COMMAND & convert to JSON
+### MODEL PRETRAIN 
 ###
 
-set stat = "/tmp/$0:t.$$.stat"
-swift $VERBOSE \
-  --os-user-id="$userId" \
-  --os-password="$password" \
-  --os-project-id="$projectId" \
-  --os-auth-url="$auth_url/v3" \
-  --os-region-name="$region" \
-  stat >! "$stat"
+set pretrain = ( `echo "$model" | jq -r '.pretrain?'` )
+if ($#pretrain == 0 || "$pretrain" == "null") set pretrain = '{}'
 
-if (-e "$stat") then
-  if ($?DEBUG) echo "$0:t $$ -- [debug] successful ($stat)"
-  set attrs = ( `awk -F': ' '{ print $1 }' "$stat" | sed 's/ //g' | sed 's/"//g'` )
-  set vals = ( `awk -F': ' '{ print $2 }' "$stat" | sed 's/ //g' | sed 's/"//g'` )
-  @ a = 1
-  set j = '{ '
-  while ($a <= $#attrs)
-    if ($a > 1) set j = "$j"', '
-    set j = "$j"'"'$attrs[$a]'": "'$vals[$a]'"'
-    @ a++
-  end
-  set json = "$j"' }'
-  rm -f "$stat"
+# PRETRAIN URL
+set url = ( `echo "$pretrain" | jq -r '.url?'` )
+if (($#url == 0 || "$url" == "null" ) && $?PRETRAINED_MODEL) then
+  set url = "$PRETRAINED_MODEL"
 else
-  echo "$0:t $$ -- [ERROR] stat failed: --os-user-id=$userId --os-password=$password --os-project-id=$projectId --os-auth-url=$auth_url/v3 --os-region-name=$region" >& /dev/stderr
+  unset url
+endif
+if ($?url) then
+  set pretrain = ( `echo "$pretrain" | jq '.url="'"$url"'"'` )
 endif
 
-if ($?json == 0) then
-  echo "$0:t $$ -- [ERROR] cannot access SWIFT object storage"
-  exit 1
-endif
-
-if ($?DEBUG) echo "$0:t $$ -- [debug] processed into JSON: " `echo "$json" | jq -c '.'`
-
-# get parameters
-set thisdir = ( `echo "$lid" | jq -r '.thisdir'` )
-set device = ( `echo "$lid" | jq -r '.device'` )
-set date = ( `echo "$lid" | jq -r '.date'` )
-set percents = ( `echo "$lid" | jq -r '.maps[].percent'`) ; set percents = ( `echo "$percents" | sed 's/ /:/g'` )
-set container = "$device.$date.$percents"
-
-# check if source exists
-if (! -e "$thisdir" || ! -d "$thisdir") then
-  echo "$0:t $$ -- [ERROR] cannot locate $thisdir"
-  exit 1
-endif
-
-##
-## TEST IF STORAGE COMPLETE
-##
-
-set storage = ( `echo "$lid" | jq -r '.storage'` )
-
-if ("$storage" != "null") then
-  goto dlaas
-endif
-
-# extract authorization token and storage URL from JSON processed from curl
-
-set auth = `echo "$json" | jq -r '.AuthToken'`
-set sturl = `echo "$json" | jq -r '.StorageURL'`
-
-# get existing containers
-set containers = ( `swift $VERBOSE --os-auth-token "$auth" --os-storage-url "$sturl" list | sed 's/ /%20/g'` )
-
-# check iff container exists; delete it when specified
-unset existing
-if ($?containers) then
-  if ($#containers) then
-    echo "$0:t $$ -- [debug] EXISTING CONTAINERS: $containers" >& /dev/stderr
-    foreach c ( $containers )
-      if ($?DELETE && "$c" == "$container") then
-        echo "$0:t $$ -- [debug] deleting existing container $c" >& /dev/stderr
-        swift $VERBOSE --os-auth-token "$auth" --os-storage-url "$sturl" delete `echo "$c" | sed 's/%20/ /g'` >& /dev/stderr
-        continue
-      else if ("$c" == "$container") then
-        set existing = "$c"
-        set n = ( `echo "$c" | sed 's/%20/ /g'` )
-        set contents = ( `swift $VERBOSE --os-auth-token "$auth" --os-storage-url "$sturl" list "$n"` )
-        if ($?contents == 0) set contents = ()
-      else
-        if ($?DEBUG) echo "$0:t $$ -- [debug] $c" >& /dev/stderr
-      endif
-    end
-  else
-    echo "$0:t $$ -- [debug] no existing containers" >& /dev/stderr
-  endif
-else
-  echo "$0:t $$ -- [debug] no containers found" >& /dev/stderr
-  exit 1
-endif
-
-# make new container
-if ($?existing) then
-  echo "$0:t $$ -- [WARN] existing container: $container; contents: [$contents]" >& /dev/stderr
-else
-  echo "$0:t $$ -- [INFO] making container: $container" >& /dev/stderr
-  swift $VERBOSE --os-auth-token "$auth" --os-storage-url "$sturl" post `echo "$container" | sed 's/%20/ /g'` >& /dev/stderr
-endif
-
-# store all files
-set files = ( `echo "$lid" | jq -r '.maps[].file,.data[].file'` )
-
-# jump to thisdir (source)
-pushd "$thisdir"
-
-foreach file ( $files )
-  set found = false
-  if (-e "$file") then
-    if ($?existing) then
-      if ($#contents) then
-        foreach c ( $contents )
-          if ("$c:h" == "$file") then
-            set found = true
-          endif
-        end
-      endif
-    endif
-    if ($found != true) then
-      if ($?DEBUG) echo "$0:t $$ -- [debug] copying $file " `du -k "$file" | awk '{ print $1 }'` "Kbytes" >& /dev/stderr
-      swift $VERBOSE --os-auth-token "$auth" --os-storage-url "$sturl" upload `echo "$container" | sed 's/%20/ /g'` "$file"
-    else
-      if ($?DEBUG) echo "$0:t $$ -- [debug] $file exists" >& /dev/stderr
-    endif
-  else
-    echo "$0:t $$ -- [ERROR] NO FILE: $file" >& /dev/stderr
-  endif
-end
-
-# back from thisdir
-popd
-
-set files = `echo "$files" | sed 's/\([^ ]*\)/"\1",/g' | sed 's/\(.*\),$/\1/'`
-set storage = '{"type":"bluemix_objectstore","container":"'"$container"'","auth_url":"'"$auth_url"'","user_name":"'"$username"'","password":"'"$password"'","domain_name":"'"$domainName"'","region":"'"$region"'","project_id":"'"$projectId"'","files":['"$files"']}'
-
-echo "$lid" | jq '.storage='"$storage" >! "$container.json"
-
-###
-### BEGIN DLAAAS
-###
-
-dlaas:
-
-set input = `jq '.' "$container.json"` 
-
-echo "$input"
-
-exit
-
-# get models from DLAAS
-set models = ( `curl -u "$DLAAS_USERNAME":"$DLAAS_PASSWORD" "$DLAAS_URL/v1/models?version=2017-02-13" | jq '.'` )
-
-# show models
-if ($?DEBUG) echo "$0:t $$ -- [debug] models = $models" >& /dev/stderr
-
-
-###
-### START DLAAS SETUP
-###
-
-set training_set = $data[1]
-set test_set = $data[2]
-
-##
-## NETWORK
-##
-
-set network = "$thisdir/$container.network.prototxt"
-if (-e "$network") then
-  echo "$0:t $$ -- [WARN] deleting existing network ($network)"
-  rm -f "$network"
-endif
-
-# ALEXNET NETWORK
-
-echo 'name: "AlexNet"' >>! "$network"
-if ($?mean_image) then
-  echo 'layer { name: "data" type: "Data" top: "data" top: "label" include { phase: TRAIN } transform_param { mirror: true crop_size: 227 mean_file: "'"$mean_image"'" } data_param { source: "'"$training_set"'" batch_size: 256 backend: LMDB } }' >>! "$network"
-  echo 'layer { name: "data" type: "Data" top: "data" top: "label" include { phase: TEST } transform_param { mirror: false crop_size: 227 mean_file: "'"$mean_image"'" } data_param { source: "'"$test_set"'" batch_size: 50 backend: LMDB } }' >>! "$network"
-else
-  echo 'layer { name: "data" type: "Data" top: "data" top: "label" include { phase: TRAIN } transform_param { mirror: true crop_size: 227 } data_param { source: "'"$training_set"'" batch_size: 256 backend: LMDB } }' >>! "$network"
-  echo 'layer { name: "data" type: "Data" top: "data" top: "label" include { phase: TEST } transform_param { mirror: false crop_size: 227 } data_param { source: "'"$test_set"'" batch_size: 50 backend: LMDB } }' >>! "$network"
-endif
-echo 'layer { name: "conv1" type: "Convolution" bottom: "data" top: "conv1" param { lr_mult: 1 decay_mult: 1 } param { lr_mult: 2 decay_mult: 0 } convolution_param { num_output: 96 kernel_size: 11 stride: 4 weight_filler { type: "gaussian" std: 0.01 } bias_filler { type: "constant" value: 0 } } }' >>! "$network"
-echo 'layer { name: "relu1" type: "ReLU" bottom: "conv1" top: "conv1" }' >>! "$network"
-echo 'layer { name: "norm1" type: "LRN" bottom: "conv1" top: "norm1" lrn_param { local_size: 5 alpha: 0.0001 beta: 0.75 } }' >>! "$network"
-echo 'layer { name: "pool1" type: "Pooling" bottom: "norm1" top: "pool1" pooling_param { pool: MAX kernel_size: 3 stride: 2 } }' >>! "$network"
-echo 'layer { name: "conv2" type: "Convolution" bottom: "pool1" top: "conv2" param { lr_mult: 1 decay_mult: 1 } param { lr_mult: 2 decay_mult: 0 } convolution_param { num_output: 256 pad: 2 kernel_size: 5 group: 2 weight_filler { type: "gaussian" std: 0.01 } bias_filler { type: "constant" value: 0.1 } } }' >>! "$network"
-echo 'layer { name: "relu2" type: "ReLU" bottom: "conv2" top: "conv2" }' >>! "$network"
-echo 'layer { name: "norm2" type: "LRN" bottom: "conv2" top: "norm2" lrn_param { local_size: 5 alpha: 0.0001 beta: 0.75 } }' >>! "$network"
-echo 'layer { name: "pool2" type: "Pooling" bottom: "norm2" top: "pool2" pooling_param { pool: MAX kernel_size: 3 stride: 2 } }' >>! "$network"
-echo 'layer { name: "conv3" type: "Convolution" bottom: "pool2" top: "conv3" param { lr_mult: 1 decay_mult: 1 } param { lr_mult: 2 decay_mult: 0 } convolution_param { num_output: 384 pad: 1 kernel_size: 3 weight_filler { type: "gaussian" std: 0.01 } bias_filler { type: "constant" value: 0 } } }' >>! "$network"
-echo 'layer { name: "relu3" type: "ReLU" bottom: "conv3" top: "conv3" }' >>! "$network"
-echo 'layer { name: "conv4" type: "Convolution" bottom: "conv3" top: "conv4" param { lr_mult: 1 decay_mult: 1 } param { lr_mult: 2 decay_mult: 0 } convolution_param { num_output: 384 pad: 1 kernel_size: 3 group: 2 weight_filler { type: "gaussian" std: 0.01 } bias_filler { type: "constant" value: 0.1 } } }' >>! "$network"
-echo 'layer { name: "relu4" type: "ReLU" bottom: "conv4" top: "conv4" }' >>! "$network"
-echo 'layer { name: "conv5" type: "Convolution" bottom: "conv4" top: "conv5" param { lr_mult: 1 decay_mult: 1 } param { lr_mult: 2 decay_mult: 0 } convolution_param { num_output: 256 pad: 1 kernel_size: 3 group: 2 weight_filler { type: "gaussian" std: 0.01 } bias_filler { type: "constant" value: 0.1 } } }' >>! "$network"
-echo 'layer { name: "relu5" type: "ReLU" bottom: "conv5" top: "conv5" }' >>! "$network"
-echo 'layer { name: "pool5" type: "Pooling" bottom: "conv5" top: "pool5" pooling_param { pool: MAX kernel_size: 3 stride: 2 } }' >>! "$network"
-echo 'layer { name: "fc6" type: "InnerProduct" bottom: "pool5" top: "fc6" param { lr_mult: 1 decay_mult: 1 } param { lr_mult: 2 decay_mult: 0 } inner_product_param { num_output: 4096 weight_filler { type: "gaussian" std: 0.005 } bias_filler { type: "constant" value: 0.1 } } }' >>! "$network"
-echo 'layer { name: "relu6" type: "ReLU" bottom: "fc6" top: "fc6" }' >>! "$network"
-echo 'layer { name: "drop6" type: "Dropout" bottom: "fc6" top: "fc6" dropout_param { dropout_ratio: 0.5 } }' >>! "$network"
-echo 'layer { name: "fc7" type: "InnerProduct" bottom: "fc6" top: "fc7" param { lr_mult: 1 decay_mult: 1 } param { lr_mult: 2 decay_mult: 0 } inner_product_param { num_output: 4096 weight_filler { type: "gaussian" std: 0.005 } bias_filler { type: "constant" value: 0.1 } } }' >>! "$network"
-echo 'layer { name: "relu7" type: "ReLU" bottom: "fc7" top: "fc7" }' >>! "$network"
-echo 'layer { name: "drop7" type: "Dropout" bottom: "fc7" top: "fc7" dropout_param { dropout_ratio: 0.5 } }' >>! "$network"
-echo 'layer { name: "fc8" type: "InnerProduct" bottom: "fc7" top: "fc8" param { lr_mult: 1 decay_mult: 1 } param { lr_mult: 2 decay_mult: 0 } inner_product_param { num_output: '$classes' weight_filler { type: "gaussian" std: 0.01 } bias_filler { type: "constant" value: 0 } } }' >>! "$network"
-echo 'layer { name: "accuracy" type: "Accuracy" bottom: "fc8" bottom: "label" top: "accuracy" include { phase: TEST } }' >>! "$network"
-echo 'layer { name: "loss" type: "SoftmaxWithLoss" bottom: "fc8" bottom: "label" top: "loss" }' >>! "$network"
-
-if ($?DEBUG) cat "$network" >& /dev/stderr
-
-##
-## WEIGHTS
-##
-
-# ALEXNET
-
-if ($?CAFFE_MODEL == 0) set CAFFE_MODEL = "http://dl.caffe.berkeleyvision.org/bvlc_alexnet.caffemodel"
-
-set weights = "$thisdir/$container.weights.caffemodel"
-if (-e "$weights") then
-  echo "$0:t $$ -- [WARN] using existing weights ($weights)"
-else if ($?CAFFE_MODEL) then
-  curl -s -q -f -L "$CAFFE_MODEL" -o "$weights"
-  if ($status == 22 || $status == 28 || ! -s "$weights") then
-    echo "$0:t $$ -- [ERROR] failed to find weights ($weights); CAFFE_MODEL = $CAFFE_MODEL" >& /dev/stderr
-    exit 1
-  endif
+# PRETRAIN WEIGHTS
+set weights = ( `echo "$pretrain" | jq -r '.weights?'` )
+if ($#weights && "$weights" != "null") then
+  set weights = "$thisdir/$weights"; if (! -e "$weights") unset weights
 else
   unset weights
 endif
+if ($?weights == 0) then
+  if ($?url) then
+    set weights = "$thisdir/$dlaasjob.caffemodel"
 
-##
-## SOLVER
-##
-
-set solver = "$thisdir/$container.solver.prototxt"
-if (-e "$solver") then
-  echo "$0:t $$ -- [WARN] deleting existing solver ($solver)"
-  rm -f "$solver"
+    if ( ! -e "$weights") then
+      curl -s -q -f -L "$url" -o "$weights"
+      if ($status == 22 || $status == 28 || ! -e "$weights") then
+        echo "$0:t $$ -- [ERROR] failed to download weights; URL = $url" >& /dev/stderr
+        exit 1
+      endif
+    endif
+  endif 
+endif
+if ($?weights) then
+  set pretrain = ( `echo "$pretrain" | jq '.weights="'"$weights:t"'"'` )
 endif
 
-# ALEXNET SOLVER
+## UPDATE MODEL (PRETRAIN)
+if ($#pretrain > 1) then
+  set model = ( `echo "$model" | jq '.pretrain='"$pretrain"` )
+endif
 
-echo 'net: "'"$network"'"' >>! "$solver"
-echo 'test_iter: 1000' >>! "$solver"
-echo 'test_interval: 1000' >>! "$solver"
-echo 'base_lr: 0.01' >>! "$solver"
-echo 'lr_policy: "step"' >>! "$solver"
-echo 'gamma: 0.1' >>! "$solver"
-echo 'stepsize: 100000' >>! "$solver"
-echo 'display: 20' >>! "$solver"
-echo 'max_iter: 450000' >>! "$solver"
-echo 'momentum: 0.9' >>! "$solver"
-echo 'weight_decay: 0.0005' >>! "$solver"
-echo 'snapshot: 10000' >>! "$solver"
-echo 'snapshot_prefix: "${DATA_DIR}/'"$weights:t"'"' >>! "$solver"
-echo 'solver_mode: GPU' >>! "$solver"
+###
+### MODEL TRAINING
+###
 
-if ($?DEBUG) cat "$solver" >& /dev/stderr
+# only handle two sets (training and test)
+set data = ( `jq -r '.data[].id' "$dlaasjob.json"` )
+if ($#data != 2) then
+  echo "$0:t $$ -- [ERROR] invalid number of sets; only two (2) allowed: $#data" >& /dev/stderr
+  exit 1
+else
+  # get training and test set
+  set training_set = ( `jq -r '.data[0].file' "$dlaasjob.json"` )
+  set test_set = ( `jq -r '.data[1].file' "$dlaasjob.json"` )
+  # get count of classes
+  set class_count = ( `jq -r '.classes|length' "$dlaasjob.json"` )
+endif
 
+# PRIOR TRAINING
+set training = ( `echo "$model" | jq -r '.training?'` )
+if ($#training == 0 || "$training" == "null") set training = '{}'
 
-##
-## ZIP IT ALL UP
-##
+## TRAINING NETWORK w/ training and test sets
+set network = ( `echo "$training" | jq -r '.network?'` )
+if ($#network && "$network" != "null") then
+  set network = "$thisdir/$network"
+else 
+  set network = "$thisdir/$dlaasjob.network.prototxt"
+endif
+$0:h/mknetwork.csh "$training_set" "$test_set" "$class_count" >! "$network"
+if ($status != 0 || ! -e "$network") then
+  echo "$0:t $$ -- [ERROR] failed to build network" >& /dev/stderr
+  exit 1
+endif
+if ($?network) then
+  set training = ( `echo "$training" | jq '.network="'"$network:t"'"'` )
+endif
 
-set zip = ( $solver $network )
-if ($?weights) then
-  set zip = ( $zip $weights )
+## TRAINING SOLVER w/ network (above) defined
+set solver = ( `echo "$training" | jq -r '.solver?'` )
+if ($#solver && "$solver" != "null") then
+  set solver = "$thisdir/$solver"
+else
+  set solver = "$thisdir/$dlaasjob.solver.prototxt"
+endif
+$0:h/mksolver.csh "$network:t" "$dlaasjob-snapshot" >! "$solver"
+if ($status != 0 || ! -e "$solver") then
+  echo "$0:t $$ -- [ERROR] failed to build solver" >& /dev/stderr
+  exit 1
+endif
+if ($?solver) then
+  set training = ( `echo "$training" | jq '.solver="'"$solver:t"'"'` )
+endif
+
+## UPDATE MODEL (TRAINING)
+if ($#training > 1) then
+  # update model
+  set model = ( `echo "$model" | jq '.training='"$training"` )
+else
+  echo "$0:t $$ -- [ERROR] models require training" >& /dev/stderr
+  exit
+endif
+
+###
+### UPDATE JSON (MODEL) 
+###
+
+if ($#model > 1) then
+  set json = ( `echo "$json" | jq '.model='"$model"` )
+else
+  echo "$0:t $$ -- [ERROR] jobs require models" >& /dev/stderr
+  exit
+endif
+
+###
+### STORE MODEL
+###
+
+echo "$json" | jq '.' >! "$dlaasjob.json"
+
+####
+####
+#### STORE FILES
+####
+####
+
+store:
+
+if ($?DEBUG) then
+  set storage = ( `jq -r '.storage?' "$dlaasjob.json"` )
+  echo "$0:t $$ -- [debug] storage = " `echo "$storage" | jq -c '.'` >& /dev/stderr
+endif
+
+# do storage
+set storage = ( `$0:h/mkswift.csh "$dlaasjob"` )
+if ($#storage && "$storage" != "null") then
+  set auth_url = ( `jq -r '.storage.auth_url' "$dlaasjob.json"` )
+  set username = ( `jq -r '.storage.user_name' "$dlaasjob.json"` )
+  set password = ( `jq -r '.storage.password' "$dlaasjob.json"` )
+  set domainName = ( `jq -r '.storage.domain_name' "$dlaasjob.json"` )
+  set projectId = ( `jq -r '.storage.project_id' "$dlaasjob.json"` )
+  set region = ( `jq -r '.storage.region' "$dlaasjob.json"` )
+else
+  echo "$0:t $$ -- [ERROR] invalid storage ($storage)" >& /dev/stderr
+  exit 1
 endif
 
 ##
 ## MANIFEST 
 ##
 
-set manifest = "$TMP/$0:t.$$.manifest.yaml"
+set manifest = ( `jq -r '.training.manifest?' "$dlaasjob.json"` )
+if ($#manifest == 0 || "$manifest" == "null") then
+  set manifest = "$thisdir/$dlaasjob.manifest.yaml"
+endif
+
 if (-e "$manifest") then
-  echo "$0:t $$ -- [WARN] deleting existing manifest ($manifest)"
+  echo "$0:t $$ -- [WARN] existing manifest; deleting $manifest" >& /dev/stderr
   rm -f "$manifest"
 endif
 
-echo "name: $container" >>! "$manifest"
+echo "name: $dlaasjob" >>! "$manifest"
 echo 'version: "'"1.0"'"' >>! "$manifest"
 echo "description: Caffe model running on GPUs." >>! "$manifest"
 echo "gpus: 1" >>! "$manifest"
 echo "memory: 500MiB" >>! "$manifest"
 echo "" >>! "$manifest"
 echo "data_stores:" >>! "$manifest"
-echo "  - id: $container" >>! "$manifest"
+echo "  - id: $dlaasjob" >>! "$manifest"
 echo "    type: bluemix_objectstore" >>! "$manifest"
 echo "    training_data:" >>! "$manifest"
-echo "      container: $container" >>! "$manifest"
+echo "      container: $dlaasjob" >>! "$manifest"
 echo "    training_results:" >>! "$manifest"
-echo "      container: $container" >>! "$manifest"
+echo "      container: $dlaasjob" >>! "$manifest"
 echo "    connection:" >>! "$manifest"
-echo "      auth_url: $auth_url" >>! "$manifest"
-echo "      user_name: $username" >>! "$manifest"
-echo "      password: $password" >>! "$manifest"
-echo "      domain_name: $domainName" >>! "$manifest"
-echo "      region: $region" >>! "$manifest"
-echo "      project_id: $projectId" >>! "$manifest"
+echo "      auth_url: "\""$auth_url"\" >>! "$manifest"
+echo "      user_name: "\""$username"\" >>! "$manifest"
+echo "      password: "\""$password"\" >>! "$manifest"
+echo "      domain_name: "\""$domainName"\" >>! "$manifest"
+echo "      region: "\""$region"\" >>! "$manifest"
+echo "      project_id: "\""$projectId"\" >>! "$manifest"
 echo "" >>! "$manifest"
 echo "framework:" >>! "$manifest"
 echo "  name: caffe" >>! "$manifest"
 echo '  version: "'"1.0-py2"'"' >>! "$manifest"
+# WEIGHTS
+echo -n '  command: caffe train -solver ${DATA_DIR}/'"$solver:t"' -gpu all' >>! "$manifest"
 if ($?weights) then
-  echo "  command: caffe train -solver $solver -gpu all -weights $weights" >>! "$manifest"
+  echo ' -weights ${DATA_DIR}/'"$weights:t" >>! "$manifest"
 else
-  echo "  command: caffe train -solver $solver -gpu all" >>! "$manifest"
+  echo '' >>! "$manifest"
 endif
 
 
-if ($?DEBUG) cat "$manifest" >& /dev/stderr
+##
+## ZIP IT ALL UP
+##
+
+set zip = ( "$solver:t" "$network:t" )
+
+if (-e "$thisdir/$dlaasjob.zip") then
+  if ($?DEBUG) echo "$0:t $$ -- [WARN] existing ZIP file; deleting $thisdir/$dlaasjob.zip" >& /dev/stderr
+  rm -f "$thisdir/$dlaasjob.zip"
+endif
+
+pushd "$thisdir"
+zip -u "$dlaasjob.zip" $zip
+popd
+
+## SUBMIT IT
+
+set out = "/tmp/$0:t.$$.json"
+curl -s -q -f -L -o "$out" -u "$DLAAS_USERNAME":"$DLAAS_PASSWORD" "$DLAAS_URL/v1/models?version=2017-02-13" -F "model_definition=@$thisdir/$dlaasjob.zip" -F "manifest=@$manifest"
+if ($status == 22 || $status == 28 || ! -e "$out") then
+  echo "$0:t $$ -- [ERROR] failed to submit DLAAS job ($dlaasjob)" >& /dev/stderr
+  exit 1
+else
+  # EXAMPLE {"model_id":"training-825OVpLzg","location":"/v1/models/training-825OVpLzg"}
+  set model_id = ( `jq -r '.model_id' "$out"` )
+  set location = ( `jq -r '.location' "$out"` )
+  rm -f "$out"
+endif
+
+if ($?DEBUG) echo "$0:t $$ -- [debug] DLAAS job ($dlaasjob) submitted; model_id: $model_id; location: $location" >& /dev/stderr
+
+again:
+
+set out = "/tmp/$0:t.$$.json"
+curl -s -q -f -L -o "$out" -u "$DLAAS_USERNAME":"$DLAAS_PASSWORD" "$DLAAS_URL/v1/models?version=2017-02-13"
+set models = ( `jq '.' "$out"` )
+if ($#models <= 1) then
+  echo "$0:t $$ -- [ERROR] invalid response from DLAAS" `cat "$out"` >& /dev/stderr
+  rm -f "$out"
+  exit 1
+else
+  rm -f "$out"
+  if ($?DEBUG) then
+    set nmodel = ( `echo "$models" | jq '.models|length'` )
+    set allmodels = ( `echo "$models" | jq '.models[].name'` )
+    echo "$0:t $$ -- [debug] MODELS ($nmodel): $allmodels" >& /dev/stderr
+    unset nmodel allmodels
+  endif
+endif
+
+
+set m = ( `echo "$models" | jq '.models[]|select(.model_id=="'"$model_id"'"?)'` )
+if ($#m <= 1) then
+  echo "$0:t $$ -- [ERROR] model not found: $model_id" >& /dev/stderr
+  exit 1
+endif
+
+if ($?DEBUG) echo "$0:t $$ -- [debug] model_id: $model_id { $m }" >& /dev/stderr
+
+set training_status = ( `echo "$models" | jq '.models[]|select(.model_id=="'$model_id'").training.training_status?'` )
+if ($#training_status <= 1) then
+  echo "$0:t $$ -- [ERROR] invalid training_status for model ($model_id)" >& /dev/stderr
+  exit 1
+endif
+
+set current = ( `echo "$training_status" | jq -r '.status?'` )
+if ($#current && "$current" != "null") then
+  switch ($current)
+    case "FAILED":
+      echo "$0:t $$ -- [WARN] $current ($dlaasjob); model ($model_id)" >& /dev/stderr
+      breaksw
+    case "PENDING":
+      goto again
+      breaksw
+    default:
+      echo "$0:t $$ -- [WARN] $current ($dlaasjob); model ($model_id)" >& /dev/stderr
+      goto again
+      breaksw
+  endsw
+else
+  echo "$0:t $$ -- [ERROR] current status ($training_status) invalid for model ($model_id)" >& /dev/stderr
+  exit 1
+endif
 
 ####
 #### END
 ####
 
-# cleanup 
+cleanup:
+
 if ($?DELETE) then
   echo "$0:t $$ -- [debug]  DELETE CONTAINER: $c" >& /dev/stderr
   swift $VERBOSE --os-auth-token "$auth" --os-storage-url "$sturl" delete `echo "$container" | sed 's/%20/ /g'` >& /dev/stderr
+  if ($?DEBUG) then
+    set containers = ( `swift $VERBOSE --os-auth-token "$auth" --os-storage-url "$sturl" list | sed 's/ /%20/g'` )
+    echo "$0:t $$ -- [debug]  RESIDUAL CONTAINERS: $containers" >& /dev/stderr
+  endif
 endif
-
-# end
-set containers = ( `swift $VERBOSE --os-auth-token "$auth" --os-storage-url "$sturl" list | sed 's/ /%20/g'` )
-if ($?DEBUG) echo "$0:t $$ -- [debug]  RESIDUAL CONTAINERS: $containers" >& /dev/stderr
-

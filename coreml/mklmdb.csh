@@ -4,22 +4,22 @@ if ($?TMP == 0) setenv TMP "/tmp/$0:t.$$"
 if (! -e "$TMP" || ! -d "$TMP") mkdir -p "$TMP"
 
 if ($?CAFFE == 0) setenv CAFFE "$0:h/caffe"
-echo '[ENV] CAFFE (' "$CAFFE" ')' >& /dev/stderr
+echo "$0:t $$ -- [ENV] CAFFE ($CAFFE)" >& /dev/stderr
 
 if (! -e "$CAFFE") then
-  echo "[ERROR] please install BLVC Caffe in ($CAFFE)" >& /dev/stderr
+  echo "$0:t $$ -- [ERROR] please install BLVC Caffe in ($CAFFE)" >& /dev/stderr
   exit 1
 endif
 
 # path to source directory
-if ($?AAH_HOME == 0) setenv AAH_HOME /var/lib/age-at-home/label
-echo '[ENV] AAH_HOME (' "$AAH_HOME" ')' >& /dev/stderr
-if (! -e "$AAH_HOME" || ! -d "$AAH_HOME") then
-  echo "[ERROR] directory $AAH_HOME is not available" >& /dev/stderr
+if ($?ROOTDIR == 0) setenv ROOTDIR /var/lib/age-at-home/label
+echo "$0:t $$ -- [ENV] ROOTDIR ($ROOTDIR)" >& /dev/stderr
+if (! -e "$ROOTDIR" || ! -d "$ROOTDIR") then
+  echo "$0:t $$ -- [ERROR] directory $ROOTDIR is not available" >& /dev/stderr
   exit 1
 endif
 
-echo "[debug] $0 $argv ($#argv)" >& /dev/stderr
+echo "$0:t $$ -- [debug] $0 $argv ($#argv)" >& /dev/stderr
 
 # get source
 if ($#argv > 0) then
@@ -42,7 +42,7 @@ endif
 
 if ($?total) then
   if ($total != 100) then
-    echo "[ERROR] set breakdown ($percentages) across $#percentages does not total 100%" >& /dev/stderr
+    echo "$0:t $$ -- [ERROR] set breakdown ($percentages) across $#percentages does not total 100%" >& /dev/stderr
     exit
   endif
 endif
@@ -50,21 +50,27 @@ if ($?percentages == 0) then
   set percentages = ( 50 50 )
 endif
 
-echo '[ARGS] --percentages ('"$percentages"')' >& /dev/stderr
+echo "$0:t $$ -- [ARGS] --percentages ($percentages)" >& /dev/stderr
 
 if ($?device == 0) set device = "rough-fog"
-echo '[ARGS] device (' "$device" ')' >& /dev/stderr
+echo "$0:t $$ -- [ARGS] device ($device)" >& /dev/stderr
 
-set rootdir = "$AAH_HOME/$device"
+set rootdir = "$ROOTDIR/$device"
+
+if (-d "$rootdir") then
+  set stat = ( `stat -r "$rootdir" | awk '{ print $10 }'` )
+else
+  echo "$0:t $$ -- [ERROR] cannot locate $rootdir" >& /dev/stderr
+  exit 1
+endif
 
 if ($?ARRAY_SIZE == 0) setenv ARRAY_SIZE 100
-echo '[ENV] ARRAY_SIZE (' "$ARRAY_SIZE" ')' >& /dev/stderr
+echo "$0:t $$ -- [ENV] ARRAY_SIZE ($ARRAY_SIZE)" >& /dev/stderr
 
 ###
 ### TEST IF WE'VE BUILT THE CLASS FILES
 ###
 
-set stat = ( `stat -r "$rootdir" | awk '{ print $10 }'` )
 
 set json = '{"rootdir":"'"$rootdir"'","thisdir":"'"$cwd"'","device":"'$device'","date":'$stat
 
@@ -92,36 +98,36 @@ endif
 
 if ($#existing == $#percentages && -e `echo "$device.$stat.$percentages.json" | sed 's/ /:/g'`) then
     unset json
-    echo "[WARN] using existing $existing" >& /dev/stderr
+    echo "$0:t $$ -- [WARN] using existing $existing" >& /dev/stderr
     goto next
 endif
 
 if ($?classes == 0) then
   set classes = ()
-  set dirs = ( "$AAH_HOME/$device"/* )
+  set dirs = ( "$ROOTDIR/$device"/* )
   foreach d ( $dirs )
     set t = "$d:t"
-    if (-d "$AAH_HOME/$device/$t") then
-      echo "[debug] adding $t ($d)" >& /dev/stderr
+    if (-d "$ROOTDIR/$device/$t") then
+      echo "$0:t $$ -- [debug] adding $t ($d)" >& /dev/stderr
       set classes = ( $classes "$t" )
     endif
   end
 endif
-echo '[INFO] classes (' "$classes" ')' >& /dev/stderr
+echo "$0:t $$ -- [INFO] classes ($classes)" >& /dev/stderr
 
 if ($#classes < 5) then
-  echo "[ERROR] too few classes ($#classes)" >& /dev/stderr
+  echo "$0:t $$ -- [ERROR] too few classes ($#classes)" >& /dev/stderr
   exit 1
 else if ($#classes > $ARRAY_SIZE) then
-  echo "[ERROR] too many classes ($#classes); increase ARRAY_SIZE" >& /dev/stderr
+  echo "$0:t $$ -- [ERROR] too many classes ($#classes); increase ARRAY_SIZE" >& /dev/stderr
   exit 1
 endif
 
 if ($?regexp == 0) set regexp = "[0-9]*.jpg"
-echo '[ARGS] regexp (' "$regexp" ')' >& /dev/stderr
+echo "$0:t $$ -- [ARGS] regexp ($regexp)" >& /dev/stderr
 
 if ($#percentages < 2) then
-  echo "[ERROR] too few bins ($#percentages)" >& /dev/stderr
+  echo "$0:t $$ -- [ERROR] too few bins ($#percentages)" >& /dev/stderr
   exit 1
 endif
 
@@ -133,7 +139,7 @@ while ( $i <= $#percentages )
 
   set nb = `echo "$pct / 100.0 * $ARRAY_SIZE" | bc -l`; set nb = "$nb:r"
   # create buckets equivalent to percentage of array
-  echo "[DEBUG] set ($i) has ($nb) buckets" >& /dev/stderr
+  echo "$0:t $$ -- [DEBUG] set ($i) has ($nb) buckets" >& /dev/stderr
   jot $nb $i $i >>! "$TMP/$0:t.$$.buckets.map"
   @ i++
 end
@@ -144,7 +150,7 @@ jot -r $ARRAY_SIZE 1 $#classes >! "$TMP/$0:t.$$.classes.map"
 # join maps
 set assign = ( `paste  "$TMP/$0:t.$$.classes.map" "$TMP/$0:t.$$.buckets.map" | sort -n | awk '{ print $2 }'` )
 
-echo "[DEBUG] total ($#assign) buckets ($assign)" >& /dev/stderr
+echo "$0:t $$ -- [DEBUG] total ($#assign) buckets ($assign)" >& /dev/stderr
 
 # clean-up
 rm -f "$TMP/$0:t.$$.buckets.map" "$TMP/$0:t.$$.classes.map"
@@ -158,7 +164,7 @@ rm -f "$TMP/$0:t.$$.buckets.map" "$TMP/$0:t.$$.classes.map"
 @ cid = 0
 set bucket_counts = ( `jot $ARRAY_SIZE 0 0` )
 
-echo -n "[debug] CLASSES " >& /dev/stderr
+echo -n "$0:t $$ -- [debug] CLASSES " >& /dev/stderr
 @ total = 0
 set class_counts = ()
 foreach c ( $classes )
@@ -166,14 +172,14 @@ foreach c ( $classes )
 
   # error if none found
   if (! -e "$TMP/$0:t.path") then
-    echo "[ERROR] cannot find ($regexp) at $rootdir/$c" >& /dev/stderr
+    echo "$0:t $$ -- [ERROR] cannot find ($regexp) at $rootdir/$c" >& /dev/stderr
     exit 1
   endif
 
   # count lines
   set cc = `wc -l "$TMP/$0:t.path" | awk '{ print $1 }'`
   if ($?cc == 0) then
-    echo "[ERROR] no lines in $TMP/$0:t.path" >& /dev/stderr
+    echo "$0:t $$ -- [ERROR] no lines in $TMP/$0:t.path" >& /dev/stderr
     exit 1
   endif
  
@@ -225,7 +231,7 @@ while ($c <= $#classes)
   endif
 
   set class_percentages = ( $class_percentages `echo "$cc / $total * 100.0" | bc -l` )
-  echo "[INFO] class $classes[$c] ($cc):" `echo "$class_percentages[$#class_percentages]" | awk '{ printf("%.2f%%\n", $1) }'`  >& /dev/stderr
+  echo "$0:t $$ -- [INFO] class $classes[$c] ($cc):" `echo "$class_percentages[$#class_percentages]" | awk '{ printf("%.2f%%\n", $1) }'`  >& /dev/stderr
   @ c++
 end
 
@@ -244,7 +250,7 @@ while ($i <= $#percentages)
   set bfile = "$TMP/$0:t.$i.map"
 
   if (! -e "$bfile") then
-    echo "[ERROR] no file $bfile" >& /dev/stderr
+    echo "$0:t $$ -- [ERROR] no file $bfile" >& /dev/stderr
     exit
   endif  
   set nl = `wc -l "$bfile" | awk '{ print $1 }'`
@@ -264,7 +270,7 @@ while ($i <= $#percentages)
     set dp = `echo "$cp - $pc" | bc -l | awk '{ printf("%0.4f\n", $1) }'`
     set av = `echo "$dp" | awk '{ v = ( $1 < 0 ? -$1 : $1 ); printf("%d\n", v) }'`
 
-    echo "[debug] set ($i); class ($cn; $pc:r%); " `echo "$cp,$dp" | awk -F, '{ printf("population (%.2f%%) delta (%.2f%%)\n", $1, $2) }'` >& /dev/stderr
+    echo "$0:t $$ -- [debug] set ($i); class ($cn; $pc:r%); " `echo "$cp,$dp" | awk -F, '{ printf("population (%.2f%%) delta (%.2f%%)\n", $1, $2) }'` >& /dev/stderr
     if ($?css) then
       set css = "$css",'{"name":"'"$cn"'","count":'$cl'}'
     else
@@ -282,7 +288,7 @@ while ($i <= $#percentages)
   endif
 
   set dfile = "$device.$stat.$i.$percentages[$i].map"
-  echo "[INFO] $dfile " `echo "$nl" | awk '{ printf("%d, %.2f%%\n", $1, $1 / '"$total"' * 100.0) }'` >& /dev/stderr
+  echo "$0:t $$ -- [INFO] $dfile " `echo "$nl" | awk '{ printf("%d, %.2f%%\n", $1, $1 / '"$total"' * 100.0) }'` >& /dev/stderr
   mv -f "$bfile" "$dfile"
   set cs = "$cs"',"file":"'$dfile'"}'
   @ i++
@@ -296,38 +302,40 @@ else
 endif
 set json = "$json"'}'
 
-echo "$json" 
-
-echo "$json" | jq . >! `echo "$device.$stat.$percentages.json" | sed 's/ /:/g'`
+set percent = `echo "$percentages" | sed "s/ /:/g"`
+echo "$json" | jq '.name="'"$device.$stat.$percent"'"' >! `echo "$device.$stat.$percent.json"`
 
 next:
 
 if ($?pfile == 0) then
-  set pfile = `echo "$device.$stat.$percentages.json" | sed 's/ /:/g'`
+  set percent = `echo "$percentages" | sed "s/ /:/g"`
+  set pfile = `echo "$device.$stat.$percent.json"`
 endif
 
 if (! -e "$pfile") then
-  echo "[ERROR] cannot find parameters: $pfile"
+  echo "$0:t $$ -- [ERROR] cannot find parameters: $pfile"
   exit 1
 else
   set json = `jq '.' "$pfile"`
 endif
 
 if ($?json == 0) then
-  echo "[ERROR] no parameters"
+  echo "$0:t $$ -- [ERROR] no parameters"
   exit 1
 endif 
+
+set json = `echo "$json" | jq '.name="'"$pfile:r"'"'`
 
 if ($?MODEL_IMAGE_HEIGHT == 0) setenv MODEL_IMAGE_HEIGHT 224
 if ($?MODEL_IMAGE_WIDTH == 0) setenv MODEL_IMAGE_WIDTH 224
 
-echo "[ENV] MODEL_IMAGE_WIDTH $MODEL_IMAGE_WIDTH" >& /dev/stderr
-echo "[ENV] MODEL_IMAGE_HEIGHT $MODEL_IMAGE_HEIGHT" >& /dev/stderr
+echo "$0:t $$ -- [ENV] MODEL_IMAGE_WIDTH $MODEL_IMAGE_WIDTH" >& /dev/stderr
+echo "$0:t $$ -- [ENV] MODEL_IMAGE_HEIGHT $MODEL_IMAGE_HEIGHT" >& /dev/stderr
 
 set json = `echo "$json" | jq '.convert={"width":'$MODEL_IMAGE_WIDTH',"height":'$MODEL_IMAGE_WIDTH',"shuffle":true,"backend":"lmdb"}'`
 
 setenv GLOG_logtostderr 1
-echo "[ENV] GLOG_logtostderr $GLOG_logtostderr" >& /dev/stderr
+echo "$0:t $$ -- [ENV] GLOG_logtostderr $GLOG_logtostderr" >& /dev/stderr
 
 set counts = ()
 set entries = ()
@@ -343,15 +351,15 @@ while ($r <= $#percentages)
 
   set json = `echo "$json" | jq '.data['$b']={"count":"'$counts[$#counts]'","file":"'"$sfile"'","data":"'"$lfile"'","shuffle":true,"format":"png"}'`
 
-  echo '[INFO] SET: '"$sfile ( $counts[$#counts] )" >& /dev/stderr
+  echo "$0:t $$ -- [INFO] SET: $sfile ( $counts[$#counts] )" >& /dev/stderr
 
 #    --check_size \
 #    --encode_type jpg \
 
   if (-e "$lfile") then
-    echo "[INFO] existing $lfile; skipping convert_imageset command" >& /dev/stderr
+    echo "$0:t $$ -- [INFO] existing $lfile; skipping convert_imageset command" >& /dev/stderr
   else if (! -e "$CAFFE/build/tools/convert_imageset") then
-    echo "[ERROR] BLVC Caffe is not installed; trying `$0:h/mkcaffe.csh`" >& /dev/stderr
+    echo "$0:t $$ -- [ERROR] BLVC Caffe is not installed; trying `$0:h/mkcaffe.csh`" >& /dev/stderr
   else
     $CAFFE/build/tools/convert_imageset \
       --resize_height $MODEL_IMAGE_HEIGHT \
@@ -364,10 +372,10 @@ while ($r <= $#percentages)
   endif
 
   if (-e "$lfile" && -d "$lfile") then
-    echo "[INFO] SUCCESS: $lfile" >& /dev/stderr
+    echo "$0:t $$ -- [INFO] SUCCESS: $lfile" >& /dev/stderr
     set entries = ( $entries `mdb_stat "$lfile" | egrep "Entries: " | awk -F: '{ print $2 }'` )
     if ($entries[$#entries] != $counts[$#counts]) then
-      echo "[WARN] set $r; count ($counts[$#counts]); entries ($entries[$#entries])" >& /dev/stderr
+      echo "$0:t $$ -- [WARN] set $r; count ($counts[$#counts]); entries ($entries[$#entries])" >& /dev/stderr
     endif
     @ total_entries += $entries[$#entries]
  
@@ -378,7 +386,7 @@ while ($r <= $#percentages)
     endif
 
   else
-    echo "[ERROR] FAILURE - $lfile does not exist or is not a directory" >& /dev/stderr
+    echo "$0:t $$ -- [ERROR] FAILURE - $lfile does not exist or is not a directory" >& /dev/stderr
     exit 1
   endif
   @ r++
@@ -387,18 +395,18 @@ if ($?cs) then
   set json = `echo "$json" | jq '.data=['"$cs"']'`
   unset cs
 else
-    echo "[ERROR] FAILURE - no data" >& /dev/stderr
+    echo "$0:t $$ -- [ERROR] FAILURE - no data" >& /dev/stderr
     exit 1
 endif
 
 if ($#entries) then
   @ i = 1
   while ($i <= $#entries)
-    echo "[INFO] set $i; entries ($entries[$i]; " `echo "$entries[$i] / $total_entries * 100.0" | bc -l` "%" >& /dev/stderr
+    echo "$0:t $$ -- [INFO] set $i; entries ($entries[$i]; " `echo "$entries[$i] / $total_entries * 100.0" | bc -l` "%" >& /dev/stderr
     @ i++ 
   end
 else
-  echo "[ERROR] no entries ???" >& /dev/stderr
+  echo "$0:t $$ -- [ERROR] no entries ???" >& /dev/stderr
   exit 1
 endif
 
