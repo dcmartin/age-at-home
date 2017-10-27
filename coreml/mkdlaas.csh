@@ -180,7 +180,7 @@ endif
 # get prior model
 set model = ( `jq -r '.model?' "$dlaasjob.json"` )
 if ($#model <= 1) then
-  set model = '{"type":"caffe","version":"1.0-py2","name":"'"$dlaasjob"'"}'
+  set model = '{"type":"caffe","version":"1.0-py2"}'
 endif
 
 ###
@@ -398,23 +398,21 @@ pushd "$thisdir"
 zip -u "$dlaasjob.zip" $zip
 popd
 
-## SUBMIT IT
+####
+####
+#### DLAAS MAIN LOOP
+####
+####
 
-set out = "/tmp/$0:t.$$.json"
-curl -s -q -f -L -o "$out" -u "$DLAAS_USERNAME":"$DLAAS_PASSWORD" "$DLAAS_URL/v1/models?version=2017-02-13" -F "model_definition=@$thisdir/$dlaasjob.zip" -F "manifest=@$manifest"
-if ($status == 22 || $status == 28 || ! -e "$out") then
-  echo "$0:t $$ -- [ERROR] failed to submit DLAAS job ($dlaasjob)" >& /dev/stderr
-  exit 1
-else
-  # EXAMPLE {"model_id":"training-825OVpLzg","location":"/v1/models/training-825OVpLzg"}
-  set model_id = ( `jq -r '.model_id' "$out"` )
-  set location = ( `jq -r '.location' "$out"` )
-  rm -f "$out"
+if ($?model_id) then
+  unset model_id
 endif
 
-if ($?DEBUG) echo "$0:t $$ -- [debug] DLAAS job ($dlaasjob) submitted; model_id: $model_id; location: $location" >& /dev/stderr
-
 again:
+
+##
+## GET DLAAS STATUS FOR ALL MODELS
+##
 
 set out = "/tmp/$0:t.$$.json"
 curl -s -q -f -L -o "$out" -u "$DLAAS_USERNAME":"$DLAAS_PASSWORD" "$DLAAS_URL/v1/models?version=2017-02-13"
@@ -426,46 +424,107 @@ if ($#models <= 1) then
 else
   rm -f "$out"
   if ($?DEBUG) then
+    set alljobs= ( `echo "$models" | jq '.models[].name'` )
     set nmodel = ( `echo "$models" | jq '.models|length'` )
-    set allmodels = ( `echo "$models" | jq '.models[].name'` )
-    echo "$0:t $$ -- [debug] MODELS ($nmodel): $allmodels" >& /dev/stderr
-    unset nmodel allmodels
+    if ($nmodel != $#alljobs) then
+      echo "$0:t $$ -- [ERROR] counts do not match ($#alljobs != $nmodel)" >& /dev/stderr
+    endif
+    echo "$0:t $$ -- [debug] MODELS ($nmodel): $alljobs" >& /dev/stderr
   endif
 endif
 
-
-set m = ( `echo "$models" | jq '.models[]|select(.model_id=="'"$model_id"'"?)'` )
-if ($#m <= 1) then
-  echo "$0:t $$ -- [ERROR] model not found: $model_id" >& /dev/stderr
-  exit 1
-endif
-
-if ($?DEBUG) echo "$0:t $$ -- [debug] model_id: $model_id { $m }" >& /dev/stderr
-
-set training_status = ( `echo "$models" | jq '.models[]|select(.model_id=="'$model_id'").training.training_status?'` )
-if ($#training_status <= 1) then
-  echo "$0:t $$ -- [ERROR] invalid training_status for model ($model_id)" >& /dev/stderr
-  exit 1
-endif
-
-set current = ( `echo "$training_status" | jq -r '.status?'` )
-if ($#current && "$current" != "null") then
-  switch ($current)
-    case "FAILED":
-      echo "$0:t $$ -- [WARN] $current ($dlaasjob); model ($model_id)" >& /dev/stderr
-      breaksw
-    case "PENDING":
-      goto again
-      breaksw
-    default:
-      echo "$0:t $$ -- [WARN] $current ($dlaasjob); model ($model_id)" >& /dev/stderr
-      goto again
-      breaksw
-  endsw
+## FIND ALL MODELS FOR THIS JOB
+set mids = ( `echo "$models" | jq -r '.models[]|select(.name=="'"$dlaasjob"'")|.model_id?'` )
+if ($#mids == 0 || "$mids" == "null") then
+  echo "$0:t $$ -- [debug] no existing models for dlaasjob ($dlaasjob)" >& /dev/stderr
 else
-  echo "$0:t $$ -- [ERROR] current status ($training_status) invalid for model ($model_id)" >& /dev/stderr
-  exit 1
+  echo "$0:t $$ -- [debug] dlaasjob ($dlaasjob) has existing models ($mids)" >& /dev/stderr
+  foreach mid ( $mids )
+    set ts = ( `echo "$models" | jq '.models[]|select(.model_id=="'"$mid"'")|.training.training_status'` )
+    set st = ( `echo "$ts" | jq -r '.status'` )
+
+    if ($?DEBUG) echo "$0:t $$ -- [debug] handling $st model ($mid) for dlaasjob ($dlaasjob)" >& /dev/stderr
+
+    switch ($st)
+      case "FAILED":
+        echo "$0:t $$ -- [WARN] DELETING $mid ($st)" >& /dev/stderr
+        set out = "/tmp/$0:t.$$.json"
+        curl -s -q -f -L -o "$out" -u "$DLAAS_USERNAME":"$DLAAS_PASSWORD" -XDELETE "$DLAAS_URL/v1/models/"$mid"?version=2017-02-13"
+        if ($status == 22 || $status == 28 || ! -e "$out") then
+          echo "$0:t $$ -- [WARN] failed to delete model ($mid)" >& /dev/stderr
+        else
+          set m = ( `jq -r '.model_id' "$out"` )
+          if ($m != $mid) then
+            echo "$0:t $$ -- [WARN] failed to delete model ($m)" >& /dev/stderr
+          endif
+        endif
+        breaksw
+      case "PENDING":
+      case "DOWNLOADING":
+      case "PROCESSING":
+      case "STORING":
+      default:
+        echo "$0:t $$ -- [debug] USING $mid ($st) for dlaasjob ($dlaasjob)" >& /dev/stderr
+        set model_id = $mid
+        breaksw
+    endsw
+  end
 endif
+
+## SUBMIT IT (IFF not found)
+if ($?model_id == 0) then
+  set out = "/tmp/$0:t.$$.json"
+  curl -s -q -f -L -o "$out" -u "$DLAAS_USERNAME":"$DLAAS_PASSWORD" "$DLAAS_URL/v1/models?version=2017-02-13" -F "model_definition=@$thisdir/$dlaasjob.zip" -F "manifest=@$manifest"
+  if ($status == 22 || $status == 28 || ! -e "$out") then
+    echo "$0:t $$ -- [ERROR] failed to submit DLAAS job ($dlaasjob)" >& /dev/stderr
+    exit 1
+  else
+    # EXAMPLE {"model_id":"training-825OVpLzg","location":"/v1/models/training-825OVpLzg"}
+    set model_id = ( `jq -r '.model_id?' "$out"` )
+    set location = ( `jq -r '.location?' "$out"` )
+    rm -f "$out"
+    if ($#model_id && "$model_id" != "null") then
+      echo "$0:t $$ -- [debug] model_id: $model_id" >& /dev/stderr
+    else
+      echo "$0:t $$ -- [debug] job ($dlaasjob) failure" >& /dev/stderr
+      exit 1
+    endif
+    if ($?DEBUG) echo "$0:t $$ -- [debug] DLAAS job ($dlaasjob) submitted; model_id: $model_id; location: $location" >& /dev/stderr
+  endif
+  goto again
+endif
+
+if ($?models) then
+  # WAIT UNTIL DONE
+  set training_status = ( `echo "$models" | jq '.models[]|select(.model_id=="'$model_id'").training.training_status?'` )
+  if ($#training_status == 0 || "$training_status" == "null") then
+    echo "$0:t $$ -- [ERROR] invalid training_status for model ($model_id) $training_status" >& /dev/stderr
+  endif
+  # get current
+  set current = ( `echo "$training_status" | jq -r '.status?'` )
+  if ($#current && "$current" != "null") then
+    switch ($current)
+      case "FAILED":
+        echo "$0:t $$ -- [INFO] $current ($dlaasjob); model ($model_id)" >& /dev/stderr
+        set model = ( `echo "$models" | jq '.models[]|select(.model_id=="'$model_id'")'` )
+        breaksw
+      case "PENDING":
+      case "DOWNLOADING":
+      case "PROCESSING":
+      case "STORING":
+      default:
+        echo "$0:t $$ -- [INFO] $current ($dlaasjob); model ($model_id)" >& /dev/stderr
+        sleep 10
+        goto again
+        breaksw
+    endsw
+  else
+    echo "$0:t $$ -- [ERROR] current status ($training_status) invalid for model ($model_id)" >& /dev/stderr
+    exit 1
+  endif
+endif
+
+echo "$json" | jq '.model.results='"$model"` | tee "$dlaasjob.json"
 
 ####
 #### END

@@ -4,6 +4,11 @@
 # TEST IF PRE-REQUISITES ARE INSTALLED
 #
 
+command -v brew >& /dev/null
+if ($status != 0) then
+  echo "[ERROR] Please install HomeBrew first; try using http://brew.sh"
+  exit 1
+endif
 command -v jq >& /dev/null
 if ($status != 0) then
   echo "[ERROR] Please install jq first; try using http://brew.sh (brew install jq)"
