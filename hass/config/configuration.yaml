@@ -523,15 +523,15 @@ conversation:
 
 # Enables support for tracking state changes over time.
 history:
-  exclude:
-    domains:
-      - pws
-      - weather
-      - updater
-      - camera
-      - rest
-      - mqtt
-      - media_player
+#  exclude:
+#    domains:
+#      - pws
+#      - weather
+#      - updater
+#      - camera
+#      - rest
+#      - mqtt
+#      - media_player
   include:
     entities:
       - sensor.david_plex
@@ -578,16 +578,13 @@ history:
       - sensor.frontdoor_motion_count
       - sensor.kitchen_motion_count
       - sensor.road_motion_count
-      - sensor.no_active_ratio
-      - sensor.yes_active_ratio
-      - sensor.bathroom_active_time
-      - sensor.frontdoor_active_time
-      - sensor.kitchen_active_time
-      - sensor.road_active_time
-      - sensor.bathroom_active_count
-      - sensor.frontdoor_active_count
-      - sensor.kitchen_active_count
-      - sensor.road_active_count
+      - sensor.count_automations
+      - sensor.count_binary_sensors
+      - sensor.count_cameras
+      - sensor.count_device_trackers
+      - sensor.count_media_players
+      - sensor.count_sensors
+      - sensor.count_zones
 
 # View all events in a logbook
 logbook:
@@ -2078,10 +2075,12 @@ sensor motion_sensors:
         - sensor.kitchen_ago
         - sensor.bathroom_ago
         - sensor.frontdoor_ago
+      unit_of_measurement: seconds
       value_template: >
         {{ ( states('sensor.kitchen_ago')|int, states('sensor.bathroom_ago')|int, states('sensor.frontdoor_ago')|int ) | list | min }}
     exterior_ago:
       entity_id: sensor.road_ago
+      unit_of_measurement: seconds
       value_template: >
         {{ ( states('sensor.road_ago')|int,) | list | min }}
     kitchen_when:
@@ -2357,9 +2356,7 @@ binary_sensor yes_no_motion:
 ### HISTORICAL STATISTICS
 
 ## ACTIVITY
-
-# TIME 
-
+ 
 sensor yes_active_ratio:
   - platform: history_stats
     icon: mdi:timer
@@ -2462,7 +2459,7 @@ sensor road_active_time:
 
 ## MOTION
 
-# TIME
+# RATIO
 
 sensor yes_motion_ratio:
   - platform: history_stats
@@ -2491,7 +2488,7 @@ sensor kitchen_motion_count:
     name: kitchen_motion_count
     friendly_name: Kitchen Count Today
     entity_id: binary_sensor.kitchen_motion
-    unit_of_measurement: 'events'
+    unit_of_measurement: seconds
     state: 'on'
     type: count
     start: '{{ now().replace(hour=0).replace(minute=0).replace(second=0) }}'
@@ -2501,7 +2498,7 @@ sensor bathroom_motion_count:
   - platform: history_stats
     name: bathroom_motion_count
     entity_id: binary_sensor.bathroom_motion
-    unit_of_measurement: 'events'
+    unit_of_measurement: seconds
     state: 'on'
     type: count
     start: '{{ now().replace(hour=0).replace(minute=0).replace(second=0) }}'
@@ -2511,7 +2508,7 @@ sensor frontdoor_motion_count:
   - platform: history_stats
     name: frontdoor_motion_count
     entity_id: binary_sensor.frontdoor_motion
-    unit_of_measurement: 'events'
+    unit_of_measurement: seconds
     state: 'on'
     type: count
     start: '{{ now().replace(hour=0).replace(minute=0).replace(second=0) }}'
@@ -2521,7 +2518,7 @@ sensor road_motion_count:
   - platform: history_stats
     name: road_motion_count
     entity_id: binary_sensor.road_motion
-    unit_of_measurement: 'events'
+    unit_of_measurement: seconds
     state: 'on'
     type: count
     start: '{{ now().replace(hour=0).replace(minute=0).replace(second=0) }}'
@@ -2677,8 +2674,7 @@ sensor people_location_template:
         - device_tracker.davids_iphone
         - device_tracker.dcmsiphone7
       value_template: >
-        {% if is_state('device_tracker.davids_iphone','home') and is_state('device_tracker.dcmsiphone7','home') %} 'home' 
-        {% else %} {{ states.device_tracker.dcmsiphone7.state }} {% endif %}
+        {{ states('device_tracker.davids_iphone') and states('device_tracker.dcmsiphone7') }}
     keli_location:
       entity_id: device_tracker.kelisiphone7
       friendly_name: "Keli's location"

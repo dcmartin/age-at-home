@@ -42,6 +42,43 @@
       entity_id: "group.lights"
 
 #
+# attempt to notify when things are down
+#
+
+- id: notify_ageathome_devices
+  alias: 'notify_ageathome_devices'
+  initial_state: on
+  trigger:
+    - platform: state
+      entity_id: 
+        - group.ageathome_devices
+  condition: 
+    - condition: template
+      value_template: >
+        {{ trigger.from_state != None and trigger.to_state.state != trigger.from_state.state }}
+  action:
+    - service: notify.notify
+      data_template:
+        message: >
+          AgeAtHome {{ trigger.entity_id }}'s status just changed from {{ trigger.from_state.state }} to {{ trigger.to_state.state }}
+
+- id: notify_status_view
+  alias: 'notify_status_view'
+  initial_state: on
+  trigger:
+    - platform: state
+      entity_id: group.status_view
+  condition:
+    - condition: template
+      value_template: >
+        {{ trigger.from_state != None and trigger.to_state.state != trigger.from_state.state }}
+  action:
+    - service: notify.notify
+      data_template:
+        message: >
+          System {{ trigger.entity_id }}'s status just changed from {{ trigger.from_state.state }} to {{ trigger.to_state.state }}
+
+#
 # iOS NOTIFICATIONS
 #
 
