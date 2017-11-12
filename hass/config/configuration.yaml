@@ -35,6 +35,7 @@ hassio:
 discovery:
 frontend:
 config:
+map:
 
 #
 # PANEL IFRAME(S)
@@ -378,15 +379,27 @@ notify ios:
 
 # ZONES
 
+# zone: !include zones.yaml
+
 zone jimjanaustin:
   name: "Jim Jan Austin"
+  icon: mdi:home
   latitude: 30.49788338485368
   longitude: -97.7739577124575
   radius: 200
   track_ios: true
 
+zone jimjansanjose:
+  name: "Jim Jan San Jose"
+  icon: mdi:home
+  latitude: 37.215407
+  longitude: -121.864994
+  radius: 200
+  track_ios: true
+
 zone nannyshouse:
   name: "Nannys House"
+  icon: mdi:home
   latitude: 30.391078
   longitude: -97.694590
   radius: 200
@@ -501,6 +514,20 @@ zone safeway:
   longitude: -121.861451
   track_ios: true
 
+zone leipzig:
+  name: 'Leipzig, Germany'
+  icon: mdi:currency-eur
+  radius: 15000
+  latitude: 51.340260
+  longitude: 12.372691
+
+zone dublin:
+  name: 'Dublin, Ireland'
+  icon: mdi:beer
+  radius: 15000
+  latitude: 53.349925
+  longitude: -6.258065
+
 # plex
 
 media_player david_plex:
@@ -534,14 +561,32 @@ history:
 #      - media_player
   include:
     entities:
-      - sensor.david_plex
       - binary_sensor.family_at_frontdoor
       - binary_sensor.family_detected
       - binary_sensor.family_in_bathroom
       - binary_sensor.family_in_kitchen
       - binary_sensor.family_on_road
+      - binary_sensor.kitchen_motion
+      - binary_sensor.bathroom_motion
+      - binary_sensor.frontdoor_motion
+      - binary_sensor.road_motion
       - binary_sensor.exterior_motion
       - binary_sensor.interior_motion
+      - binary_sensor.no_motion
+      - binary_sensor.yes_motion
+      - binary_sensor.david_home
+      - binary_sensor.keli_home
+      - binary_sensor.hali_home
+      - binary_sensor.ian_home
+      - binary_sensor.riley_home
+      - binary_sensor.ellen_home
+      - binary_sensor.family_home
+      - sensor.david_location
+      - sensor.keli_location
+      - sensor.hali_location
+      - sensor.ian_location
+      - sensor.riley_location
+      - sensor.ellen_location
       - sensor.bathroom_motion
       - sensor.frontdoor_motion
       - sensor.kitchen_motion
@@ -584,7 +629,9 @@ history:
       - sensor.count_device_trackers
       - sensor.count_media_players
       - sensor.count_sensors
+      - sensor.count_binary_sensors
       - sensor.count_zones
+      - sensor.david_plex
 
 # View all events in a logbook
 logbook:
@@ -2292,32 +2339,28 @@ binary_sensor location_motion:
   sensors:
     kitchen_motion:
       entity_id: 
-        - binary_sensor.kitchen_active
         - sensor.kitchen_ago
       device_class: motion
       value_template: >
-        {{ states('binary_sensor.kitchen_active') and states('sensor.kitchen_ago')|int < 30 }}
+        {{  states('sensor.kitchen_ago')|int < 30 }}
     bathroom_motion:
       entity_id:
-        - binary_sensor.bathroom_active
         - sensor.bathroom_ago
       device_class: motion
       value_template: >
-        {{ states('binary_sensor.bathroom_active') and states('sensor.bathroom_ago')|int < 30 }}
+        {{  states('sensor.bathroom_ago')|int < 30 }}
     frontdoor_motion:
       entity_id: 
-        - binary_sensor.frontdoor_active
         - sensor.frontdoor_ago
       device_class: motion
       value_template: >
-        {{ states('binary_sensor.frontdoor_active') and states('sensor.frontdoor_ago')|int < 30 }}
+        {{  states('sensor.frontdoor_ago')|int < 30 }}
     road_motion:
       entity_id: 
-        - binary_sensor.road_active
         - sensor.road_ago
       device_class: motion
       value_template: >
-        {{ states('binary_sensor.road_active') and states('sensor.road_ago')|int < 30 }}
+        {{  states('sensor.road_ago')|int < 30 }}
 
 binary_sensor interior_exterior_motion:
   platform: template
@@ -2351,7 +2394,7 @@ binary_sensor yes_no_motion:
         - binary_sensor.interior_motion
         - binary_sensor.exterior_motion
       value_template: >
-        {{ is_state('binary_sensor.interior_motion',false) and is_state('binary_sensor.exterior_motion',false) }}
+        {{ is_state('binary_sensor.interior_motion','off') and is_state('binary_sensor.exterior_motion','off') }}
 
 ### HISTORICAL STATISTICS
 
@@ -2475,8 +2518,8 @@ sensor no_motion_ratio:
   - platform: history_stats
     icon: mdi:timer
     name: no_motion_ratio
-    entity_id: binary_sensor.no_motion
-    state: 'on'
+    entity_id: binary_sensor.yes_motion
+    state: 'off'
     type: ratio
     start: '{{ now().replace(hour=0).replace(minute=0).replace(second=0) }}'
     end: '{{ now() }}'
@@ -2581,11 +2624,6 @@ binary_sensor david_home:
         platform: 'state'
         to_state: 'home'
       - entity_id: device_tracker.dcmsiphone7
-        prob_given_true: 0.8
-        prob_given_false: 0.2
-        platform: 'state'
-        to_state: 'home'
-      - entity_id: device_tracker.davidcsapple_watch
         prob_given_true: 0.8
         prob_given_false: 0.2
         platform: 'state'
@@ -2792,40 +2830,40 @@ switch kitchen_power_template:
         data:
           entity_id: switch.kitchen_power
 
-input_slider:
-  auto_light_minutes:
-    name: Minutes after sunset
-    icon: mdi:timer
-    initial: 30
-    min: 0
-    max: 120
-    step: 10
-  auto_light_duration:
-    name: Duration hours
-    icon: mdi:timer
-    initial: 4
-    min: 0
-    max: 8
-    step: 0.5
+# input_slider:
+#   auto_light_minutes:
+#     name: Minutes after sunset
+#     icon: mdi:timer
+#     initial: 30
+#     min: 0
+#     max: 120
+#     step: 10
+#   auto_light_duration:
+#     name: Duration hours
+#     icon: mdi:timer
+#     initial: 4
+#     min: 0
+#     max: 8
+#     step: 0.5
 
-sensor slider:
-  - platform: template
-    sensors:
-      auto_light_start:
-        friendly_name: 'Lights on at'
-        value_template: '{{ (as_timestamp(states.sun.sun.attributes.next_setting) + (states("input_slider.auto_light_minutes") | int)  * 60)  | timestamp_custom("%H:%M") }}'
-      auto_light_stop:
-        friendly_name: 'Lights out at'
-        value_template: '{{ ( as_timestamp(states.sun.sun.attributes.next_setting) + (states("input_slider.auto_light_minutes") | int)  * 60 + (states("input_slider.auto_light_duration") | float) * 60 * 60  )  | timestamp_custom("%H:%M") }}'
-      auto_light_minutes:
-        friendly_name: 'Lights on '
-        value_template: '{{ "%d minutes after sunset" | format(states("input_slider.auto_light_minutes") | int) }}'
-      auto_light_duration:
-        friendly_name: 'Lights on for'
-        value_template: '{{ "%0.1f hours" | format(states("input_slider.auto_light_duration") | float) }}'
-  - platform: time_date
-    display_options:
-      - 'time'
+#sensor slider:
+#  - platform: template
+#    sensors:
+#      auto_light_start:
+#        friendly_name: 'Lights on at'
+#        value_template: '{{ (as_timestamp(states.sun.sun.attributes.next_setting) + (states("input_slider.auto_light_minutes") | int)  * 60)  | timestamp_custom("%H:%M") }}'
+#      auto_light_stop:
+#        friendly_name: 'Lights out at'
+#        value_template: '{{ ( as_timestamp(states.sun.sun.attributes.next_setting) + (states("input_slider.auto_light_minutes") | int)  * 60 + (states("input_slider.auto_light_duration") | float) * 60 * 60  )  | timestamp_custom("%H:%M") }}'
+#      auto_light_minutes:
+#        friendly_name: 'Lights on '
+#        value_template: '{{ "%d minutes after sunset" | format(states("input_slider.auto_light_minutes") | int) }}'
+#      auto_light_duration:
+#        friendly_name: 'Lights on for'
+#        value_template: '{{ "%0.1f hours" | format(states("input_slider.auto_light_duration") | float) }}'
+#  - platform: time_date
+#    display_options:
+#      - 'time'
 
 ##
 ## AUTOMATIONS

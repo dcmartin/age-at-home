@@ -2,7 +2,7 @@
 
 set dir = "$cwd/$0:h"
 
-if ($?share == 0) set share = "/usr/share/hassio"
+if ($?share == 0) set share = "/usr/local/share/hassio"
 if ($?config == 0) set config = "$share/homeassistant"
 if ($?addons == 0) set addons = "$share/addons/local"
 
