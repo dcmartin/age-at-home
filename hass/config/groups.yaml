@@ -282,6 +282,8 @@ ageathome_view:
     - group.ageathome_motion
     - group.motion_detection
     - group.family_detection
+    - history_graph.count_graph
+    - history_graph.time_graph
 
 ageathome_cameras:
   view: yes
