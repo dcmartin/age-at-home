@@ -93,3 +93,17 @@ zone safeway:
   latitude: 37.219579
   longitude: -121.861451
   track_ios: true
+
+zone leipzig:
+  name: zoneleipzig
+  icon: mdi:currency-eur
+  radius: 15000
+  latitude: 51.340260
+  longitude: 12.372691
+
+zone dublin:
+  name: zonedublin
+  icon: mdi:beer
+  radius: 15000
+  latitude: 53.349925
+  longitude: -6.258065

@@ -8,9 +8,16 @@ default_view:
   icon: mdi:home-variant
   entities:
     - group.people
-    - group.iphones
     - group.weather_today
     - camera.wuradar
+
+over_view:
+  view: yes
+  name: Over View
+  icon: mdi:looks
+  entities:
+    - group.iphones
+    - group.sensor_counts
       
 people:
   name: People
@@ -25,18 +32,16 @@ people:
 iphones:
   name: iPhones
   entities:
-    - device_tracker.kelis_iphone
     - device_tracker.davids_iphone
+    - device_tracker.kelis_iphone
     - device_tracker.ellens_iphone
     - device_tracker.rileys_iphone
-    - device_tracker.davidsipadmini
-    - device_tracker.davidcsapple_watch
-    - device_tracker.kelisiphone7
     - device_tracker.dcmsiphone7
-    - device_tracker.ellensiphone5
+    - device_tracker.kelisiphone7
     - device_tracker.halisiphone
     - device_tracker.ianmartinsiphone
-    - device_tracker.rileysiphone6
+    - device_tracker.rileysiphone5
+    - device_tracker.ellensiphone5
 
 #
 # PLAY1
@@ -72,6 +77,7 @@ sensor_counts:
     - sensor.count_device_trackers
     - sensor.count_media_players
     - sensor.count_sensors
+    - sensor.count_binary_sensors
     - sensor.count_zones
 
 motion_detection:
@@ -273,10 +279,11 @@ ageathome_view:
     - group.ageathome_devices
     - group.ageathome_last
     - group.ageathome_ago
-    - group.ageathome_active
     - group.ageathome_motion
     - group.motion_detection
     - group.family_detection
+    - history_graph.count_graph
+    - history_graph.time_graph
 
 ageathome_cameras:
   view: yes
@@ -296,28 +303,6 @@ ageathome_devices:
     - device_tracker.quietwater
     - device_tracker.dampcloud
     - device_tracker.roughwind
-
-ageathome_active:
-  name: 'AgeAtHome Active'
-  entities:
-    - binary_sensor.yes_active
-    - binary_sensor.no_active
-    - binary_sensor.interior_active
-    - binary_sensor.exterior_active
-    - binary_sensor.bathroom_active
-    - binary_sensor.frontdoor_active
-    - binary_sensor.kitchen_active
-    - binary_sensor.road_active
-    - sensor.no_active_time
-    - sensor.yes_active_time
-    - sensor.bathroom_active_time
-    - sensor.bathroom_active_count
-    - sensor.frontdoor_active_time
-    - sensor.frontdoor_active_count
-    - sensor.kitchen_active_time
-    - sensor.kitchen_active_count
-    - sensor.road_active_time
-    - sensor.road_active_count
 
 ageathome_motion:
   name: 'AgeAtHome Motion'
@@ -391,6 +376,7 @@ ageathome_kitchen_details:
     - sensor.kitchen_when
     - sensor.kitchen_why
     - sensor.kitchen_ago
+    - sensor.kitchen_last
     - sensor.kitchen_empty_time
     - sensor.kitchen_event_count
 
@@ -426,6 +412,7 @@ ageathome_bathroom_details:
     - sensor.bathroom_when
     - sensor.bathroom_why
     - sensor.bathroom_ago
+    - sensor.bathroom_last
     - sensor.bathroom_empty_time
 
 ageathome_notin_bathroom:
@@ -460,6 +447,7 @@ ageathome_frontdoor_details:
     - sensor.frontdoor_when
     - sensor.frontdoor_why
     - sensor.frontdoor_ago
+    - sensor.frontdoor_last
     - sensor.frontdoor_empty_time
 
 ageathome_notin_frontdoor:
@@ -494,6 +482,7 @@ ageathome_road_details:
     - sensor.road_when
     - sensor.road_why
     - sensor.road_ago
+    - sensor.road_last
     - sensor.road_empty_time
 
 #
@@ -578,8 +567,6 @@ status_view:
     - group.network_status
     - group.tivo_status
     - group.webcam_status
-    - group.sensor_counts
-    - group.security
 
 sonos_play1:
   name: Sonos PLAY1
@@ -701,10 +688,3 @@ webcam_status:
     - device_tracker.wcv80n_upperpath
     - device_tracker.wcv80n_woodshed
 
-security:
-  name: security
-  entities:
-    - input_boolean.panic
-    - input_boolean.night_mode
-    - input_boolean.voice_alerts
-    - input_boolean.visitor
