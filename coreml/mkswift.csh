@@ -2,7 +2,9 @@
 
 # uncomment for production
 setenv DEBUG true
-# setenv DELETE true
+# setenv DELETE_CONTAINER true
+# setenv DELETE_JOB true
+# setenv DELETE_OLD_MODELS true
 setenv VERBOSE "--verbose"
 
 ###
@@ -131,73 +133,123 @@ if ($?containers) then
   if ($#containers) then
     echo "$0:t $$ -- [debug] EXISTING CONTAINERS: $containers" >& /dev/stderr
     foreach c ( $containers )
-      if ($?DELETE && ("$c" == "$dlaasjob" || "$c" == "$dlaasjob-output")) then
-        echo "$0:t $$ -- [debug] deleting existing container $c" >& /dev/stderr
-        swift $VERBOSE --os-auth-token "$auth" --os-storage-url "$sturl" delete `echo "$c" | sed 's/%20/ /g'` >& /dev/stderr
-        continue
-      else if ("$c" == "$dlaasjob") then
-        set existing = "$c"
-        set n = ( `echo "$c" | sed 's/%20/ /g'` )
-        set contents = ( `swift $VERBOSE --os-auth-token "$auth" --os-storage-url "$sturl" list "$n"` )
-        if ($?contents == 0) set contents = ()
+      if ("$c" == "$dlaasjob") then
+        if ($?DELETE_CONTAINER) then
+          echo "$0:t $$ -- [debug] deleting existing container $c" >& /dev/stderr
+          swift $VERBOSE --os-auth-token "$auth" --os-storage-url "$sturl" delete `echo "$c" | sed 's/%20/ /g'` >& /dev/null
+        else
+          set existing = "$c"
+          set n = ( `echo "$c" | sed 's/%20/ /g'` )
+          set contents = ( `swift $VERBOSE --os-auth-token "$auth" --os-storage-url "$sturl" list "$n"` )
+          if ($?contents == 0) set contents = ()
+        endif
       else
         if ($?DEBUG) echo "$0:t $$ -- [debug] $c" >& /dev/stderr
       endif
     end
   else
-    echo "$0:t $$ -- [debug] no existing containers" >& /dev/stderr
+    echo "$0:t $$ -- [debug] zero containers found" >& /dev/stderr
   endif
 else
-  echo "$0:t $$ -- [debug] no containers found" >& /dev/stderr
-  exit 1
+  echo "$0:t $$ -- [INFO] no containers exist" >& /dev/stderr
 endif
 
-# make new container
+## MAKE NEW CONTAINER
 if ($?existing) then
   echo "$0:t $$ -- [WARN] existing container: $dlaasjob; contents: [$contents]" >& /dev/stderr
 else
   echo "$0:t $$ -- [INFO] making container: $dlaasjob" >& /dev/stderr
-  swift $VERBOSE --os-auth-token "$auth" --os-storage-url "$sturl" post `echo "$dlaasjob" | sed 's/%20/ /g'` >& /dev/stderr
+  swift $VERBOSE --os-auth-token "$auth" --os-storage-url "$sturl" post `echo "$dlaasjob" | sed 's/%20/ /g'` >& /dev/null
 endif
 
+
+
 ##
-## STORE SPECIFIED FILES (in thisdir)
+## SYNCHRONIZE MODEL FILES
 ##
 
-set files = ( `jq -r '.maps[]?.file,.data[]?.file,.model.pretrain.weights?,.model.training.median?' "$dlaasjob.json"` )
+# identify training files from configuration
+set files = ( `jq -r '.maps[]?.file,.data[]?.file,.model.pretrain.weights?,.model.training.median?' "$dlaasjob.json" | egrep -v "null"` )
 if ($#files == 0) then
-  echo "$0:t $$ -- [WARN] no files" >& /dev/stderr
+  echo "$0:t $$ -- [ERROR] no training files" >& /dev/stderr
+  exit 1
+endif
+
+# identify model from configuration results
+set model_id = ( `jq -r '.model.results.model_id' "$dlaasjob.json"` )
+if ($#model_id == 0 || "$model_id" == "null") then
+  if ($?DEBUG) echo "$0:t $$ -- [debug] no model" >& /dev/stderr
+  unset model_id
 endif
 
 # jump to source
 pushd "$thisdir"
 
+## UPLOAD training files
 foreach file ( $files )
-  if ("$file" == "null") continue
   set found = false
   if (-e "$file") then
-    if ($?existing) then
-      if ($#contents) then
-        foreach c ( $contents )
-          if ("$c:h" == "$file") then
-            set found = true
-          endif
-        end
+    foreach c ( $contents )
+      if ("$c:h" == "$file") then
+        set found = true
       endif
-    endif
+    end
     if ($found != true) then
-      if ($?DEBUG) echo "$0:t $$ -- [debug] copying $file " `du -k "$file" | awk '{ print $1 }'` "Kbytes" >& /dev/stderr
-      swift $VERBOSE --os-auth-token "$auth" --os-storage-url "$sturl" upload `echo "$dlaasjob" | sed 's/%20/ /g'` "$file"
+      if ($?DEBUG) echo "$0:t $$ -- [debug] UPLOADING $file " `du -k "$file" | awk '{ print $1 }'` "Kbytes" >& /dev/stderr
+      swift $VERBOSE --os-auth-token "$auth" --os-storage-url "$sturl" upload `echo "$dlaasjob" | sed 's/%20/ /g'` "$file" >& /dev/null
     else
       if ($?DEBUG) echo "$0:t $$ -- [debug] $file exists" >& /dev/stderr
     endif
   else
-    echo "$0:t $$ -- [ERROR] NO FILE: $file" >& /dev/stderr
+    echo "$0:t $$ -- [ERROR] $file does not exists" >& /dev/stderr
+    exit 1
   endif
-end
+endif
+
+## DOWNLOAD result files
+if ($?contents && $?model_id) then
+  foreach c ( $contents )
+    # results match model identifier
+    if ( "$c" =~ "$model_id/*" ) then
+      if ( ! -e "$c" ) then
+        mkdir -p "$c:h"
+        swift $VERBOSE --os-auth-token "$auth" --os-storage-url "$sturl" download `echo "$dlaasjob" | sed 's/%20/ /g'` "$c" >& /dev/null
+        if ($?DEBUG) echo "$0:t $$ -- [debug] DOWNLOADED $c " `du -k "$c " | awk '{ print $1 }'` " Kbytes" >& /dev/stderr
+        if ($?output) then
+          set output = ( $output "$c" )
+        else
+          set output = ( "$c" )
+        endif
+      else
+        if ($?DEBUG) echo "$0:t $$ -- [debug] JOB $c synchronized" >& /dev/stderr
+      endif
+    else if ("$c" =~ "training-*") then
+      if ($?DEBUG) echo "$0:t $$ -- [debug] OLD $c exists" >& /dev/stderr
+      if ($?oldmodels) then
+        set oldmodels = ( $oldmodels "$c" )
+      else
+        set oldmodels = ( "$c" )
+      endif
+    else
+      if ($?DEBUG) echo "$0:t $$ -- [debug] $c exists" >& /dev/stderr
+    endif
+  end
+endif
 
 # back from source
 popd
+# update files
+if ($?output) then
+  set files = ( $files $output )
+endif
+
+## DELETE OLD MODELS (or not)
+if ($?oldmodels && $?DELETE_OLD_MODELS) then
+  foreach c ( $oldmodels )
+    echo "$0:t $$ -- [INFO] DELETING OLD MODEL $c" >& /dev/stderr
+    swift $VERBOSE --os-auth-token "$auth" --os-storage-url "$sturl" delete `echo "$dlaasjob" | sed 's/%20/ /g'` "$c" >& /dev/null
+  end
+endif
 
 ###
 ### DONE
@@ -210,10 +262,9 @@ else
   set files = ""
 endif
 # storage documentation
-# set storage = '{"type":"bluemix_objectstore","container":"'"$dlaasjob"'","auth_url":"'"$auth_url"'/v3","user_name":"'"$userId"'","password":"'"$password"'","domain_name":"'"$domainName"'","region":"'"$region"'","project_id":"'"$projectId"'","files":['"$files"']}'
 set storage = '{"type":"bluemix_objectstore","container":"'"$dlaasjob"'","auth_url":"'"$auth_url"'/v3","user_name":"'"$username"'","password":"'"$password"'","domain_name":"'"$domainName"'","region":"'"$region"'","project_id":"'"$projectId"'","files":['"$files"']}'
 # update storage
 jq '.storage='"$storage" "$dlaasjob.json" >! /tmp/$0:t.$$.json
 # save result and return
 jq '.' /tmp/$0:t.$$.json | tee "$dlaasjob.json"
-
+rm -f /tmp/$0:t.$$.json
