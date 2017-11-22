@@ -223,36 +223,36 @@ tivo_cabin_premiere:
 
 # ageathome
 
-roughfog:
+rough-fog:
   mac: B8:27:EB:D0:95:AD
-  name: roughfog
+  name: 'ageathome_kitchen'
   hide_if_away: false
   icon: mdi:webcam
   picture: http://farm5.static.flickr.com/4100/4930862762_4abbd2b5b3_m.jpg
   track: true
   vendor: Raspberry Pi Foundation
 
-quietwater:
+quiet-water:
   mac: B8:27:EB:90:6F:4A
-  name: quietwater
+  name: 'ageathome_road'
   hide_if_away: false
   icon: mdi:webcam
   picture: http://farm5.static.flickr.com/4100/4930862762_4abbd2b5b3_m.jpg
   track: true
   vendor: Raspberry Pi Foundation
 
-dampcloud:
+damp-cloud:
   mac: B8:27:EB:01:E6:05
-  name: dampcloud
+  name: 'ageathome_bathroom'
   hide_if_away: false
   icon: mdi:webcam
   picture: http://farm5.static.flickr.com/4100/4930862762_4abbd2b5b3_m.jpg
   track: true
   vendor: Raspberry Pi Foundation
 
-roughwind:
+rough-wind:
   mac: B8:27:EB:BD:1D:F3
-  name: roughwind
+  name: 'ageathome_frontdoor'
   hide_if_away: false
   icon: mdi:webcam
   picture: http://farm5.static.flickr.com/4100/4930862762_4abbd2b5b3_m.jpg
