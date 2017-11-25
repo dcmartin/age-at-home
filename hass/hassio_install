@@ -7,16 +7,18 @@ URL_VERSION="https://raw.githubusercontent.com/home-assistant/hassio/master/vers
 URL_START_HASSIO="https://raw.githubusercontent.com/home-assistant/hassio-build/master/install/misc/hassio-start"
 URL_GENERIC_HC="https://raw.githubusercontent.com/home-assistant/hassio-build/master/generic-hc"
 URL_SERVICE_HASSIO="https://raw.githubusercontent.com/home-assistant/hassio-build/master/install/systemd/hassio-supervisor.service"
-URL_SERVICE_HOSTCONTROLL="https://raw.githubusercontent.com/home-assistant/hassio-build/master/install/systemd/hassio-hc.service"
+URL_SERVICE_HOSTCONTROL="https://raw.githubusercontent.com/home-assistant/hassio-build/master/install/systemd/hassio-hc.service"
 
-BIN_DIR=/usr/local/bin
-DATA_SHARE=/usr/local/share/hassio
+BIN_DIR=/usr/bin
+DATA_SHARE=/usr/share/hassio
 
 # Check env
 command -v docker > /dev/null 2>&1 || { echo "[ERROR] Please install docker first"; exit 1; }
 command -v jq > /dev/null 2>&1 || { echo "[ERROR] Please install jq first"; exit 1; }
 command -v socat > /dev/null 2>&1 || { echo "[ERROR] Please install socat first"; exit 1; }
 command -v curl > /dev/null 2>&1 || { echo "[ERROR] Please install curl first"; exit 1; }
+command -v avahi-daemon > /dev/null 2>&1 || { echo "[ERROR] Please install avahi first"; exit 1; }
+command -v dbus-daemon > /dev/null 2>&1 || { echo "[ERROR] Please install dbus first"; exit 1; }
 
 # Check system options
 if [ -x $(command -v systemctl) ]; then
@@ -65,7 +67,7 @@ case $ARCH in
         HOMEASSISTANT_DOCKER="$DOCKER_REPO/$MACHINE-homeassistant"
         HASSIO_DOCKER="$DOCKER_REPO/amd64-hassio-supervisor"
     ;;
-    "arm" | "armv7l")
+    "arm" | "armv7l" | "armv6l")
         if [ -z $MACHINE ]; then
             echo "[ERROR] Please set machine for $ARCH"
             exit 1
@@ -103,20 +105,20 @@ docker pull "$HASSIO_DOCKER:$HASSIO_VERSION" > /dev/null
 docker tag "$HASSIO_DOCKER:$HASSIO_VERSION" "$HASSIO_DOCKER:latest" > /dev/null
 
 ##
-# install generic hostcontrol
+# Install generic hostcontrol
 echo "[INFO] Install generic HostControl"
 curl -sL "$URL_GENERIC_HC/$GENERIC_HC_VERSION" > "$BIN_DIR/hassio-hc"
 
 chmod a+x "$BIN_DIR/hassio-hc"
 
 ##
-# install start-hassio
+# Install start-hassio
 echo "[INFO] Install startup scripts"
 curl -sL "$URL_START_HASSIO" > "$BIN_DIR/hassio-start"
 
-sed -ibak "s|%%SUPERVISOR_IMAGE%%|$HASSIO_DOCKER|g" "$BIN_DIR/hassio-start"
-sed -ibak "s|%%HOMEASSISTANT_IMAGE%%|$HOMEASSISTANT_DOCKER|g" "$BIN_DIR/hassio-start"
-sed -ibak "s|%%DATA_SHARE%%|$DATA_SHARE|g" "$BIN_DIR/hassio-start"
+sed -i "s|%%SUPERVISOR_IMAGE%%|$HASSIO_DOCKER|g" "$BIN_DIR/hassio-start"
+sed -i "s|%%HOMEASSISTANT_IMAGE%%|$HOMEASSISTANT_DOCKER|g" "$BIN_DIR/hassio-start"
+sed -i "s|%%DATA_SHARE%%|$DATA_SHARE|g" "$BIN_DIR/hassio-start"
 
 chmod a+x "$BIN_DIR/hassio-start"
 
@@ -125,10 +127,10 @@ chmod a+x "$BIN_DIR/hassio-start"
 if [ "$INIT_SYSTEM" == "systemd" ]; then
     echo "[INFO] Init systemd"
     curl -sL "$URL_SERVICE_HASSIO" > "/etc/systemd/system/hassio-supervisor.service"
-    curl -sL "$URL_SERVICE_HOSTCONTROLL" > "/etc/systemd/system/hassio-hc.service"
+    curl -sL "$URL_SERVICE_HOSTCONTROL" > "/etc/systemd/system/hassio-hc.service"
 
-    sed -ibak "s|%%BIN_DIR%%|$BIN_DIR|g" "/etc/systemd/system/hassio-hc.service"
-    sed -ibak "s|%%BIN_DIR%%|$BIN_DIR|g" "/etc/systemd/system/hassio-supervisor.service"
+    sed -i "s|%%BIN_DIR%%|$BIN_DIR|g" "/etc/systemd/system/hassio-hc.service"
+    sed -i "s|%%BIN_DIR%%|$BIN_DIR|g" "/etc/systemd/system/hassio-supervisor.service"
 
     systemctl enable hassio-supervisor.service
 
