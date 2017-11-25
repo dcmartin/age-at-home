@@ -51,16 +51,38 @@
   trigger:
     - platform: state
       entity_id: 
-        - group.ageathome_devices
+        - device_tracker.roughfog
+        - device_tracker.dampcloud
+        - device_tracker.roughwind
+        - device_tracker.quietwater
   condition: 
     - condition: template
       value_template: >
-        {{ trigger.from_state != None and trigger.to_state.state != trigger.from_state.state }}
+        {{ ( trigger.from_state != None and trigger.to_state.state != trigger.from_state.state ) }}
   action:
     - service: notify.notify
       data_template:
         message: >
-          AgeAtHome {{ trigger.entity_id }}'s status just changed from {{ trigger.from_state.state }} to {{ trigger.to_state.state }}
+          AgeAtHome device {{ trigger.entity_id }} {{ state(trigger.entity_id)['attributes.friendly_name'] }}'s status just changed from {{ trigger.from_state.state }} to {{ trigger.to_state.state }}
+
+- id: notify_ageathome_devices_offline'
+  alias: 'notify_ageathome_offline'
+  trigger:
+    - platform: state
+      entity_id:
+        - device_tracker.roughfog
+        - device_tracker.dampcloud
+        - device_tracker.roughwind
+        - device_tracker.quietwater
+  condition:
+    - condition: template
+      value_template: >
+        {{ trigger.to_state == 'not_home' }}
+  action:
+    - service: notify.notify
+      data_template:
+        message: >
+          AgeAtHome {{ trigger.entity_id.replace('device_tracker.','') }} is offline.
 
 - id: notify_status_view
   alias: 'notify_status_view'
@@ -393,9 +415,9 @@
          {% for state in states.sensor -%}
            {%- if loop.first -%}{"category":"sensor","date":{{ (now().timestamp()|int) }},"items":[
            {%- elif loop.last -%}
-             {"name":"{{ state.name | lower | urlencode }}","state":"{{ state.state }}"}
+             {"name":"{{ state.name | lower }}","state":"{{ state.state }}"}
            {%- else -%}
-             {"name":"{{ state.name | lower | urlencode }}","state":"{{ state.state }}"},
+             {"name":"{{ state.name | lower }}","state":"{{ state.state }}"},
            {%- endif -%}
           {%- endfor -%}]}
 

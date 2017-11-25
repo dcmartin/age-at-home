@@ -249,6 +249,15 @@ sensor state_template:
               {"name":"{{state.entity_id.replace('device_tracker.','')}}","state":"{{state.attributes.device_status}}"},
             {%- endif -%}
           {%- endfor -%}null]}
+      all_wcv80n:
+        entity_id: states.camera
+        value_template: >
+          {% for state in states.camera -%}
+            {%- if loop.first -%} [ {%- endif -%}
+            {%- if state.name.startswith('wcv80n') -%} 
+              "{{state.name.replace('wcv80n_','')}}",
+            {%- endif -%}
+          {%- endfor -%}null]
       ageathome_people:
         entity_id: 
           - sensor.ageathome_locations
@@ -264,7 +273,7 @@ sensor state_template:
               {"date":{{ (now().timestamp()|int) }},"devices":[
             {%- endif -%}
             {%- if state.attributes.friendly_name.startswith('ageathome_') %}
-              {"name":"{{state.entity_id.replace('device_tracker.','')}}","location":"{{state.attributes.friendly_name.replace('ageathome_','')}}"},
+              {"device":"{{state.entity_id.replace('device_tracker.','')}}","location":"{{state.attributes.friendly_name.replace('ageathome_','')}}"},
             {%- endif -%}
           {%- endfor -%}null]}
       ageathome_locations:
@@ -273,16 +282,7 @@ sensor state_template:
           {% for state in states.camera -%}
             {%- if loop.first -%} {"date":{{ (now().timestamp()|int) }},"locations":[ {%- endif -%}
             {%- if state.name.startswith('ageathome') -%} 
-              "{{state.name.replace('ageathome_','')}}",
-            {%- endif -%}
-          {%- endfor -%}null]}
-      wcv80n_cameras:
-        entity_id: states.camera
-        value_template: >
-          {% for state in states.camera -%}
-            {%- if loop.first -%} {"date":{{ (now().timestamp()|int) }},"cameras":[ {%- endif -%}
-            {%- if state.name.startswith('wcv80n') -%} 
-              "{{state.name.replace('wcv80n_','')}}",
+              {"camera":"{{state.entity_id.replace('camera.','')}}","location":"{{state.name.replace('ageathome_','')}}"},
             {%- endif -%}
           {%- endfor -%}null]}
 
@@ -590,6 +590,7 @@ conversation:
 history:
   include:
     entities:
+      - sensor.externalip
       # - binary_sensor.fletcher_fordflex_road
       # - binary_sensor.martin_rtv1100_road
       # - binary_sensor.martin_sprinter_road
@@ -598,9 +599,12 @@ history:
       # - binary_sensor.martin_c30_road
       - binary_sensor.martin_c70_road
       - binary_sensor.other_road
-      - sensor.martin_c70_road_count
-      - sensor.martin_c70_road_ratio
-      - sensor.martin_c70_road_time
+      - sensor.martin_road_count
+      - sensor.martin_road_ratio
+      - sensor.martin_road_time
+      - sensor.fletcher_road_count
+      - sensor.fletcher_road_ratio
+      - sensor.fletcher_road_time
       - sensor.other_road_count
       - sensor.other_road_ratio
       - sensor.other_road_time
@@ -1795,22 +1799,22 @@ sensor mtnrpi2_agreement5_start:
 ## CAMERAS (motion package)
 ##
 
-camera aah_kitchen:
+camera roughfog:
   - platform: mjpeg
     name: ageathome_kitchen
     mjpeg_url: http://192.168.1.34:8081/
 
-camera aah_bathroom:
+camera dampcloud:
   - platform: mjpeg
     name: ageathome_bathroom
     mjpeg_url: http://192.168.1.35:8081/
 
-camera aah_road:
+camera quietwater:
   - platform: mjpeg
     name: ageathome_road
     mjpeg_url: http://192.168.1.36:8081/
 
-camera aah_frontdoor:   
+camera roughwind:   
   - platform: mjpeg
     name: ageathome_frontdoor
     mjpeg_url: http://192.168.1.37:8081/
@@ -2376,11 +2380,40 @@ binary_sensor what_road:
         {{ is_state('sensor.road_what','fletcher_fordflex') or
            is_state('sensor.road_what','fletcher_hybrid') or
            is_state('sensor.road_what','fletcher_pickup') }}
-    unknown_road:
+    other_road:
       entity_id:
         - sensor.road_what
       value_template: >
         {{ not states('binary_sensor.martin_road') and not states('binary_sensor.fletcher_road') }}
+
+sensor other_road_count:
+  - platform: history_stats
+    name: other_road_count
+    entity_id: binary_sensor.other_road
+    state: 'on'
+    type: count
+    start: '{{ now().replace(hour=0).replace(minute=0).replace(second=0) }}'
+    end: '{{ now() }}'
+
+sensor other_road_ratio:
+  - platform: history_stats
+    icon: mdi:timer
+    name: other_road_ratio
+    entity_id: binary_sensor.other_road
+    state: 'on'
+    type: ratio
+    start: '{{ now().replace(hour=0).replace(minute=0).replace(second=0) }}'
+    end: '{{ now() }}'
+
+sensor other_road_time:
+  - platform: history_stats
+    icon: mdi:timer
+    name: other_road_time
+    entity_id: binary_sensor.other_road
+    state: 'on'
+    type: time
+    start: '{{ now().replace(hour=0).replace(minute=0).replace(second=0) }}'
+    end: '{{ now() }}'
 
 sensor martin_road_count:
   - platform: history_stats
@@ -2401,6 +2434,16 @@ sensor martin_road_ratio:
     start: '{{ now().replace(hour=0).replace(minute=0).replace(second=0) }}'
     end: '{{ now() }}'
 
+sensor martin_road_time:
+  - platform: history_stats
+    icon: mdi:timer
+    name: martin_road_time
+    entity_id: binary_sensor.martin_road
+    state: 'on'
+    type: time
+    start: '{{ now().replace(hour=0).replace(minute=0).replace(second=0) }}'
+    end: '{{ now() }}'
+
 sensor fletcher_road_count:
   - platform: history_stats
     name: fletcher_road_count
@@ -2417,6 +2460,16 @@ sensor fletcher_road_ratio:
     entity_id: binary_sensor.fletcher_road
     state: 'on'
     type: ratio
+    start: '{{ now().replace(hour=0).replace(minute=0).replace(second=0) }}'
+    end: '{{ now() }}'
+
+sensor fletcher_road_time:
+  - platform: history_stats
+    icon: mdi:timer
+    name: fletcher_road_time
+    entity_id: binary_sensor.fletcher_road
+    state: 'on'
+    type: time
     start: '{{ now().replace(hour=0).replace(minute=0).replace(second=0) }}'
     end: '{{ now() }}'
 
@@ -3695,7 +3748,7 @@ history_graph:
     entities:
       - sensor.martin_road_time
       - sensor.fletcher_road_time
-      - sensor.unknown_road_time
+      - sensor.other_road_time
     hours_to_show: 24
     refresh: 60
   road_ratio:
@@ -3703,7 +3756,7 @@ history_graph:
     entities:
       - sensor.martin_road_ratio
       - sensor.fletcher_road_ratio
-      - sensor.unknown_road_ratio
+      - sensor.other_road_ratio
     hours_to_show: 24
     refresh: 60
   road_count:
@@ -3711,7 +3764,7 @@ history_graph:
     entities:
       - sensor.martin_road_count
       - sensor.fletcher_road_count
-      - sensor.unknown_road_count
+      - sensor.other_road_count
     hours_to_show: 24
     refresh: 60
 

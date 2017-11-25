@@ -264,10 +264,10 @@ ageathome_devices:
   name: AgeAtHome Devices
   icon: mdi:lan-connect
   entities:
-    - device_tracker.ageathome_kitchen_camera
-    - device_tracker.ageathome_bathroom_camera
-    - device_tracker.ageathome_frontdoor_camera
-    - device_tracker.ageathome_road_camera
+    - device_tracker.roughfog
+    - device_tracker.dampcloud
+    - device_tracker.roughwind
+    - device_tracker.quietwater
 
 ageathome_motion:
   name: 'AgeAtHome Motion'
@@ -360,11 +360,11 @@ ageathome_bathroom_view:
   icon: mdi:anchor
   entities:
     - camera.bathroom_image_annotated
-    # - camera.bathroom_image_cropped
+    - group.ageathome_bathroom_details
     - history_graph.bathroom_count
     - history_graph.bathroom_time
     - history_graph.bathroom_ratio
-    - group.ageathome_bathroom_details
+    - history_graph.bathroom_accuracy
 
 ageathome_bathroom_details:
   name: AgeAtHome Bathroom Details
@@ -390,11 +390,11 @@ ageathome_frontdoor_view:
   icon: mdi:home-outline
   entities:
     - camera.frontdoor_image_annotated
-    # - camera.frontdoor_image_cropped
+    - group.ageathome_frontdoor_details
     - history_graph.frontdoor_count
     - history_graph.frontdoor_time
     - history_graph.frontdoor_ratio
-    - group.ageathome_frontdoor_details
+    - history_graph.frontdoor_accuracy
 
 ageathome_frontdoor_details:
   name: AgeAtHome Frontdoor Details
@@ -420,11 +420,11 @@ ageathome_road_view:
   icon: mdi:road
   entities:
     - camera.road_image_annotated
-    # - camera.road_image_cropped
+    - group.ageathome_road_details
     - history_graph.road_count
     - history_graph.road_time
     - history_graph.road_ratio
-    - group.ageathome_road_details
+    - history_graph.road_accuracy
 
 ageathome_road_details:
   name: AgeAtHome Road Details
