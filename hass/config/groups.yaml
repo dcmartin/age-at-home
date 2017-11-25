@@ -30,6 +30,29 @@ people:
     - sensor.riley_location
     - sensor.ellen_location
 
+david_devices:
+  name: david_devices
+  entities:
+    - device_tracker.davids_iphone
+    - device_tracker.dcmsiphone7
+    - device_tracker.davidpro
+    - device_tracker.davidcsapple_watch
+
+ellen_devices:
+  name: ellen_devices
+  entities:
+    - device_tracker.ellens_ipad4prez
+    - device_tracker.ellens_iphone
+    - device_tracker.ellensipadpro
+    - device_tracker.ellensiphone5
+
+hali_devices:
+  name: hali_devices
+  entities:
+    - device_tracker.halisiphone 
+    - device_tracker.haliair
+    - device_tracker.halisapple_watch
+
 iphones:
   name: iPhones
   entities:

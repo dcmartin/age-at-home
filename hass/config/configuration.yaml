@@ -3524,17 +3524,28 @@ sensor people_location_template:
         - device_tracker.davids_iphone
         - device_tracker.dcmsiphone7
       value_template: >
-        {{ states('device_tracker.davids_iphone') and states('device_tracker.dcmsiphone7') }}
+        {%- for e in states.group.david_devices.attributes.entity_id -%}
+            {% if loop.first %}{% else %}{% if states(e) != 'unknown' %}|{% endif %}{% endif %}
+          {% if states(e) != 'unknown' %}
+            {{ states(e)|string|lower|tojson }}
+          {% endif %}
+        {%- endfor -%}
     keli_location:
       entity_id: device_tracker.kelisiphone7
       friendly_name: "Keli's location"
       value_template: >
         {{ states('device_tracker.kelisiphone7') }}
     hali_location:
-      entity_id: device_tracker.halisiphone 
+      entity_id: 
+        - group.hali_devices
       friendly_name: "Hali's location"
       value_template: >
-        {{ states('device_tracker.halisiphone') }}
+        {%- for e in states.group.hali_devices.attributes.entity_id -%}
+            {% if loop.first %}{% else %}{% if states(e) != 'unknown' %}|{% endif %}{% endif %}
+          {% if states(e) != 'unknown' %}
+            {{ states(e)|string|lower|tojson }}
+          {% endif %}
+        {%- endfor -%}
     ian_location:
       entity_id: device_tracker.ianmartinsiphone 
       friendly_name: "Ian's location"
