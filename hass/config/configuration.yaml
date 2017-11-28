@@ -22,7 +22,7 @@ http:
     - https://google.com
     - https://home-assistant.io
     - http://dcmartin.com
-  base_url: homeassistant.dcmartin.com:8123
+  base_url: 192.168.1.26:8123
 
 updater:
   include_used_components: true
@@ -62,10 +62,6 @@ panel_iframe:
     title: 'mtn_rpi2'
     icon: mdi:image-filter-hdr
     url: 'http://192.168.1.39/dashboard'
-  rpi3:
-    title: 'mtn_rpi3'
-    icon: mdi:image-filter-hdr
-    url: 'http://192.168.1.40/dashboard'
   terminal:
     title: Terminal
     icon: mdi:console
@@ -133,7 +129,7 @@ sensor solar:
 #        output_pictures: center
 #            threshold: 1500
 #                threshold_tune: on
-#                mqtt_host: homeassistant.dcmartin.com
+#                mqtt_host: 192.168.1.26
 #                mqtt_picture: on
 #                stream_port: 8081
 
@@ -3518,18 +3514,26 @@ binary_sensor ian_maybe_home:
 sensor people_location_template:
   platform: template
   sensors:
+    david_status:
+      friendly_name: "David's Status"
+      entity_id:
+        - group.david_devices
+      value_template: >
+       {%- set e = closest(states.group.david_devices) -%}
+       {%- if e is defined -%} 
+         {%- set d = distance(e) -%}
+         {%- if e.source_type == 'gps' -%} 
+           {"device":{{ e.attributes.friendly_name|tojson }},"location":{{e.state|tojson}},"online":{{(e.attributes.device_status == 'online')|tojson}},"feet":{{d*5280.0}}}
+         {%- else -%}
+           {"device":{{ e.attributes.friendly_name|tojson }},"location":"home","online":true,"feet":{{d*5280.0}}}
+         {%- endif -%}
+       {%- endif -%}
     david_location:
       friendly_name: "David's location"
       entity_id:
-        - device_tracker.davids_iphone
-        - device_tracker.dcmsiphone7
+        - group.david_devices
       value_template: >
-        {%- for e in states.group.david_devices.attributes.entity_id -%}
-            {% if loop.first %}{% else %}{% if states(e) != 'unknown' %}|{% endif %}{% endif %}
-          {% if states(e) != 'unknown' %}
-            {{ states(e)|string|lower|tojson }}
-          {% endif %}
-        {%- endfor -%}
+        {{ closest(states.group.david_devices).state }}
     keli_location:
       entity_id: device_tracker.kelisiphone7
       friendly_name: "Keli's location"
@@ -3540,12 +3544,7 @@ sensor people_location_template:
         - group.hali_devices
       friendly_name: "Hali's location"
       value_template: >
-        {%- for e in states.group.hali_devices.attributes.entity_id -%}
-            {% if loop.first %}{% else %}{% if states(e) != 'unknown' %}|{% endif %}{% endif %}
-          {% if states(e) != 'unknown' %}
-            {{ states(e)|string|lower|tojson }}
-          {% endif %}
-        {%- endfor -%}
+        {{ closest(states.group.hali_devices).state }}
     ian_location:
       entity_id: device_tracker.ianmartinsiphone 
       friendly_name: "Ian's location"

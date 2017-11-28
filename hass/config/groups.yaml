@@ -35,8 +35,13 @@ david_devices:
   entities:
     - device_tracker.davids_iphone
     - device_tracker.dcmsiphone7
-    - device_tracker.davidpro
     - device_tracker.davidcsapple_watch
+
+ian_devices:
+  name: ian_devices
+  entities:
+    - device_tracker.ianmartinsiphone
+    - device_tracker.ianair
 
 ellen_devices:
   name: ellen_devices
