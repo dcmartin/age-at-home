@@ -21,4 +21,17 @@ $template DynamicWorkloadFile,"/var/log/workload/%syslogtag:R,ERE,1,DFLT:.*workl
 EOF
 service rsyslog restart
 
-
+mkdir -p /var/horizon/reg/microservice;
+mkdir -p /var/horizon/reg/workload;
+mkdir -p /var/horizon/reg/examples;
+cd /var/horizon/reg;
+find . ! -name env_vars -type f -exec rm -f {} +;
+wget -i https://raw.githubusercontent.com/linggao/horizon-utils/master/reg/filelist.txt;
+wget -i https://raw.githubusercontent.com/linggao/horizon-utils/master/reg/microservice/filelist.txt -P microservice/
+wget -i https://raw.githubusercontent.com/linggao/horizon-utils/master/reg/workload/filelist.txt -P workload/
+wget -i https://raw.githubusercontent.com/linggao/horizon-utils/master/reg/examples/filelist.txt -P examples/
+wget https://raw.githubusercontent.com/linggao/horizon-utils/master/update_horizon;
+chmod +x reg_all rereg update_horizon;
+ln -sf /var/horizon/reg/reg_all /usr/local/sbin;
+ln -sf /var/horizon/reg/rereg /usr/local/sbin;
+ln -sf /var/horizon/reg/update_horizon /usr/local/sbin
