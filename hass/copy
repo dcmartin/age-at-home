@@ -7,17 +7,23 @@ if ($?config == 0) set config = "$share/homeassistant"
 if ($?addons == 0) set addons = "$share/addons/local"
 
 # copy CONFIGURATION
-set files = ( known_devices.yaml configuration.yaml groups.yaml automations.yaml templates.yaml logger.yaml customize.yaml secrets.yaml )
-echo -n "Copying configuration ["
-foreach file ( $files )
-  echo -n "$file "
-  cp "$dir/config/$file" "$config/$file"
+set yamls = ( scripts known_devices configuration groups history automations templates logger customize secrets )
+echo -n "Copying YAML ["
+foreach yaml ( $yamls )
+  if (-e "$dir/config/$yaml.yaml") then
+    echo -n "$yaml "
+    cp "$dir/config/$yaml.yaml" "$config/$yaml.yaml"
+  else
+    echo "NO SUCH FILE $dir/config/$yaml.yaml"
+    exit 1
+  endif
 end
 echo "]"
 
 # copy ADDONS
+echo "Copying ADDONS"
 foreach i ( "$dir"/addons/* )
-  echo -n "Copying $i:t ["
+  echo -n "$i:t ["
   if (-d "$i") then
     mkdir -p "$addons/$i:t"
     foreach j ( "$i"/* )

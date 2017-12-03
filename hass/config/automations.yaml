@@ -205,7 +205,7 @@
 #
 
 - id: aah_david_status
-  alias: 'aah_david_status'
+  alias: aah_david_status
   initial_state: 'on'
   trigger:
     platform: state
@@ -218,7 +218,7 @@
           {"what":"david","date:",{{(now().timestamp()|int)}},"state":{{ states('sensor.david_status') }}}
 
 - id: aah_camera_offline
-  alias: 'Notify if any AAH sensor is unknown for 10 minutes'
+  alias: aah_camera_offline
   trigger:
     platform: state
     entity_id:
@@ -226,40 +226,42 @@
       - camera.ageathome_bathroom
       - camera.ageathome_frontdoor
       - camera.ageathome_road
-    to: 'unknown'
+    to: 'not home'
     for:
       minutes: 10
   action:
     - service: mqtt.publish
       data_template:
-        topic: 'status/camera'
+        topic: 'ageathome/status/camera'
         payload: >
           {"device":"{{ trigger.to_state.attributes.friendly_name }}","status":"offline"}
 
-#- id: aah_notify_lowscore
-#  alias: very low score
-#  trigger:
-#    platform: numeric_state
-#    entity_id: sensor.last_why
-#    below: 0.50
-#  action:
-#    - service: notify.notify
-#      data_template:
-#        message: >
-#          VERY LOW {{ states.sensor.last_who }} saw {{ states.sensor.last_what }} {{ states.sensor.last_why }}
-#
-#- id: aah_notify_highscore
-#  alias: very high score
-#  trigger:
-#    platform: numeric_state
-#    entity_id: sensor.last_why
-#    above: 0.99
-#  action:
-#    - service: notify.notify
-#      data_template:
-#        message: >
-#          VERY HIGH {{ states.sensor.last_who }} saw {{ states.sensor.last_what }} {{ states.sensor.last_why }}
-#
+- id: aah_notify_lowscore
+  alias: very low score
+  trigger:
+    platform: numeric_state
+    entity_id: sensor.last_why
+    below: 0.50
+  action:
+    - service: mqtt.publish
+      data_template:
+        topic: 'ageathome/notify/score'
+        payload: >
+          {"location":{{states('sensor.last_where')|tojson}},"model":{{states('sensor.last_who')|tojson}},"class":{{states('sensor.last_what')|tojson}},"score":{{states('sensor.last_why')}}}
+
+- id: aah_notify_highscore
+  alias: very high score
+  trigger:
+    platform: numeric_state
+    entity_id: sensor.last_why
+    above: 0.98
+  action:
+    - service: mqtt.publish
+      data_template:
+        topic: 'ageathome/notify/score'
+        payload: >
+          {"location":{{states('sensor.last_where')|tojson}},"model":{{states('sensor.last_who')|tojson}},"class":{{states('sensor.last_what')|tojson}},"score":{{states('sensor.last_why')}}}
+
 #- id: sonos_volume_limiter
 #  alias: Sonos Volume Limiter
 #  initial_state: True
@@ -357,11 +359,11 @@
            {%- if loop.first -%}{"category":"device_tracker","date":{{ (now().timestamp()|int) }},"items":[
            {%- elif loop.last -%}
              {%- if state.attributes.source_type != None -%}
-               {"name":"{{ state.name | lower }}","state":"{{state.state}}","attributes":{{ state.attributes|length}}}
+               {"name":"{{ state.name | lower }}","state":"{{state.state}}","attributes":{{state.attributes|length}}}
              {%- endif -%}
            {%- else -%}
              {%- if state.attributes.source_type != None -%}
-               {"name":"{{ state.name | lower }}","state":"{{state.state}}","attributes":{{ state.attributes|length}}},
+               {"name":"{{ state.name | lower }}","state":"{{state.state}}","attributes":{{state.attributes|length}}},
              {%- endif -%}
            {%- endif -%}
           {%- endfor -%}]}
@@ -401,9 +403,9 @@
          {% for state in states.sensor -%}
            {%- if loop.first -%}{"category":"sensor","date":{{ (now().timestamp()|int) }},"items":[
            {%- elif loop.last -%}
-             {"name":"{{ state.name | lower }}","state":"{{ state.state }}"}
+             {"name":"{{ state.name | lower }}","state":{{ state.state|tojson }}}
            {%- else -%}
-             {"name":"{{ state.name | lower }}","state":"{{ state.state }}"},
+             {"name":"{{ state.name | lower }}","state":{{ state.state|tojson }}},
            {%- endif -%}
           {%- endfor -%}]}
 

@@ -97,7 +97,6 @@ sensor solar:
   sensors:
     solar_angle:
       value_template: '{{ states.sun.sun.attributes.elevation }}'
-      friendly_name: 'Sun angle'
       unit_of_measurement: 'degrees'
     sunrise:
       value_template: '{{ as_timestamp(states.sun.sun.attributes.next_rising) | timestamp_custom("%I:%M %p") }}'
@@ -113,6 +112,7 @@ sensor solar:
 #  password: !secret horizon_password
 #  wallet: !secret horizon_wallet
 #  publicid: !secret horizon_public_id
+#   pattern: sdr-gps-netspeed
 #  workload:
 #    - sdr
 #            type: realtek
@@ -237,18 +237,18 @@ sensor state_template:
           - states.device_tracker
           - sun.sun
         value_template: >
-          {% for state in states.device_tracker -%}
+          {%- for state in states.device_tracker -%}
             {%- if loop.first -%}
-              {"date":{{ (now().timestamp()|int) }},"devices":[
+              {"date":{{ (now().timestamp()|int) }},"list":[
             {%- endif -%}
-            {%- if state.attributes.source_type == 'gps' -%}
-              {"name":"{{state.entity_id.replace('device_tracker.','')}}","state":"{{state.attributes.device_status}}"},
+            {%- if state.attributes.source_type == 'gps' and state.attributes.device_status == 'online' -%}
+              {{state.entity_id.replace('device_tracker.','')|truncate(8,false,"")|tojson}},
             {%- endif -%}
           {%- endfor -%}null]}
       all_wcv80n:
         entity_id: states.camera
         value_template: >
-          {% for state in states.camera -%}
+          {%- for state in states.camera -%}
             {%- if loop.first -%} [ {%- endif -%}
             {%- if state.name.startswith('wcv80n') -%} 
               "{{state.name.replace('wcv80n_','')}}",
@@ -264,18 +264,18 @@ sensor state_template:
           - states.device_tracker
           - sensor.ageathome_locations
         value_template: >
-          {% for state in states.device_tracker -%}
+          {%- for state in states.device_tracker -%}
             {%- if loop.first -%}
               {"date":{{ (now().timestamp()|int) }},"devices":[
             {%- endif -%}
-            {%- if state.attributes.friendly_name.startswith('ageathome_') %}
+            {%- if state.attributes.friendly_name.startswith('ageathome_') -%}
               {"device":"{{state.entity_id.replace('device_tracker.','')}}","location":"{{state.attributes.friendly_name.replace('ageathome_','')}}"},
             {%- endif -%}
           {%- endfor -%}null]}
       ageathome_locations:
         entity_id: states.camera
         value_template: >
-          {% for state in states.camera -%}
+          {%- for state in states.camera -%}
             {%- if loop.first -%} {"date":{{ (now().timestamp()|int) }},"locations":[ {%- endif -%}
             {%- if state.name.startswith('ageathome') -%} 
               {"camera":"{{state.entity_id.replace('camera.','')}}","location":"{{state.name.replace('ageathome_','')}}"},
@@ -394,14 +394,19 @@ ios:
             textInputButtonTitle: 'Silencio!'
             textInputPlaceholder: 'Placeholder'
 
-
-# DEVICE TRACKER IN ICLOUD
+##
+## DEVICE TRACKERS
+##
 
 device_tracker:
   - platform: icloud
     username: !secret icloud_username
     password: !secret icloud_password
     account_name: DCMARTIN
+  - platform: mikrotik
+    host: 192.168.1.1
+    username: !secret mikrotik_username
+    password: !secret mikrotik_password
 
 # NOTIFIERS
 
@@ -583,172 +588,7 @@ sensor david_plex:
 conversation:
 
 # Enables support for tracking state changes over time.
-history:
-  include:
-    entities:
-      - sensor.externalip
-      # - binary_sensor.fletcher_fordflex_road
-      # - binary_sensor.martin_rtv1100_road
-      # - binary_sensor.martin_sprinter_road
-      # - binary_sensor.martin_suburban_road
-      # - binary_sensor.martin_xc90_road
-      # - binary_sensor.martin_c30_road
-      - binary_sensor.martin_c70_road
-      - binary_sensor.other_road
-      - sensor.martin_road_count
-      - sensor.martin_road_ratio
-      - sensor.martin_road_time
-      - sensor.fletcher_road_count
-      - sensor.fletcher_road_ratio
-      - sensor.fletcher_road_time
-      - sensor.other_road_count
-      - sensor.other_road_ratio
-      - sensor.other_road_time
-      # motion in location
-      - binary_sensor.bathroom_motion
-      - binary_sensor.exterior_motion
-      - binary_sensor.frontdoor_motion
-      - binary_sensor.interior_motion
-      - binary_sensor.kitchen_motion
-      - binary_sensor.road_motion
-      # entity in location (6 entities; 3 locations)
-      - binary_sensor.david_bathroom
-      - binary_sensor.david_frontdoor
-      - binary_sensor.david_interior
-      - binary_sensor.david_kitchen
-      - binary_sensor.ellen_bathroom
-      - binary_sensor.ellen_frontdoor
-      - binary_sensor.ellen_interior
-      - binary_sensor.ellen_kitchen
-      - binary_sensor.hali_bathroom
-      - binary_sensor.hali_frontdoor
-      - binary_sensor.hali_interior
-      - binary_sensor.hali_kitchen
-      - binary_sensor.ian_bathroom
-      - binary_sensor.ian_frontdoor
-      - binary_sensor.ian_interior
-      - binary_sensor.ian_kitchen
-      - binary_sensor.keli_bathroom
-      - binary_sensor.keli_frontdoor
-      - binary_sensor.keli_interior
-      - binary_sensor.keli_kitchen
-      - binary_sensor.riley_bathroom
-      - binary_sensor.riley_frontdoor
-      - binary_sensor.riley_interior
-      - binary_sensor.riley_kitchen
-      # entity @ home (6 entities; bayesian)
-      - binary_sensor.david_home
-      - binary_sensor.ellen_home
-      - binary_sensor.hali_home
-      - binary_sensor.ian_home
-      - binary_sensor.keli_home
-      - binary_sensor.riley_home
-      # classifier wrong
-      - binary_sensor.kitchen_wrong
-      - binary_sensor.bathroom_wrong
-      - binary_sensor.frontdoor_wrong
-      - binary_sensor.road_wrong
-      # entity device tracker (iOS)
-      - device_tracker.dcmsiphone7
-      - device_tracker.ellensiphone5
-      - device_tracker.halisiphone
-      - device_tracker.ianmartinsiphone
-      - device_tracker.kelisiphone7
-      - device_tracker.rileysiphone5
-      # location
-      - sensor.bathroom_ago
-      - sensor.bathroom_motion_count
-      - sensor.bathroom_motion_time
-      - sensor.bathroom_what
-      # meta-sensor
-      - sensor.count_automations
-      - sensor.count_binary_sensors
-      - sensor.count_cameras
-      - sensor.count_device_trackers
-      - sensor.count_media_players
-      - sensor.count_sensors
-      - sensor.count_zones
-      - sensor.david_bathroom_count
-      - sensor.david_bathroom_ratio
-      - sensor.david_bathroom_time
-      - sensor.david_frontdoor_count
-      - sensor.david_frontdoor_ratio
-      - sensor.david_frontdoor_time
-      - sensor.david_kitchen_count
-      - sensor.david_kitchen_ratio
-      - sensor.david_kitchen_time
-      - sensor.david_location
-      - sensor.david_plex
-      - sensor.ellen_bathroom_count
-      - sensor.ellen_bathroom_ratio
-      - sensor.ellen_bathroom_time
-      - sensor.ellen_frontdoor_count
-      - sensor.ellen_frontdoor_ratio
-      - sensor.ellen_frontdoor_time
-      - sensor.ellen_kitchen_count
-      - sensor.ellen_kitchen_ratio
-      - sensor.ellen_kitchen_time
-      - sensor.ellen_location
-      - sensor.exterior_motion_ratio
-      - sensor.frontdoor_ago
-      - sensor.frontdoor_motion_count
-      - sensor.frontdoor_motion_time
-      - sensor.frontdoor_what
-      - sensor.hali_bathroom_count
-      - sensor.hali_bathroom_ratio
-      - sensor.hali_bathroom_time
-      - sensor.hali_frontdoor_count
-      - sensor.hali_frontdoor_ratio
-      - sensor.hali_frontdoor_time
-      - sensor.hali_kitchen_count
-      - sensor.hali_kitchen_ratio
-      - sensor.hali_kitchen_time
-      - sensor.hali_location
-      - sensor.ian_bathroom_count
-      - sensor.ian_bathroom_ratio
-      - sensor.ian_bathroom_time
-      - sensor.ian_frontdoor_count
-      - sensor.ian_frontdoor_ratio
-      - sensor.ian_frontdoor_time
-      - sensor.ian_kitchen_count
-      - sensor.ian_kitchen_ratio
-      - sensor.ian_kitchen_time
-      - sensor.ian_location
-      - sensor.interior_motion_ratio
-      - sensor.keli_bathroom_count
-      - sensor.keli_bathroom_ratio
-      - sensor.keli_bathroom_time
-      - sensor.keli_frontdoor_count
-      - sensor.keli_frontdoor_ratio
-      - sensor.keli_frontdoor_time
-      - sensor.keli_kitchen_count
-      - sensor.keli_kitchen_ratio
-      - sensor.keli_kitchen_time
-      - sensor.keli_location
-      - sensor.kitchen_ago
-      - sensor.kitchen_motion_count
-      - sensor.kitchen_motion_time
-      - sensor.kitchen_what
-      - sensor.last_ago
-      - sensor.last_what
-      - sensor.last_when
-      - sensor.play1_state
-      - sensor.play3_state
-      - sensor.riley_bathroom_count
-      - sensor.riley_bathroom_ratio
-      - sensor.riley_bathroom_time
-      - sensor.riley_frontdoor_count
-      - sensor.riley_frontdoor_ratio
-      - sensor.riley_frontdoor_time
-      - sensor.riley_kitchen_count
-      - sensor.riley_kitchen_ratio
-      - sensor.riley_kitchen_time
-      - sensor.riley_location
-      - sensor.road_ago
-      - sensor.road_motion_count
-      - sensor.road_motion_time
-      - sensor.road_what
-      - sensor.solar_angle
+history: !include history.yaml
 
 # View all events in a logbook
 logbook:
@@ -996,793 +836,929 @@ sensor external_ip:
 ### HORIZON
 ###
 
-sensor mtnrpi2_connectivity:
+## STATUS
+
+# CONFIGURATION
+
+sensor hzn_connectivity:
   - platform: rest
-    resource: 'http://192.168.1.32/CGI/mtn-status.cgi?ip=39'
-    name: MtnRpi2 Connectivity
+    resource: 'http://192.168.1.39/status'
+    name: horizon_connectivity
     value_template: >
-      {%- if value_json is defined -%} {{ value_json.connectivity | default("null") }}
-      {%- else -%} 0 {%- endif -%}
+      {%- if value_json is defined and value_json.configuration is defined -%} 
+        {{ value_json.connectivity | default(null) }}
+      {%- else -%} 'undefined' {%- endif -%}
 
-sensor mtnrpi2_exchange:
+sensor hzn_exchange:
   - platform: rest
-    resource: 'http://192.168.1.32/CGI/mtn-status.cgi?ip=39'
-    name: MtnRpi2 Exchange
+    resource: 'http://192.168.1.39/status'
+    name: horizon_exchange
     value_template: >
-      {%- if value_json is defined -%} {{ value_json.configuration.exchange_api | default("null") }}
-      {%- else -%} 0 {%- endif -%}
+      {%- if value_json is defined and value_json.configuration is defined -%} 
+        {{ value_json.configuration.exchange_api | default(null) }}
+      {%- else -%} 'undefined' {%- endif -%}
 
-
-## GETH
-
-sensor mtnrpi2_balance:
+sensor hzn_architecture:
   - platform: rest
-    resource: 'http://192.168.1.32/CGI/mtn-status.cgi?ip=39'
-    name: MtnRpi2 Balance
+    resource: 'http://192.168.1.39/status'
+    name: horizon_architecture
     value_template: >
-      {%- if value_json is defined and value_json.geth != [] -%} 
-        {{ value_json.geth[0].eth_balance | default(0) }}
-      {%- else -%} 0 {%- endif -%}
+      {%- if value_json is defined and value_json.configuration is defined -%} 
+        {{ value_json.configuration.architecture | default(null) }}
+      {%- else -%} 'undefined' {%- endif -%}
 
-sensor mtnrpi2_net_peer_count:
+# ETHEREUM
+
+sensor hzn_balance:
   - platform: rest
-    resource: 'http://192.168.1.32/CGI/mtn-status.cgi?ip=39'
-    name: MtnRpi2 Net Peer Count
+    resource: 'http://192.168.1.39/status'
+    name: horizon_balance
     value_template: >
-      {%- if value_json is defined and value_json.geth != [] -%} 
-        {{ value_json.geth[0].net_peer_count | default("null") }}
-        {{ value_json.geth[0].eth_balance | default(0) }}
-      {%- else -%} 0 {%- endif -%}
+      {%- if value_json is defined -%}
+        {%- if value_json.geth is defined -%}
+          {%- if value_json.geth != [] -%} 
+            {{ value_json.geth.eth_balance|int }}
+          {%- else -%}
+            0
+          {%- endif -%}
+        {%- else -%}
+          -1
+        {%- endif -%}
+      {%- else -%}
+        'undefined'
+      {%- endif -%}
 
-sensor mtnrpi2_eth_syncing:
+sensor hzn_peer_count:
   - platform: rest
-    resource: 'http://192.168.1.32/CGI/mtn-status.cgi?ip=39'
-    name: MtnRpi2 Eth Syncing
+    resource: 'http://192.168.1.39/status'
+    name: horizon_net_peer_count
     value_template: >
-      {%- if value_json is defined and value_json.geth != [] -%} 
-        {{ value_json.geth[0].eth_syncing | default("null") }}
-      {%- else -%} 0 {%- endif -%}
+      {%- if value_json is defined -%}
+        {%- if value_json.geth is defined -%}
+          {%- if value_json.geth != [] -%} 
+            {{ value_json.geth.net_peer_count|int }}
+          {%- else -%}
+            0
+          {%- endif -%}
+        {%- else -%}
+          -1
+        {%- endif -%}
+      {%- else -%}
+        'undefined'
+      {%- endif -%}
 
-sensor mtnrpi2_eth_blocknumber:
+sensor hzn_syncing:
   - platform: rest
-    resource: 'http://192.168.1.32/CGI/mtn-status.cgi?ip=39'
-    name: MtnRpi2 Eth Blocknumber
+    resource: 'http://192.168.1.39/status'
+    name: horizon_syncing
     value_template: >
-      {%- if value_json is defined and value_json.geth != [] -%} 
-        {{ value_json.geth[0].eth_block_number | default("null") }}
-      {%- else -%} 0 {%- endif -%}
+      {%- if value_json is defined -%}
+        {%- if value_json.geth is defined -%}
+          {%- if value_json.geth != [] -%} 
+            {{ value_json.geth.eth_syncing }}
+          {%- else -%}
+            null
+          {%- endif -%}
+        {%- else -%}
+          'undefined'
+        {%- endif -%}
+      {%- else -%}
+        'undefined'
+      {%- endif -%}
 
-sensor mtnrpi2_eth_account:
+sensor hzn_blocknumber:
   - platform: rest
-    resource: 'http://192.168.1.32/CGI/mtn-status.cgi?ip=39'
-    name: MtnRpi2 Eth Account
+    resource: 'http://192.168.1.39/status'
+    name: horizon_blocknumber
     value_template: >
-      {%- if value_json is defined and value_json.geth != [] -%} 
-        {{ value_json.geth[0].eth_accounts[0] | default("null") }}
-      {%- else -%} 0 {%- endif -%}
+      {%- if value_json is defined -%}
+        {%- if value_json.geth is defined -%}
+          {%- if value_json.geth != [] -%} 
+            {{ value_json.geth.eth_blocknumber|int }}
+          {%- else -%}
+            0
+          {%- endif -%}
+        {%- else -%}
+          -1
+        {%- endif -%}
+      {%- else -%}
+        'undefined'
+      {%- endif -%}
 
-# HORIZON DEVICE
-
-sensor mtnrpi2_device_id:
+sensor hzn_account:
   - platform: rest
-    resource: 'http://192.168.1.32/CGI/mtn-device.cgi?ip=39'
-    name: MtnRpi2 Device AccountID
+    resource: 'http://192.168.1.39/status'
+    name: horizon_account
+    value_template: >
+      {%- if value_json is defined -%}
+        {%- if value_json.geth is defined -%}
+          {%- if value_json.geth != [] -%} 
+            {{ value_json.geth.eth_accounts[0] }}
+          {%- else -%}
+            null
+          {%- endif -%}
+        {%- else -%}
+          'undefined'
+        {%- endif -%}
+      {%- else -%}
+        'undefined'
+      {%- endif -%}
+
+## NODE
+
+sensor hzn_node_id:
+  - platform: rest
+    resource: 'http://192.168.1.39/node'
+    name: horizon_node_id
     value_template: >
       {%- if value_json is defined -%} 
-        {{ value_json.id | default("null") }}
-      {%- else -%} 0 {%- endif -%}
+        {{ value_json.id | default(null) }}
+      {%- else -%} 'undefined' {%- endif -%}
 
-sensor mtnrpi2_device_organization:
+sensor hzn_node_organization:
   - platform: rest
-    resource: 'http://192.168.1.32/CGI/mtn-device.cgi?ip=39'
-    name: MtnRpi2 Device Organization
+    resource: 'http://192.168.1.39/node'
+    name: horizon_node_organization
     value_template: >
       {%- if value_json is defined -%} 
-        {{ value_json.organization | default("null") }}
-      {%- else -%} 0 {%- endif -%}
+        {{ value_json.organization | default(null) }}
+      {%- else -%} 'undefined' {%- endif -%}
 
-sensor mtnrpi2_device_name:
+sensor hzn_node_pattern:
   - platform: rest
-    resource: 'http://192.168.1.32/CGI/mtn-device.cgi?ip=39'
-    name: MtnRpi2 Device Name
+    resource: 'http://192.168.1.39/node'
+    name: horizon_node_pattern
     value_template: >
       {%- if value_json is defined -%} 
-        {{ value_json.name | default("null") }}
-      {%- else -%} 0 {%- endif -%}
+        {{ value_json.pattern | default(null) }}
+      {%- else -%} 'undefined' {%- endif -%}
 
-# HORIZON SERVICE/ATTRIBUTE
-
-sensor mtnrpi2_attribute_count:
+sensor hzn_node_name:
   - platform: rest
-    resource: 'http://192.168.1.32/CGI/mtn-attribute.cgi?ip=39'
-    name: MtnRpi2 Attribute Count
+    resource: 'http://192.168.1.39/node'
+    name: horizon_node_name
     value_template: >
       {%- if value_json is defined -%} 
-        {{ ( value_json.attributes | length ) | default(0)  }}
-      {%- else -%} 0 {%- endif -%}
+        {{ value_json.name | default(null) }}
+      {%- else -%} 'undefined' {%- endif -%}
 
-# HORIZON AGREEMENT
-
-sensor mtnrpi2_agreements_active_count:
+sensor hzn_node_valid:
   - platform: rest
-    resource: 'http://192.168.1.32/CGI/mtn-agreement.cgi?ip=39'
-    name: MtnRpi2 Agreements Active Count
+    resource: 'http://192.168.1.39/node'
+    name: horizon_node_valid
+    value_template: >
+      {%- if value_json is defined -%} 
+        {{ value_json.token_valid | default(null) }}
+      {%- else -%} 'undefined' {%- endif -%}
+
+sensor hzn_node_valid_time:
+  - platform: rest
+    resource: 'http://192.168.1.39/node'
+    name: horizon_node_valid_time
+    value_template: >
+      {%- if value_json is defined -%} 
+        {{ value_json.token_valid|int|timestamp_custom("%a %b %d @ %I:%M %p") | default(null) }}
+      {%- else -%} 'undefined' {%- endif -%}
+
+# CONFIG
+
+sensor hzn_node_state:
+  - platform: rest
+    resource: 'http://192.168.1.39/node'
+    name: horizon_node_state
+    value_template: >
+      {%- if value_json is defined -%} 
+        {{ value_json.configstate.state | default(null) }}
+      {%- else -%} 'undefined' {%- endif -%}
+
+sensor hzn_node_update:
+  - platform: rest
+    resource: 'http://192.168.1.39/node'
+    name: horizon_node_update
+    value_template: >
+      {%- if value_json is defined -%} 
+        {{ value_json.configstate.last_update_time|int|timestamp_custom("%a %b %d @ %I:%M %p") | default(null) }}
+      {%- else -%} 'undefined' {%- endif -%}
+
+## MICROSERVICE
+
+sensor hzn_microservice_config_count:
+  - platform: rest
+    resource: 'http://192.168.1.39/microservice'
+    name: horizon_microservice_config_count
+    value_template: >
+      {%- if value_json is defined and value_json.config is defined -%} 
+        {{ ( value_json.config | length ) | default(0)  }}
+      {%- else -%} 'undefined' {%- endif -%}
+
+sensor hzn_microservice_instance_active_count:
+  - platform: rest
+    resource: 'http://192.168.1.39/microservice'
+    name: horizon_microservice_instance_active_count
+    value_template: >
+      {%- if value_json is defined and value_json.instances is defined -%} 
+        {{ ( value_json.instances.active | length ) | default(0) }}
+      {%- else -%} 'undefined' {%- endif -%}
+
+sensor hzn_microservice_instance_archived_count:
+  - platform: rest
+    resource: 'http://192.168.1.39/microservice'
+    name: horizon_microservice_instance_archived_count
+    value_template: >
+      {%- if value_json is defined and value_json.instances is defined -%} 
+        {{ ( value_json.instances.archived | length ) | default(0) }}
+      {%- else -%} 'undefined' {%- endif -%}
+
+sensor hzn_microservice_definition_active_count:
+  - platform: rest
+    resource: 'http://192.168.1.39/microservice'
+    name: horizon_microservice_definition_active_count
+    value_template: >
+      {%- if value_json is defined and value_json.definitions is defined -%} 
+        {{ ( value_json.definitions.active | length ) | default(0) }}
+      {%- else -%} 'undefined' {%- endif -%}
+
+sensor hzn_microservice_definition_archived_count:
+  - platform: rest
+    resource: 'http://192.168.1.39/microservice'
+    name: horizon_microservice_definition_archived_count
+    value_template: >
+      {%- if value_json is defined and value_json.definitions is defined -%} 
+        {{ ( value_json.definitions.archived | length ) | default(0) }}
+      {%- else -%} 'undefined' {%- endif -%}
+
+## ATTRIBUTE
+
+sensor hzn_attribute_count:
+  - platform: rest
+    resource: 'http://192.168.1.39/attribute'
+    name: horizon_attribute_count
+    value_template: >
+      {%- if value_json is defined -%} 
+        {{ ( value_json.attributes | length ) | default(0) }}
+      {%- else -%} 'undefined' {%- endif -%}
+
+sensor hzn_attribute_ids:
+  - platform: rest
+    resource: 'http://192.168.1.39/attribute'
+    name: horizon_attribute_ids
+    value_template: >
+      {%- if value_json is defined and value_json.attributes|length > 0 -%} 
+        {%- for attribute in value_json.attributes -%}
+          {%- if loop.first -%}
+          {%- elif loop.last -%}
+            {%- if attribute.id != None -%}
+              {{- attribute.id|truncate(8,false,'')|tojson -}}
+            {%- endif -%}
+          {%- else -%}
+            {%- if attribute.id != None -%}
+              {{- attribute.id|truncate(8,false,'')|tojson -}},
+            {%- endif -%}
+          {%- endif -%}
+        {%- endfor -%}
+      {%- else -%} 'undefined' {%- endif -%}
+
+## HORIZON AGREEMENT
+
+sensor hzn_agreement_active_count:
+  - platform: rest
+    resource: 'http://192.168.1.39/agreement'
+    name: horizon_agreement_active_count
     value_template: >
       {%- if value_json is defined -%} 
         {{ ( value_json.agreements.active | length ) | default(0) }}
       {%- else -%} 0 {%- endif -%}
 
-sensor mtnrpi2_agreements_archive_count:
+sensor hzn_agreement_archived_count:
   - platform: rest
-    resource: 'http://192.168.1.32/CGI/mtn-agreement.cgi?ip=39'
-    name: MtnRpi2 Agreements Archive Count
+    resource: 'http://192.168.1.39/agreement'
+    name: horizon_agreement_archived_count
     value_template: >
       {%- if value_json is defined -%} 
-        {{ ( value_json.agreements.archive | length ) | default(0) }}
+        {{ ( value_json.agreements.archived | length ) | default(0) }}
       {%- else -%} 0 {%- endif -%}
 
 # HORIZON WORKLOAD
 
-sensor mtnrpi2_workloads_count:
+sensor hzn_workload_container_count:
   - platform: rest
-    resource: 'http://192.168.1.32/CGI/mtn-workload.cgi?ip=39'
-    name: MtnRpi2 Workloads Count
+    resource: 'http://192.168.1.39/workload'
+    name: horizon_workload_container_count
     value_template: >
       {%- if value_json is defined -%} 
-        {{ ( value_json.workloads | length ) | default(0) }}
-      {%- else -%} 0 {%- endif -%}
+        {{ ( value_json.containers | length ) | default(0) }}
+      {%- else -%} 'undefined' {%- endif -%}
 
-# HORIZON PUBLICKEY
-
-sensor mtnrpi2_publickey:
-  - platform: rest
-    resource: 'http://192.168.1.32/CGI/mtn-publickey.cgi?ip=39'
-    name: MtnRpi2 Publickey
-    value_template: >
-      {%- if value_json is defined -%} 
-        {{ value_json.pem | default("null") }}
-      {%- else -%} null {%- endif -%}
+## AGREEMENTS
 
 # AGREEMENT #0
 
-sensor mtnrpi2_agreement0_name:
+sensor hzn_agreement0_name:
   - platform: rest
-    resource: 'http://192.168.1.32/CGI/mtn-agreement.cgi?ip=39&id=0'
-    name: 'MtnRpi2 Agreement0 Name'
-    friendly_name: 'Name'
+    resource: 'http://192.168.1.39/agreement'
+    name: horizon_agreement0_name
     value_template: >
-      {%- if value_json is defined -%} 
-        {{ value_json.name }}
+      {%- if value_json is defined and states('sensor.horizon_agreement_active_count')|int > 0 -%} 
+        {{ value_json.agreements.active[0].name | default(null) }}
       {%- else -%} null {%- endif -%}
 
-sensor mtnrpi2_agreement0_id:
+sensor hzn_agreement0_id:
   - platform: rest
-    resource: 'http://192.168.1.32/CGI/mtn-agreement.cgi?ip=39&id=0'
-    name: 'MtnRpi2 Agreement0 ID'
-    friendly_name: 'AgreementID'
+    resource: 'http://192.168.1.39/agreement'
+    name: horizon_agreement0_id
     value_template: >
-      {%- if value_json is defined -%} 
-        {{ value_json.current_agreement_id | default("null") }}
+      {%- if value_json is defined and states('sensor.horizon_agreement_active_count')|int > 0 -%} 
+        {{ value_json.agreements.active[0].current_agreement_id | default(null) }}
       {%- else -%} null {%- endif -%}
 
-sensor mtnrpi2_agreement0_protocol:
+sensor hzn_agreement0_consumer:
   - platform: rest
-    resource: 'http://192.168.1.32/CGI/mtn-agreement.cgi?ip=39&id=0'
-    name: MtnRpi2 Agreement0 Protocol
-    friendly_name: 'Protocol'
+    resource: 'http://192.168.1.39/agreement'
+    name: horizon_agreement0_consumer
     value_template: >
-      {%- if value_json is defined -%} 
-        {{ value_json.agreement_protocol | default("null") }}
+      {%- if value_json is defined and states('sensor.horizon_agreement_active_count')|int > 0 -%} 
+        {{ value_json.agreements.active[0].consumer_id | default(null) }}
       {%- else -%} null {%- endif -%}
 
-sensor mtnrpi2_agreement0_consumer:
+sensor hzn_agreement0_counterparty:
   - platform: rest
-    resource: 'http://192.168.1.32/CGI/mtn-agreement.cgi?ip=39&id=0'
-    name: 'MtnRpi2 Agreement0 Consumer'
-    friendly_name: 'Consumer'
+    resource: 'http://192.168.1.39/agreement'
+    name: horizon_agreement0_counterparty
     value_template: >
-      {%- if value_json is defined -%} 
-        {{ value_json.consumer_id | default("null") }}
+      {%- if value_json is defined and states('sensor.horizon_agreement_active_count')|int > 0 -%} 
+        {{ value_json.agreements.active[0].counterparty_address | default(null) }}
       {%- else -%} null {%- endif -%}
 
-sensor mtnrpi2_agreement0_create:
+sensor hzn_agreement0_protocol:
   - platform: rest
-    resource: 'http://192.168.1.32/CGI/mtn-agreement.cgi?ip=39&id=0'
-    name: 'MtnRpi2 Agreement0 Create'
+    resource: 'http://192.168.1.39/agreement'
+    name: horizon_agreement0_protocol
     value_template: >
-      {%- if (states.sensor.mtnrpi2_agreements_active_count != None) -%}
-        {%- if (states.sensor.mtnrpi2_agreements_active_count.state | int) > 0 -%}
-          {{ value_json.agreement_creation_time | timestamp_custom("%a %b %d @ %I:%M %p") }}
-        {%- else -%}
-          {{ 'no agreement' }}
-        {%- endif -%}
+      {%- if value_json is defined and states('sensor.horizon_agreement_active_count')|int > 0 -%} 
+        {{ value_json.agreements.active[0].agreement_protocol | default(null) }}
+      {%- else -%} null {%- endif -%}
+
+sensor hzn_agreement0_create:
+  - platform: rest
+    resource: 'http://192.168.1.39/agreement'
+    name: horizon_agreement0_create
+    value_template: >
+      {%- if value_json is defined and states('sensor.horizon_agreement_active_count')|int > 0 -%} 
+          {{ value_json.agreements.active[0].agreement_creation_time | timestamp_custom("%a %b %d @ %I:%M %p") }}
       {%- else -%}
         {{ 'no agreement' }}
       {%- endif -%}
 
-sensor mtnrpi2_agreement0_accept:
+sensor hzn_agreement0_accept:
   - platform: rest
-    resource: 'http://192.168.1.32/CGI/mtn-agreement.cgi?ip=39&id=0'
-    name: 'MtnRpi2 Agreement0 Accept'
+    resource: 'http://192.168.1.39/agreement'
+    name: horizon_agreement0_accept
     value_template: >
-      {%- if value_json is defined and (states.sensor.mtnrpi2_agreements_active_count != None) -%}
-        {%- if (states.sensor.mtnrpi2_agreements_active_count.state | int) > 0 -%}
-          {{ value_json.agreement_accepted_time | timestamp_custom("%a %b %d @ %I:%M %p") }}
-        {%- else -%}
-          {{ 'no agreement' }}
-        {%- endif -%}
+      {%- if value_json is defined and states('sensor.horizon_agreement_active_count')|int > 0 -%} 
+        {{ value_json.agreements.active[0].agreement_accepted_time | timestamp_custom("%a %b %d @ %I:%M %p") }}
       {%- else -%}
         {{ 'no agreement' }}
       {%- endif -%}
 
-sensor mtnrpi2_agreement0_finalize:
+sensor hzn_agreement0_finalize:
   - platform: rest
-    resource: 'http://192.168.1.32/CGI/mtn-agreement.cgi?ip=39&id=0'
-    name: 'MtnRpi2 Agreement0 Finalize'
+    resource: 'http://192.168.1.39/agreement'
+    name: horizon_agreement0_finalize
     value_template: >
-      {%- if value_json is defined and (states.sensor.mtnrpi2_agreements_active_count != None) -%}
-        {%- if (states.sensor.mtnrpi2_agreements_active_count.state | int) > 0 -%}
-          {{ value_json.agreement_finalized_time | timestamp_custom("%a %b %d @ %I:%M %p") }}
-        {%- else -%}
-          {{ 'no agreement' }}
-        {%- endif -%}
+      {%- if value_json is defined and states('sensor.horizon_agreement_active_count')|int > 0 -%} 
+        {{ value_json.agreements.active[0].agreement_finalized_time | timestamp_custom("%a %b %d @ %I:%M %p") }}
       {%- else -%}
         {{ 'no agreement' }}
       {%- endif -%}
 
-sensor mtnrpi2_agreement0_receive:
+sensor hzn_agreement0_receive:
   - platform: rest
-    resource: 'http://192.168.1.32/CGI/mtn-agreement.cgi?ip=39&id=0'
-    name: 'MtnRpi2 Agreement0 Receive'
-    # value_template: '{{ value_json.agreement_data_received_time | timestamp_custom("%a %b %d @ %I:%M %p") }}'
+    resource: 'http://192.168.1.39/agreement'
+    name: horizon_agreement0_receive
     value_template: >
-      {%- if value_json is defined and (states.sensor.mtnrpi2_agreements_active_count != None) -%}
-        {%- if (states.sensor.mtnrpi2_agreements_active_count.state | int) > 0 -%}
-          {{ value_json.agreement_data_received_time | timestamp_custom("%a %b %d @ %I:%M %p") }}
-        {%- else -%}
-          {{ 'no agreement' }}
-        {%- endif -%}
+      {%- if value_json is defined and states('sensor.horizon_agreement_active_count')|int > 0 -%} 
+        {{ value_json.agreements.active[0].agreement_data_received_time | timestamp_custom("%a %b %d @ %I:%M %p") }}
       {%- else -%}
         {{ 'no agreement' }}
       {%- endif -%}
 
-sensor mtnrpi2_agreement0_start:
+sensor hzn_agreement0_start:
   - platform: rest
-    resource: 'http://192.168.1.32/CGI/mtn-agreement.cgi?ip=39&id=0'
-    name: 'MtnRpi2 Agreement3 Start'
-    # value_template: '{{ value_json.agreement_execution_start_time | timestamp_custom("%a %b %d @ %I:%M %p") }}'
+    resource: 'http://192.168.1.39/agreement'
+    name: horizon_agreement0_start
     value_template: >
-      {%- if value_json is defined and (states.sensor.mtnrpi2_agreements_active_count != None) -%}
-        {%- if (states.sensor.mtnrpi2_agreements_active_count.state | int) > 3 -%}
-          {{ value_json.agreement_execution_start_time | timestamp_custom("%a %b %d @ %I:%M %p") }}
-        {%- else -%}
-          {{ 'no agreement' }}
-        {%- endif -%}
+      {%- if value_json is defined and states('sensor.horizon_agreement_active_count')|int > 0 -%} 
+        {{ value_json.agreements.active[0].agreement_execution_start_time | timestamp_custom("%a %b %d @ %I:%M %p") }}
       {%- else -%}
         {{ 'no agreement' }}
       {%- endif -%}
 
 # AGREEMENT #1
 
-sensor mtnrpi2_agreement1_name:
+sensor hzn_agreement1_name:
   - platform: rest
-    resource: 'http://192.168.1.32/CGI/mtn-agreement.cgi?ip=39&id=1'
-    name: 'MtnRpi2 Agreement1 Name'
-    value_template: '{{ value_json.name | default("null") }}'
-
-sensor mtnrpi2_agreement1_id:
-  - platform: rest
-    resource: 'http://192.168.1.32/CGI/mtn-agreement.cgi?ip=39&id=1'
-    name: 'MtnRpi2 Agreement1 ID'
-    value_template: '{{ value_json.current_agreement_id | default("null") }}'
-
-sensor mtnrpi2_agreement1_protocol:
-  - platform: rest
-    resource: 'http://192.168.1.32/CGI/mtn-agreement.cgi?ip=39&id=1'
-    name: MtnRpi2 Agreement1 Protocol
-    value_template: '{{ value_json.agreement_protocol | default("null") }}'
-
-sensor mtnrpi2_agreement1_consumer:
-  - platform: rest
-    resource: 'http://192.168.1.32/CGI/mtn-agreement.cgi?ip=39&id=1'
-    name: 'MtnRpi2 Agreement1 Consumer'
-    value_template: '{{ value_json.consumer_id | default("null") }}'
-
-sensor mtnrpi2_agreement1_create:
-  - platform: rest
-    resource: 'http://192.168.1.32/CGI/mtn-agreement.cgi?ip=39&id=1'
-    name: 'MtnRpi2 Agreement1 Create'
+    resource: 'http://192.168.1.39/agreement'
+    name: horizon_agreement1_name
     value_template: >
-      {%- if (states.sensor.mtnrpi2_agreements_active_count != None) -%}
-        {%- if (states.sensor.mtnrpi2_agreements_active_count.state | int) > 1 -%}
-          {{ value_json.agreement_creation_time | timestamp_custom("%a %b %d @ %I:%M %p") }}
-        {%- else -%}
-          {{ 'no agreement' }}
-        {%- endif -%}
+      {%- if value_json is defined and states('sensor.horizon_agreement_active_count')|int > 1 -%} 
+        {{ value_json.agreements.active[1].name | default(null) }}
+      {%- else -%} null {%- endif -%}
+
+sensor hzn_agreement1_id:
+  - platform: rest
+    resource: 'http://192.168.1.39/agreement'
+    name: horizon_agreement1_id
+    value_template: >
+      {%- if value_json is defined and states('sensor.horizon_agreement_active_count')|int > 1 -%} 
+        {{ value_json.agreements.active[1].current_agreement_id | default(null) }}
+      {%- else -%} null {%- endif -%}
+
+sensor hzn_agreement1_consumer:
+  - platform: rest
+    resource: 'http://192.168.1.39/agreement'
+    name: horizon_agreement1_consumer
+    value_template: >
+      {%- if value_json is defined and states('sensor.horizon_agreement_active_count')|int > 1 -%} 
+        {{ value_json.agreements.active[1].consumer_id | default(null) }}
+      {%- else -%} null {%- endif -%}
+
+sensor hzn_agreement1_counterparty:
+  - platform: rest
+    resource: 'http://192.168.1.39/agreement'
+    name: horizon_agreement1_counterparty
+    value_template: >
+      {%- if value_json is defined and states('sensor.horizon_agreement_active_count')|int > 1 -%} 
+        {{ value_json.agreements.active[1].counterparty_address | default(null) }}
+      {%- else -%} null {%- endif -%}
+
+sensor hzn_agreement1_protocol:
+  - platform: rest
+    resource: 'http://192.168.1.39/agreement'
+    name: horizon_agreement1_protocol
+    value_template: >
+      {%- if value_json is defined and states('sensor.horizon_agreement_active_count')|int > 1 -%} 
+        {{ value_json.agreements.active[1].agreement_protocol | default(null) }}
+      {%- else -%} null {%- endif -%}
+
+sensor hzn_agreement1_create:
+  - platform: rest
+    resource: 'http://192.168.1.39/agreement'
+    name: horizon_agreement1_create
+    value_template: >
+      {%- if value_json is defined and states('sensor.horizon_agreement_active_count')|int > 1 -%} 
+          {{ value_json.agreements.active[1].agreement_creation_time | timestamp_custom("%a %b %d @ %I:%M %p") }}
       {%- else -%}
         {{ 'no agreement' }}
       {%- endif -%}
 
-sensor mtnrpi2_agreement1_accept:
+sensor hzn_agreement1_accept:
   - platform: rest
-    resource: 'http://192.168.1.32/CGI/mtn-agreement.cgi?ip=39&id=1'
-    name: 'MtnRpi2 Agreement1 Accept'
-    # value_template: '{{ value_json.agreement_accepted_time | timestamp_custom("%a %b %d @ %I:%M %p") }}'
+    resource: 'http://192.168.1.39/agreement'
+    name: horizon_agreement1_accept
     value_template: >
-      {%- if (states.sensor.mtnrpi2_agreements_active_count != None) -%}
-        {%- if (states.sensor.mtnrpi2_agreements_active_count.state | int) > 1 -%}
-          {{ value_json.agreement_accepted_time | timestamp_custom("%a %b %d @ %I:%M %p") }}
-        {%- else -%}
-          {{ 'no agreement' }}
-        {%- endif -%}
+      {%- if value_json is defined and states('sensor.horizon_agreement_active_count')|int > 1 -%} 
+        {{ value_json.agreements.active[1].agreement_accepted_time | timestamp_custom("%a %b %d @ %I:%M %p") }}
       {%- else -%}
         {{ 'no agreement' }}
       {%- endif -%}
 
-sensor mtnrpi2_agreement1_finalize:
+sensor hzn_agreement1_finalize:
   - platform: rest
-    resource: 'http://392.168.1.32/CGI/mtn-agreement.cgi?ip=39&id=1'
-    name: 'MtnRpi2 Agreement1 Finalize'
-    # value_template: '{{ value_json.agreement_finalized_time | timestamp_custom("%a %b %d @ %I:%M %p") }}'
+    resource: 'http://192.168.1.39/agreement'
+    name: horizon_agreement1_finalize
     value_template: >
-      {%- if (states.sensor.mtnrpi2_agreements_active_count != None) -%}
-        {%- if (states.sensor.mtnrpi2_agreements_active_count.state | int) > 1 -%}
-          {{ value_json.agreement_finalized_time | timestamp_custom("%a %b %d @ %I:%M %p") }}
-        {%- else -%}
-          {{ 'no agreement' }}
-        {%- endif -%}
+      {%- if value_json is defined and states('sensor.horizon_agreement_active_count')|int > 1 -%} 
+        {{ value_json.agreements.active[1].agreement_finalized_time | timestamp_custom("%a %b %d @ %I:%M %p") }}
       {%- else -%}
         {{ 'no agreement' }}
       {%- endif -%}
 
-sensor mtnrpi2_agreement1_receive:
+sensor hzn_agreement1_receive:
   - platform: rest
-    resource: 'http://192.168.1.32/CGI/mtn-agreement.cgi?ip=39&id=1'
-    name: 'MtnRpi2 Agreement1 Receive'
-    # value_template: '{{ value_json.agreement_data_received_time | timestamp_custom("%a %b %d @ %I:%M %p") }}'
+    resource: 'http://192.168.1.39/agreement'
+    name: horizon_agreement1_receive
     value_template: >
-      {%- if (states.sensor.mtnrpi2_agreements_active_count != None) -%}
-        {%- if (states.sensor.mtnrpi2_agreements_active_count.state | int) > 1 -%}
-          {{ value_json.agreement_data_received_time | timestamp_custom("%a %b %d @ %I:%M %p") }}
-        {%- else -%}
-          {{ 'no agreement' }}
-        {%- endif -%}
+      {%- if value_json is defined and states('sensor.horizon_agreement_active_count')|int > 1 -%} 
+        {{ value_json.agreements.active[1].agreement_data_received_time | timestamp_custom("%a %b %d @ %I:%M %p") }}
       {%- else -%}
         {{ 'no agreement' }}
       {%- endif -%}
 
-sensor mtnrpi2_agreement1_start:
+sensor hzn_agreement1_start:
   - platform: rest
-    resource: 'http://192.168.1.32/CGI/mtn-agreement.cgi?ip=39&id=1'
-    name: 'MtnRpi2 Agreement1 Start'
-    # value_template: '{{ value_json.agreement_execution_start_time | timestamp_custom("%a %b %d @ %I:%M %p") }}'
+    resource: 'http://192.168.1.39/agreement'
+    name: horizon_agreement1_start
     value_template: >
-      {%- if (states.sensor.mtnrpi2_agreements_active_count != None) -%}
-        {%- if (states.sensor.mtnrpi2_agreements_active_count.state | int) > 1 -%}
-          {{ value_json.agreement_execution_start_time | timestamp_custom("%a %b %d @ %I:%M %p") }}
-        {%- else -%}
-          {{ 'no agreement' }}
-        {%- endif -%}
+      {%- if value_json is defined and states('sensor.horizon_agreement_active_count')|int > 1 -%} 
+        {{ value_json.agreements.active[1].agreement_execution_start_time | timestamp_custom("%a %b %d @ %I:%M %p") }}
       {%- else -%}
         {{ 'no agreement' }}
       {%- endif -%}
 
 # AGREEMENT #2
 
-sensor mtnrpi2_agreement2_name:
+sensor hzn_agreement2_name:
   - platform: rest
-    resource: 'http://192.168.1.32/CGI/mtn-agreement.cgi?ip=39&id=2'
-    name: 'MtnRpi2 Agreement2 Name'
-    value_template: '{{ value_json.name | default("null") }}'
-
-sensor mtnrpi2_agreement2_id:
-  - platform: rest
-    resource: 'http://192.168.1.32/CGI/mtn-agreement.cgi?ip=39&id=2'
-    name: 'MtnRpi2 Agreement2 ID'
-    value_template: '{{ value_json.current_agreement_id | default("null") }}'
-
-sensor mtnrpi2_agreement2_protocol:
-  - platform: rest
-    resource: 'http://192.168.1.32/CGI/mtn-agreement.cgi?ip=39&id=2'
-    name: MtnRpi2 Agreement2 Protocol
-    value_template: '{{ value_json.agreement_protocol | default("null") }}'
-
-sensor mtnrpi2_agreement2_consumer:
-  - platform: rest
-    resource: 'http://192.168.1.32/CGI/mtn-agreement.cgi?ip=39&id=2'
-    name: 'MtnRpi2 Agreement2 Consumer'
-    value_template: '{{ value_json.consumer_id | default("null") }}'
-
-sensor mtnrpi2_agreement2_create:
-  - platform: rest
-    resource: 'http://192.168.1.32/CGI/mtn-agreement.cgi?ip=39&id=2'
-    name: 'MtnRpi2 Agreement2 Create'
+    resource: 'http://192.168.1.39/agreement'
+    name: horizon_agreement2_name
     value_template: >
-      {%- if (states.sensor.mtnrpi2_agreements_active_count != None) -%}
-        {%- if (states.sensor.mtnrpi2_agreements_active_count.state | int) > 2 -%}
-          {{ value_json.agreement_creation_time | timestamp_custom("%a %b %d @ %I:%M %p") }}
-        {%- else -%}
-          {{ 'no agreement' }}
-        {%- endif -%}
+      {%- if value_json is defined and states('sensor.horizon_agreement_active_count')|int > 2 -%} 
+        {{ value_json.agreements.active[2].name | default(null) }}
+      {%- else -%} null {%- endif -%}
+
+sensor hzn_agreement2_id:
+  - platform: rest
+    resource: 'http://192.168.1.39/agreement'
+    name: horizon_agreement2_id
+    value_template: >
+      {%- if value_json is defined and states('sensor.horizon_agreement_active_count')|int > 2 -%} 
+        {{ value_json.agreements.active[2].current_agreement_id | default(null) }}
+      {%- else -%} null {%- endif -%}
+
+sensor hzn_agreement2_consumer:
+  - platform: rest
+    resource: 'http://192.168.1.39/agreement'
+    name: horizon_agreement2_consumer
+    value_template: >
+      {%- if value_json is defined and states('sensor.horizon_agreement_active_count')|int > 2 -%} 
+        {{ value_json.agreements.active[2].consumer_id | default(null) }}
+      {%- else -%} null {%- endif -%}
+
+sensor hzn_agreement2_counterparty:
+  - platform: rest
+    resource: 'http://192.168.1.39/agreement'
+    name: horizon_agreement2_counterparty
+    value_template: >
+      {%- if value_json is defined and states('sensor.horizon_agreement_active_count')|int > 2 -%} 
+        {{ value_json.agreements.active[2].counterparty_address | default(null) }}
+      {%- else -%} null {%- endif -%}
+
+sensor hzn_agreement2_protocol:
+  - platform: rest
+    resource: 'http://192.168.1.39/agreement'
+    name: horizon_agreement2_protocol
+    value_template: >
+      {%- if value_json is defined and states('sensor.horizon_agreement_active_count')|int > 2 -%} 
+        {{ value_json.agreements.active[2].agreement_protocol | default(null) }}
+      {%- else -%} null {%- endif -%}
+
+sensor hzn_agreement2_create:
+  - platform: rest
+    resource: 'http://192.168.1.39/agreement'
+    name: horizon_agreement2_create
+    value_template: >
+      {%- if value_json is defined and states('sensor.horizon_agreement_active_count')|int > 2 -%} 
+          {{ value_json.agreements.active[2].agreement_creation_time | timestamp_custom("%a %b %d @ %I:%M %p") }}
       {%- else -%}
         {{ 'no agreement' }}
       {%- endif -%}
 
-sensor mtnrpi2_agreement2_accept:
+sensor hzn_agreement2_accept:
   - platform: rest
-    resource: 'http://192.168.1.32/CGI/mtn-agreement.cgi?ip=39&id=2'
-    name: 'MtnRpi2 Agreement2 Accept'
-    # value_template: '{{ value_json.agreement_accepted_time | timestamp_custom("%a %b %d @ %I:%M %p") }}'
+    resource: 'http://192.168.1.39/agreement'
+    name: horizon_agreement2_accept
     value_template: >
-      {%- if (states.sensor.mtnrpi2_agreements_active_count != None) -%}
-        {%- if (states.sensor.mtnrpi2_agreements_active_count.state | int) > 2 -%}
-          {{ value_json.agreement_accepted_time | timestamp_custom("%a %b %d @ %I:%M %p") }}
-        {%- else -%}
-          {{ 'no agreement' }}
-        {%- endif -%}
+      {%- if value_json is defined and states('sensor.horizon_agreement_active_count')|int > 2 -%} 
+        {{ value_json.agreements.active[2].agreement_accepted_time | timestamp_custom("%a %b %d @ %I:%M %p") }}
       {%- else -%}
         {{ 'no agreement' }}
       {%- endif -%}
 
-sensor mtnrpi2_agreement2_finalize:
+sensor hzn_agreement2_finalize:
   - platform: rest
-    resource: 'http://192.168.1.32/CGI/mtn-agreement.cgi?ip=39&id=2'
-    name: 'MtnRpi2 Agreement2 Finalize'
-    # value_template: '{{ value_json.agreement_finalized_time | timestamp_custom("%a %b %d @ %I:%M %p") }}'
+    resource: 'http://192.168.1.39/agreement'
+    name: horizon_agreement2_finalize
     value_template: >
-      {%- if (states.sensor.mtnrpi2_agreements_active_count != None) -%}
-        {%- if (states.sensor.mtnrpi2_agreements_active_count.state | int) > 2 -%}
-          {{ value_json.agreement_finalized_time | timestamp_custom("%a %b %d @ %I:%M %p") }}
-        {%- else -%}
-          {{ 'no agreement' }}
-        {%- endif -%}
+      {%- if value_json is defined and states('sensor.horizon_agreement_active_count')|int > 2 -%} 
+        {{ value_json.agreements.active[2].agreement_finalized_time | timestamp_custom("%a %b %d @ %I:%M %p") }}
       {%- else -%}
         {{ 'no agreement' }}
       {%- endif -%}
 
-sensor mtnrpi2_agreement2_receive:
+sensor hzn_agreement2_receive:
   - platform: rest
-    resource: 'http://192.168.1.32/CGI/mtn-agreement.cgi?ip=39&id=2'
-    name: 'MtnRpi2 Agreement2 Receive'
-    # value_template: '{{ value_json.agreement_data_received_time | timestamp_custom("%a %b %d @ %I:%M %p") }}'
+    resource: 'http://192.168.1.39/agreement'
+    name: horizon_agreement2_receive
     value_template: >
-      {%- if (states.sensor.mtnrpi2_agreements_active_count != None) -%}
-        {%- if (states.sensor.mtnrpi2_agreements_active_count.state | int) > 2 -%}
-          {{ value_json.agreement_data_received_time | timestamp_custom("%a %b %d @ %I:%M %p") }}
-        {%- else -%}
-          {{ 'no agreement' }}
-        {%- endif -%}
+      {%- if value_json is defined and states('sensor.horizon_agreement_active_count')|int > 2 -%} 
+        {{ value_json.agreements.active[2].agreement_data_received_time | timestamp_custom("%a %b %d @ %I:%M %p") }}
       {%- else -%}
         {{ 'no agreement' }}
       {%- endif -%}
 
-sensor mtnrpi2_agreement2_start:
+sensor hzn_agreement2_start:
   - platform: rest
-    resource: 'http://192.168.1.32/CGI/mtn-agreement.cgi?ip=39&id=2'
-    name: 'MtnRpi2 Agreement2 Start'
-    # value_template: '{{ value_json.agreement_execution_start_time | timestamp_custom("%a %b %d @ %I:%M %p") }}'
+    resource: 'http://192.168.1.39/agreement'
+    name: horizon_agreement2_start
     value_template: >
-      {%- if (states.sensor.mtnrpi2_agreements_active_count != None) -%}
-        {%- if (states.sensor.mtnrpi2_agreements_active_count.state | int) > 2 -%}
-          {{ value_json.agreement_execution_start_time | timestamp_custom("%a %b %d @ %I:%M %p") }}
-        {%- else -%}
-          {{ 'no agreement' }}
-        {%- endif -%}
+      {%- if value_json is defined and states('sensor.horizon_agreement_active_count')|int > 2 -%} 
+        {{ value_json.agreements.active[2].agreement_execution_start_time | timestamp_custom("%a %b %d @ %I:%M %p") }}
       {%- else -%}
         {{ 'no agreement' }}
       {%- endif -%}
 
 # AGREEMENT #3
 
-sensor mtnrpi2_agreement3_name:
+sensor hzn_agreement3_name:
   - platform: rest
-    resource: 'http://192.168.1.32/CGI/mtn-agreement.cgi?ip=39&id=3'
-    name: 'MtnRpi2 Agreement3 Name'
-    value_template: '{{ value_json.name | default("null") }}'
-
-sensor mtnrpi2_agreement3_id:
-  - platform: rest
-    resource: 'http://192.168.1.32/CGI/mtn-agreement.cgi?ip=39&id=3'
-    name: 'MtnRpi2 Agreement3 ID'
-    value_template: '{{ value_json.current_agreement_id | default("null") }}'
-
-sensor mtnrpi2_agreement3_protocol:
-  - platform: rest
-    resource: 'http://192.168.1.32/CGI/mtn-agreement.cgi?ip=39&id=3'
-    name: MtnRpi2 Agreement3 Protocol
-    value_template: '{{ value_json.agreement_protocol | default("null") }}'
-
-sensor mtnrpi2_agreement3_consumer:
-  - platform: rest
-    resource: 'http://192.168.1.32/CGI/mtn-agreement.cgi?ip=39&id=3'
-    name: 'MtnRpi2 Agreement3 Consumer'
-    value_template: '{{ value_json.consumer_id | default("null") }}'
-
-sensor mtnrpi2_agreement3_create:
-  - platform: rest
-    resource: 'http://192.168.1.32/CGI/mtn-agreement.cgi?ip=39&id=3'
-    name: 'MtnRpi2 Agreement3 Create'
+    resource: 'http://192.168.1.39/agreement'
+    name: horizon_agreement3_name
     value_template: >
-      {%- if (states.sensor.mtnrpi2_agreements_active_count != None) -%}
-        {%- if (states.sensor.mtnrpi2_agreements_active_count.state | int) > 3 -%}
-          {{ value_json.agreement_creation_time | timestamp_custom("%a %b %d @ %I:%M %p") }}
-        {%- else -%}
-          {{ 'no agreement' }}
-        {%- endif -%}
+      {%- if value_json is defined and states('sensor.horizon_agreement_active_count')|int > 3 -%} 
+        {{ value_json.agreements.active[3].name | default(null) }}
+      {%- else -%} null {%- endif -%}
+
+sensor hzn_agreement3_id:
+  - platform: rest
+    resource: 'http://192.168.1.39/agreement'
+    name: horizon_agreement3_id
+    value_template: >
+      {%- if value_json is defined and states('sensor.horizon_agreement_active_count')|int > 3 -%} 
+        {{ value_json.agreements.active[3].current_agreement_id | default(null) }}
+      {%- else -%} null {%- endif -%}
+
+sensor hzn_agreement3_consumer:
+  - platform: rest
+    resource: 'http://192.168.1.39/agreement'
+    name: horizon_agreement3_consumer
+    value_template: >
+      {%- if value_json is defined and states('sensor.horizon_agreement_active_count')|int > 3 -%} 
+        {{ value_json.agreements.active[3].consumer_id | default(null) }}
+      {%- else -%} null {%- endif -%}
+
+sensor hzn_agreement3_counterparty:
+  - platform: rest
+    resource: 'http://192.168.1.39/agreement'
+    name: horizon_agreement3_counterparty
+    value_template: >
+      {%- if value_json is defined and states('sensor.horizon_agreement_active_count')|int > 3 -%} 
+        {{ value_json.agreements.active[3].counterparty_address | default(null) }}
+      {%- else -%} null {%- endif -%}
+
+sensor hzn_agreement3_protocol:
+  - platform: rest
+    resource: 'http://192.168.1.39/agreement'
+    name: horizon_agreement3_protocol
+    value_template: >
+      {%- if value_json is defined and states('sensor.horizon_agreement_active_count')|int > 3 -%} 
+        {{ value_json.agreements.active[3].agreement_protocol | default(null) }}
+      {%- else -%} null {%- endif -%}
+
+sensor hzn_agreement3_create:
+  - platform: rest
+    resource: 'http://192.168.1.39/agreement'
+    name: horizon_agreement3_create
+    value_template: >
+      {%- if value_json is defined and states('sensor.horizon_agreement_active_count')|int > 3 -%} 
+          {{ value_json.agreements.active[3].agreement_creation_time | timestamp_custom("%a %b %d @ %I:%M %p") }}
       {%- else -%}
         {{ 'no agreement' }}
       {%- endif -%}
 
-sensor mtnrpi2_agreement3_accept:
+sensor hzn_agreement3_accept:
   - platform: rest
-    resource: 'http://192.168.1.32/CGI/mtn-agreement.cgi?ip=39&id=3'
-    name: 'MtnRpi2 Agreement3 Accept'
-    # value_template: '{{ value_json.agreement_accepted_time | timestamp_custom("%a %b %d @ %I:%M %p") }}'
+    resource: 'http://192.168.1.39/agreement'
+    name: horizon_agreement3_accept
     value_template: >
-      {%- if (states.sensor.mtnrpi2_agreements_active_count != None) -%}
-        {%- if (states.sensor.mtnrpi2_agreements_active_count.state | int) > 3 -%}
-          {{ value_json.agreement_accepted_time | timestamp_custom("%a %b %d @ %I:%M %p") }}
-        {%- else -%}
-          {{ 'no agreement' }}
-        {%- endif -%}
+      {%- if value_json is defined and states('sensor.horizon_agreement_active_count')|int > 3 -%} 
+        {{ value_json.agreements.active[3].agreement_accepted_time | timestamp_custom("%a %b %d @ %I:%M %p") }}
       {%- else -%}
         {{ 'no agreement' }}
       {%- endif -%}
 
-sensor mtnrpi2_agreement3_finalize:
+sensor hzn_agreement3_finalize:
   - platform: rest
-    resource: 'http://192.168.1.32/CGI/mtn-agreement.cgi?ip=39&id=3'
-    name: 'MtnRpi2 Agreement3 Finalize'
-    # value_template: '{{ value_json.agreement_finalized_time | timestamp_custom("%a %b %d @ %I:%M %p") }}'
+    resource: 'http://192.168.1.39/agreement'
+    name: horizon_agreement3_finalize
     value_template: >
-      {%- if (states.sensor.mtnrpi2_agreements_active_count != None) -%}
-        {%- if (states.sensor.mtnrpi2_agreements_active_count.state | int) > 3 -%}
-          {{ value_json.agreement_finalized_time | timestamp_custom("%a %b %d @ %I:%M %p") }}
-        {%- else -%}
-          {{ 'no agreement' }}
-        {%- endif -%}
+      {%- if value_json is defined and states('sensor.horizon_agreement_active_count')|int > 3 -%} 
+        {{ value_json.agreements.active[3].agreement_finalized_time | timestamp_custom("%a %b %d @ %I:%M %p") }}
       {%- else -%}
         {{ 'no agreement' }}
       {%- endif -%}
 
-sensor mtnrpi2_agreement3_receive:
+sensor hzn_agreement3_receive:
   - platform: rest
-    resource: 'http://192.168.1.32/CGI/mtn-agreement.cgi?ip=39&id=3'
-    name: 'MtnRpi2 Agreement3 Receive'
-    # value_template: '{{ value_json.agreement_data_received_time | timestamp_custom("%a %b %d @ %I:%M %p") }}'
+    resource: 'http://192.168.1.39/agreement'
+    name: horizon_agreement3_receive
     value_template: >
-      {%- if (states.sensor.mtnrpi2_agreements_active_count != None) -%}
-        {%- if (states.sensor.mtnrpi2_agreements_active_count.state | int) > 3 -%}
-          {{ value_json.agreement_data_received_time | timestamp_custom("%a %b %d @ %I:%M %p") }}
-        {%- else -%}
-          {{ 'no agreement' }}
-        {%- endif -%}
+      {%- if value_json is defined and states('sensor.horizon_agreement_active_count')|int > 3 -%} 
+        {{ value_json.agreements.active[3].agreement_data_received_time | timestamp_custom("%a %b %d @ %I:%M %p") }}
       {%- else -%}
         {{ 'no agreement' }}
       {%- endif -%}
 
-sensor mtnrpi2_agreement3_start:
+sensor hzn_agreement3_start:
   - platform: rest
-    resource: 'http://192.168.1.32/CGI/mtn-agreement.cgi?ip=39&id=3'
-    name: 'MtnRpi2 Agreement3 Start'
-    # value_template: '{{ value_json.agreement_execution_start_time | timestamp_custom("%a %b %d @ %I:%M %p") }}'
+    resource: 'http://192.168.1.39/agreement'
+    name: horizon_agreement3_start
     value_template: >
-      {%- if (states.sensor.mtnrpi2_agreements_active_count != None) -%}
-        {%- if (states.sensor.mtnrpi2_agreements_active_count.state | int) > 3 -%}
-          {{ value_json.agreement_execution_start_time | timestamp_custom("%a %b %d @ %I:%M %p") }}
-        {%- else -%}
-          {{ 'no agreement' }}
-        {%- endif -%}
+      {%- if value_json is defined and states('sensor.horizon_agreement_active_count')|int > 3 -%} 
+        {{ value_json.agreements.active[3].agreement_execution_start_time | timestamp_custom("%a %b %d @ %I:%M %p") }}
       {%- else -%}
         {{ 'no agreement' }}
       {%- endif -%}
 
 # AGREEMENT #4
 
-sensor mtnrpi2_agreement4_name:
+sensor hzn_agreement4_name:
   - platform: rest
-    resource: 'http://192.168.1.32/CGI/mtn-agreement.cgi?ip=39&id=4'
-    name: 'MtnRpi2 Agreement4 Name'
-    value_template: '{{ value_json.name | default("null") }}'
-
-sensor mtnrpi2_agreement4_id:
-  - platform: rest
-    resource: 'http://192.168.1.32/CGI/mtn-agreement.cgi?ip=39&id=4'
-    name: 'MtnRpi2 Agreement4 ID'
-    value_template: '{{ value_json.current_agreement_id | default("null") }}'
-
-sensor mtnrpi2_agreement4_protocol:
-  - platform: rest
-    resource: 'http://192.168.1.32/CGI/mtn-agreement.cgi?ip=39&id=4'
-    name: MtnRpi2 Agreement4 Protocol
-    value_template: '{{ value_json.agreement_protocol | default("null") }}'
-
-sensor mtnrpi2_agreement4_consumer:
-  - platform: rest
-    resource: 'http://192.168.1.32/CGI/mtn-agreement.cgi?ip=39&id=4'
-    name: 'MtnRpi2 Agreement4 Consumer'
-    value_template: '{{ value_json.consumer_id | default("null") }}'
-
-sensor mtnrpi2_agreement4_create:
-  - platform: rest
-    resource: 'http://192.168.1.32/CGI/mtn-agreement.cgi?ip=39&id=4'
-    name: 'MtnRpi2 Agreement4 Create'
+    resource: 'http://192.168.1.39/agreement'
+    name: horizon_agreement4_name
     value_template: >
-      {%- if (states.sensor.mtnrpi2_agreements_active_count != None) -%}
-        {%- if (states.sensor.mtnrpi2_agreements_active_count.state | int) > 4 -%}
-          {{ value_json.agreement_creation_time | timestamp_custom("%a %b %d @ %I:%M %p") }}
-        {%- else -%}
-          {{ 'no agreement' }}
-        {%- endif -%}
+      {%- if value_json is defined and states('sensor.horizon_agreement_active_count')|int > 4 -%} 
+        {{ value_json.agreements.active[4].name | default(null) }}
+      {%- else -%} null {%- endif -%}
+
+sensor hzn_agreement4_id:
+  - platform: rest
+    resource: 'http://192.168.1.39/agreement'
+    name: horizon_agreement4_id
+    value_template: >
+      {%- if value_json is defined and states('sensor.horizon_agreement_active_count')|int > 4 -%} 
+        {{ value_json.agreements.active[4].current_agreement_id | default(null) }}
+      {%- else -%} null {%- endif -%}
+
+sensor hzn_agreement4_consumer:
+  - platform: rest
+    resource: 'http://192.168.1.39/agreement'
+    name: horizon_agreement4_consumer
+    value_template: >
+      {%- if value_json is defined and states('sensor.horizon_agreement_active_count')|int > 4 -%} 
+        {{ value_json.agreements.active[4].consumer_id | default(null) }}
+      {%- else -%} null {%- endif -%}
+
+sensor hzn_agreement4_counterparty:
+  - platform: rest
+    resource: 'http://192.168.1.39/agreement'
+    name: horizon_agreement4_counterparty
+    value_template: >
+      {%- if value_json is defined and states('sensor.horizon_agreement_active_count')|int > 4 -%} 
+        {{ value_json.agreements.active[4].counterparty_address | default(null) }}
+      {%- else -%} null {%- endif -%}
+
+sensor hzn_agreement4_protocol:
+  - platform: rest
+    resource: 'http://192.168.1.39/agreement'
+    name: horizon_agreement4_protocol
+    value_template: >
+      {%- if value_json is defined and states('sensor.horizon_agreement_active_count')|int > 4 -%} 
+        {{ value_json.agreements.active[4].agreement_protocol | default(null) }}
+      {%- else -%} null {%- endif -%}
+
+sensor hzn_agreement4_create:
+  - platform: rest
+    resource: 'http://192.168.1.39/agreement'
+    name: horizon_agreement4_create
+    value_template: >
+      {%- if value_json is defined and states('sensor.horizon_agreement_active_count')|int > 4 -%} 
+          {{ value_json.agreements.active[4].agreement_creation_time | timestamp_custom("%a %b %d @ %I:%M %p") }}
       {%- else -%}
         {{ 'no agreement' }}
       {%- endif -%}
 
-sensor mtnrpi2_agreement4_accept:
+sensor hzn_agreement4_accept:
   - platform: rest
-    resource: 'http://192.168.1.32/CGI/mtn-agreement.cgi?ip=39&id=4'
-    name: 'MtnRpi2 Agreement4 Accept'
-    # value_template: '{{ value_json.agreement_accepted_time | timestamp_custom("%a %b %d @ %I:%M %p") }}'
+    resource: 'http://192.168.1.39/agreement'
+    name: horizon_agreement4_accept
     value_template: >
-      {%- if (states.sensor.mtnrpi2_agreements_active_count != None) -%}
-        {%- if (states.sensor.mtnrpi2_agreements_active_count.state | int) > 4 -%}
-          {{ value_json.agreement_accepted_time | timestamp_custom("%a %b %d @ %I:%M %p") }}
-        {%- else -%}
-          {{ 'no agreement' }}
-        {%- endif -%}
+      {%- if value_json is defined and states('sensor.horizon_agreement_active_count')|int > 4 -%} 
+        {{ value_json.agreements.active[4].agreement_accepted_time | timestamp_custom("%a %b %d @ %I:%M %p") }}
       {%- else -%}
         {{ 'no agreement' }}
       {%- endif -%}
 
-sensor mtnrpi2_agreement4_finalize:
+sensor hzn_agreement4_finalize:
   - platform: rest
-    resource: 'http://192.168.1.32/CGI/mtn-agreement.cgi?ip=39&id=4'
-    name: 'MtnRpi2 Agreement4 Finalize'
-    # value_template: '{{ value_json.agreement_finalized_time | timestamp_custom("%a %b %d @ %I:%M %p") }}'
+    resource: 'http://192.168.1.39/agreement'
+    name: horizon_agreement4_finalize
     value_template: >
-      {%- if (states.sensor.mtnrpi2_agreements_active_count != None) -%}
-        {%- if (states.sensor.mtnrpi2_agreements_active_count.state | int) > 4 -%}
-          {{ value_json.agreement_finalized_time | timestamp_custom("%a %b %d @ %I:%M %p") }}
-        {%- else -%}
-          {{ 'no agreement' }}
-        {%- endif -%}
+      {%- if value_json is defined and states('sensor.horizon_agreement_active_count')|int > 4 -%} 
+        {{ value_json.agreements.active[4].agreement_finalized_time | timestamp_custom("%a %b %d @ %I:%M %p") }}
       {%- else -%}
         {{ 'no agreement' }}
       {%- endif -%}
 
-sensor mtnrpi2_agreement4_receive:
+sensor hzn_agreement4_receive:
   - platform: rest
-    resource: 'http://192.168.1.32/CGI/mtn-agreement.cgi?ip=39&id=4'
-    name: 'MtnRpi2 Agreement4 Receive'
-    # value_template: '{{ value_json.agreement_data_received_time | timestamp_custom("%a %b %d @ %I:%M %p") }}'
+    resource: 'http://192.168.1.39/agreement'
+    name: horizon_agreement4_receive
     value_template: >
-      {%- if (states.sensor.mtnrpi2_agreements_active_count != None) -%}
-        {%- if (states.sensor.mtnrpi2_agreements_active_count.state | int) > 4 -%}
-          {{ value_json.agreement_data_received_time | timestamp_custom("%a %b %d @ %I:%M %p") }}
-        {%- else -%}
-          {{ 'no agreement' }}
-        {%- endif -%}
+      {%- if value_json is defined and states('sensor.horizon_agreement_active_count')|int > 4 -%} 
+        {{ value_json.agreements.active[4].agreement_data_received_time | timestamp_custom("%a %b %d @ %I:%M %p") }}
       {%- else -%}
         {{ 'no agreement' }}
       {%- endif -%}
 
-sensor mtnrpi2_agreement4_start:
+sensor hzn_agreement4_start:
   - platform: rest
-    resource: 'http://192.168.1.32/CGI/mtn-agreement.cgi?ip=39&id=4'
-    name: 'MtnRpi2 Agreement4 Start'
-    # value_template: '{{ value_json.agreement_execution_start_time | timestamp_custom("%a %b %d @ %I:%M %p") }}'
+    resource: 'http://192.168.1.39/agreement'
+    name: horizon_agreement4_start
     value_template: >
-      {%- if (states.sensor.mtnrpi2_agreements_active_count != None) -%}
-        {%- if (states.sensor.mtnrpi2_agreements_active_count.state | int) > 4 -%}
-          {{ value_json.agreement_execution_start_time | timestamp_custom("%a %b %d @ %I:%M %p") }}
-        {%- else -%}
-          {{ 'no agreement' }}
-        {%- endif -%}
+      {%- if value_json is defined and states('sensor.horizon_agreement_active_count')|int > 4 -%} 
+        {{ value_json.agreements.active[4].agreement_execution_start_time | timestamp_custom("%a %b %d @ %I:%M %p") }}
       {%- else -%}
         {{ 'no agreement' }}
       {%- endif -%}
 
 # AGREEMENT #5
 
-sensor mtnrpi2_agreement5_name:
+sensor hzn_agreement5_name:
   - platform: rest
-    resource: 'http://192.168.1.32/CGI/mtn-agreement.cgi?ip=39&id=5'
-    name: 'MtnRpi2 Agreement5 Name'
-    value_template: '{{ value_json.name | default("null") }}'
-    
-sensor mtnrpi2_agreement5_id:
-  - platform: rest
-    resource: 'http://192.168.1.32/CGI/mtn-agreement.cgi?ip=39&id=5'
-    name: 'MtnRpi2 Agreement5 ID'
-    value_template: '{{ value_json.current_agreement_id | default("null") }}'
-
-sensor mtnrpi2_agreement5_protocol:
-  - platform: rest
-    resource: 'http://192.168.1.32/CGI/mtn-agreement.cgi?ip=39&id=5'
-    name: MtnRpi2 Agreement5 Protocol
-    value_template: '{{ value_json.agreement_protocol | default("null") }}'
-
-sensor mtnrpi2_agreement5_consumer:
-  - platform: rest
-    resource: 'http://192.168.1.32/CGI/mtn-agreement.cgi?ip=39&id=5'
-    name: 'MtnRpi2 Agreement5 Consumer'
-    value_template: '{{ value_json.consumer_id | default("null") }}'
-
-sensor mtnrpi2_agreement5_create:
-  - platform: rest
-    resource: 'http://192.168.1.32/CGI/mtn-agreement.cgi?ip=39&id=5'
-    name: 'MtnRpi2 Agreement5 Create'
+    resource: 'http://192.168.1.39/agreement'
+    name: horizon_agreement5_name
     value_template: >
-      {%- if (states.sensor.mtnrpi2_agreements_active_count != None) -%}
-        {%- if (states.sensor.mtnrpi2_agreements_active_count.state | int) > 5 -%}
-          {{ value_json.agreement_creation_time | timestamp_custom("%a %b %d @ %I:%M %p") }}
-        {%- else -%}
-          {{ 'no agreement' }}
-        {%- endif -%}
+      {%- if value_json is defined and states('sensor.horizon_agreement_active_count')|int > 5 -%} 
+        {{ value_json.agreements.active[5].name | default(null) }}
+      {%- else -%} null {%- endif -%}
+
+sensor hzn_agreement5_id:
+  - platform: rest
+    resource: 'http://192.168.1.39/agreement'
+    name: horizon_agreement5_id
+    value_template: >
+      {%- if value_json is defined and states('sensor.horizon_agreement_active_count')|int > 5 -%} 
+        {{ value_json.agreements.active[5].current_agreement_id | default(null) }}
+      {%- else -%} null {%- endif -%}
+
+sensor hzn_agreement5_consumer:
+  - platform: rest
+    resource: 'http://192.168.1.39/agreement'
+    name: horizon_agreement5_consumer
+    value_template: >
+      {%- if value_json is defined and states('sensor.horizon_agreement_active_count')|int > 5 -%} 
+        {{ value_json.agreements.active[5].consumer_id | default(null) }}
+      {%- else -%} null {%- endif -%}
+
+sensor hzn_agreement5_counterparty:
+  - platform: rest
+    resource: 'http://192.168.1.39/agreement'
+    name: horizon_agreement5_counterparty
+    value_template: >
+      {%- if value_json is defined and states('sensor.horizon_agreement_active_count')|int > 5 -%} 
+        {{ value_json.agreements.active[5].counterparty_address | default(null) }}
+      {%- else -%} null {%- endif -%}
+
+sensor hzn_agreement5_protocol:
+  - platform: rest
+    resource: 'http://192.168.1.39/agreement'
+    name: horizon_agreement5_protocol
+    value_template: >
+      {%- if value_json is defined and states('sensor.horizon_agreement_active_count')|int > 5 -%} 
+        {{ value_json.agreements.active[5].agreement_protocol | default(null) }}
+      {%- else -%} null {%- endif -%}
+
+sensor hzn_agreement5_create:
+  - platform: rest
+    resource: 'http://192.168.1.39/agreement'
+    name: horizon_agreement5_create
+    value_template: >
+      {%- if value_json is defined and states('sensor.horizon_agreement_active_count')|int > 5 -%} 
+          {{ value_json.agreements.active[5].agreement_creation_time | timestamp_custom("%a %b %d @ %I:%M %p") }}
       {%- else -%}
         {{ 'no agreement' }}
       {%- endif -%}
 
-sensor mtnrpi2_agreement5_accept:
+sensor hzn_agreement5_accept:
   - platform: rest
-    resource: 'http://192.168.1.32/CGI/mtn-agreement.cgi?ip=39&id=5'
-    name: 'MtnRpi2 Agreement5 Accept'
-    # value_template: '{{ value_json.agreement_accepted_time | timestamp_custom("%a %b %d @ %I:%M %p") }}'
+    resource: 'http://192.168.1.39/agreement'
+    name: horizon_agreement5_accept
     value_template: >
-      {%- if (states.sensor.mtnrpi2_agreements_active_count != None) -%}
-        {%- if (states.sensor.mtnrpi2_agreements_active_count.state | int) > 5 -%}
-          {{ value_json.agreement_accepted_time | timestamp_custom("%a %b %d @ %I:%M %p") }}
-        {%- else -%}
-          {{ 'no agreement' }}
-        {%- endif -%}
+      {%- if value_json is defined and states('sensor.horizon_agreement_active_count')|int > 5 -%} 
+        {{ value_json.agreements.active[5].agreement_accepted_time | timestamp_custom("%a %b %d @ %I:%M %p") }}
       {%- else -%}
         {{ 'no agreement' }}
       {%- endif -%}
 
-sensor mtnrpi2_agreement5_finalize:
+sensor hzn_agreement5_finalize:
   - platform: rest
-    resource: 'http://192.168.1.32/CGI/mtn-agreement.cgi?ip=39&id=5'
-    name: 'MtnRpi2 Agreement5 Finalize'
-    # value_template: '{{ value_json.agreement_finalized_time | timestamp_custom("%a %b %d @ %I:%M %p") }}'
+    resource: 'http://192.168.1.39/agreement'
+    name: horizon_agreement5_finalize
     value_template: >
-      {%- if (states.sensor.mtnrpi2_agreements_active_count != None) -%}
-        {%- if (states.sensor.mtnrpi2_agreements_active_count.state | int) > 5 -%}
-          {{ value_json.agreement_finalized_time | timestamp_custom("%a %b %d @ %I:%M %p") }}
-        {%- else -%}
-          {{ 'no agreement' }}
-        {%- endif -%}
+      {%- if value_json is defined and states('sensor.horizon_agreement_active_count')|int > 5 -%} 
+        {{ value_json.agreements.active[5].agreement_finalized_time | timestamp_custom("%a %b %d @ %I:%M %p") }}
       {%- else -%}
         {{ 'no agreement' }}
       {%- endif -%}
 
-sensor mtnrpi2_agreement5_receive:
+sensor hzn_agreement5_receive:
   - platform: rest
-    resource: 'http://192.168.1.32/CGI/mtn-agreement.cgi?ip=39&id=5'
-    name: 'MtnRpi2 Agreement5 Receive'
-    # value_template: '{{ value_json.agreement_data_received_time | timestamp_custom("%a %b %d @ %I:%M %p") }}'
+    resource: 'http://192.168.1.39/agreement'
+    name: horizon_agreement5_receive
     value_template: >
-      {%- if (states.sensor.mtnrpi2_agreements_active_count != None) -%}
-        {%- if (states.sensor.mtnrpi2_agreements_active_count.state | int) > 5 -%}
-          {{ value_json.agreement_data_received_time | timestamp_custom("%a %b %d @ %I:%M %p") }}
-        {%- else -%}
-          {{ 'no agreement' }}
-        {%- endif -%}
+      {%- if value_json is defined and states('sensor.horizon_agreement_active_count')|int > 5 -%} 
+        {{ value_json.agreements.active[5].agreement_data_received_time | timestamp_custom("%a %b %d @ %I:%M %p") }}
       {%- else -%}
         {{ 'no agreement' }}
       {%- endif -%}
 
-sensor mtnrpi2_agreement5_start:
+sensor hzn_agreement5_start:
   - platform: rest
-    resource: 'http://192.168.1.32/CGI/mtn-agreement.cgi?ip=39&id=5'
-    name: 'MtnRpi2 Agreement5 Start'
-    # value_template: '{{ value_json.agreement_execution_start_time | timestamp_custom("%a %b %d @ %I:%M %p") }}'
+    resource: 'http://192.168.1.39/agreement'
+    name: horizon_agreement5_start
     value_template: >
-      {%- if (states.sensor.mtnrpi2_agreements_active_count != None) -%}
-        {%- if (states.sensor.mtnrpi2_agreements_active_count.state | int) > 5 -%}
-          {{ value_json.agreement_execution_start_time | timestamp_custom("%a %b %d @ %I:%M %p") }}
-        {%- else -%}
-          {{ 'no agreement' }}
-        {%- endif -%}
+      {%- if value_json is defined and states('sensor.horizon_agreement_active_count')|int > 5 -%} 
+        {{ value_json.agreements.active[5].agreement_execution_start_time | timestamp_custom("%a %b %d @ %I:%M %p") }}
       {%- else -%}
         {{ 'no agreement' }}
       {%- endif -%}
@@ -2144,46 +2120,6 @@ binary_sensor classifier_wrong:
       value_template: >
         {{ is_state('binary_sensor.david_home','on') and is_state('sensor.road_what','martin_c70') }}
 
-#
-# ACTIVE SENSOR DEFINED BY MQTT W/ 30 SECOND EXPIRATION
-#
-
-binary_sensor kitchen_active:
-  platform: mqtt
-  name: kitchen_active
-  state_topic: 'presence/kitchen'
-  device_class: motion
-  expire_after: 30
-  value_template: >
-    {% if value_json is defined %} 'on' {% else %} 'off' {% endif %}
-
-binary_sensor bathroom_active:
-  platform: mqtt
-  name: bathroom_active
-  state_topic: 'presence/bathroom'
-  device_class: motion
-  expire_after: 30
-  value_template: >
-    {% if value_json is defined %} 'on' {% else %} 'off' {% endif %}
-
-binary_sensor frontdoor_active:
-  platform: mqtt
-  name: frontdoor_active
-  state_topic: 'presence/frontdoor'
-  device_class: motion
-  expire_after: 30
-  value_template: >
-    {% if value_json is defined %} 'on' {% else %} 'off' {% endif %}
-
-binary_sensor road_active:
-  platform: mqtt
-  name: road_active
-  state_topic: 'presence/road'
-  device_class: motion
-  expire_after: 30
-  value_template: >
-    {% if value_json is defined %} 'on' {% else %} 'off' {% endif %}
-
 ##
 ## FRONTDOOR
 ##
@@ -2380,7 +2316,7 @@ binary_sensor what_road:
       entity_id:
         - sensor.road_what
       value_template: >
-        {{ not states('binary_sensor.martin_road') and not states('binary_sensor.fletcher_road') }}
+        {{ is_state('binary_sensor.martin_road','off') and is_state('binary_sensor.fletcher_road','off') }}
 
 sensor other_road_count:
   - platform: history_stats
@@ -3299,7 +3235,6 @@ sensor exterior_motion_ratio:
 sensor kitchen_motion_count:
   - platform: history_stats
     name: kitchen_motion_count
-    friendly_name: Kitchen Count Today
     entity_id: binary_sensor.kitchen_motion
     state: 'on'
     type: count
@@ -3515,7 +3450,7 @@ sensor people_location_template:
   platform: template
   sensors:
     david_status:
-      friendly_name: "David's Status"
+      friendly_name: "David's status"
       entity_id:
         - group.david_devices
       value_template: >
@@ -3777,6 +3712,22 @@ history_graph:
       - sensor.other_road_count
     hours_to_show: 24
     refresh: 60
+
+##
+## INPUT
+##
+
+input_text:
+  test1:
+    name: test1
+    initial: type something here
+
+##
+## SCRIPTS
+##
+
+# nothing (yet)
+script: !include scripts.yaml
 
 ##
 ## AUTOMATIONS
