@@ -21,7 +21,7 @@ endif
 
 if (! -e /tmp/$0:t.$ip.$DATE.json) then
   /bin/rm -f /tmp/$0:t.$ip.*.json
-  /usr/bin/curl -s -q -f -L0 "http://192.168.1.$ip/horizondevice" | /usr/local/bin/jq '.' >! /tmp/$0:t.$ip.$DATE.json
+  /usr/bin/curl -s -q -f -L0 "http://192.168.1.$ip/node" | /usr/local/bin/jq '.' >! /tmp/$0:t.$ip.$DATE.json
 endif
 
 @ age = $SECONDS - $DATE
