@@ -20,6 +20,12 @@ foreach yaml ( $yamls )
 end
 echo "]"
 
+# copy COMPONENTS
+if (-d "$dir/config/custom_components") then
+echo "Copying COMPONENTS"
+cp -r "$dir/config/custom_components/" "$config/custom_components"
+endif
+
 # copy ADDONS
 echo "Copying ADDONS"
 foreach i ( "$dir"/addons/* )

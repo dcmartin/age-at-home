@@ -829,7 +829,7 @@ sensor external_ip:
     name: externalip
     value_template: >
       {%- if value_json is defined -%} 
-        {{ value_json.ip | default("null") }}
+        {{ value_json.ip | default(null) }}
       {%- else -%} 0 {%- endif -%}
 
 ###
@@ -3502,6 +3502,51 @@ group: !include groups.yaml
 ###
 ### CONFIGURATION AND DISCOVERY
 ###
+
+sensor aah_device_count:
+  - platform: rest
+    resource: 'http://192.168.1.32/CGI/aah-devices.cgi'
+    name: aah_device_count
+    value_template: >
+      {%- if value_json is defined -%}
+        {%- if value_json.devices is defined -%}
+          {%- if value_json.devices != [] -%}
+            {{ value_json.devices|length | default(0) }}
+          {%- else -%} 0 {%- endif -%}
+        {%- else -%} -1 {%- endif -%}
+      {%- else -%} -2 {%- endif -%}
+
+sensor aah_device_names:
+  - platform: rest
+    resource: 'http://192.168.1.32/CGI/aah-devices.cgi'
+    name: aah_device_names
+    value_template: >
+      {%- if value_json is defined -%}
+        {%- if value_json.devices is defined -%}
+          {%- if value_json.devices != [] -%}
+          {%- for device in value_json.devices -%}
+            {%- if loop.first -%} {%- else -%}, {%- endif -%} 
+            {{ device.name | default(null) }}
+          {%- endfor -%}
+          {%- else -%} 'no device' {%- endif -%}
+        {%- else -%} 'undefined' {%- endif -%}
+      {%- else -%} 'no service' {%- endif -%}
+
+sensor aah_device_dates:
+  - platform: rest
+    resource: 'http://192.168.1.32/CGI/aah-devices.cgi'
+    name: aah_device_dates
+    value_template: >
+      {%- if value_json is defined -%}
+        {%- if value_json.devices is defined -%}
+          {%- if value_json.devices != [] -%}
+          {%- for device in value_json.devices -%}
+            {%- if loop.first -%} {%- else -%}, {%- endif -%} 
+            {{ (device.date|int) | default(null) }}
+          {%- endfor -%}
+          {%- else -%} 'no device' {%- endif -%}
+        {%- else -%} 'undefined' {%- endif -%}
+      {%- else -%} 'no service' {%- endif -%}
 
 binary_sensor aah_device_template:
   platform: template
