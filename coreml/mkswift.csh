@@ -3,9 +3,8 @@
 # uncomment for production
 setenv DEBUG true
 # setenv DELETE_CONTAINER true
-# setenv DELETE_JOB true
-# setenv DELETE_OLD_MODELS true
-setenv VERBOSE "--verbose"
+setenv DELETE_OLD_MODELS true
+setenv SWIFT_ARGS "--verbose"
 
 ###
 ### PREREQUISITE CHECK
@@ -77,7 +76,7 @@ setenv OS_AUTH_VERSION 3
 
 # get SWIFT status information
 set stat = "/tmp/$0:t.$$.stat"
-swift $VERBOSE \
+swift $SWIFT_ARGS \
   --os-user-id="$userId" \
   --os-password="$password" \
   --os-project-id="$projectId" \
@@ -125,7 +124,7 @@ set auth = `echo "$json" | jq -r '.AuthToken'`
 set sturl = `echo "$json" | jq -r '.StorageURL'`
 
 # get existing containers
-set containers = ( `swift $VERBOSE --os-auth-token "$auth" --os-storage-url "$sturl" list | sed 's/ /%20/g'` )
+set containers = ( `swift $SWIFT_ARGS --os-auth-token "$auth" --os-storage-url "$sturl" list | sed 's/ /%20/g'` )
 
 # check iff container exists; delete it when specified
 unset existing
@@ -136,11 +135,11 @@ if ($?containers) then
       if ("$c" == "$dlaasjob") then
         if ($?DELETE_CONTAINER) then
           echo "$0:t $$ -- [debug] deleting existing container $c" >& /dev/stderr
-          swift $VERBOSE --os-auth-token "$auth" --os-storage-url "$sturl" delete `echo "$c" | sed 's/%20/ /g'` >& /dev/null
+          swift $SWIFT_ARGS --os-auth-token "$auth" --os-storage-url "$sturl" delete `echo "$c" | sed 's/%20/ /g'` >& /dev/null
         else
           set existing = "$c"
           set n = ( `echo "$c" | sed 's/%20/ /g'` )
-          set contents = ( `swift $VERBOSE --os-auth-token "$auth" --os-storage-url "$sturl" list "$n"` )
+          set contents = ( `swift $SWIFT_ARGS --os-auth-token "$auth" --os-storage-url "$sturl" list "$n"` )
           if ($?contents == 0) set contents = ()
         endif
       else
@@ -159,20 +158,20 @@ if ($?existing) then
   echo "$0:t $$ -- [WARN] existing container: $dlaasjob; contents: [$contents]" >& /dev/stderr
 else
   echo "$0:t $$ -- [INFO] making container: $dlaasjob" >& /dev/stderr
-  swift $VERBOSE --os-auth-token "$auth" --os-storage-url "$sturl" post `echo "$dlaasjob" | sed 's/%20/ /g'` >& /dev/null
+  swift $SWIFT_ARGS --os-auth-token "$auth" --os-storage-url "$sturl" post `echo "$dlaasjob" | sed 's/%20/ /g'` >& /dev/null
 endif
-
-
 
 ##
 ## SYNCHRONIZE MODEL FILES
 ##
 
 # identify training files from configuration
-set files = ( `jq -r '.maps[]?.file,.data[]?.file,.model.pretrain.weights?,.model.training.median?' "$dlaasjob.json" | egrep -v "null"` )
+set files = ( `jq -r '.sample.maps[]?.file,.sample.data[]?.file,.model.pretrain.weights?,.model.training.network?,.model.training.solver?,.model.training.median?' "$dlaasjob.json" | egrep -v "null"` )
 if ($#files == 0) then
   echo "$0:t $$ -- [ERROR] no training files" >& /dev/stderr
   exit 1
+else
+  if ($?DEBUG) echo "$0:t $$ -- [debug] training files [$files]" >& /dev/stderr
 endif
 
 # identify model from configuration results
@@ -190,21 +189,22 @@ foreach file ( $files )
   set found = false
   if (-e "$file") then
     foreach c ( $contents )
-      if ("$c:h" == "$file") then
+      if ((-d "$file" && "$c:h" == "$file") || (! -d "$file" && "$c" == "$file")) then
         set found = true
+        break
       endif
     end
     if ($found != true) then
       if ($?DEBUG) echo "$0:t $$ -- [debug] UPLOADING $file " `du -k "$file" | awk '{ print $1 }'` "Kbytes" >& /dev/stderr
-      swift $VERBOSE --os-auth-token "$auth" --os-storage-url "$sturl" upload `echo "$dlaasjob" | sed 's/%20/ /g'` "$file" >& /dev/null
+      swift $SWIFT_ARGS --os-auth-token "$auth" --os-storage-url "$sturl" upload `echo "$dlaasjob" | sed 's/%20/ /g'` "$file"
     else
-      if ($?DEBUG) echo "$0:t $$ -- [debug] $file exists" >& /dev/stderr
+      if ($?DEBUG) echo "$0:t $$ -- [debug] $file has been uploaded" >& /dev/stderr
     endif
   else
     echo "$0:t $$ -- [ERROR] $file does not exists" >& /dev/stderr
     exit 1
   endif
-endif
+end
 
 ## DOWNLOAD result files
 if ($?contents && $?model_id) then
@@ -213,7 +213,7 @@ if ($?contents && $?model_id) then
     if ( "$c" =~ "$model_id/*" ) then
       if ( ! -e "$c" ) then
         mkdir -p "$c:h"
-        swift $VERBOSE --os-auth-token "$auth" --os-storage-url "$sturl" download `echo "$dlaasjob" | sed 's/%20/ /g'` "$c" >& /dev/null
+        swift $SWIFT_ARGS --os-auth-token "$auth" --os-storage-url "$sturl" download `echo "$dlaasjob" | sed 's/%20/ /g'` "$c" >& /dev/null
         if ($?DEBUG) echo "$0:t $$ -- [debug] DOWNLOADED $c " `du -k "$c " | awk '{ print $1 }'` " Kbytes" >& /dev/stderr
         if ($?output) then
           set output = ( $output "$c" )
@@ -247,7 +247,7 @@ endif
 if ($?oldmodels && $?DELETE_OLD_MODELS) then
   foreach c ( $oldmodels )
     echo "$0:t $$ -- [INFO] DELETING OLD MODEL $c" >& /dev/stderr
-    swift $VERBOSE --os-auth-token "$auth" --os-storage-url "$sturl" delete `echo "$dlaasjob" | sed 's/%20/ /g'` "$c" >& /dev/null
+    swift $SWIFT_ARGS --os-auth-token "$auth" --os-storage-url "$sturl" delete `echo "$dlaasjob" | sed 's/%20/ /g'` "$c" >& /dev/null
   end
 endif
 

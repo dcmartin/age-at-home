@@ -12,7 +12,7 @@ set TTL = 15
 set SECONDS = `date "+%s"`
 set DATE = `/bin/echo $SECONDS \/ $TTL \* $TTL | bc`
  
-# setenv DEBUG true
+setenv DEBUG true
 
 /bin/echo `date` "$0 $$ -- START ($QUERY_STRING) from $HTTP_REFERER" >>! $TMP/LOG
 

@@ -1,5 +1,10 @@
 #!/bin/csh -fb
 
+if ($?MODEL_IMAGE_HEIGHT == 0) setenv MODEL_IMAGE_HEIGHT 224
+if ($?MODEL_IMAGE_WIDTH == 0) setenv MODEL_IMAGE_WIDTH 224
+if ($?SAMPLE_SET_FORMAT == 0) setenv SAMPLE_SET_FORMAT lmdb
+if ($?SAMPLE_DATA_FORMAT == 0) setenv SAMPLE_DATA_FORMAT png
+
 # change for production
 setenv DEBUG true
 # setenv DELETE_FAILED_MODELS true
