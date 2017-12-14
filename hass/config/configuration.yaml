@@ -3746,4 +3746,3 @@ script: !include scripts.yaml
 ##
 
 automation: !include automations.yaml
-
