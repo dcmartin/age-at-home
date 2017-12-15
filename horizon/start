@@ -1,6 +1,6 @@
 #!/bin/bash 
 
-export NODE_ID=$(hostname)
+export NODE_ID="david-pi2"
 export NODE_TOKEN=whocares
 export USERNAME=dcmartin
 export PASSWORD=whocares
