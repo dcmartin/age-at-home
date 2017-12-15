@@ -23,11 +23,11 @@ endif
 
 echo 'name: "AlexNet"' 
 if ($?mean_image) then
-  echo 'layer { name: "data" type: "Data" top: "data" top: "label" include { phase: TRAIN } transform_param { mirror: true crop_size: 227 mean_file: "'"$mean_image"'" } data_param { source: "'"$training_set"'" batch_size: 256 backend: LMDB } }' 
-  echo 'layer { name: "data" type: "Data" top: "data" top: "label" include { phase: TEST } transform_param { mirror: false crop_size: 227 mean_file: "'"$mean_image"'" } data_param { source: "'"$test_set"'" batch_size: 50 backend: LMDB } }' 
+  echo 'layer { name: "data" type: "Data" top: "data" top: "label" include { phase: TRAIN } transform_param { mirror: true crop_size: '$MODEL_IMAGE_WIDTH' mean_file: "'"$mean_image"'" } data_param { source: "'"$training_set"'" batch_size: 256 backend: LMDB } }' 
+  echo 'layer { name: "data" type: "Data" top: "data" top: "label" include { phase: TEST } transform_param { mirror: false crop_size: '$MODEL_IMAGE_WIDTH' mean_file: "'"$mean_image"'" } data_param { source: "'"$test_set"'" batch_size: 50 backend: LMDB } }' 
 else
-  echo 'layer { name: "data" type: "Data" top: "data" top: "label" include { phase: TRAIN } transform_param { mirror: true crop_size: 227 } data_param { source: "'"$training_set"'" batch_size: 256 backend: LMDB } }' 
-  echo 'layer { name: "data" type: "Data" top: "data" top: "label" include { phase: TEST } transform_param { mirror: false crop_size: 227 } data_param { source: "'"$test_set"'" batch_size: 50 backend: LMDB } }' 
+  echo 'layer { name: "data" type: "Data" top: "data" top: "label" include { phase: TRAIN } transform_param { mirror: true crop_size: '$MODEL_IMAGE_WIDTH' } data_param { source: "'"$training_set"'" batch_size: 256 backend: LMDB } }' 
+  echo 'layer { name: "data" type: "Data" top: "data" top: "label" include { phase: TEST } transform_param { mirror: false crop_size: '$MODEL_IMAGE_WIDTH' } data_param { source: "'"$test_set"'" batch_size: 50 backend: LMDB } }' 
 endif
 echo 'layer { name: "conv1" type: "Convolution" bottom: "data" top: "conv1" param { lr_mult: 1 decay_mult: 1 } param { lr_mult: 2 decay_mult: 0 } convolution_param { num_output: 96 kernel_size: 11 stride: 4 weight_filler { type: "gaussian" std: 0.01 } bias_filler { type: "constant" value: 0 } } }' 
 echo 'layer { name: "relu1" type: "ReLU" bottom: "conv1" top: "conv1" }' 

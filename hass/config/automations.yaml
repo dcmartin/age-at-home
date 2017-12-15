@@ -204,8 +204,8 @@
 # MQTT
 #
 
-- id: aah_david_status
-  alias: aah_david_status
+- id: david_status
+  alias: david_status
   initial_state: 'on'
   trigger:
     platform: state
@@ -217,8 +217,8 @@
         payload: >
           {"what":"david","date:",{{(now().timestamp()|int)}},"state":{{ states('sensor.david_status') }}}
 
-- id: aah_camera_offline
-  alias: aah_camera_offline
+- id: camera_offline
+  alias: camera_offline
   trigger:
     platform: state
     entity_id:
@@ -236,7 +236,7 @@
         payload: >
           {"device":"{{ trigger.to_state.attributes.friendly_name }}","status":"offline"}
 
-- id: aah_notify_lowscore
+- id: notify_lowscore
   alias: very low score
   trigger:
     platform: numeric_state
@@ -249,7 +249,7 @@
         payload: >
           {"location":{{states('sensor.last_where')|tojson}},"model":{{states('sensor.last_who')|tojson}},"class":{{states('sensor.last_what')|tojson}},"score":{{states('sensor.last_why')}}}
 
-- id: aah_notify_highscore
+- id: notify_highscore
   alias: very high score
   trigger:
     platform: numeric_state
@@ -262,24 +262,142 @@
         payload: >
           {"location":{{states('sensor.last_where')|tojson}},"model":{{states('sensor.last_who')|tojson}},"class":{{states('sensor.last_what')|tojson}},"score":{{states('sensor.last_why')}}}
 
-#- id: sonos_volume_limiter
-#  alias: Sonos Volume Limiter
-#  initial_state: True
-#  hide_entity: False
-#  trigger:
-#    platform: numeric_state
-#    entity_id: media_player.play1
-#    value_template: '{{ state.attributes.volume_level }}'
-#    above: 0.35
-#  condition:
-#    platform: time
-#    after: '08:00:00'
-#    before: '20:00:00'
-#  action:
-#    - service: media_player.volume_set
-#      data_template:
-#        entity_id: media_player.play1
-#        volume_level: 0.34
+###
+### PUBLISH OUTPUT
+###
+
+- id: aah_location_not_people
+  alias: aah_location_not_people
+  initial_state: on
+  trigger:
+    - platform: mqtt
+      topic: 'presence/+'
+  condition: 
+     - condition: template
+       value_template: >
+         # need to make 'people' an attribute of event, e.g. hierarchy of class element defined 'people/family/david' and check entire path
+         {%- for state in states.group.people.attributes.entity_id -%}
+           {%- set w = state.replace('sensor.','').replace('_location','')|lower -%}
+           {%- if w == trigger.payload_json.class|lower and not states(state)|lower in ('home','unknown') -%} 
+            {{- true -}}
+           {%- endif -%}
+         {%- endfor -%}
+  action:
+    - service: mqtt.publish
+      data_template:
+        topic: 'wrong/group/people/{{ trigger.payload_json.class }}'
+        payload: >-
+          {
+           "type":"group/people",
+           "triggered":{{(now().timestamp()|int)}},
+           "device":{{trigger.payload_json.device|tojson}},
+           "id":{{trigger.payload_json.id|tojson}},
+           "where":{{trigger.payload_json.location|tojson}},
+           "who":{{trigger.payload_json.model|tojson}},
+           "what":{{trigger.payload_json.class|tojson}},
+           "why":{{trigger.payload_json.score|float}},
+           "date":{{trigger.payload_json.date|int}}
+          }
+
+- id: aah_location_not_home
+  alias: aah_location_not_home
+  initial_state: on
+  trigger:
+    - platform: mqtt
+      topic: 'presence/+'
+  condition: 
+     - condition: template
+       value_template: '{{ not states(("sensor.",trigger.payload_json.class,"_location")|join|lower) in ("home","unknown") }}'
+  action:
+    - service: mqtt.publish
+      data_template:
+        topic: 'wrong/entity/{{ trigger.payload_json.class }}'
+        payload: >-
+          {
+           "type":"entity",
+           "triggered":{{(now().timestamp()|int)}},
+           "device":{{trigger.payload_json.device|tojson}},
+           "id":{{trigger.payload_json.id|tojson}},
+           "where":{{trigger.payload_json.location|tojson}},
+           "who":{{trigger.payload_json.model|tojson}},
+           "what":{{trigger.payload_json.class|tojson}},
+           "why":{{trigger.payload_json.score|float}},
+           "date":{{trigger.payload_json.date|int}}
+          }
+
+- id: aah_location_undefined
+  alias: aah_location_undefined
+  initial_state: on
+  trigger:
+    - platform: mqtt
+      topic: 'presence/+'
+  condition: 
+     - condition: template
+       value_template: '{{ states(("sensor.",trigger.payload_json.class,"_location")|join|lower)|length == 0 }}'
+  action:
+    - service: mqtt.publish
+      data_template:
+        topic: 'wrong/undefined/{{ trigger.payload_json.class }}'
+        payload: >-
+          {
+           "type":"undefined",
+           "triggered":{{(now().timestamp()|int)}},
+           "device":{{trigger.payload_json.device|tojson}},
+           "id":{{trigger.payload_json.id|tojson}},
+           "where":{{trigger.payload_json.location|tojson}},
+           "who":{{trigger.payload_json.model|tojson}},
+           "what":{{trigger.payload_json.class|tojson}},
+           "why":{{trigger.payload_json.score|float}},
+           "date":{{trigger.payload_json.date|int}}
+          }
+
+- id: aah_location_not_road
+  alias: aah_location_not_road
+  initial_state: on
+  trigger:
+    - platform: mqtt
+      topic: 'presence/road'
+  condition: 
+     - condition: template
+       value_template: '{{ trigger.payload_json.class == "martin_c70" and states("sensor.david_location")|lower == "home" }}'
+  action:
+    - service: mqtt.publish
+      data_template:
+        topic: 'wrong/{{ trigger.payload_json.location }}/{{ trigger.payload_json.class }}'
+        payload: >-
+          {
+           "type":"road",
+           "triggered":{{(now().timestamp()|int)}},
+           "device":{{trigger.payload_json.device|tojson}},
+           "id":{{trigger.payload_json.id|tojson}},
+           "where":{{trigger.payload_json.location|tojson}},
+           "who":{{trigger.payload_json.model|tojson}},
+           "what":{{trigger.payload_json.class|tojson}},
+           "why":{{trigger.payload_json.score|float}},
+           "date":{{trigger.payload_json.date|int}}
+          }
+
+###
+### SONOS
+###
+
+- id: sonos_volume_limiter
+  alias: sonos_volume_limiter
+  initial_state: 'on'
+  trigger:
+    - platform: numeric_state
+      entity_id: media_player.play1
+      value_template: '{{ state.attributes.volume_level }}'
+      above: 0.35
+  condition:
+    - condition: time
+      after: '08:00:00'
+      before: '20:00:00'
+  action:
+    - service: media_player.volume_set
+      data_template:
+        entity_id: media_player.play1
+        volume_level: 0.34
 
 ##
 ## DUMPS

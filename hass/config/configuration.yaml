@@ -418,156 +418,26 @@ notify ios:
 
 # ZONES
 
-# zone: !include zones.yaml
+zone: !include zones.yaml
 
-zone jimjanaustin:
-  name: "Jim Jan Austin"
-  icon: mdi:home
-  latitude: 30.49788338485368
-  longitude: -97.7739577124575
-  radius: 200
-  track_ios: true
+##
+## plex
+##
 
-zone jimjansanjose:
-  name: "Jim Jan San Jose"
-  icon: mdi:home
-  latitude: 37.215407
-  longitude: -121.864994
-  radius: 200
-  track_ios: true
+media_player davidsimac:
+  - platform: plex
+    name: davidsimac
+    ip_address: 192.168.1.27
+    port: 32400
+    token: !secret plex_token
 
-zone nannyshouse:
-  name: "Nannys House"
-  icon: mdi:home
-  latitude: 30.391078
-  longitude: -97.694590
-  radius: 200
-  track_ios: true
-
-zone austincity:
-  name: "Austin City"
-  latitude: 30.266187
-  longitude: -97.743503
-  radius: 15000
-  track_ios: true
-
-zone southsanjose:
-  name: 'South San Jose'
-  icon: mdi:home
-  latitude: 37.242386
-  longitude: -121.874724
-  radius: 10000
-  track_ios: true
-
-zone chicagoland:
-  name: 'Chicago-Land'
-  icon: mdi:home
-  latitude: 42.013780
-  longitude: -87.063821
-  radius: 100000
-  track_ios: true
-
-zone westernspring:
-  name: 'Western Springs, IL'
-  icon: mdi:home
-  latitude: 41.811889
-  longitude: -87.901608
-  radius: 5000
-  track_ios: true
-
-zone magicianlake:
-  name: 'Magician Lake'
-  icon: mdi:home
-  latitude: 42.071890
-  longitude: -86.152227
-  radius: 10000
-  track_ios: true
-
-zone newzealand:
-  name: 'New Zealand'
-  icon: mdi:home
-  latitude: -37.89431844841493
-  longitude: 175.4656750337923
-  radius: 10000
-  track_ios: true
-
-zone fortcollins:
-  name: 'Fort Collins, CO'
-  icon: mdi:home
-  latitude: 40.5786172734845
-  longitude: -105.0849671207992
-  radius: 10000
-  track_ios: true
-
-zone home:
-  name: home
-  icon: mdi:home
-  latitude: 37.174815
-  longitude: -121.816325
-  radius: 125
-  track_ios: true
-
-# school zones
-
-zone leland:
-  name: 'Leland High School'
-  icon: mdi:school
-  radius: 250
-  latitude: 37.217712
-  longitude: -121.844413
-  track_ios: true
-
-zone presentation:
-  name: 'Presentation High School'
-  icon: mdi:school
-  radius: 250
-  latitude: 37.283350
-  longitude: -121.900422
-  track_ios: true
-
-# work zones
-
-zone arc:
-  name: 'IBM Almaden'
-  icon: mdi:domain
-  radius: 250
-  latitude: 37.211072
-  longitude: -121.807391
-  track_ios: true
-
-zone svl:
-  name: 'IBM Silicon Valley'
-  icon: mdi:domain
-  radius: 250
-  latitude: 37.196352
-  longitude: -121.748551
-  track_ios: true
-
-# well known locations
-
-zone safeway:
-  name: 'Safeway Shopping Center'
-  icon: mdi:store
-  radius: 100
-  latitude: 37.219579
-  longitude: -121.861451
-  track_ios: true
-
-zone leipzig:
-  name: 'Leipzig, Germany'
-  icon: mdi:currency-eur
-  radius: 15000
-  latitude: 51.340260
-  longitude: 12.372691
-
-zone dublin:
-  name: 'Dublin, Ireland'
-  icon: mdi:beer
-  radius: 15000
-  latitude: 53.349925
-  longitude: -6.258065
-
-# plex
+sensor davidsimac:
+  - platform: plex
+    host: 192.168.1.27
+    port: 32400
+    name: davidsimac
+    username: !secret plex_username
+    password: !secret plex_password
 
 media_player david_plex:
   - platform: plex
@@ -1853,8 +1723,105 @@ sensor count_zones:
       {% if value_json is defined %} {{ value_json['items'] | length }} {% else %} 0 {% endif %}
 
 ##
+## ERRORS
+##
+
+sensor error:
+  - platform: mqtt
+    state_topic: 'error/+'
+    name: error
+    value_template: '{% if value_json is defined %} {{ value_json }} {% else %} "nothing" {% endif %}'
+     
+sensor error_id:
+  - platform: mqtt
+    state_topic: 'error/+'
+    name: error_id
+    value_template: '{% if value_json is defined %} {{ value_json.id }} {% else %} "nothing" {% endif %}'
+
+sensor error_device:
+  - platform: mqtt
+    state_topic: 'error/+'
+    name: error_device
+    value_template: '{% if value_json is defined %} {{ value_json.device }} {% else %} "nothing" {% endif %}'
+
+camera error_image:
+  - platform: generic
+    name: error_image
+    still_image_url: 'http://192.168.1.32/CGI/aah-images.cgi?db={{states.sensor.error_device.state}}&id={{states.sensor.error_id.state}}&ext=full'
+
+##
+## WRONG
+##
+
+sensor aah_wrong_device:
+  - platform: mqtt
+    name: aah_wrong_device
+    state_topic: 'wrong/#'
+    value_template: '{% if value_json is defined %} {{ value_json.device }} {% else %} "none" {% endif %}'
+
+sensor aah_wrong_id:
+  - platform: mqtt
+    name: aah_wrong_id
+    state_topic: 'wrong/#'
+    value_template: '{% if value_json is defined %} {{ value_json.id }} {% else %} "none" {% endif %}'
+
+sensor aah_wrong_what:
+  - platform: mqtt
+    state_topic: 'wrong/#'
+    name: aah_wrong_what
+    value_template: '{% if value_json is defined %} {{ value_json.class }} {% else %} "nothing" {% endif %}'
+
+sensor aah_wrong_who:
+  - platform: mqtt
+    state_topic: 'wrong/#'
+    name: aah_wrong_who
+    value_template: '{% if value_json is defined %} {{ value_json.model }} {% else %} "nobody" {% endif %}'
+
+sensor aah_wrong_why:
+  - platform: mqtt
+    state_topic: 'wrong/#'
+    name: aah_wrong_why
+    value_template: '{% if value_json is defined %} {{ value_json.score }} {% else %} 0.0 {% endif %}'
+
+sensor aah_wrong_date:
+  - platform: mqtt
+    state_topic: 'wrong/#'
+    name: aah_wrong_date
+    value_template: '{% if value_json is defined -%} {{ value_json.date|int }} {%- else -%} -1 {%- endif -%}'
+
+sensor aah_wrong_where:
+  - platform: mqtt
+    state_topic: 'wrong/#'
+    name: aah_wrong_where
+    value_template: '{% if value_json is defined %} {{ value_json.location }} {% else %} "nowhere" {% endif %}'
+
+sensor aah_wrong_when:
+  - platform: mqtt
+    state_topic: 'wrong/#'
+    name: aah_wrong_when
+    value_template: '{% if value_json is defined %} {{ value_json.date | timestamp_custom("%a %b %d @ %I:%M %p") }} {% else %} "never" {% endif %}'
+    icon_template: >-
+      {% if ((states.sensor.aah_wrong_date.state|int) | timestamp_custom("%p")) == "PM" %}
+        mdi:weather-night
+      {% else %}
+        mdi:weather-sunny
+      {% endif %}
+
+##
 ## LAST ACTIVITY
 ##
+
+sensor last_device:
+  - platform: mqtt
+    name: last_device
+    state_topic: 'presence/+'
+    value_template: '{% if value_json is defined %} {{ value_json.device }} {% else %} "none" {% endif %}'
+
+sensor last_id:
+  - platform: mqtt
+    name: last_id
+    state_topic: 'presence/+'
+    value_template: '{% if value_json is defined %} {{ value_json.id }} {% else %} "none" {% endif %}'
 
 sensor last_what:
   - platform: mqtt
@@ -3503,10 +3470,10 @@ group: !include groups.yaml
 ### CONFIGURATION AND DISCOVERY
 ###
 
-sensor aah_device_count:
+sensor device_count:
   - platform: rest
     resource: 'http://192.168.1.32/CGI/aah-devices.cgi'
-    name: aah_device_count
+    name: device_count
     value_template: >
       {%- if value_json is defined -%}
         {%- if value_json.devices is defined -%}
@@ -3516,10 +3483,10 @@ sensor aah_device_count:
         {%- else -%} -1 {%- endif -%}
       {%- else -%} -2 {%- endif -%}
 
-sensor aah_device_names:
+sensor device_names:
   - platform: rest
     resource: 'http://192.168.1.32/CGI/aah-devices.cgi'
-    name: aah_device_names
+    name: device_names
     value_template: >
       {%- if value_json is defined -%}
         {%- if value_json.devices is defined -%}
@@ -3532,10 +3499,10 @@ sensor aah_device_names:
         {%- else -%} 'undefined' {%- endif -%}
       {%- else -%} 'no service' {%- endif -%}
 
-sensor aah_device_dates:
+sensor device_dates:
   - platform: rest
     resource: 'http://192.168.1.32/CGI/aah-devices.cgi'
-    name: aah_device_dates
+    name: device_dates
     value_template: >
       {%- if value_json is defined -%}
         {%- if value_json.devices is defined -%}
@@ -3548,31 +3515,31 @@ sensor aah_device_dates:
         {%- else -%} 'undefined' {%- endif -%}
       {%- else -%} 'no service' {%- endif -%}
 
-binary_sensor aah_device_template:
+binary_sensor device_template:
   platform: template
   sensors:
-    aah_online_kitchen:
+    online_kitchen:
       entity_id:
         - device_tracker.ageathome_kitchen_camera
       value_template: >
         {{ states.device_tracker.ageathome_kitchen_camera != None and
            states.device_tracker.ageathome_kitchen_camera.state != None and
            states.device_tracker.ageathome_kitchen_camera.state == 'home' }}
-    aah_online_bathroom:
+    online_bathroom:
       entity_id:
         - device_tracker.ageathome_bathroom_camera
       value_template: >
         {{ states.device_tracker.ageathome_bathroom_camera != None and
            states.device_tracker.ageathome_bathroom_camera.state != None and
            states.device_tracker.ageathome_bathroom_camera.state == 'home' }}
-    aah_online_frontdoor:
+    online_frontdoor:
       entity_id:
         - device_tracker.ageathome_frontdoor_camera
       value_template: >
         {{ states.device_tracker.ageathome_frontdoor_camera != None and
            states.device_tracker.ageathome_frontdoor_camera.state != None and
            states.device_tracker.ageathome_frontdoor_camera.state == 'home' }}
-    aah_online_road:
+    online_road:
       entity_id:
         - device_tracker.ageathome_road_camera
       value_template: >
@@ -3580,27 +3547,27 @@ binary_sensor aah_device_template:
            states.device_tracker.ageathome_road_camera.state != None and
            states.device_tracker.ageathome_road_camera.state == 'home' }}
 
-binary_sensor aah_template:
+binary_sensor template:
   - platform: template
     sensors:
-      aah_discovery_complete:
+      discovery_complete:
         entity_id: 
-          - sensor.aah_discovery
+          - sensor.discovery
         value_template: >
-          {{ states.binary_sensor.aah_discovery != None and
-             states.binary_sensor.aah_discovery.state != 'unknown' and
-             states.binary_sensor.aah_discovery.attributes != None and
-             states.binary_sensor.aah_discovery.attributes.url != None and
-             states.binary_sensor.aah_discovery.attributes.url != 'null' }}
-      aah_config_complete:
+          {{ states.binary_sensor.discovery != None and
+             states.binary_sensor.discovery.state != 'unknown' and
+             states.binary_sensor.discovery.attributes != None and
+             states.binary_sensor.discovery.attributes.url != None and
+             states.binary_sensor.discovery.attributes.url != 'null' }}
+      config_complete:
         entity_id: 
-          - sensor.aah_config
+          - sensor.config
         value_template: >
-          {{ states.binary_sensor.aah_config != None and
-             states.binary_sensor.aah_config.state != 'unknown' and
-             states.binary_sensor.aah_config.attributes != None and
-             states.binary_sensor.aah_config.attributes.vr_apikey != None and
-             states.binary_sensor.aah_config.attributes.vr_apikey != 'null' }}
+          {{ states.binary_sensor.config != None and
+             states.binary_sensor.config.state != 'unknown' and
+             states.binary_sensor.config.attributes != None and
+             states.binary_sensor.config.attributes.vr_apikey != None and
+             states.binary_sensor.config.attributes.vr_apikey != 'null' }}
 
 ##
 ## HISTORY GRAPH

@@ -162,4 +162,3 @@
       - sensor.road_motion_count
       - sensor.road_motion_time
       - sensor.road_what
-      - sensor.solar_angle

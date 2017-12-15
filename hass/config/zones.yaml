@@ -1,109 +1,156 @@
-zone fazenda:
+
+- jimjanaustin:
+  name: "Jim Jan Austin"
+  icon: mdi:home
+  latitude: 30.49788338485368
+  longitude: -97.7739577124575
+  radius: 200
+  track_ios: true
+
+- jimjansanjose:
+  name: "Jim Jan San Jose"
+  icon: mdi:home
+  latitude: 37.215407
+  longitude: -121.864994
+  radius: 200
+  track_ios: true
+
+- nannyshouse:
+  name: "Nannys House"
+  icon: mdi:home
+  latitude: 30.391078
+  longitude: -97.694590
+  radius: 200
+  track_ios: true
+
+- austincity:
+  name: "Austin City"
+  latitude: 30.266187
+  longitude: -97.743503
+  radius: 15000
+  track_ios: true
+
+- southsanjose:
+  name: 'South San Jose'
+  icon: mdi:home
+  latitude: 37.242386
+  longitude: -121.874724
+  radius: 10000
+  track_ios: true
+
+- chicagoland:
+  name: 'Chicago-Land'
+  icon: mdi:home
+  latitude: 42.013780
+  longitude: -87.063821
+  radius: 100000
+  track_ios: true
+
+- westernspring:
+  name: 'Western Springs, IL'
+  icon: mdi:home
+  latitude: 41.811889
+  longitude: -87.901608
+  radius: 5000
+  track_ios: true
+
+- magicianlake:
+  name: 'Magician Lake'
+  icon: mdi:home
+  latitude: 42.071890
+  longitude: -86.152227
+  radius: 10000
+  track_ios: true
+
+- newzealand:
+  name: 'New Zealand'
+  icon: mdi:home
+  latitude: -37.89431844841493
+  longitude: 175.4656750337923
+  radius: 10000
+  track_ios: true
+
+- fortcollins:
+  name: 'Fort Collins, CO'
+  icon: mdi:home
+  latitude: 40.5786172734845
+  longitude: -105.0849671207992
+  radius: 10000
+  track_ios: true
+
+- home:
   name: home
   icon: mdi:home
-  latitude: 37.174389
-  longitude: -121.816530
-  radius: 100
+  latitude: 37.174815
+  longitude: -121.816325
+  radius: 125
   track_ios: true
 
-zone roadbelow:
-  name: zoneroadbelow
-  icon: mdi:cctv
-  radius: 10
-  latitude: 37.174957
-  longitude: -121.817140
-  track_ios: true
+# school zones
 
-zone poolhouse:
-  name: zonepoolhouse
-  radius: 25
-  latitude: 37.174277
-  longitude: -121.815931
-  icon: mdi:account-location
-  track_ios: true
-
-zone cabin:
-  name: zonecabin
-  radius: 10
-  latitude: 37.174962
-  longitude: -121.816351
-  icon: mdi:account-location
-  track_ios: true
-
-zone kitchen:
-  name: zonekitchen
-  icon: mdi:cctv
-  radius: 5
-  latitude: 37.174997
-  longitude: -121.816442
-  track_ios: true
-
-zone bathroom:
-  name: zonebathroom
-  icon: mdi:cctv
-  radius: 5
-  latitude: 37.175068
-  longitude: -121.816223
-  track_ios: true
-
-zone frontdoor:
-  name: zonefrontdoor
-  icon: mdi:cctv
-  radius: 5
-  latitude: 37.174934
-  longitude: -121.816306
-  track_ios: true
-
-zone leland:
-  name: zoneleland
+- bretharte:
+  name: 'Bret Harte Middle School'
   icon: mdi:school
-  radius: 250
-  latitude: 37.217712
-  longitude: -121.844413
+  radius: 150
+  latitude: 37.212996
+  longitude: -121.845283
   track_ios: true
 
-zone presentation:
-  name: zonepresentation
+- leland:
+  name: 'Leland High School'
+  icon: mdi:school
+  radius: 350
+  latitude: 37.215363
+  longitude: -121.844489
+  track_ios: true
+
+- presentation:
+  name: 'Presentation High School'
   icon: mdi:school
   radius: 250
   latitude: 37.283350
   longitude: -121.900422
   track_ios: true
 
-zone arc:
-  name: zonearc
+# work zones
+
+- arc:
+  name: 'IBM Almaden'
   icon: mdi:domain
   radius: 250
   latitude: 37.211072
   longitude: -121.807391
   track_ios: true
 
-zone svl:
-  name: zonesvl
+- svl:
+  name: 'IBM Silicon Valley'
   icon: mdi:domain
   radius: 250
   latitude: 37.196352
   longitude: -121.748551
   track_ios: true
 
-zone safeway:
-  name: zonesafeway
+# well known locations
+
+- safeway:
+  name: 'Safeway Shopping Center'
   icon: mdi:store
   radius: 100
   latitude: 37.219579
   longitude: -121.861451
   track_ios: true
 
-zone leipzig:
-  name: zoneleipzig
+- leipzig:
+  name: 'Leipzig, Germany'
   icon: mdi:currency-eur
   radius: 15000
   latitude: 51.340260
   longitude: 12.372691
 
-zone dublin:
-  name: zonedublin
+- dublin:
+  name: 'Dublin, Ireland'
   icon: mdi:beer
   radius: 15000
   latitude: 53.349925
   longitude: -6.258065
+
