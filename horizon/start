@@ -1,0 +1,51 @@
+#!/bin/bash 
+
+export NODE_ID=$(hostname)
+export NODE_TOKEN=whocares
+export USERNAME=dcmartin
+export PASSWORD=whocares
+export EMAIL="horizon@dcmartin.com"
+export LATITUDE=37.174390
+export LONGITUDE=-121.816448
+
+NODE=$(hzn exchange node list -n $NODE_ID:$NODE_TOKEN -o public)
+if [ -z "${NODE}" ]; then
+  hzn exchange node create -u $USERNAME:$PASSWORD -e $EMAIL -n $NODE_ID:$NODE_TOKEN -o public
+else
+  echo "Node $NODE_ID exists"
+  echo "${NODE}" | jq '.'
+fi
+
+JSON="input.json"
+if [ -e $JSON ]; then
+  echo "Existing JSON configuration $JSON"
+else
+  cat > $JSON << EOF
+{
+  "global": [
+    {
+      "type": "LocationAttributes",
+      "variables": {
+        "lat": $LATITUDE,
+        "lon": $LONGITUDE,
+        "use_gps": false,
+        "location_accuracy_km": 0.1
+      }
+    }
+  ]
+}
+EOF
+fi
+
+AGREEMENTS=$(hzn agreement list | jq '.|length')
+if [ $AGREEMENTS > 0 ]; then
+  echo "NODE $NODE_ID has $AGREEMENTS existing agreements; run 'hzn unregister' and run $0 again"
+  # hzn unregister
+else
+  PATTERNS=$(hzn exchange pattern list -n $NODE_ID:$NODE_TOKEN -o public --names-only | jq '.[]' | sed 's@public/@@')
+  echo "Available patterns: $PATTERNS"
+  export PATTERN=netspeed-sdr-arm
+  echo "Using pattern: $PATTERN"
+  hzn register -n $NODE_ID:$NODE_TOKEN -f $JSON public $PATTERN
+fi
+
