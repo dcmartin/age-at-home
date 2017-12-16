@@ -5,6 +5,15 @@ if [ $WHOAMI != "root" ]; then
   echo "Please run this script as root; e.g. sudo $0"
   exit
 fi
+
+ACTIVE=$(systemctl is-active horizon.service)
+if [ $ACTIVE != "active" ]; then
+  echo "The horizon.service is not active ($ACTIVE)"
+else
+  echo "The horizon.service is already active ($ACTIVE)"
+  exit
+fi
+
 ARCH=$(arch|sed "s/.*86.*/amd64/")
 if [ $ARCH != "amd64" ]; then
   ARCH=$(arch|sed "s/.*arm.*/arm64/")

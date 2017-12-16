@@ -1,16 +1,18 @@
 #!/bin/bash 
 
+export ORG=public
 export NODE_ID=$(hostname)
-export NODE_TOKEN=whocares
-export USERNAME=dcmartin
-export PASSWORD=whocares
+export NODE_TOKEN="whocares"
+export USERNAME="dcmartin"
+export PASSWORD="whocares"
 export EMAIL="horizon@dcmartin.com"
+# KELIS POND - 37.174612, -121.816487
 # MT UMUNUM - 37.160560, -121.897549
 # IBM ALMADEN - 37.211682,-121.808543
-# KELIS POND - 37.174612, -121.816487
-export LATITUDE=37.211682
-export LONGITUDE=-121.808543
-export ORG=public
+# IBM SILICON VALLEY LAB - 37.195937, -121.748065
+# IBM SAN FRANCISCO - 37.791447, -122.398156
+export LATITUDE="37.211682"
+export LONGITUDE="-121.808543"
 
 ACTIVE=$(systemctl is-active horizon.service)
 if [ $ACTIVE != "active" ]; then
