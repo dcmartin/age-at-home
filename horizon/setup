@@ -1,10 +1,24 @@
 #!/bin/bash
 
+WHOAMI=$(whoami)
+if [ $WHOAMI != "root" ]; then
+  echo "Please run this script as root; e.g. sudo $0"
+  exit
+fi
+ARCH=$(arch|sed "s/.*86.*/amd64/")
+if [ $ARCH != "amd64" ]; then
+  ARCH=$(arch|sed "s/.*arm.*/arm64/")
+  if [ $ARCH != "arm64" ]; then
+    echo "Architecture $ARCH unsupported by this script"
+    exit
+  fi
+fi
+
 wget -qO - http://pkg.bluehorizon.network/bluehorizon.network-public.key | apt-key add -
 
 cat << EOF > /etc/apt/sources.list.d/bluehorizon.list
-deb [arch=amd64] http://pkg.bluehorizon.network/linux/ubuntu xenial-updates main
-deb-src [arch=amd64] http://pkg.bluehorizon.network/linux/ubuntu xenial-updates main
+deb [arch=$ARCH] http://pkg.bluehorizon.network/linux/ubuntu xenial-updates main
+deb-src [arch=$ARCH] http://pkg.bluehorizon.network/linux/ubuntu xenial-updates main
 EOF
 
 apt-get update
