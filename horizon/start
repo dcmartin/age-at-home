@@ -11,8 +11,8 @@ export EMAIL="horizon@dcmartin.com"
 # IBM ALMADEN - 37.211682,-121.808543
 # IBM SILICON VALLEY LAB - 37.195937, -121.748065
 # IBM SAN FRANCISCO - 37.791447, -122.398156
-export LATITUDE="37.211682"
-export LONGITUDE="-121.808543"
+export LATITUDE="37.791447"
+export LONGITUDE="-122.398156"
 
 ACTIVE=$(systemctl is-active horizon.service)
 if [ $ACTIVE != "active" ]; then
@@ -70,6 +70,6 @@ if [ $NAGREEMENT -gt 0 ]; then
   # hzn unregister
 else
   echo "Using pattern: $PATTERN"
-  hzn register -n $NODE_ID:$NODE_TOKEN -f $JSON $ORG $PATTERN
+  hzn register -u $USERNAME:$PASSWORD -n $NODE_ID:$NODE_TOKEN -f $JSON $ORG $PATTERN
 fi
 

@@ -23,6 +23,20 @@ if [ $ARCH != "amd64" ]; then
   fi
 fi
 
+##
+## DOCKER
+##
+
+sudo apt-get install -y apt-transport-https ca-certificates curl software-properties-common
+curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -
+sudo add-apt-repository "deb [arch=$ARCH] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable"
+sudo apt-get update
+sudo apt-get install -y docker-ce
+
+##
+## HORIZON
+##
+
 wget -qO - http://pkg.bluehorizon.network/bluehorizon.network-public.key | apt-key add -
 
 cat << EOF > /etc/apt/sources.list.d/bluehorizon.list
@@ -33,6 +47,10 @@ EOF
 apt-get update
 
 apt-get install -y horizon bluehorizon bluehorizon-ui
+
+##
+## SYSLOG
+##
 
 cat << EOF > /etc/rsyslog.d/10-horizon-docker.conf
 $template DynamicWorkloadFile,"/var/log/workload/%syslogtag:R,ERE,1,DFLT:.*workload-([^\[]+)--end%.log"
