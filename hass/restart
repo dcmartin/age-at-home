@@ -1,6 +1,11 @@
 #!/bin/csh -fb
-set docker = `groups "$user" | sed "s/.*docker.*/true/"`
-if ($#docker && $docker == "true") then
+if ($?SUDO_USER) then
+  set u = "$SUDO_USER"
+else
+  set u = "$USER"
+endif
+set docker = `groups "$u" | sed "s/.*docker.*/true/"`
+if ($#docker && "$docker" == "true") then
   docker restart homeassistant
 else
   echo "$0:t -- use sudo or add $user to docker group"

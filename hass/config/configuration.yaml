@@ -14,7 +14,7 @@ homeassistant:
   customize: !include customize.yaml
 
 cloud:
-  alexa:
+config:
 
 switch livingroom-hs105:
   - platform: tplink
