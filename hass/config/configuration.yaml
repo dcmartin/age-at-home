@@ -13,6 +13,14 @@ homeassistant:
   # customize
   customize: !include customize.yaml
 
+cloud:
+  alexa:
+
+switch livingroom-hs105:
+  - platform: tplink
+    name: livingroom
+    host: 192.168.1.43
+
 http:
   api_password: !secret http_api_password
   trusted_networks: 
@@ -61,7 +69,7 @@ panel_iframe:
   rpi2:
     title: 'mtn_rpi2'
     icon: mdi:image-filter-hdr
-    url: 'http://192.168.1.39/dashboard'
+    url: 'http://192.168.1.26/dashboard'
   terminal:
     title: Terminal
     icon: mdi:console
@@ -157,7 +165,7 @@ sensor solar:
 
 #motion rough-fog:
 #  name: kitchen
-#  server: 192.168.1.39
+#  server: 192.168.1.26
 #  webcontrol_port: 8080
 #  stream_port: 8081
 #  username: !secret motion_username
@@ -712,7 +720,7 @@ sensor external_ip:
 
 sensor hzn_connectivity:
   - platform: rest
-    resource: 'http://192.168.1.39/status'
+    resource: 'http://192.168.1.26/status'
     name: horizon_connectivity
     value_template: >
       {%- if value_json is defined and value_json.configuration is defined -%} 
@@ -721,7 +729,7 @@ sensor hzn_connectivity:
 
 sensor hzn_exchange:
   - platform: rest
-    resource: 'http://192.168.1.39/status'
+    resource: 'http://192.168.1.26/status'
     name: horizon_exchange
     value_template: >
       {%- if value_json is defined and value_json.configuration is defined -%} 
@@ -730,7 +738,7 @@ sensor hzn_exchange:
 
 sensor hzn_architecture:
   - platform: rest
-    resource: 'http://192.168.1.39/status'
+    resource: 'http://192.168.1.26/status'
     name: horizon_architecture
     value_template: >
       {%- if value_json is defined and value_json.configuration is defined -%} 
@@ -741,7 +749,7 @@ sensor hzn_architecture:
 
 sensor hzn_balance:
   - platform: rest
-    resource: 'http://192.168.1.39/status'
+    resource: 'http://192.168.1.26/status'
     name: horizon_balance
     value_template: >
       {%- if value_json is defined -%}
@@ -760,7 +768,7 @@ sensor hzn_balance:
 
 sensor hzn_peer_count:
   - platform: rest
-    resource: 'http://192.168.1.39/status'
+    resource: 'http://192.168.1.26/status'
     name: horizon_net_peer_count
     value_template: >
       {%- if value_json is defined -%}
@@ -779,7 +787,7 @@ sensor hzn_peer_count:
 
 sensor hzn_syncing:
   - platform: rest
-    resource: 'http://192.168.1.39/status'
+    resource: 'http://192.168.1.26/status'
     name: horizon_syncing
     value_template: >
       {%- if value_json is defined -%}
@@ -798,7 +806,7 @@ sensor hzn_syncing:
 
 sensor hzn_blocknumber:
   - platform: rest
-    resource: 'http://192.168.1.39/status'
+    resource: 'http://192.168.1.26/status'
     name: horizon_blocknumber
     value_template: >
       {%- if value_json is defined -%}
@@ -817,7 +825,7 @@ sensor hzn_blocknumber:
 
 sensor hzn_account:
   - platform: rest
-    resource: 'http://192.168.1.39/status'
+    resource: 'http://192.168.1.26/status'
     name: horizon_account
     value_template: >
       {%- if value_json is defined -%}
@@ -838,7 +846,7 @@ sensor hzn_account:
 
 sensor hzn_node_id:
   - platform: rest
-    resource: 'http://192.168.1.39/node'
+    resource: 'http://192.168.1.26/node'
     name: horizon_node_id
     value_template: >
       {%- if value_json is defined -%} 
@@ -847,7 +855,7 @@ sensor hzn_node_id:
 
 sensor hzn_node_organization:
   - platform: rest
-    resource: 'http://192.168.1.39/node'
+    resource: 'http://192.168.1.26/node'
     name: horizon_node_organization
     value_template: >
       {%- if value_json is defined -%} 
@@ -856,7 +864,7 @@ sensor hzn_node_organization:
 
 sensor hzn_node_pattern:
   - platform: rest
-    resource: 'http://192.168.1.39/node'
+    resource: 'http://192.168.1.26/node'
     name: horizon_node_pattern
     value_template: >
       {%- if value_json is defined -%} 
@@ -865,7 +873,7 @@ sensor hzn_node_pattern:
 
 sensor hzn_node_name:
   - platform: rest
-    resource: 'http://192.168.1.39/node'
+    resource: 'http://192.168.1.26/node'
     name: horizon_node_name
     value_template: >
       {%- if value_json is defined -%} 
@@ -874,7 +882,7 @@ sensor hzn_node_name:
 
 sensor hzn_node_valid:
   - platform: rest
-    resource: 'http://192.168.1.39/node'
+    resource: 'http://192.168.1.26/node'
     name: horizon_node_valid
     value_template: >
       {%- if value_json is defined -%} 
@@ -883,7 +891,7 @@ sensor hzn_node_valid:
 
 sensor hzn_node_valid_time:
   - platform: rest
-    resource: 'http://192.168.1.39/node'
+    resource: 'http://192.168.1.26/node'
     name: horizon_node_valid_time
     value_template: >
       {%- if value_json is defined -%} 
@@ -894,7 +902,7 @@ sensor hzn_node_valid_time:
 
 sensor hzn_node_state:
   - platform: rest
-    resource: 'http://192.168.1.39/node'
+    resource: 'http://192.168.1.26/node'
     name: horizon_node_state
     value_template: >
       {%- if value_json is defined -%} 
@@ -903,7 +911,7 @@ sensor hzn_node_state:
 
 sensor hzn_node_update:
   - platform: rest
-    resource: 'http://192.168.1.39/node'
+    resource: 'http://192.168.1.26/node'
     name: horizon_node_update
     value_template: >
       {%- if value_json is defined -%} 
@@ -914,7 +922,7 @@ sensor hzn_node_update:
 
 sensor hzn_microservice_config_count:
   - platform: rest
-    resource: 'http://192.168.1.39/microservice'
+    resource: 'http://192.168.1.26/microservice'
     name: horizon_microservice_config_count
     value_template: >
       {%- if value_json is defined and value_json.config is defined -%} 
@@ -923,7 +931,7 @@ sensor hzn_microservice_config_count:
 
 sensor hzn_microservice_instance_active_count:
   - platform: rest
-    resource: 'http://192.168.1.39/microservice'
+    resource: 'http://192.168.1.26/microservice'
     name: horizon_microservice_instance_active_count
     value_template: >
       {%- if value_json is defined and value_json.instances is defined -%} 
@@ -932,7 +940,7 @@ sensor hzn_microservice_instance_active_count:
 
 sensor hzn_microservice_instance_archived_count:
   - platform: rest
-    resource: 'http://192.168.1.39/microservice'
+    resource: 'http://192.168.1.26/microservice'
     name: horizon_microservice_instance_archived_count
     value_template: >
       {%- if value_json is defined and value_json.instances is defined -%} 
@@ -941,7 +949,7 @@ sensor hzn_microservice_instance_archived_count:
 
 sensor hzn_microservice_definition_active_count:
   - platform: rest
-    resource: 'http://192.168.1.39/microservice'
+    resource: 'http://192.168.1.26/microservice'
     name: horizon_microservice_definition_active_count
     value_template: >
       {%- if value_json is defined and value_json.definitions is defined -%} 
@@ -950,7 +958,7 @@ sensor hzn_microservice_definition_active_count:
 
 sensor hzn_microservice_definition_archived_count:
   - platform: rest
-    resource: 'http://192.168.1.39/microservice'
+    resource: 'http://192.168.1.26/microservice'
     name: horizon_microservice_definition_archived_count
     value_template: >
       {%- if value_json is defined and value_json.definitions is defined -%} 
@@ -961,7 +969,7 @@ sensor hzn_microservice_definition_archived_count:
 
 sensor hzn_attribute_count:
   - platform: rest
-    resource: 'http://192.168.1.39/attribute'
+    resource: 'http://192.168.1.26/attribute'
     name: horizon_attribute_count
     value_template: >
       {%- if value_json is defined -%} 
@@ -970,13 +978,12 @@ sensor hzn_attribute_count:
 
 sensor hzn_attribute_ids:
   - platform: rest
-    resource: 'http://192.168.1.39/attribute'
+    resource: 'http://192.168.1.26/attribute'
     name: horizon_attribute_ids
     value_template: >
       {%- if value_json is defined and value_json.attributes|length > 0 -%} 
         {%- for attribute in value_json.attributes -%}
-          {%- if loop.first -%}
-          {%- elif loop.last -%}
+          {%- if loop.last -%}
             {%- if attribute.id != None -%}
               {{- attribute.id|truncate(8,false,'')|tojson -}}
             {%- endif -%}
@@ -992,16 +999,54 @@ sensor hzn_attribute_ids:
 
 sensor hzn_agreement_active_count:
   - platform: rest
-    resource: 'http://192.168.1.39/agreement'
+    resource: 'http://192.168.1.26/agreement'
     name: horizon_agreement_active_count
     value_template: >
       {%- if value_json is defined -%} 
         {{ ( value_json.agreements.active | length ) | default(0) }}
       {%- else -%} 0 {%- endif -%}
 
+sensor hzn_agreement_active_ids:
+  - platform: rest
+    resource: 'http://192.168.1.26/agreement'
+    name: horizon_agreement_active_ids
+    value_template: >
+      {%- if value_json is defined and value_json.agreements.active|length > 0 -%} 
+        {%- for agreement in value_json.agreements.active %}
+          {%- if loop.last -%}
+            {%- if agreement.current_agreement_id != None -%}
+              {{- agreement.current_agreement_id|tojson -}}
+            {%- endif -%}
+          {%- else -%}
+            {%- if agreement.current_agreement_id != None -%}
+              {{- agreement.current_agreement_id|tojson -}},
+            {%- endif -%}
+          {%- endif -%}
+        {%- endfor -%}
+      {%- else -%} 'undefined' {%- endif -%}
+
+sensor hzn_agreement_active_urls:
+  - platform: rest
+    resource: 'http://192.168.1.26/agreement'
+    name: horizon_agreement_active_urls
+    value_template: >
+      {%- if value_json is defined and value_json.agreements.active|length > 0 -%} 
+        {%- for agreement in value_json.agreements.active %}
+          {%- if loop.last -%}
+            {%- if agreement.workload_to_run.url != None -%}
+              {{- agreement.workload_to_run.url|tojson -}}
+            {%- endif -%}
+          {%- else -%}
+            {%- if agreement.workload_to_run.url != None -%}
+              {{- agreement.workload_to_run.url|tojson -}},
+            {%- endif -%}
+          {%- endif -%}
+        {%- endfor -%}
+      {%- else -%} 'undefined' {%- endif -%}
+
 sensor hzn_agreement_archived_count:
   - platform: rest
-    resource: 'http://192.168.1.39/agreement'
+    resource: 'http://192.168.1.26/agreement'
     name: horizon_agreement_archived_count
     value_template: >
       {%- if value_json is defined -%} 
@@ -1012,7 +1057,7 @@ sensor hzn_agreement_archived_count:
 
 sensor hzn_workload_container_count:
   - platform: rest
-    resource: 'http://192.168.1.39/workload'
+    resource: 'http://192.168.1.26/workload'
     name: horizon_workload_container_count
     value_template: >
       {%- if value_json is defined -%} 
@@ -1025,7 +1070,7 @@ sensor hzn_workload_container_count:
 
 sensor hzn_agreement0_name:
   - platform: rest
-    resource: 'http://192.168.1.39/agreement'
+    resource: 'http://192.168.1.26/agreement'
     name: horizon_agreement0_name
     value_template: >
       {%- if value_json is defined and states('sensor.horizon_agreement_active_count')|int > 0 -%} 
@@ -1034,7 +1079,7 @@ sensor hzn_agreement0_name:
 
 sensor hzn_agreement0_id:
   - platform: rest
-    resource: 'http://192.168.1.39/agreement'
+    resource: 'http://192.168.1.26/agreement'
     name: horizon_agreement0_id
     value_template: >
       {%- if value_json is defined and states('sensor.horizon_agreement_active_count')|int > 0 -%} 
@@ -1043,7 +1088,7 @@ sensor hzn_agreement0_id:
 
 sensor hzn_agreement0_consumer:
   - platform: rest
-    resource: 'http://192.168.1.39/agreement'
+    resource: 'http://192.168.1.26/agreement'
     name: horizon_agreement0_consumer
     value_template: >
       {%- if value_json is defined and states('sensor.horizon_agreement_active_count')|int > 0 -%} 
@@ -1052,7 +1097,7 @@ sensor hzn_agreement0_consumer:
 
 sensor hzn_agreement0_counterparty:
   - platform: rest
-    resource: 'http://192.168.1.39/agreement'
+    resource: 'http://192.168.1.26/agreement'
     name: horizon_agreement0_counterparty
     value_template: >
       {%- if value_json is defined and states('sensor.horizon_agreement_active_count')|int > 0 -%} 
@@ -1061,7 +1106,7 @@ sensor hzn_agreement0_counterparty:
 
 sensor hzn_agreement0_protocol:
   - platform: rest
-    resource: 'http://192.168.1.39/agreement'
+    resource: 'http://192.168.1.26/agreement'
     name: horizon_agreement0_protocol
     value_template: >
       {%- if value_json is defined and states('sensor.horizon_agreement_active_count')|int > 0 -%} 
@@ -1070,7 +1115,7 @@ sensor hzn_agreement0_protocol:
 
 sensor hzn_agreement0_create:
   - platform: rest
-    resource: 'http://192.168.1.39/agreement'
+    resource: 'http://192.168.1.26/agreement'
     name: horizon_agreement0_create
     value_template: >
       {%- if value_json is defined and states('sensor.horizon_agreement_active_count')|int > 0 -%} 
@@ -1081,7 +1126,7 @@ sensor hzn_agreement0_create:
 
 sensor hzn_agreement0_accept:
   - platform: rest
-    resource: 'http://192.168.1.39/agreement'
+    resource: 'http://192.168.1.26/agreement'
     name: horizon_agreement0_accept
     value_template: >
       {%- if value_json is defined and states('sensor.horizon_agreement_active_count')|int > 0 -%} 
@@ -1092,7 +1137,7 @@ sensor hzn_agreement0_accept:
 
 sensor hzn_agreement0_finalize:
   - platform: rest
-    resource: 'http://192.168.1.39/agreement'
+    resource: 'http://192.168.1.26/agreement'
     name: horizon_agreement0_finalize
     value_template: >
       {%- if value_json is defined and states('sensor.horizon_agreement_active_count')|int > 0 -%} 
@@ -1103,7 +1148,7 @@ sensor hzn_agreement0_finalize:
 
 sensor hzn_agreement0_receive:
   - platform: rest
-    resource: 'http://192.168.1.39/agreement'
+    resource: 'http://192.168.1.26/agreement'
     name: horizon_agreement0_receive
     value_template: >
       {%- if value_json is defined and states('sensor.horizon_agreement_active_count')|int > 0 -%} 
@@ -1114,7 +1159,7 @@ sensor hzn_agreement0_receive:
 
 sensor hzn_agreement0_start:
   - platform: rest
-    resource: 'http://192.168.1.39/agreement'
+    resource: 'http://192.168.1.26/agreement'
     name: horizon_agreement0_start
     value_template: >
       {%- if value_json is defined and states('sensor.horizon_agreement_active_count')|int > 0 -%} 
@@ -1127,7 +1172,7 @@ sensor hzn_agreement0_start:
 
 sensor hzn_agreement1_name:
   - platform: rest
-    resource: 'http://192.168.1.39/agreement'
+    resource: 'http://192.168.1.26/agreement'
     name: horizon_agreement1_name
     value_template: >
       {%- if value_json is defined and states('sensor.horizon_agreement_active_count')|int > 1 -%} 
@@ -1136,7 +1181,7 @@ sensor hzn_agreement1_name:
 
 sensor hzn_agreement1_id:
   - platform: rest
-    resource: 'http://192.168.1.39/agreement'
+    resource: 'http://192.168.1.26/agreement'
     name: horizon_agreement1_id
     value_template: >
       {%- if value_json is defined and states('sensor.horizon_agreement_active_count')|int > 1 -%} 
@@ -1145,7 +1190,7 @@ sensor hzn_agreement1_id:
 
 sensor hzn_agreement1_consumer:
   - platform: rest
-    resource: 'http://192.168.1.39/agreement'
+    resource: 'http://192.168.1.26/agreement'
     name: horizon_agreement1_consumer
     value_template: >
       {%- if value_json is defined and states('sensor.horizon_agreement_active_count')|int > 1 -%} 
@@ -1154,7 +1199,7 @@ sensor hzn_agreement1_consumer:
 
 sensor hzn_agreement1_counterparty:
   - platform: rest
-    resource: 'http://192.168.1.39/agreement'
+    resource: 'http://192.168.1.26/agreement'
     name: horizon_agreement1_counterparty
     value_template: >
       {%- if value_json is defined and states('sensor.horizon_agreement_active_count')|int > 1 -%} 
@@ -1163,7 +1208,7 @@ sensor hzn_agreement1_counterparty:
 
 sensor hzn_agreement1_protocol:
   - platform: rest
-    resource: 'http://192.168.1.39/agreement'
+    resource: 'http://192.168.1.26/agreement'
     name: horizon_agreement1_protocol
     value_template: >
       {%- if value_json is defined and states('sensor.horizon_agreement_active_count')|int > 1 -%} 
@@ -1172,7 +1217,7 @@ sensor hzn_agreement1_protocol:
 
 sensor hzn_agreement1_create:
   - platform: rest
-    resource: 'http://192.168.1.39/agreement'
+    resource: 'http://192.168.1.26/agreement'
     name: horizon_agreement1_create
     value_template: >
       {%- if value_json is defined and states('sensor.horizon_agreement_active_count')|int > 1 -%} 
@@ -1183,7 +1228,7 @@ sensor hzn_agreement1_create:
 
 sensor hzn_agreement1_accept:
   - platform: rest
-    resource: 'http://192.168.1.39/agreement'
+    resource: 'http://192.168.1.26/agreement'
     name: horizon_agreement1_accept
     value_template: >
       {%- if value_json is defined and states('sensor.horizon_agreement_active_count')|int > 1 -%} 
@@ -1194,7 +1239,7 @@ sensor hzn_agreement1_accept:
 
 sensor hzn_agreement1_finalize:
   - platform: rest
-    resource: 'http://192.168.1.39/agreement'
+    resource: 'http://192.168.1.26/agreement'
     name: horizon_agreement1_finalize
     value_template: >
       {%- if value_json is defined and states('sensor.horizon_agreement_active_count')|int > 1 -%} 
@@ -1205,7 +1250,7 @@ sensor hzn_agreement1_finalize:
 
 sensor hzn_agreement1_receive:
   - platform: rest
-    resource: 'http://192.168.1.39/agreement'
+    resource: 'http://192.168.1.26/agreement'
     name: horizon_agreement1_receive
     value_template: >
       {%- if value_json is defined and states('sensor.horizon_agreement_active_count')|int > 1 -%} 
@@ -1216,7 +1261,7 @@ sensor hzn_agreement1_receive:
 
 sensor hzn_agreement1_start:
   - platform: rest
-    resource: 'http://192.168.1.39/agreement'
+    resource: 'http://192.168.1.26/agreement'
     name: horizon_agreement1_start
     value_template: >
       {%- if value_json is defined and states('sensor.horizon_agreement_active_count')|int > 1 -%} 
@@ -1229,7 +1274,7 @@ sensor hzn_agreement1_start:
 
 sensor hzn_agreement2_name:
   - platform: rest
-    resource: 'http://192.168.1.39/agreement'
+    resource: 'http://192.168.1.26/agreement'
     name: horizon_agreement2_name
     value_template: >
       {%- if value_json is defined and states('sensor.horizon_agreement_active_count')|int > 2 -%} 
@@ -1238,7 +1283,7 @@ sensor hzn_agreement2_name:
 
 sensor hzn_agreement2_id:
   - platform: rest
-    resource: 'http://192.168.1.39/agreement'
+    resource: 'http://192.168.1.26/agreement'
     name: horizon_agreement2_id
     value_template: >
       {%- if value_json is defined and states('sensor.horizon_agreement_active_count')|int > 2 -%} 
@@ -1247,7 +1292,7 @@ sensor hzn_agreement2_id:
 
 sensor hzn_agreement2_consumer:
   - platform: rest
-    resource: 'http://192.168.1.39/agreement'
+    resource: 'http://192.168.1.26/agreement'
     name: horizon_agreement2_consumer
     value_template: >
       {%- if value_json is defined and states('sensor.horizon_agreement_active_count')|int > 2 -%} 
@@ -1256,7 +1301,7 @@ sensor hzn_agreement2_consumer:
 
 sensor hzn_agreement2_counterparty:
   - platform: rest
-    resource: 'http://192.168.1.39/agreement'
+    resource: 'http://192.168.1.26/agreement'
     name: horizon_agreement2_counterparty
     value_template: >
       {%- if value_json is defined and states('sensor.horizon_agreement_active_count')|int > 2 -%} 
@@ -1265,7 +1310,7 @@ sensor hzn_agreement2_counterparty:
 
 sensor hzn_agreement2_protocol:
   - platform: rest
-    resource: 'http://192.168.1.39/agreement'
+    resource: 'http://192.168.1.26/agreement'
     name: horizon_agreement2_protocol
     value_template: >
       {%- if value_json is defined and states('sensor.horizon_agreement_active_count')|int > 2 -%} 
@@ -1274,7 +1319,7 @@ sensor hzn_agreement2_protocol:
 
 sensor hzn_agreement2_create:
   - platform: rest
-    resource: 'http://192.168.1.39/agreement'
+    resource: 'http://192.168.1.26/agreement'
     name: horizon_agreement2_create
     value_template: >
       {%- if value_json is defined and states('sensor.horizon_agreement_active_count')|int > 2 -%} 
@@ -1285,7 +1330,7 @@ sensor hzn_agreement2_create:
 
 sensor hzn_agreement2_accept:
   - platform: rest
-    resource: 'http://192.168.1.39/agreement'
+    resource: 'http://192.168.1.26/agreement'
     name: horizon_agreement2_accept
     value_template: >
       {%- if value_json is defined and states('sensor.horizon_agreement_active_count')|int > 2 -%} 
@@ -1296,7 +1341,7 @@ sensor hzn_agreement2_accept:
 
 sensor hzn_agreement2_finalize:
   - platform: rest
-    resource: 'http://192.168.1.39/agreement'
+    resource: 'http://192.168.1.26/agreement'
     name: horizon_agreement2_finalize
     value_template: >
       {%- if value_json is defined and states('sensor.horizon_agreement_active_count')|int > 2 -%} 
@@ -1307,7 +1352,7 @@ sensor hzn_agreement2_finalize:
 
 sensor hzn_agreement2_receive:
   - platform: rest
-    resource: 'http://192.168.1.39/agreement'
+    resource: 'http://192.168.1.26/agreement'
     name: horizon_agreement2_receive
     value_template: >
       {%- if value_json is defined and states('sensor.horizon_agreement_active_count')|int > 2 -%} 
@@ -1318,7 +1363,7 @@ sensor hzn_agreement2_receive:
 
 sensor hzn_agreement2_start:
   - platform: rest
-    resource: 'http://192.168.1.39/agreement'
+    resource: 'http://192.168.1.26/agreement'
     name: horizon_agreement2_start
     value_template: >
       {%- if value_json is defined and states('sensor.horizon_agreement_active_count')|int > 2 -%} 
@@ -1331,7 +1376,7 @@ sensor hzn_agreement2_start:
 
 sensor hzn_agreement3_name:
   - platform: rest
-    resource: 'http://192.168.1.39/agreement'
+    resource: 'http://192.168.1.26/agreement'
     name: horizon_agreement3_name
     value_template: >
       {%- if value_json is defined and states('sensor.horizon_agreement_active_count')|int > 3 -%} 
@@ -1340,7 +1385,7 @@ sensor hzn_agreement3_name:
 
 sensor hzn_agreement3_id:
   - platform: rest
-    resource: 'http://192.168.1.39/agreement'
+    resource: 'http://192.168.1.26/agreement'
     name: horizon_agreement3_id
     value_template: >
       {%- if value_json is defined and states('sensor.horizon_agreement_active_count')|int > 3 -%} 
@@ -1349,7 +1394,7 @@ sensor hzn_agreement3_id:
 
 sensor hzn_agreement3_consumer:
   - platform: rest
-    resource: 'http://192.168.1.39/agreement'
+    resource: 'http://192.168.1.26/agreement'
     name: horizon_agreement3_consumer
     value_template: >
       {%- if value_json is defined and states('sensor.horizon_agreement_active_count')|int > 3 -%} 
@@ -1358,7 +1403,7 @@ sensor hzn_agreement3_consumer:
 
 sensor hzn_agreement3_counterparty:
   - platform: rest
-    resource: 'http://192.168.1.39/agreement'
+    resource: 'http://192.168.1.26/agreement'
     name: horizon_agreement3_counterparty
     value_template: >
       {%- if value_json is defined and states('sensor.horizon_agreement_active_count')|int > 3 -%} 
@@ -1367,7 +1412,7 @@ sensor hzn_agreement3_counterparty:
 
 sensor hzn_agreement3_protocol:
   - platform: rest
-    resource: 'http://192.168.1.39/agreement'
+    resource: 'http://192.168.1.26/agreement'
     name: horizon_agreement3_protocol
     value_template: >
       {%- if value_json is defined and states('sensor.horizon_agreement_active_count')|int > 3 -%} 
@@ -1376,7 +1421,7 @@ sensor hzn_agreement3_protocol:
 
 sensor hzn_agreement3_create:
   - platform: rest
-    resource: 'http://192.168.1.39/agreement'
+    resource: 'http://192.168.1.26/agreement'
     name: horizon_agreement3_create
     value_template: >
       {%- if value_json is defined and states('sensor.horizon_agreement_active_count')|int > 3 -%} 
@@ -1387,7 +1432,7 @@ sensor hzn_agreement3_create:
 
 sensor hzn_agreement3_accept:
   - platform: rest
-    resource: 'http://192.168.1.39/agreement'
+    resource: 'http://192.168.1.26/agreement'
     name: horizon_agreement3_accept
     value_template: >
       {%- if value_json is defined and states('sensor.horizon_agreement_active_count')|int > 3 -%} 
@@ -1398,7 +1443,7 @@ sensor hzn_agreement3_accept:
 
 sensor hzn_agreement3_finalize:
   - platform: rest
-    resource: 'http://192.168.1.39/agreement'
+    resource: 'http://192.168.1.26/agreement'
     name: horizon_agreement3_finalize
     value_template: >
       {%- if value_json is defined and states('sensor.horizon_agreement_active_count')|int > 3 -%} 
@@ -1409,7 +1454,7 @@ sensor hzn_agreement3_finalize:
 
 sensor hzn_agreement3_receive:
   - platform: rest
-    resource: 'http://192.168.1.39/agreement'
+    resource: 'http://192.168.1.26/agreement'
     name: horizon_agreement3_receive
     value_template: >
       {%- if value_json is defined and states('sensor.horizon_agreement_active_count')|int > 3 -%} 
@@ -1420,7 +1465,7 @@ sensor hzn_agreement3_receive:
 
 sensor hzn_agreement3_start:
   - platform: rest
-    resource: 'http://192.168.1.39/agreement'
+    resource: 'http://192.168.1.26/agreement'
     name: horizon_agreement3_start
     value_template: >
       {%- if value_json is defined and states('sensor.horizon_agreement_active_count')|int > 3 -%} 
@@ -1433,7 +1478,7 @@ sensor hzn_agreement3_start:
 
 sensor hzn_agreement4_name:
   - platform: rest
-    resource: 'http://192.168.1.39/agreement'
+    resource: 'http://192.168.1.26/agreement'
     name: horizon_agreement4_name
     value_template: >
       {%- if value_json is defined and states('sensor.horizon_agreement_active_count')|int > 4 -%} 
@@ -1442,7 +1487,7 @@ sensor hzn_agreement4_name:
 
 sensor hzn_agreement4_id:
   - platform: rest
-    resource: 'http://192.168.1.39/agreement'
+    resource: 'http://192.168.1.26/agreement'
     name: horizon_agreement4_id
     value_template: >
       {%- if value_json is defined and states('sensor.horizon_agreement_active_count')|int > 4 -%} 
@@ -1451,7 +1496,7 @@ sensor hzn_agreement4_id:
 
 sensor hzn_agreement4_consumer:
   - platform: rest
-    resource: 'http://192.168.1.39/agreement'
+    resource: 'http://192.168.1.26/agreement'
     name: horizon_agreement4_consumer
     value_template: >
       {%- if value_json is defined and states('sensor.horizon_agreement_active_count')|int > 4 -%} 
@@ -1460,7 +1505,7 @@ sensor hzn_agreement4_consumer:
 
 sensor hzn_agreement4_counterparty:
   - platform: rest
-    resource: 'http://192.168.1.39/agreement'
+    resource: 'http://192.168.1.26/agreement'
     name: horizon_agreement4_counterparty
     value_template: >
       {%- if value_json is defined and states('sensor.horizon_agreement_active_count')|int > 4 -%} 
@@ -1469,7 +1514,7 @@ sensor hzn_agreement4_counterparty:
 
 sensor hzn_agreement4_protocol:
   - platform: rest
-    resource: 'http://192.168.1.39/agreement'
+    resource: 'http://192.168.1.26/agreement'
     name: horizon_agreement4_protocol
     value_template: >
       {%- if value_json is defined and states('sensor.horizon_agreement_active_count')|int > 4 -%} 
@@ -1478,7 +1523,7 @@ sensor hzn_agreement4_protocol:
 
 sensor hzn_agreement4_create:
   - platform: rest
-    resource: 'http://192.168.1.39/agreement'
+    resource: 'http://192.168.1.26/agreement'
     name: horizon_agreement4_create
     value_template: >
       {%- if value_json is defined and states('sensor.horizon_agreement_active_count')|int > 4 -%} 
@@ -1489,7 +1534,7 @@ sensor hzn_agreement4_create:
 
 sensor hzn_agreement4_accept:
   - platform: rest
-    resource: 'http://192.168.1.39/agreement'
+    resource: 'http://192.168.1.26/agreement'
     name: horizon_agreement4_accept
     value_template: >
       {%- if value_json is defined and states('sensor.horizon_agreement_active_count')|int > 4 -%} 
@@ -1500,7 +1545,7 @@ sensor hzn_agreement4_accept:
 
 sensor hzn_agreement4_finalize:
   - platform: rest
-    resource: 'http://192.168.1.39/agreement'
+    resource: 'http://192.168.1.26/agreement'
     name: horizon_agreement4_finalize
     value_template: >
       {%- if value_json is defined and states('sensor.horizon_agreement_active_count')|int > 4 -%} 
@@ -1511,7 +1556,7 @@ sensor hzn_agreement4_finalize:
 
 sensor hzn_agreement4_receive:
   - platform: rest
-    resource: 'http://192.168.1.39/agreement'
+    resource: 'http://192.168.1.26/agreement'
     name: horizon_agreement4_receive
     value_template: >
       {%- if value_json is defined and states('sensor.horizon_agreement_active_count')|int > 4 -%} 
@@ -1522,7 +1567,7 @@ sensor hzn_agreement4_receive:
 
 sensor hzn_agreement4_start:
   - platform: rest
-    resource: 'http://192.168.1.39/agreement'
+    resource: 'http://192.168.1.26/agreement'
     name: horizon_agreement4_start
     value_template: >
       {%- if value_json is defined and states('sensor.horizon_agreement_active_count')|int > 4 -%} 
@@ -1535,7 +1580,7 @@ sensor hzn_agreement4_start:
 
 sensor hzn_agreement5_name:
   - platform: rest
-    resource: 'http://192.168.1.39/agreement'
+    resource: 'http://192.168.1.26/agreement'
     name: horizon_agreement5_name
     value_template: >
       {%- if value_json is defined and states('sensor.horizon_agreement_active_count')|int > 5 -%} 
@@ -1544,7 +1589,7 @@ sensor hzn_agreement5_name:
 
 sensor hzn_agreement5_id:
   - platform: rest
-    resource: 'http://192.168.1.39/agreement'
+    resource: 'http://192.168.1.26/agreement'
     name: horizon_agreement5_id
     value_template: >
       {%- if value_json is defined and states('sensor.horizon_agreement_active_count')|int > 5 -%} 
@@ -1553,7 +1598,7 @@ sensor hzn_agreement5_id:
 
 sensor hzn_agreement5_consumer:
   - platform: rest
-    resource: 'http://192.168.1.39/agreement'
+    resource: 'http://192.168.1.26/agreement'
     name: horizon_agreement5_consumer
     value_template: >
       {%- if value_json is defined and states('sensor.horizon_agreement_active_count')|int > 5 -%} 
@@ -1562,7 +1607,7 @@ sensor hzn_agreement5_consumer:
 
 sensor hzn_agreement5_counterparty:
   - platform: rest
-    resource: 'http://192.168.1.39/agreement'
+    resource: 'http://192.168.1.26/agreement'
     name: horizon_agreement5_counterparty
     value_template: >
       {%- if value_json is defined and states('sensor.horizon_agreement_active_count')|int > 5 -%} 
@@ -1571,7 +1616,7 @@ sensor hzn_agreement5_counterparty:
 
 sensor hzn_agreement5_protocol:
   - platform: rest
-    resource: 'http://192.168.1.39/agreement'
+    resource: 'http://192.168.1.26/agreement'
     name: horizon_agreement5_protocol
     value_template: >
       {%- if value_json is defined and states('sensor.horizon_agreement_active_count')|int > 5 -%} 
@@ -1580,7 +1625,7 @@ sensor hzn_agreement5_protocol:
 
 sensor hzn_agreement5_create:
   - platform: rest
-    resource: 'http://192.168.1.39/agreement'
+    resource: 'http://192.168.1.26/agreement'
     name: horizon_agreement5_create
     value_template: >
       {%- if value_json is defined and states('sensor.horizon_agreement_active_count')|int > 5 -%} 
@@ -1591,7 +1636,7 @@ sensor hzn_agreement5_create:
 
 sensor hzn_agreement5_accept:
   - platform: rest
-    resource: 'http://192.168.1.39/agreement'
+    resource: 'http://192.168.1.26/agreement'
     name: horizon_agreement5_accept
     value_template: >
       {%- if value_json is defined and states('sensor.horizon_agreement_active_count')|int > 5 -%} 
@@ -1602,7 +1647,7 @@ sensor hzn_agreement5_accept:
 
 sensor hzn_agreement5_finalize:
   - platform: rest
-    resource: 'http://192.168.1.39/agreement'
+    resource: 'http://192.168.1.26/agreement'
     name: horizon_agreement5_finalize
     value_template: >
       {%- if value_json is defined and states('sensor.horizon_agreement_active_count')|int > 5 -%} 
@@ -1613,7 +1658,7 @@ sensor hzn_agreement5_finalize:
 
 sensor hzn_agreement5_receive:
   - platform: rest
-    resource: 'http://192.168.1.39/agreement'
+    resource: 'http://192.168.1.26/agreement'
     name: horizon_agreement5_receive
     value_template: >
       {%- if value_json is defined and states('sensor.horizon_agreement_active_count')|int > 5 -%} 
@@ -1624,7 +1669,7 @@ sensor hzn_agreement5_receive:
 
 sensor hzn_agreement5_start:
   - platform: rest
-    resource: 'http://192.168.1.39/agreement'
+    resource: 'http://192.168.1.26/agreement'
     name: horizon_agreement5_start
     value_template: >
       {%- if value_json is defined and states('sensor.horizon_agreement_active_count')|int > 5 -%} 

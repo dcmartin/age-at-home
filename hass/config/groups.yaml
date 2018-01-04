@@ -1,4 +1,4 @@
-#
+#gr
 # DEFAULT
 #
 
@@ -154,6 +154,8 @@ horizon_status:
     - device_tracker.mtn_rpi2
     - sensor.horizon_account
     - sensor.horizon_agreement_active_count
+    - sensor.horizon_agreement_active_ids
+    - sensor.horizon_agreement_active_urls
     - sensor.horizon_agreement_archived_count
     - sensor.horizon_architecture
     - sensor.horizon_attribute_count
