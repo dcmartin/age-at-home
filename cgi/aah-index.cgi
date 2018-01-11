@@ -83,13 +83,12 @@ endif
 if ($?DEBUG) /bin/echo `date` "$0 $$ -- query string ($QUERY_STRING)" >>! $TMP/LOG
 
 # check which image (ext = { full, crop } -> type = { jpg, jpeg } )
+set type = "jpg"
 if ($?ext) then
     set ext = $ext:h
-    if ($ext == "full") set type = "jpg"
     if ($ext == "crop") set type = "jpeg"
 else
     set ext = "full"
-    set type = "jpg"
 endif
 
 #
