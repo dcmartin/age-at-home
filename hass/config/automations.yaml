@@ -109,6 +109,8 @@
   initial_state: 'on'
   trigger:
     - platform: state
+      entity_id: group.david_devices
+    - platform: state
       entity_id: device_tracker.dcmsiphone7
     - platform: state
       entity_id: device_tracker.davids_iphone
@@ -127,6 +129,37 @@
       data_template:
         message: >
           {{ trigger.entity_id }}'s location just changed from {{ trigger.from_state.state }} to {{ trigger.to_state.state }}
+    - service: mqtt.publish
+      data_template:
+        topic: 'notify/david'
+        payload: >
+          {
+           "entity":{{trigger.entity_id|tojson}},
+           "date:",{{(now().timestamp()|int)}},
+           "from":{{ trigger.from_state.state|tojson }},
+           "to":{{ trigger.to_state.state|tojson }},
+           "what":"david",
+           "source":{{states(trigger.entity_id)|tojson}},
+           "state":{{states('sensor.david_status')|tojson}}
+          }
+
+#       {%- set e = closest(states.group.david_devices) -%}
+#       {%- if e is defined -%}
+#         {%- set d = distance(e) -%}
+#         {%- if e.source_type == 'gps' -%}
+#           {"device":{{ e.attributes.friendly_name|tojson }},"location":{{e.state|tojson}},"online":{{(e.attributes.device_status == 'online')|tojson}},"feet":{{d*5280.0}}}
+#         {%- else -%}
+#           {"device":{{ e.attributes.friendly_name|tojson }},"location":"home","online":true,"feet":{{d*5280.0}}}
+#         {%- endif -%}
+#       {%- endif -%}
+
+# {% for state in states.group.david_devices.attributes.entity_id -%}
+#   {%- if loop.first %}
+#   {% elif loop.last %}
+#   {% else %}
+#   {% endif -%}
+#   {{ state, states(state) }}
+# {%- endfor -%}
 
 - id: notify_ellen
   alias: 'notify_ellen'

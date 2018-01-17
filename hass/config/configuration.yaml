@@ -13,9 +13,6 @@ homeassistant:
   # customize
   customize: !include customize.yaml
 
-cloud:
-config:
-
 switch livingroom-hs105:
   - platform: tplink
     name: livingroom
@@ -39,6 +36,7 @@ updater:
 # BASICS
 #
 
+cloud:
 hassio:
 discovery:
 frontend:
@@ -1690,21 +1688,33 @@ camera roughfog:
   - platform: mjpeg
     name: ageathome_kitchen
     mjpeg_url: http://192.168.1.34:8081/
+    authentication: basic
+    username: !secret wcv80n_username
+    password: !secret wcv80n_password
 
 camera dampcloud:
   - platform: mjpeg
     name: ageathome_bathroom
     mjpeg_url: http://192.168.1.35:8081/
+    authentication: basic
+    username: !secret wcv80n_username
+    password: !secret wcv80n_password
 
 camera quietwater:
   - platform: mjpeg
     name: ageathome_road
     mjpeg_url: http://192.168.1.36:8081/
+    authentication: basic
+    username: !secret wcv80n_username
+    password: !secret wcv80n_password
 
 camera roughwind:   
   - platform: mjpeg
     name: ageathome_frontdoor
     mjpeg_url: http://192.168.1.37:8081/
+    authentication: basic
+    username: !secret wcv80n_username
+    password: !secret wcv80n_password
 
 ##
 ## STATUS CATCHERS
