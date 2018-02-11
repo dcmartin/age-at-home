@@ -28,4 +28,3 @@ WORKDIR /var/lib/motion
 
 # invoke motion detection script (NOT as daemon; re-direct logging to STDERR)
 CMD [ "/usr/local/bin/run.sh" ]
-
