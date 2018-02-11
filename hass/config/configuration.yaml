@@ -1,3 +1,7 @@
+###
+### MINIMUM
+###
+
 homeassistant:
   # Name of the location where Home Assistant is running
   name: Fazenda da Saudade
@@ -10,13 +14,43 @@ homeassistant:
   unit_system: imperial
   # Pick yours from here: http://en.wikipedia.org/wiki/List_of_tz_database_time_zones
   time_zone: America/Los_Angeles
-  # customize
+  # customize (optional)
   customize: !include customize.yaml
 
-switch livingroom-hs105:
-  - platform: tplink
-    name: livingroom
-    host: 192.168.1.43
+## no parameters necessary
+
+cloud: # uses home-assistant cloud service
+hassio: # use hassio supervisor
+discovery: # find automatically
+frontend: # build a http interface (see HTTP below)
+config: # enable configuration changes (to all)
+map: # provide a map of tracked devices
+conversation: # Allows you to issue voice commands from the frontend in enabled browsers
+logbook: # View all events in a logbook
+
+## do updates automatically (including sub-components)
+
+updater:
+  include_used_components: true
+
+## Enables support for tracking state changes over time.
+history: !include history.yaml
+
+###
+### SIMPLE
+###
+
+## Text to speech (using Google)
+tts:
+  platform: google
+
+## IFTTT (key in secrets.yaml)
+ifttt:
+  key: !secret ifttt_key
+
+###
+### HTTP (web interface; see "frontend")
+###
 
 http:
   api_password: !secret http_api_password
@@ -29,23 +63,79 @@ http:
     - http://dcmartin.com
   base_url: 192.168.1.26:8123
 
-updater:
-  include_used_components: true
+###
+### EXTERNAL IP
+###
 
-#
-# BASICS
-#
+## simple REST sensor that parses JSON payload received
+sensor external_ip:
+  - platform: rest
+    resource: http://ip.jsontest.com
+    name: externalip
+    value_template: >
+      {%- if value_json is defined -%} 
+        {{ value_json.ip | default(null) }}
+      {%- else -%} 0 {%- endif -%}
 
-cloud:
-hassio:
-discovery:
-frontend:
-config:
-map:
+###
+### SUN
+###
 
-#
-# PANEL IFRAME(S)
-#
+## set the elevation (IDK if necessary)
+sun:
+  elevation: 827
+
+## use elevation to calculate new sensors
+sensor solar:
+  platform: template
+  sensors:
+    solar_angle:
+      value_template: '{{ states.sun.sun.attributes.elevation }}'
+      unit_of_measurement: 'degrees'
+    sunrise:
+      value_template: '{{ as_timestamp(states.sun.sun.attributes.next_rising) | timestamp_custom("%I:%M %p") }}'
+    sunset:
+      value_template: '{{ as_timestamp(states.sun.sun.attributes.next_setting) | timestamp_custom("%I:%M %p") }}'
+
+###
+### MQTT (install using hassio)
+###
+
+## broker is LAN IP address of this instance
+mqtt:
+  broker: 192.168.1.26
+  keepalive: 60
+  client_id: homeassistant
+  # port:
+  # username:
+  # password:
+
+###
+### HUE bridge & lights
+###
+
+## specify LAN IP address for Hue bridge device (should be discovered; see "discovery")
+hue:
+  bridges:
+    - host: 192.168.1.49
+
+###
+### TPLINK switches
+###
+
+switch tplink-hs100:
+  - platform: tplink
+    name: poolhouse
+    host: 192.168.1.42
+
+switch tplink-hs105:
+  - platform: tplink
+    name: fronthall
+    host: 192.168.1.43
+
+###
+### PANEL_IFRAME (tabs in HTTP web interface; see "frontend")
+###
 
 panel_iframe:
   docsis:
@@ -77,37 +167,63 @@ panel_iframe:
     icon: mdi:webcam
     url: 'http://192.168.1.32/LOCAL.html'
 
-#
+###
+### SENSORS
+###
 
-#
-# MQTT
-#
+## calculate list of devices tracked by GPS; n.b. sun.sun forces periodic re-evaluation
+sensor state_template gps_trackers:
+  - platform: template
+    sensors:
+      all_gps:
+        entity_id: 
+          - states.device_tracker
+          - sun.sun
+        value_template: >
+          {%- for state in states.device_tracker -%}
+            {%- if loop.first -%}
+              {"date":{{ (now().timestamp()|int) }},"list":[
+            {%- endif -%}
+            {%- if state.attributes.source_type == 'gps' and state.attributes.device_status == 'online' -%}
+              {{state.entity_id.replace('device_tracker.','')|truncate(8,false,"")|tojson}},
+            {%- endif -%}
+          {%- endfor -%}null]}
 
-mqtt:
-  broker: 192.168.1.26
-  keepalive: 60
-  client_id: homeassistant
-  # port:
-  # username:
-  # password:
+## calculate list of webcams 
+sensor state_template webcam_trackers:
+  - platform: template
+    sensors:
+      all_wcv80n:
+        entity_id: states.camera
+        value_template: >
+          {%- for state in states.camera -%}
+            {%- if loop.first -%} [ {%- endif -%}
+            {%- if state.name.startswith('wcv80n') -%} 
+              "{{state.name.replace('wcv80n_','')}}",
+            {%- endif -%}
+          {%- endfor -%}null]
 
-#
-# SUN
-#
+###
+### FFMPEG motion detection (this is a test)
+###
 
-sun:
-  elevation: 827
+## initial FFMPEG
+ffmpeg:
 
-sensor solar:
-  platform: template
-  sensors:
-    solar_angle:
-      value_template: '{{ states.sun.sun.attributes.elevation }}'
-      unit_of_measurement: 'degrees'
-    sunrise:
-      value_template: '{{ as_timestamp(states.sun.sun.attributes.next_rising) | timestamp_custom("%I:%M %p") }}'
-    sunset:
-      value_template: '{{ as_timestamp(states.sun.sun.attributes.next_setting) | timestamp_custom("%I:%M %p") }}'
+## binary indicator of motion
+binary_sensor backyardmotion:
+  - platform: ffmpeg_motion
+    input: !secret backyardvideo
+    name: backyardmotion
+    extra_arguments: -pred 1 -q:v 2
+    # device_class: motion
+    # initial_state: false
+    # changes: 5
+    # reset: 20
+    # repeats: 0
+    # repeat_time: 0
+    # ffmpeg_bin: /usr/bin/ffmpeg
+    # ffmpeg_bin: /usr/bin/avconv
 
 ###
 ### HORIZON
@@ -140,7 +256,7 @@ sensor solar:
 #                stream_port: 8081
 
 ###
-### WATSON IOT PLATFORM
+### WATSON IOT PLATFORM (TBD)
 ###
 
 #watson_iotp:
@@ -220,46 +336,18 @@ sensor solar:
 #  stream_localhost: off
 #  stream_limit: 0
 
-#binary_sensor backyardmotion:
-#  - platform: ffmpeg_motion
-#    input: !secret backyardvideo
-#    name: backyardmotion
-#    device_class: motion
-#    initial_state: false
-#    changes: 5
-    # ffmpeg_bin: /usr/bin/ffmpeg
-    # ffmpeg_bin: /usr/bin/avconv
-    # extra_arguments: -pred 1 -q:v 2
-    # reset: 20
-    # repeats: 0
-    # repeat_time: 0
-    # extra_arguments:
+
+###
+### AGEATHOME - ENTITY LISTS 
+###
+
+## people - statically defined known entities to track
+## devices - discovered devices from device_tracker entities where "friendly_name" has "ageathome_" prefix
+## locations - discovered locations from camera entities where "name" has "ageathome_" prefix
 
 sensor state_template:
   - platform: template
     sensors:
-      all_gps:
-        entity_id: 
-          - states.device_tracker
-          - sun.sun
-        value_template: >
-          {%- for state in states.device_tracker -%}
-            {%- if loop.first -%}
-              {"date":{{ (now().timestamp()|int) }},"list":[
-            {%- endif -%}
-            {%- if state.attributes.source_type == 'gps' and state.attributes.device_status == 'online' -%}
-              {{state.entity_id.replace('device_tracker.','')|truncate(8,false,"")|tojson}},
-            {%- endif -%}
-          {%- endfor -%}null]}
-      all_wcv80n:
-        entity_id: states.camera
-        value_template: >
-          {%- for state in states.camera -%}
-            {%- if loop.first -%} [ {%- endif -%}
-            {%- if state.name.startswith('wcv80n') -%} 
-              "{{state.name.replace('wcv80n_','')}}",
-            {%- endif -%}
-          {%- endfor -%}null]
       ageathome_people:
         entity_id: 
           - sensor.ageathome_locations
@@ -400,51 +488,55 @@ ios:
             textInputButtonTitle: 'Silencio!'
             textInputPlaceholder: 'Placeholder'
 
-##
-## DEVICE TRACKERS
-##
+###
+### DEVICE TRACKERS
+###
 
+## device tracking from this host
+device_tracker dt_nmap:
+  - platform: nmap_tracker
+    hosts: 192.168.1.1/24
+    home_interval: 10
+    track_new_devices: yes
+    consider_home: 180
+    exclude:
+     - 192.168.1.26
+
+## device tracking from iCloud
 device_tracker:
   - platform: icloud
     username: !secret icloud_username
     password: !secret icloud_password
     account_name: DCMARTIN
+
+## device tracking from LAN/WAN gateway 
   - platform: mikrotik
     host: 192.168.1.1
     username: !secret mikrotik_username
     password: !secret mikrotik_password
 
-# NOTIFIERS
+###
+### ZONES
+###
 
-# targeting app on davids phone
+zone: !include zones.yaml
+
+###
+### NOTIFY
+###
+
+## iOS notifications (single targer)
+
 notify ios:
   - platform: ios
     name: davids_iphone
     target: !secret notify_target
 
-# ZONES
+###
+### PLEX
+###
 
-zone: !include zones.yaml
-
-##
-## plex
-##
-
-media_player davidsimac:
-  - platform: plex
-    name: davidsimac
-    ip_address: 192.168.1.27
-    port: 32400
-    token: !secret plex_token
-
-sensor davidsimac:
-  - platform: plex
-    host: 192.168.1.27
-    port: 32400
-    name: davidsimac
-    username: !secret plex_username
-    password: !secret plex_password
-
+## media player
 media_player david_plex:
   - platform: plex
     name: david_plex
@@ -452,6 +544,7 @@ media_player david_plex:
     port: 32400
     token: !secret plex_token
 
+## sensor
 sensor david_plex:
   - platform: plex
     host: 192.168.1.32
@@ -460,41 +553,51 @@ sensor david_plex:
     username: !secret plex_username
     password: !secret plex_password
 
-# Allows you to issue voice commands from the frontend in enabled browsers
-conversation:
+###
+### WEATHER
+###
 
-# Enables support for tracking state changes over time.
-history: !include history.yaml
-
-# View all events in a logbook
-logbook:
-
-# Text to speech
-tts:
-  - platform: google
-
-ifttt:
-  key: !secret ifttt_key
-
-#
-# CAMERAS
-#
-
+## weathermap forecast
 camera weatherforecast:
   - platform: generic
     name: weatherforecast
     still_image_url: 'https://www.yr.no/sted/USA/California/San_Francisco/meteogram.svg'
     content_type: 'image/svg+xml'
 
+## weather underground radar
 camera wuradar:
   - platform: generic
-    still_image_url: 'https://icons.wxug.com/data/weather-maps/radar/united-states/bakersfield-california-region-current-radar-animation.gif'
     name: wuradar
+    still_image_url: 'https://icons.wxug.com/data/weather-maps/radar/united-states/bakersfield-california-region-current-radar-animation.gif'
 
-#
-# WCV80N cameras
-#
+## WEATHER UNDERGROUND (requires account; see secrets.yaml)
+sensor kcasanjo411:
+  - platform: wunderground
+    api_key: !secret wunderground_api_key
+    pws_id: KCASANJO411
+    monitored_conditions:
+      - weather
+      - feelslike_f
+      - precip_today_in
+      - relative_humidity
+      - visibility_mi
+      - wind_dir
+      - wind_gust_mph
+      - wind_mph
+      - weather_1d
+      - weather_1n
+      - weather_2d
+      - weather_2n
+      - weather_3d
+      - weather_3n
+      - weather_4d
+      - weather_4n
 
+###
+### WEBCAMS
+###
+
+## all Linksys/Cisco WCV80N cameras
 camera wcv80n_woodshed:
   - platform: mjpeg
     mjpeg_url: http://192.168.1.163/img/video.mjpeg
@@ -654,59 +757,6 @@ camera wcv80n_backyard:
     name: wcv80n_backyard
     username: !secret wcv80n_username
     password: !secret wcv80n_password
-
-
-#
-# DEVICE TRACKER (NMAP)
-#
-
-device_tracker dt_nmap:
-  - platform: nmap_tracker
-    hosts: 192.168.1.1/24
-    home_interval: 10
-    track_new_devices: yes
-    consider_home: 180
-    exclude:
-     - 192.168.1.26
-
-#
-# WUNDERGROUND (WEATHER UNDERGROUND)
-#
-
-sensor kcasanjo411:
-  - platform: wunderground
-    api_key: !secret wunderground_api_key
-    pws_id: KCASANJO411
-    monitored_conditions:
-      - weather
-      - feelslike_f
-      - precip_today_in
-      - relative_humidity
-      - visibility_mi
-      - wind_dir
-      - wind_gust_mph
-      - wind_mph
-      - weather_1d
-      - weather_1n
-      - weather_2d
-      - weather_2n
-      - weather_3d
-      - weather_3n
-      - weather_4d
-      - weather_4n
-
-#
-# REST PLATFORM SENSORS
-#
-
-sensor external_ip:
-  - platform: rest
-    resource: http://ip.jsontest.com
-    name: externalip
-    value_template: >
-      {%- if value_json is defined -%} 
-        {{ value_json.ip | default(null) }}
-      {%- else -%} 0 {%- endif -%}
 
 ###
 ### HORIZON
@@ -1719,6 +1769,13 @@ camera roughwind:
 ##
 ## STATUS CATCHERS
 ##
+
+sensor count_lights:
+  - platform: mqtt
+    name: count_lights
+    state_topic: 'state/light/+'
+    value_template: >
+      {% if value_json is defined %} {{ value_json['items'] | length }} {% else %} 0 {% endif %}
 
 sensor count_automations:
   - platform: mqtt

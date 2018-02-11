@@ -1,4 +1,4 @@
-#gr
+#
 # DEFAULT
 #
 
@@ -606,6 +606,8 @@ system_status:
     - device_tracker.dlicontroller
     - device_tracker.envoy
     - device_tracker.huebridge
+    - device_tracker.tplinkhs105
+    - device_tracker.tplinkhs100
 
 network_status:
   name: Network Status

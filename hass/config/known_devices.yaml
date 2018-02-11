@@ -259,6 +259,37 @@ rough-wind:
   track: true
   vendor: Raspberry Pi Foundation
 
+## HUE
+
+# 192.168.1.49
+hue-bridge:
+  mac: 00:17:88:A2:14:F4
+  name: 'hue_bridge'
+  hide_if_away: false
+  icon: mdi:lightbulb
+  track: true
+  vendor: Philips
+
+## TPLINK
+
+# 192.168.1.42
+tplink-hs100:
+  mac: 70:4F:57:9C:5F:4A
+  name: 'tplink_hs100'
+  hide_if_away: false
+  icon: mdi:power-socket-us
+  track: true
+  vendor: TPLINK
+
+# 192.168.1.43
+tplink-hs105:
+  mac: 70:4F:57:AC:35:D7 
+  name: 'tplink_hs105'
+  hide_if_away: false
+  icon: mdi:power-socket-us
+  track: true
+  vendor: TPLINK
+
 # NVIDIA TX2 (HOME-ASSISTANT HOST)
 
 nvidia_tx2_eth0:
