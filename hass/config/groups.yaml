@@ -106,7 +106,8 @@ sensor_counts:
     - sensor.count_device_trackers
     - sensor.count_media_players
     - sensor.count_sensors
-    - sensor.count_binary_sensors
+    - sensor.count_lights
+    - sensor.count_automations
     - sensor.count_zones
 
 family_detection:
@@ -604,6 +605,7 @@ system_status:
     - device_tracker.microcell_cabin
     - device_tracker.dlicontroller
     - device_tracker.envoy
+    - device_tracker.huebridge
 
 network_status:
   name: Network Status
