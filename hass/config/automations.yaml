@@ -436,6 +436,25 @@
 ## DUMPS
 ##
 
+- id: publish_lights
+  alias: 'publish_lights'
+  initial_state: 'on'
+  trigger:
+    - platform: template
+      value_template: '{{ states.light != None }}'
+    - platform: state
+      entity_id: states.light
+  action:
+    - service: mqtt.publish
+      data_template:
+        topic: 'state/light/all'
+        payload: >
+          {%- for state in states.light -%}
+            {%- if loop.first -%}{"category":"light","date":{{ (now().timestamp()|int) }},"items":[
+            {%- else -%},
+            {%- endif -%} {"name":"{{state.name|lower}}","state":"{{state.state}}","last_triggerd":"{{state.attributes.last_triggered}}"}
+          {%- endfor -%}]}
+
 - id: publish_automations
   alias: 'publish_automations'
   initial_state: 'on'
