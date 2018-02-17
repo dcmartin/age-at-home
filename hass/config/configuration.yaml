@@ -207,7 +207,7 @@ sensor state_template webcam_trackers:
 ### FFMPEG motion detection (this is a test)
 ###
 
-## initial FFMPEG
+## initiate FFMPEG
 ffmpeg:
 
 ## binary indicator of motion
@@ -376,13 +376,14 @@ sensor state_template:
             {%- endif -%}
           {%- endfor -%}null]}
 
-#
-# SONOS
-#
+###
+### SONOS
+###
 
 media_player sonos:
   - platform: sonos
 
+## short-cut sensors for sonos in kitchen
 sensor sonos_play1:
   platform: template
   sensors:
@@ -414,6 +415,18 @@ sensor sonos_play1:
       entity_id: media_player.play1
       value_template: '{{ states.media_player.play1.attributes.media_album_name }}'
 
+## track history of sonos paused
+sensor play1_paused:
+  - platform: history_stats
+    icon: mdi:speaker
+    name: play1_paused
+    entity_id: sensor.play1_state
+    state: 'paused'
+    type: ratio
+    start: '{{ now().replace(hour=0).replace(minute=0).replace(second=0) }}'
+    end: '{{ now() }}'
+
+## sonos in livingroom
 sensor sonos_play3:
   - platform: template
     sensors:
@@ -445,16 +458,6 @@ sensor sonos_play3:
         entity_id: media_player.play3
         value_template: '{{ states.media_player.play3.attributes.media_album_name }}'
 
-sensor play1_paused:
-  - platform: history_stats
-    icon: mdi:speaker
-    name: play1_paused
-    entity_id: sensor.play1_state
-    state: 'paused'
-    type: ratio
-    start: '{{ now().replace(hour=0).replace(minute=0).replace(second=0) }}'
-    end: '{{ now() }}'
-
 sensor play3_paused:
   - platform: history_stats
     icon: mdi:speaker
@@ -464,29 +467,6 @@ sensor play3_paused:
     type: ratio
     start: '{{ now().replace(hour=0).replace(minute=0).replace(second=0) }}'
     end: '{{ now() }}'
-
-# IOS
-
-ios:
-  push:
-    categories:
-      - name: Alarm
-        identifier: 'ALARM'
-        actions:
-          - identifier: 'SOUND_ALARM'
-            title: 'Sound Alarm'
-            activationMode: 'background'
-            authenticationRequired: no
-            destructive: yes
-            behavior: 'default'
-          - identifier: 'SILENCE_ALARM'
-            title: 'Silence Alarm'
-            activationMode: 'foreground'
-            authenticationRequired: yes
-            destructive: no
-            behavior: 'textInput'
-            textInputButtonTitle: 'Silencio!'
-            textInputPlaceholder: 'Placeholder'
 
 ###
 ### DEVICE TRACKERS
@@ -3582,10 +3562,10 @@ group: !include groups.yaml
 ### CONFIGURATION AND DISCOVERY
 ###
 
-sensor device_count:
+sensor aah_device_count:
   - platform: rest
     resource: 'http://192.168.1.32/CGI/aah-devices.cgi'
-    name: device_count
+    name: aah_device_count
     value_template: >
       {%- if value_json is defined -%}
         {%- if value_json.devices is defined -%}
@@ -3595,10 +3575,10 @@ sensor device_count:
         {%- else -%} -1 {%- endif -%}
       {%- else -%} -2 {%- endif -%}
 
-sensor device_names:
+sensor aah_device_names:
   - platform: rest
     resource: 'http://192.168.1.32/CGI/aah-devices.cgi'
-    name: device_names
+    name: aah_device_names
     value_template: >
       {%- if value_json is defined -%}
         {%- if value_json.devices is defined -%}
@@ -3611,10 +3591,10 @@ sensor device_names:
         {%- else -%} 'undefined' {%- endif -%}
       {%- else -%} 'no service' {%- endif -%}
 
-sensor device_dates:
+sensor aah_device_dates:
   - platform: rest
     resource: 'http://192.168.1.32/CGI/aah-devices.cgi'
-    name: device_dates
+    name: aah_device_dates
     value_template: >
       {%- if value_json is defined -%}
         {%- if value_json.devices is defined -%}
@@ -3659,32 +3639,30 @@ binary_sensor device_template:
            states.device_tracker.ageathome_road_camera.state != None and
            states.device_tracker.ageathome_road_camera.state == 'home' }}
 
+## determine if aah_discovery & aah_config are defined (url, ..)
 binary_sensor template:
   - platform: template
     sensors:
-      discovery_complete:
+      aah_discovery_complete:
         entity_id: 
-          - sensor.discovery
+          - sensor.aah_discovery
         value_template: >
-          {{ states.binary_sensor.discovery != None and
-             states.binary_sensor.discovery.state != 'unknown' and
-             states.binary_sensor.discovery.attributes != None and
-             states.binary_sensor.discovery.attributes.url != None and
-             states.binary_sensor.discovery.attributes.url != 'null' }}
-      config_complete:
+          {{ states.binary_sensor.aah_discovery != None and
+             states.binary_sensor.aah_discovery.state != 'unknown' and
+             states.binary_sensor.aah_discovery.attributes != None and
+             states.binary_sensor.aah_discovery.attributes.url != None and
+             states.binary_sensor.aah_discovery.attributes.url != 'null' }}
+      aah_config_complete:
         entity_id: 
-          - sensor.config
+          - sensor.aah_config
         value_template: >
-          {{ states.binary_sensor.config != None and
-             states.binary_sensor.config.state != 'unknown' and
-             states.binary_sensor.config.attributes != None and
-             states.binary_sensor.config.attributes.vr_apikey != None and
-             states.binary_sensor.config.attributes.vr_apikey != 'null' }}
+          {{ states.binary_sensor.aah_config != None and
+             states.binary_sensor.aah_config.state != 'unknown' and
+             states.binary_sensor.aah_config.attributes != None and
+             states.binary_sensor.aah_config.attributes.vr_apikey != None and
+             states.binary_sensor.aah_config.attributes.vr_apikey != 'null' }}
 
-##
 ## HISTORY GRAPH
-##
-
 history_graph:
   kitchen_accuracy:
     name: Kitchen Accuracy
@@ -3845,6 +3823,31 @@ input_text:
   test1:
     name: test1
     initial: type something here
+
+###
+### IOS
+###
+
+ios:
+  push:
+    categories:
+      - name: Alarm
+        identifier: 'ALARM'
+        actions:
+          - identifier: 'SOUND_ALARM'
+            title: 'Sound Alarm'
+            activationMode: 'background'
+            authenticationRequired: no
+            destructive: yes
+            behavior: 'default'
+          - identifier: 'SILENCE_ALARM'
+            title: 'Silence Alarm'
+            activationMode: 'foreground'
+            authenticationRequired: yes
+            destructive: no
+            behavior: 'textInput'
+            textInputButtonTitle: 'Silencio!'
+            textInputPlaceholder: 'Placeholder'
 
 ##
 ## SCRIPTS
