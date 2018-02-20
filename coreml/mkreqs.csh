@@ -37,6 +37,6 @@ endif
 if ($?CAFFE == 0) setenv CAFFE "$0:h/caffe"
 if ($?DEBUG) echo '[ENV] CAFFE (' "$CAFFE" ')' >& /dev/stderr
 if (! -e "$CAFFE") then
-  echo "$0:t $$ -- [ERROR] please install BLVC Caffe in ($CAFFE); trying `$0:h/mkcaffe.csh`"" >& /dev/stderr
+  echo "$0:t $$ -- [ERROR] please install BLVC Caffe in ($CAFFE); trying" `$0:h/mkcaffe.csh` >& /dev/stderr
   exit 1
 endif
