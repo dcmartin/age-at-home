@@ -21,6 +21,7 @@ RUN apt-get update && apt-get install -q -y --no-install-recommends \
     python-pip \
     python-setuptools \
     build-essential
+
 #
 # update pip
 #

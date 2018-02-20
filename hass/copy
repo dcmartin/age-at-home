@@ -3,6 +3,11 @@
 set dir = "$cwd/$0:h"
 
 if ($?share == 0) set share = "/usr/share/hassio"
+if (! -d "$share") then
+  echo "ERROR: cannot locate directory $share"
+  exit
+endif
+
 if ($?config == 0) set config = "$share/homeassistant"
 if ($?addons == 0) set addons = "$share/addons/local"
 
@@ -22,8 +27,10 @@ echo "]"
 
 # copy COMPONENTS
 if (-d "$dir/config/custom_components") then
-echo "Copying COMPONENTS"
-cp -r "$dir/config/custom_components/" "$config/custom_components"
+  echo "Copying COMPONENTS"
+  cp -r "$dir/config/custom_components/" "$config/custom_components"
+else
+  echo "WARN: cannot locate $dir/config/custom_components"
 endif
 
 # copy ADDONS
