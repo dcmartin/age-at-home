@@ -65,7 +65,7 @@
         message: >
           AgeAtHome device {{ trigger.entity_id }} {{ state(trigger.entity_id)['attributes.friendly_name'] }}'s status just changed from {{ trigger.from_state.state }} to {{ trigger.to_state.state }}
 
-- id: notify_ageathome_devices_offline'
+- id: 'notify_ageathome_devices_offline'
   alias: 'notify_ageathome_offline'
   trigger:
     - platform: state
@@ -259,6 +259,7 @@
       - camera.ageathome_bathroom
       - camera.ageathome_frontdoor
       - camera.ageathome_road
+      - camera.ageathome_test
     to: 'not home'
     for:
       minutes: 10
@@ -268,6 +269,10 @@
         topic: 'ageathome/status/camera'
         payload: >
           {"device":"{{ trigger.to_state.attributes.friendly_name }}","status":"offline"}
+    - service: notify.notify
+      data_template:
+        message: >
+          {{ trigger.entity_id }}'s location just changed from {{ trigger.from_state.state }} to {{ trigger.to_state.state }}
 
 - id: notify_lowscore
   alias: very low score
@@ -331,16 +336,22 @@
            "why":{{trigger.payload_json.score|float}},
            "date":{{trigger.payload_json.date|int}}
           }
+    - service: notify.notify
+      data_template:
+        message: >
+          LOCATION NOT PEOPLE : {{ trigger.payload_json.class }} seen in {{ trigger.payload_json.location }} when location is {{ states(("sensor.",trigger.payload_json.class,"_location")|join|lower) }}
 
-- id: aah_location_not_home
-  alias: aah_location_not_home
+- id: aah_location_nothome
+  alias: aah_location_nothome
   initial_state: on
   trigger:
     - platform: mqtt
       topic: 'presence/+'
   condition: 
      - condition: template
-       value_template: '{{ not states(("sensor.",trigger.payload_json.class,"_location")|join|lower) in ("home","unknown") }}'
+       value_template: >
+         # {% set trigger = { "payload_json": { "class": "david", "location": "kitchen" } } %}
+         {{ not ( states(("sensor.",trigger.payload_json.class,"_location")|join|lower) in ("home","unknown") and states(("sensor.",trigger.payload_json.location,"_ago")|join|lower)|int < 60) }}
   action:
     - service: mqtt.publish
       data_template:
@@ -357,6 +368,75 @@
            "why":{{trigger.payload_json.score|float}},
            "date":{{trigger.payload_json.date|int}}
           }
+    - service: notify.notify
+      data_template:
+        title: MSG 1
+        message: >-
+          # {% set trigger = { "payload_json": { "class": "david", "location": "kitchen", "id": "YYYYMMDDHHMMSS.##", "score": 0.9, "model": "test", "date": 1521392119 } } %}
+          saw {{ trigger.payload_json.class }} ( {{ states(("sensor.",trigger.payload_json.class,"_location")|join|lower) }} )
+          in {{ trigger.payload_json.location }} 
+          when {{ trigger.payload_json.date|int|timestamp_custom("%a %b %d @ %I:%M %p") | default(null) }}
+          by {{ trigger.payload_json.model }} 
+          level {{ trigger.payload_json.score|float > 0.9 }}
+          image {{ trigger.payload_json.id }} 
+          url http://homeassistant.dcmartin.com:8123{{- states(("sensor.camera_",trigger.payload_json.location,"_entity_picture")|join|lower) -}}
+        data:
+          attachment:
+            url: http://homeassistant.dcmartin.com:8123{{- states(("sensor.camera_",trigger.payload_json.location,"_entity_picture")|join|lower) -}}
+            content-type: jpeg
+            hide-thumbnail: false
+    - service: notify.notify
+      data_template:
+        title: PUSH 1
+        push:
+          # badge: 0
+          # sound: "US-EN-Alexa-Garage-Door-Opened.wav"
+          category: camera
+          entity_id: >
+            # {% set trigger = { "payload_json": { "class": "david", "location": "kitchen", "id": "YYYYMMDDHHMMSS.##", "score": 0.9, "model": "test", "date": 1521392119 } } %}
+            {{ ("camera.ageathome_",trigger.payload_json.location,"")|join|lower }}
+
+#          action_data:
+#            entity_id: {{ trigger.payload_json.location }} 
+#            my_custom_data: {{ trigger.payload_json.id }} 
+
+#
+# EXAMPLE PAYLOAD FROM IOS NOTIFICATION
+#
+# {
+#  "sourceDeviceName": "Robbie's iPhone 7 Plus",
+#  "sourceDeviceID": "robbies_iphone_7_plus",
+#  "actionName": "SOUND_ALARM",
+#  "sourceDevicePushId": "ab9f02fe-6ac6-47b8-adeb-5dd87b489156",
+#  "textInput": "",
+#  "actionData": {}
+# }
+#
+
+- id: aah_correction
+  alias: aah_correction
+  initial_state: on
+  trigger:
+    -  platform: event
+       event_type: ios.notification_action_fired
+       # event_data:
+       #   actionName: SOUND_ALARM
+  action:
+    - service: mqtt.publish
+      data_template:
+        topic: 'correction/entity'
+        payload: >-
+          {
+           "type":"correction",
+           "triggered":{{(now().timestamp()|int)}},
+           "payload":{{trigger.payload_json|tojson}},
+          }
+    - service: notify.notify
+      data_template:
+        title: RECEIVED
+        message: >
+          {{ trigger.payload_json.textInput }} {{ trigger.payload_json.actionData }} 
+
 
 - id: aah_location_undefined
   alias: aah_location_undefined

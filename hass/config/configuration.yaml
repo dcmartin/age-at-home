@@ -55,8 +55,6 @@ ifttt:
 http:
   api_password: !secret http_api_password
   trusted_networks: 
-    - 192.168.1.0/24
-    - 172.30.33.0/24
   cors_allowed_origins: 
     - https://google.com
     - https://home-assistant.io
@@ -349,32 +347,74 @@ sensor state_template:
   - platform: template
     sensors:
       ageathome_people:
-        entity_id: 
-          - sensor.ageathome_locations
         value_template: >
-          {{ [ 'david','keli','hali','ian','riley','ellen' ] }}
-      ageathome_devices:
-        entity_id: 
-          - states.device_tracker
-          - sensor.ageathome_locations
+          {{ ('david','keli','hali','ian','riley','ellen')|list }}
+      aah_location_list:
+        entity_id: states.device_tracker
         value_template: >
           {%- for state in states.device_tracker -%}
-            {%- if loop.first -%}
-              {"date":{{ (now().timestamp()|int) }},"devices":[
+            {%- if loop.last -%} 
+              {%- if state.attributes.friendly_name.startswith('ageathome_') -%}
+                "{{state.attributes.friendly_name.replace('ageathome_','')}}",
+              {%- endif -%}
+            {%- else -%}
+              {%- if state.attributes.friendly_name.startswith('ageathome_') -%}
+                "{{state.attributes.friendly_name.replace('ageathome_','')}}"
+              {%- endif -%}
             {%- endif -%}
-            {%- if state.attributes.friendly_name.startswith('ageathome_') -%}
-              {"device":"{{state.entity_id.replace('device_tracker.','')}}","location":"{{state.attributes.friendly_name.replace('ageathome_','')}}"},
-            {%- endif -%}
-          {%- endfor -%}null]}
-      ageathome_locations:
-        entity_id: states.camera
+          {%- endfor -%}
+      aah_camera_list:
+        entity_id: states.device_tracker
         value_template: >
-          {%- for state in states.camera -%}
-            {%- if loop.first -%} {"date":{{ (now().timestamp()|int) }},"locations":[ {%- endif -%}
-            {%- if state.name.startswith('ageathome') -%} 
-              {"camera":"{{state.entity_id.replace('camera.','')}}","location":"{{state.name.replace('ageathome_','')}}"},
+          {%- for state in states.device_tracker -%}
+            {%- if loop.last -%} 
+              {%- if state.attributes.friendly_name.startswith('ageathome_') -%}
+                "{{state.entity_id.replace('device_tracker.','')}}",
+              {%- endif -%}
+            {%- else -%}
+              {%- if state.attributes.friendly_name.startswith('ageathome_') -%}
+                "{{state.entity_id.replace('device_tracker.','')}}"
+              {%- endif -%}
+            {%- endif -%}
+          {%- endfor -%}
+      aah_devices:
+        entity_id: states.device_tracker
+        value_template: >
+          {%- for state in states.device_tracker -%}
+            {%- if loop.last -%} 
+              {%- if state.attributes.friendly_name.startswith('ageathome_') -%}
+                {"camera":"{{state.entity_id.replace('device_tracker.','')}}","location":"{{state.attributes.friendly_name.replace('ageathome_','')}}"},
+              {%- endif -%}
+            {%- else -%}
+              {%- if state.attributes.friendly_name.startswith('ageathome_') -%}
+                {"camera":"{{state.entity_id.replace('device_tracker.','')}}","location":"{{state.attributes.friendly_name.replace('ageathome_','')}}"}
+              {%- endif -%}
+            {%- endif -%}
+          {%- endfor -%}
+      ageathome_gps_devices:
+        entity_id: states.device_tracker
+        value_template: >
+         {%- for state in states.device_tracker -%}
+            {%- if loop.first -%} {"gps":[ {%- endif -%}
+            {%- if state.attributes.source_type and state.attributes.source_type == "gps" -%}
+              {"device":"{{state.entity_id.replace('device_tracker.','')}}","name":"{{state.attributes.friendly_name}}"},
             {%- endif -%}
           {%- endfor -%}null]}
+      camera_kitchen_entity_picture:
+        entity_id: camera.ageathome_kitchen
+        value_template: '{{ states.camera.ageathome_kitchen.attributes.entity_picture }}'
+      camera_bathroom_entity_picture:
+        entity_id: camera.ageathome_bathroom
+        value_template: '{{ states.camera.ageathome_bathroom.attributes.entity_picture }}'
+      camera_frontdoor_entity_picture:
+        entity_id: camera.ageathome_frontdoor
+        value_template: '{{ states.camera.ageathome_frontdoor.attributes.entity_picture }}'
+      camera_road_entity_picture:
+        entity_id: camera.ageathome_road
+        value_template: '{{ states.camera.ageathome_road.attributes.entity_picture }}'
+      camera_test_entity_picture:
+        entity_id: camera.ageathome_test
+        value_template: '{{ states.camera.ageathome_test.attributes.entity_picture }}'
 
 ###
 ### SONOS
@@ -507,10 +547,31 @@ zone: !include zones.yaml
 
 ## iOS notifications (single targer)
 
-notify ios:
+notify dcmsiphone7:
   - platform: ios
-    name: davids_iphone
+    name: dcmsiphone7
     target: !secret notify_target
+
+ios:
+  push:
+    categories:
+      - name: camera
+        identifier: 'camera'
+        actions:
+          - identifier: 'CORRECT'
+            title: 'Correct'
+            activationMode: 'background'
+            authenticationRequired: no 
+            destructive: no
+            behavior: 'default'
+          - identifier: 'INCORRECT'
+            title: 'Incorrect'
+            activationMode: 'background'
+            authenticationRequired: no
+            destructive: yes
+            behavior: 'textInput'
+            textInputButtonTitle: 'Who?'
+            textInputPlaceholder: 'Unknown'
 
 ###
 ### PLEX
@@ -1742,6 +1803,14 @@ camera roughwind:
   - platform: mjpeg
     name: ageathome_frontdoor
     mjpeg_url: http://192.168.1.37:8081/
+    authentication: basic
+    username: !secret wcv80n_username
+    password: !secret wcv80n_password
+
+camera agedbush:   
+  - platform: mjpeg
+    name: ageathome_test
+    mjpeg_url: http://192.168.1.38:8081/
     authentication: basic
     username: !secret wcv80n_username
     password: !secret wcv80n_password
@@ -3823,31 +3892,6 @@ input_text:
   test1:
     name: test1
     initial: type something here
-
-###
-### IOS
-###
-
-ios:
-  push:
-    categories:
-      - name: Alarm
-        identifier: 'ALARM'
-        actions:
-          - identifier: 'SOUND_ALARM'
-            title: 'Sound Alarm'
-            activationMode: 'background'
-            authenticationRequired: no
-            destructive: yes
-            behavior: 'default'
-          - identifier: 'SILENCE_ALARM'
-            title: 'Silence Alarm'
-            activationMode: 'foreground'
-            authenticationRequired: yes
-            destructive: no
-            behavior: 'textInput'
-            textInputButtonTitle: 'Silencio!'
-            textInputPlaceholder: 'Placeholder'
 
 ##
 ## SCRIPTS

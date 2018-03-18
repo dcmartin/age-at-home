@@ -299,6 +299,7 @@ ageathome_cameras:
     - camera.ageathome_frontdoor
     - camera.ageathome_road
     - camera.ageathome_bathroom
+    - camera.ageathome_test
 
 ageathome_devices:
   name: AgeAtHome Devices
