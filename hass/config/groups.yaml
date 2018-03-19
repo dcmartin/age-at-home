@@ -289,6 +289,7 @@ ageathome_accuracy:
     - history_graph.bathroom_accuracy
     - history_graph.frontdoor_accuracy
     - history_graph.road_accuracy
+    - history_graph.interiorgate_accuracy
 
 ageathome_cameras:
   view: yes
@@ -296,10 +297,10 @@ ageathome_cameras:
   icon: mdi:cancel
   entities:
     - camera.ageathome_kitchen
+    - camera.ageathome_bathroom
     - camera.ageathome_frontdoor
     - camera.ageathome_road
-    - camera.ageathome_bathroom
-    - camera.ageathome_test
+    - camera.ageathome_interiorgate
 
 ageathome_devices:
   name: AgeAtHome Devices
@@ -309,6 +310,7 @@ ageathome_devices:
     - device_tracker.dampcloud
     - device_tracker.roughwind
     - device_tracker.quietwater
+    - device_tracker.agedbush
 
 ageathome_motion:
   name: 'AgeAtHome Motion'
@@ -317,6 +319,7 @@ ageathome_motion:
     - binary_sensor.frontdoor_motion
     - binary_sensor.kitchen_motion
     - binary_sensor.road_motion
+    - binary_sensor.interiorgate_motion
     - binary_sensor.interior_motion
     - binary_sensor.exterior_motion
     - sensor.bathroom_motion_time
@@ -327,6 +330,8 @@ ageathome_motion:
     - sensor.kitchen_motion_count
     - sensor.road_motion_time
     - sensor.road_motion_count
+    - sensor.interiorgate_motion_time
+    - sensor.interiorgate_motion_count
 
 ageathome_wrong:
   name: 'AgeAtHome Wrong'
@@ -335,6 +340,7 @@ ageathome_wrong:
     - binary_sensor.bathroom_wrong
     - binary_sensor.frontdoor_wrong
     - binary_sensor.road_wrong
+    - binary_sensor.interiorgate_wrong
 
 ageathome_last:
   name: 'AgeAtHome Last'
@@ -348,9 +354,9 @@ ageathome_last:
     - sensor.last_ago
     - sensor.kitchen_last
     - sensor.bathroom_last
-    - sensor.road_last
     - sensor.frontdoor_last
-    # - camera.last_image_cropped
+    - sensor.road_last
+    - sensor.interiorgate_last
 
 ageathome_when:
   name: 'AgeAtHome When' 
@@ -363,6 +369,8 @@ ageathome_when:
     - sensor.frontdoor_ago
     - sensor.road_when
     - sensor.road_ago
+    - sensor.interiorgate_when
+    - sensor.interiorgate_ago
     - sensor.interior_ago
     - sensor.exterior_ago
 
@@ -480,6 +488,35 @@ ageathome_road_details:
     - binary_sensor.road_wrong
     - sensor.road_motion_time
     - sensor.road_motion_count
+
+# INTERIORGATE
+
+ageathome_interiorgate_view:
+  view: true
+  name: AgeAtHome Interior Gate View
+  icon: mdi:gate
+  entities:
+    - camera.interiorgate_image_annotated
+    - group.ageathome_interiorgate_details
+    - history_graph.interiorgate_count
+    - history_graph.interiorgate_time
+    - history_graph.interiorgate_ratio
+    - history_graph.interiorgate_accuracy
+
+ageathome_interiorgate_details:
+  name: AgeAtHome Interior Gate Details
+  icon: mdi:gate
+  entities:
+    - sensor.interiorgate_who
+    - sensor.interiorgate_what
+    - sensor.interiorgate_when
+    - sensor.interiorgate_why
+    - sensor.interiorgate_ago
+    - sensor.interiorgate_last
+    - binary_sensor.interiorgate_motion
+    - binary_sensor.interiorgate_wrong
+    - sensor.interiorgate_motion_time
+    - sensor.interiorgate_motion_count
 
 #
 # WEATHER VIEW

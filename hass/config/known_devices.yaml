@@ -259,6 +259,15 @@ rough-wind:
   track: true
   vendor: Raspberry Pi Foundation
 
+aged-bush:
+  mac: B8:27:EB:51:A7:48
+  name: 'ageathome_interiorgate'
+  hide_if_away: false
+  icon: mdi:webcam
+  picture: http://farm5.static.flickr.com/4100/4930862762_4abbd2b5b3_m.jpg
+  track: true
+  vendor: Raspberry Pi Foundation
+
 ## HUE
 
 # 192.168.1.49

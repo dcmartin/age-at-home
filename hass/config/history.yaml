@@ -1,80 +1,65 @@
   include:
     entities:
-      - sensor.externalip
-      # - binary_sensor.fletcher_fordflex_road
-      # - binary_sensor.martin_rtv1100_road
-      # - binary_sensor.martin_sprinter_road
-      # - binary_sensor.martin_suburban_road
-      # - binary_sensor.martin_xc90_road
-      # - binary_sensor.martin_c30_road
-      - binary_sensor.martin_c70_road
-      - binary_sensor.other_road
-      - sensor.martin_road_count
-      - sensor.martin_road_ratio
-      - sensor.martin_road_time
-      - sensor.fletcher_road_count
-      - sensor.fletcher_road_ratio
-      - sensor.fletcher_road_time
-      - sensor.other_road_count
-      - sensor.other_road_ratio
-      - sensor.other_road_time
-      # motion in location
       - binary_sensor.bathroom_motion
-      - binary_sensor.exterior_motion
-      - binary_sensor.frontdoor_motion
-      - binary_sensor.interior_motion
-      - binary_sensor.kitchen_motion
-      - binary_sensor.road_motion
-      # entity in location (6 entities; 3 locations)
+      - binary_sensor.bathroom_wrong
       - binary_sensor.david_bathroom
       - binary_sensor.david_frontdoor
+      - binary_sensor.david_home
       - binary_sensor.david_interior
       - binary_sensor.david_kitchen
       - binary_sensor.ellen_bathroom
       - binary_sensor.ellen_frontdoor
+      - binary_sensor.ellen_home
       - binary_sensor.ellen_interior
       - binary_sensor.ellen_kitchen
+      - binary_sensor.exterior_motion
+      - binary_sensor.frontdoor_motion
+      - binary_sensor.frontdoor_wrong
       - binary_sensor.hali_bathroom
       - binary_sensor.hali_frontdoor
+      - binary_sensor.hali_home
       - binary_sensor.hali_interior
       - binary_sensor.hali_kitchen
       - binary_sensor.ian_bathroom
       - binary_sensor.ian_frontdoor
+      - binary_sensor.ian_home
       - binary_sensor.ian_interior
       - binary_sensor.ian_kitchen
+      - binary_sensor.interior_motion
       - binary_sensor.keli_bathroom
       - binary_sensor.keli_frontdoor
+      - binary_sensor.keli_home
       - binary_sensor.keli_interior
       - binary_sensor.keli_kitchen
+      - binary_sensor.kitchen_motion
+      - binary_sensor.kitchen_wrong
+      - binary_sensor.martin_c70_road
+      # - binary_sensor.martin_c30_road
+      # - binary_sensor.martin_rtv1100_road
+      # - binary_sensor.martin_sprinter_road
+      # - binary_sensor.martin_suburban_road
+      # - binary_sensor.martin_xc90_road
+      # - binary_sensor.fletcher_fordflex_road
+      - binary_sensor.other_road
       - binary_sensor.riley_bathroom
       - binary_sensor.riley_frontdoor
+      - binary_sensor.riley_home
       - binary_sensor.riley_interior
       - binary_sensor.riley_kitchen
-      # entity @ home (6 entities; bayesian)
-      - binary_sensor.david_home
-      - binary_sensor.ellen_home
-      - binary_sensor.hali_home
-      - binary_sensor.ian_home
-      - binary_sensor.keli_home
-      - binary_sensor.riley_home
-      # classifier wrong
-      - binary_sensor.kitchen_wrong
-      - binary_sensor.bathroom_wrong
-      - binary_sensor.frontdoor_wrong
+      - binary_sensor.road_motion
       - binary_sensor.road_wrong
-      # entity device tracker (iOS)
+      - binary_sensor.interiorgate_motion
+      - binary_sensor.interiorgate_wrong
       - device_tracker.dcmsiphone7
       - device_tracker.ellensiphone5
       - device_tracker.halisiphone
       - device_tracker.ianmartinsiphone
       - device_tracker.kelisiphone7
       - device_tracker.rileysiphone5
-      # location
       - sensor.bathroom_ago
       - sensor.bathroom_motion_count
       - sensor.bathroom_motion_time
       - sensor.bathroom_what
-      # meta-sensor
       - sensor.count_automations
       - sensor.count_binary_sensors
       - sensor.count_cameras
@@ -104,6 +89,10 @@
       - sensor.ellen_kitchen_time
       - sensor.ellen_location
       - sensor.exterior_motion_ratio
+      - sensor.externalip
+      - sensor.fletcher_road_count
+      - sensor.fletcher_road_ratio
+      - sensor.fletcher_road_time
       - sensor.frontdoor_ago
       - sensor.frontdoor_motion_count
       - sensor.frontdoor_motion_time
@@ -146,6 +135,18 @@
       - sensor.last_ago
       - sensor.last_what
       - sensor.last_when
+      - sensor.martin_road_count
+      - sensor.martin_road_ratio
+      - sensor.martin_road_time
+      - sensor.other_road_count
+      - sensor.other_road_ratio
+      - sensor.other_road_time
+      - sensor.martin_interiorgate_count
+      - sensor.martin_interiorgate_ratio
+      - sensor.martin_interiorgate_time
+      - sensor.other_interiorgate_count
+      - sensor.other_interiorgate_ratio
+      - sensor.other_interiorgate_time
       - sensor.play1_state
       - sensor.play3_state
       - sensor.riley_bathroom_count
@@ -162,3 +163,7 @@
       - sensor.road_motion_count
       - sensor.road_motion_time
       - sensor.road_what
+      - sensor.interiorgate_ago
+      - sensor.interiorgate_motion_count
+      - sensor.interiorgate_motion_time
+      - sensor.interiorgate_what
