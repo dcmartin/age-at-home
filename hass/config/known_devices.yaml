@@ -259,6 +259,7 @@ rough-wind:
   track: true
   vendor: Raspberry Pi Foundation
 
+# 192.168.1.38
 aged-bush:
   mac: B8:27:EB:51:A7:48
   name: 'ageathome_interiorgate'
@@ -456,11 +457,11 @@ ipad_poolhouse:
   track: false
   vendor: Apple, Inc.
 
-ipad_kitchen:
+kitchenipad:
   hide_if_away: false
   icon:
   mac: 1C:AB:A7:EE:FC:52
-  name: ipad_kitchen
+  name: kitchenipad
   picture:
   track: false
   vendor: Apple, Inc.

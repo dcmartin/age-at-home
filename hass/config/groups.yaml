@@ -3,7 +3,7 @@
 #
 
 default_view:
-  view: yes
+  view: true
   name: Default View
   icon: mdi:home-variant
   entities:
@@ -12,7 +12,7 @@ default_view:
     - camera.wuradar
 
 over_view:
-  view: yes
+  view: true
   name: Over View
   icon: mdi:looks
   entities:
@@ -37,19 +37,12 @@ david_devices:
     - device_tracker.dcmsiphone7
     - device_tracker.davidcsapple_watch
 
-ian_devices:
-  name: ian_devices
+keli_devices:
+  name: keli_devices
   entities:
-    - device_tracker.ianmartinsiphone
-    - device_tracker.ianair
-
-ellen_devices:
-  name: ellen_devices
-  entities:
-    - device_tracker.ellens_ipad4prez
-    - device_tracker.ellens_iphone
-    - device_tracker.ellensipadpro
-    - device_tracker.ellensiphone5
+    - device_tracker.kelisiphone7
+    - device_tracker.kelimac
+    - device_tracker.kelisapple_watch
 
 hali_devices:
   name: hali_devices
@@ -57,6 +50,27 @@ hali_devices:
     - device_tracker.halisiphone 
     - device_tracker.haliair
     - device_tracker.halisapple_watch
+    - device_tracker.halimartinsipad
+
+ian_devices:
+  name: ian_devices
+  entities:
+    - device_tracker.ianmartinsiphone
+    - device_tracker.ianair
+
+riley_devices:
+  name: riley_devices
+  entities:
+    - device_tracker.rileymacbookair
+    - device_tracker.rileysiphone5
+
+ellen_devices:
+  name: ellen_devices
+  entities:
+    - device_tracker.ellens_ipad4prez
+    - device_tracker.ellens_iphone
+    - device_tracker.ellensipadpro
+    - device_tracker.ellensiphone
 
 iphones:
   name: iPhones
@@ -70,14 +84,14 @@ iphones:
     - device_tracker.halisiphone
     - device_tracker.ianmartinsiphone
     - device_tracker.rileysiphone5
-    - device_tracker.ellensiphone5
+    - device_tracker.ellensiphone
 
 #
 # PLAY1
 #
 
 play1_view:
-  view: yes
+  view: true
   icon: mdi:speaker
   name: Play1 View
   entities:
@@ -89,7 +103,7 @@ play1_view:
 #
 
 play3_view:
-  view: yes
+  view: true
   icon: mdi:speaker
   name: Play3 View
   entities:
@@ -134,7 +148,7 @@ family_detection:
 ##
 
 horizon_view:
-  view: yes
+  view: true
   name: Horizon View
   icon: mdi:image-filter-hdr
   entities:
@@ -271,18 +285,32 @@ horizon_agreement5:
 #
 
 ageathome_view:
-  view: yes
+  view: true
   name: AgeAtHome View
   icon: mdi:human-male-female
   entities:
+    - camera.last_image_annotated
     - group.ageathome_devices
     - group.ageathome_last
     - group.ageathome_when
+    - group.ageathome_ago
     - group.ageathome_motion
     - group.ageathome_wrong
-    - group.ageathome_accuracy
+
+ageathome_annotated_images:
+  view: true
+  name: AgeAtHome Annotated Images
+  icon: mdi:eye
+  entities:
+    - camera.interiorgate_image_annotated
+    - camera.kitchen_image_annotated
+    - camera.bathroom_image_annotated
+    - camera.frontdoor_image_annotated
+    - camera.road_image_annotated
 
 ageathome_accuracy:
+  view: true
+  icon: mdi:timetable
   name: AgeAtHome Accuracy
   entities:
     - history_graph.kitchen_accuracy
@@ -290,17 +318,6 @@ ageathome_accuracy:
     - history_graph.frontdoor_accuracy
     - history_graph.road_accuracy
     - history_graph.interiorgate_accuracy
-
-ageathome_cameras:
-  view: yes
-  name: AgeAtHome Cameras
-  icon: mdi:cancel
-  entities:
-    - camera.ageathome_kitchen
-    - camera.ageathome_bathroom
-    - camera.ageathome_frontdoor
-    - camera.ageathome_road
-    - camera.ageathome_interiorgate
 
 ageathome_devices:
   name: AgeAtHome Devices
@@ -345,7 +362,6 @@ ageathome_wrong:
 ageathome_last:
   name: 'AgeAtHome Last'
   entities:
-    - camera.last_image_annotated
     - sensor.last_who
     - sensor.last_what
     - sensor.last_where
@@ -358,21 +374,25 @@ ageathome_last:
     - sensor.road_last
     - sensor.interiorgate_last
 
+ageathome_ago:
+  name: 'AgeAtHome Ago' 
+  entities:
+    - sensor.kitchen_ago
+    - sensor.bathroom_ago
+    - sensor.frontdoor_ago
+    - sensor.road_ago
+    - sensor.interiorgate_ago
+    - sensor.interior_ago
+    - sensor.exterior_ago
+
 ageathome_when:
   name: 'AgeAtHome When' 
   entities:
     - sensor.kitchen_when
-    - sensor.kitchen_ago
     - sensor.bathroom_when
-    - sensor.bathroom_ago
     - sensor.frontdoor_when
-    - sensor.frontdoor_ago
     - sensor.road_when
-    - sensor.road_ago
     - sensor.interiorgate_when
-    - sensor.interiorgate_ago
-    - sensor.interior_ago
-    - sensor.exterior_ago
 
 # KITCHEN
 
@@ -381,12 +401,10 @@ ageathome_kitchen_view:
   name: AgeAtHome Kitchen View
   icon: mdi:stove
   entities:
-    - camera.kitchen_image_annotated
     - group.ageathome_kitchen_details
     - history_graph.kitchen_count
     - history_graph.kitchen_time
     - history_graph.kitchen_ratio
-    - history_graph.kitchen_accuracy
 
 ageathome_kitchen_details:
   name: ageathome_kitchen_details
@@ -409,12 +427,10 @@ ageathome_bathroom_view:
   name: AgeAtHome Bathroom View
   icon: mdi:anchor
   entities:
-    - camera.bathroom_image_annotated
     - group.ageathome_bathroom_details
     - history_graph.bathroom_count
     - history_graph.bathroom_time
     - history_graph.bathroom_ratio
-    - history_graph.bathroom_accuracy
 
 ageathome_bathroom_details:
   name: AgeAtHome Bathroom Details
@@ -438,12 +454,10 @@ ageathome_frontdoor_view:
   name: AgeAtHome Bathroom View
   icon: mdi:home-outline
   entities:
-    - camera.frontdoor_image_annotated
     - group.ageathome_frontdoor_details
     - history_graph.frontdoor_count
     - history_graph.frontdoor_time
     - history_graph.frontdoor_ratio
-    - history_graph.frontdoor_accuracy
 
 ageathome_frontdoor_details:
   name: AgeAtHome Frontdoor Details
@@ -467,12 +481,10 @@ ageathome_road_view:
   name: AgeAtHome Road View
   icon: mdi:road
   entities:
-    - camera.road_image_annotated
     - group.ageathome_road_details
     - history_graph.road_count
     - history_graph.road_time
     - history_graph.road_ratio
-    - history_graph.road_accuracy
 
 ageathome_road_details:
   name: AgeAtHome Road Details
@@ -496,12 +508,10 @@ ageathome_interiorgate_view:
   name: AgeAtHome Interior Gate View
   icon: mdi:gate
   entities:
-    - camera.interiorgate_image_annotated
     - group.ageathome_interiorgate_details
     - history_graph.interiorgate_count
     - history_graph.interiorgate_time
     - history_graph.interiorgate_ratio
-    - history_graph.interiorgate_accuracy
 
 ageathome_interiorgate_details:
   name: AgeAtHome Interior Gate Details
@@ -523,7 +533,7 @@ ageathome_interiorgate_details:
 #
 
 weather_view:
-  view: yes
+  view: true
   name: Weather View
   icon: mdi:weather-cloudy
   entities:
@@ -536,7 +546,7 @@ weather_view:
 #
 
 webcams_view:
-  view: yes
+  view: true
   name: Webcams View
   icon: mdi:webcam
   entities:
@@ -560,13 +570,18 @@ webcams_view:
     - camera.wcv80n_poolhousestereo
     - camera.wcv80n_diningroom
     - camera.wcv80n_backyard
+    - camera.ageathome_kitchen
+    - camera.ageathome_bathroom
+    - camera.ageathome_frontdoor
+    - camera.ageathome_road
+    - camera.ageathome_interiorgate
 
 #
 # MEDIAPLAYERS VIEW
 #
 
 mediaplayers_view:
-  view: yes
+  view: true
   name: Mediaplayers View
   icon: mdi:television
   entities:
@@ -592,7 +607,7 @@ david_plex:
 #
 
 status_view:
-  view: yes
+  view: true
   name: Status View
   icon: mdi:sitemap
   entities:

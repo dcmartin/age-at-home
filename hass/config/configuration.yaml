@@ -568,22 +568,23 @@ ios:
   push:
     categories:
       - name: Correct Model
-        identifier: correction
+        identifier: camera
         actions:
-          - identifier: 'CORRECT'
-            title: 'Correct'
+          - identifier: 'TRAIN'
+            title: 'Add to review'
             activationMode: 'background'
             authenticationRequired: no 
             destructive: no
             behavior: 'default'
-          - identifier: 'INCORRECT'
-            title: 'Incorrect'
+          - identifier: 'IGNORE'
+            title: 'Ignore event'
             activationMode: 'background'
             authenticationRequired: no
             destructive: no
-            behavior: 'textInput'
-            textInputButtonTitle: 'Who?'
-            textInputPlaceholder: 'Unknown'
+            behavior: 'default'
+            # behavior: 'textInput'
+            # textInputButtonTitle: 'Who?'
+            # textInputPlaceholder: 'Unknown'
 
 ###
 ### PLEX
@@ -2437,7 +2438,7 @@ sensor motion_sensors:
         - sensor.interiorgate_ago
       unit_of_measurement: seconds
       value_template: >
-        {{ ( states('sensor.road_ago')|int,states('sensor.interiorgate_ago')) | list | min }}
+        {{ ( states('sensor.road_ago')|int,states('sensor.interiorgate_ago')|int) | list | min }}
     kitchen_when:
       entity_id: sensor.kitchen_date
       value_template: '{{ (states.sensor.kitchen_date.state|int) | timestamp_custom("%a %b %d @ %I:%M %p") }}'
