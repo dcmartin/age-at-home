@@ -365,53 +365,38 @@ sensor aah_state_template:
         entity_id: states.device_tracker
         value_template: >
           {%- for state in states.device_tracker -%}
-            {%- if loop.last -%} 
-              {%- if state.attributes.friendly_name.startswith('ageathome_') -%}
-                "{{state.attributes.friendly_name.replace('ageathome_','')}}",
-              {%- endif -%}
-            {%- else -%}
-              {%- if state.attributes.friendly_name.startswith('ageathome_') -%}
-                "{{state.attributes.friendly_name.replace('ageathome_','')}}"
-              {%- endif -%}
+            {%- if loop.first -%} [ {%- endif -%}
+            {%- if state.attributes.friendly_name.startswith('ageathome_') -%}
+              "{{state.attributes.friendly_name.replace('ageathome_','')}}",
             {%- endif -%}
-          {%- endfor -%}
+          {%- endfor -%}null]
       aah_cameras:
-        entity_id: states.device_tracker
+        entity_id: states.camera
         value_template: >
-          {%- for state in states.device_tracker -%}
-            {%- if loop.last -%} 
-              {%- if state.attributes.friendly_name.startswith('ageathome_') -%}
-                "{{state.entity_id.replace('device_tracker.','')}}",
-              {%- endif -%}
-            {%- else -%}
-              {%- if state.attributes.friendly_name.startswith('ageathome_') -%}
-                "{{state.entity_id.replace('device_tracker.','')}}"
-              {%- endif -%}
+          {%- for state in states.camera -%}
+            {%- if loop.first -%} [ {%- endif -%}
+            {%- if state.attributes.friendly_name.startswith('ageathome_') -%}
+              "{{state.entity_id.replace('camera.','')}}",
             {%- endif -%}
-          {%- endfor -%}
+          {%- endfor -%}null]
       aah_devices:
         entity_id: states.device_tracker
         value_template: >
           {%- for state in states.device_tracker -%}
-            {%- if loop.last -%} 
-              {%- if state.attributes.friendly_name.startswith('ageathome_') -%}
-                {"camera":"{{state.entity_id.replace('device_tracker.','')}}","location":"{{state.attributes.friendly_name.replace('ageathome_','')}}"},
-              {%- endif -%}
-            {%- else -%}
-              {%- if state.attributes.friendly_name.startswith('ageathome_') -%}
-                {"camera":"{{state.entity_id.replace('device_tracker.','')}}","location":"{{state.attributes.friendly_name.replace('ageathome_','')}}"}
-              {%- endif -%}
+            {%- if loop.first -%} [ {%- endif -%}
+            {%- if state.attributes.friendly_name.startswith('ageathome_') -%}
+              {"device":"{{state.entity_id.replace('device_tracker.','')}}","location":"{{state.attributes.friendly_name.replace('ageathome_','')}}"},
             {%- endif -%}
-          {%- endfor -%}
-      aah_iphones:
+          {%- endfor -%}null]
+      aah_icloud:
         entity_id: states.device_tracker
         value_template: >
          {%- for state in states.device_tracker -%}
-            {%- if loop.first -%} {"gps":[ {%- endif -%}
-            {%- if state.attributes.source_type and state.attributes.source_type == "gps" -%}
+            {%- if loop.first -%} [ {%- endif -%}
+            {%- if state.attributes.source_type and state.attributes.account_name is defined -%}
               {"device":"{{state.entity_id.replace('device_tracker.','')}}","name":"{{state.attributes.friendly_name}}"},
             {%- endif -%}
-          {%- endfor -%}null]}
+          {%- endfor -%}null]
       camera_kitchen_entity_picture:
         entity_id: camera.ageathome_kitchen
         value_template: '{{ states.camera.ageathome_kitchen.attributes.entity_picture }}'
@@ -559,16 +544,38 @@ zone: !include zones.yaml
 
 ## iOS notifications (single targer)
 
-notify dcmsiphone7:
-  - platform: ios
-    name: dcmsiphone7
-    target: !secret notify_target
+#notify david_ios:
+#  - platform: ios
+#    name: dcmsiphone7
+#    target: !secret david_ios_notify_target
+
+#notify keli_ios:
+#  - platform: ios
+#    name: kelisiphone7
+#    target: !secret david_ios_notify_target
+
+notify ageathome_smtp:
+  - name: ageathome_smtp
+    sender_name: HomeAssistant-P40
+    platform: smtp
+    username: ageathome
+    password: !secret wcv80n_password
+    sender: ageathome@dcmartin.com
+    recipient:
+      - ageathome@dcmartin.com
+    server: smtp.dcmartin.com
+    encryption: starttls
+    port: 587
+    timeout: 15
+    debug: true
+    # encryption: none
+    # port: 25
 
 ios:
   push:
     categories:
-      - name: Correct Model
-        identifier: camera
+      - name: Train or Ignore
+        identifier: train_ignore
         actions:
           - identifier: 'TRAIN'
             title: 'Add to review'
@@ -3800,7 +3807,7 @@ binary_sensor ian_maybe_home:
 ### TRACK PEOPLE
 ###
 
-sensor people_location_template:
+sensor people_status_template:
   platform: template
   sensors:
     david_status:
@@ -3817,38 +3824,106 @@ sensor people_location_template:
            {"device":{{ e.attributes.friendly_name|tojson }},"location":"home","online":true,"feet":{{d*5280.0}}}
          {%- endif -%}
        {%- endif -%}
+    keli_status:
+      friendly_name: "Keli's status"
+      entity_id:
+        - group.keli_devices
+      value_template: >
+       {%- set e = closest(states.group.keli_devices) -%}
+       {%- if e is defined -%} 
+         {%- set d = distance(e) -%}
+         {%- if e.source_type == 'gps' -%} 
+           {"device":{{ e.attributes.friendly_name|tojson }},"location":{{e.state|tojson}},"online":{{(e.attributes.device_status == 'online')|tojson}},"feet":{{d*5280.0}}}
+         {%- else -%}
+           {"device":{{ e.attributes.friendly_name|tojson }},"location":"home","online":true,"feet":{{d*5280.0}}}
+         {%- endif -%}
+       {%- endif -%}
+    hali_status:
+      friendly_name: "Hali's status"
+      entity_id:
+        - group.hali_devices
+      value_template: >
+       {%- set e = closest(states.group.hali_devices) -%}
+       {%- if e is defined -%} 
+         {%- set d = distance(e) -%}
+         {%- if e.source_type == 'gps' -%} 
+           {"device":{{ e.attributes.friendly_name|tojson }},"location":{{e.state|tojson}},"online":{{(e.attributes.device_status == 'online')|tojson}},"feet":{{d*5280.0}}}
+         {%- else -%}
+           {"device":{{ e.attributes.friendly_name|tojson }},"location":"home","online":true,"feet":{{d*5280.0}}}
+         {%- endif -%}
+       {%- endif -%}
+    ian_status:
+      friendly_name: "Ian's status"
+      entity_id:
+        - group.ian_devices
+      value_template: >
+       {%- set e = closest(states.group.ian_devices) -%}
+       {%- if e is defined -%} 
+         {%- set d = distance(e) -%}
+         {%- if e.source_type == 'gps' -%} 
+           {"device":{{ e.attributes.friendly_name|tojson }},"location":{{e.state|tojson}},"online":{{(e.attributes.device_status == 'online')|tojson}},"feet":{{d*5280.0}}}
+         {%- else -%}
+           {"device":{{ e.attributes.friendly_name|tojson }},"location":"home","online":true,"feet":{{d*5280.0}}}
+         {%- endif -%}
+       {%- endif -%}
+    riley_status:
+      friendly_name: "Riley's status"
+      entity_id:
+        - group.riley_devices
+      value_template: >
+       {%- set e = closest(states.group.riley_devices) -%}
+       {%- if e is defined -%} 
+         {%- set d = distance(e) -%}
+         {%- if e.source_type == 'gps' -%} 
+           {"device":{{ e.attributes.friendly_name|tojson }},"location":{{e.state|tojson}},"online":{{(e.attributes.device_status == 'online')|tojson}},"feet":{{d*5280.0}}}
+         {%- else -%}
+           {"device":{{ e.attributes.friendly_name|tojson }},"location":"home","online":true,"feet":{{d*5280.0}}}
+         {%- endif -%}
+       {%- endif -%}
+    ellen_status:
+      friendly_name: "Ellen's status"
+      entity_id:
+        - group.ellen_devices
+      value_template: >
+       {%- set e = closest(states.group.ellen_devices) -%}
+       {%- if e is defined -%} 
+         {%- set d = distance(e) -%}
+         {%- if e.source_type == 'gps' -%} 
+           {"device":{{ e.attributes.friendly_name|tojson }},"location":{{e.state|tojson}},"online":{{(e.attributes.device_status == 'online')|tojson}},"feet":{{d*5280.0}}}
+         {%- else -%}
+           {"device":{{ e.attributes.friendly_name|tojson }},"location":"home","online":true,"feet":{{d*5280.0}}}
+         {%- endif -%}
+       {%- endif -%}
     david_location:
       friendly_name: "David's location"
-      entity_id:
-        - group.david_devices
+      entity_id: group.david_devices
       value_template: >
         {{ closest(states.group.david_devices).state }}
     keli_location:
-      entity_id: device_tracker.kelisiphone7
       friendly_name: "Keli's location"
+      entity_id: group.keli_devices
       value_template: >
-        {{ states('device_tracker.kelisiphone7') }}
+        {{ closest(states.group.keli_devices).state }}
     hali_location:
-      entity_id: 
-        - group.hali_devices
       friendly_name: "Hali's location"
+      entity_id: group.hali_devices
       value_template: >
         {{ closest(states.group.hali_devices).state }}
     ian_location:
-      entity_id: device_tracker.ianmartinsiphone 
       friendly_name: "Ian's location"
+      entity_id: group.ian_devices
       value_template: >
-        {{ states('device_tracker.ianmartinsiphone') }}
+        {{ closest(states.group.ian_devices).state }}
     riley_location:
-      entity_id: device_tracker.rileysiphone5
       friendly_name: "Riley's location"
+      entity_id: group.riley_devices
       value_template: >
-        {{ states('device_tracker.rileysiphone5') }}
+        {{ closest(states.group.riley_devices).state }}
     ellen_location:
-      entity_id: device_tracker.ellensiphone5
       friendly_name: "Ellen's location"
+      entity_id: group.ellen_devices
       value_template: >
-        {{ states('device_tracker.ellensiphone5') }}
+        {{ closest(states.group.ellen_devices).state }}
 
 logger: !include logger.yaml
 group: !include groups.yaml

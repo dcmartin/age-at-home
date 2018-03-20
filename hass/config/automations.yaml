@@ -1,3 +1,7 @@
+###
+### LIGHTS
+###
+
 - id: auto_light_on_enabled
   alias: auto_light_on_enabled
   trigger:
@@ -49,6 +53,11 @@
 ## AGE-AT-HOME
 ##
 
+#  condition:
+#    - condition: template
+#      value_template: >
+#        {{ trigger.to_state.state == 'not_home' }}
+
 # devices offline ('not_home')
 - id: aah_notify_devices_offline
   alias: aah_notify_devices_offline
@@ -70,14 +79,10 @@
       to: 'not_home'
       for:
         minutes: 10
-#  condition:
-#    - condition: template
-#      value_template: >
-#        {{ trigger.to_state.state == 'not_home' }}
   action:
     - service: mqtt.publish
       data_template:
-        topic: 'ageathome/status/camera'
+        topic: 'status/camera'
         payload: >
           {"device":"{{ trigger.to_state.attributes.friendly_name }}","status":"offline"}
     - service: notify.notify
@@ -108,47 +113,8 @@
           {{ trigger.to_state.attributes.friendly_name }} is offline.
 
 ##
-## PEOPLE STATUS
+## TEST CODE FOR LOCATION CHANGE PROCESSING
 ##
-
-- id: notify_david
-  alias: 'notify_david'
-  initial_state: 'on'
-  trigger:
-    - platform: state
-      entity_id: 
-        - group.david_devices
-        - sensor.david_status
-  condition: 
-    condition: and
-    conditions:
-      - condition: time
-        after: '06:00'
-      - condition: time
-        before: '22:00'
-      - condition: template
-        value_template: >
-          {{ (trigger.from_state != None) and (trigger.to_state.state != trigger.from_state.state) }}
-  action:
-    # NOTIFY to IOS
-    - service: notify.notify
-      data_template:
-        message: >
-          {{ trigger.to_state.attributes.friendly_name }} location just changed from {{ trigger.from_state.state }} to {{ trigger.to_state.state }}
-    # PUBLISH to MQTT
-    - service: mqtt.publish
-      data_template:
-        topic: 'notify/david'
-        payload: >
-          {
-           "entity":{{trigger.entity_id|tojson}},
-           "date:",{{(now().timestamp()|int)}},
-           "from":{{ trigger.from_state.state|tojson }},
-           "to":{{ trigger.to_state.state|tojson }},
-           "what":"david",
-           "source":{{states(trigger.entity_id)|tojson}},
-           "state":{{states('sensor.david_status')|tojson}}
-          }
 
 # {% set trigger = { "from_state": { "state": "Not Here", "attributes": {"friendly_name":"David iPhone7"}}, "to_state": { "state": "Home" }, "entity_id": "group.david_devices" } %}
 # {% set e = trigger.entity_id %}
@@ -164,6 +130,52 @@
 #           {"device":{{ e.attributes.friendly_name|tojson }},"location":"home","online":true,"feet":{{d*5280.0}}}
 #         {%- endif -%}
 #       {%- endif -%}
+
+##
+## PEOPLE LOCATION CHANGE NOTIFICATIONS
+##
+
+# {% set trigger = { "to_state": { "state": "HOME", "attributes": {"name": "dcmsiphone7", "friendly_name":"David's iPhone7"}}, "from_state": { "state": "NOTHERE" }, "entity_id": "group.david_devices" } %}
+#  status/{{ trigger.entity_id.replace("group.","").replace("_devices","")|lower }}/location
+
+- id: notify_david
+  alias: 'notify_david'
+  initial_state: 'on'
+  trigger:
+    - platform: state
+      entity_id: 
+        - group.david_devices
+        # - sensor.david_status
+  condition: 
+    condition: and
+    conditions:
+      - condition: time
+        after: '06:00'
+      - condition: time
+        before: '22:00'
+      - condition: template
+        value_template: >
+          {{ (trigger.from_state != None) and (trigger.to_state.state != trigger.from_state.state) }}
+  action:
+    - service: notify.notify
+      data_template:
+        message: >
+          {{ trigger.to_state.attributes.friendly_name }} location just changed from {{ trigger.from_state.state }} to {{ trigger.to_state.state }}
+    - service: mqtt.publish
+      data_template:
+        topic: status/location
+        payload: >-
+          {% set what = trigger.entity_id.replace("group.","").replace("_devices","")|lower %}
+          {
+           "source":{{trigger.entity_id|tojson}},
+           "name": {{trigger.to_state.attributes.name|tojson}}
+           "friendly_name": {{trigger.to_state.attributes.friendly_name|tojson}}
+           "date:",{{(now().timestamp()|int)}},
+           "from":{{ trigger.from_state.state|tojson }},
+           "to":{{ trigger.to_state.state|tojson }},
+           "person":{{ what }}
+           "state": {{states(("sensor.",what,"_status")|join|lower) }}
+          }
 
 # KELI
 - id: notify_keli
@@ -295,7 +307,7 @@
 #
 
 
-- id: notify_lowscore
+- id: aah_publish_lowscore
   alias: very low score
   trigger:
     platform: numeric_state
@@ -308,7 +320,7 @@
         payload: >
           {"location":{{states('sensor.last_where')|tojson}},"model":{{states('sensor.last_who')|tojson}},"class":{{states('sensor.last_what')|tojson}},"score":{{states('sensor.last_why')}}}
 
-- id: notify_highscore
+- id: aah_publish_highscore
   alias: very high score
   trigger:
     platform: numeric_state
@@ -325,7 +337,8 @@
 ### INTERIOR GATE
 ###
 
-- alias: 'Interior Gate Open'
+- id: interiorgate_open
+  alias: 'Interior Gate Open'
   initial_state: on
   trigger:
     platform: state
@@ -336,7 +349,8 @@
     service: script.turn_on
     entity_id: script.gate_door_alarm
 
-- alias: 'Interior Gate Closed'
+- id: interiorgate_closed
+  alias: 'Interior Gate Closed'
   initial_state: on
   trigger:
     platform: state
@@ -347,7 +361,8 @@
     service: script.turn_off
     entity_id: script.gate_door_alarm
 
-- alias: 'Open Interior Gate'
+- id: interiorgate_opengate
+  alias: 'Open Interior Gate'
   initial_state: on
   trigger:
     platform: event
@@ -358,7 +373,8 @@
     service: cover.open_cover
     entity_id: cover.interiorgate_opener
 
-- alias: 'Close Interior Gate'
+- id: interiorgate_closegate
+  alias: 'Close Interior Gate'
   initial_state: on
   trigger:
     platform: event
@@ -373,8 +389,12 @@
 ### NOTIFY IF PERSON SEEN IN LOCATION IS NOT HOME or UNKNOWN (DNE)
 ###
 
-- id: aah_location_not_people
-  alias: aah_location_not_people
+##
+## LISTEN to 'presence/+' AND WATCH FOR FALSE POSITIVES (PERSON SEEN but not at HOME)
+##
+
+- id: aah_person_not_home
+  alias: aah_person_not_home
   initial_state: on
   trigger:
     - platform: mqtt
@@ -391,24 +411,38 @@
            {%- endif -%}
          {%- endfor -%}
   action:
+    # send MQTT message that a false-positive has occurred
     - service: mqtt.publish
       data_template:
-        topic: 'wrong/group/people/{{ trigger.payload_json.class }}'
+        topic: 'wrong/people'
         payload: >-
           {
-           "type":"group/people",
            "triggered":{{(now().timestamp()|int)}},
            "device":{{trigger.payload_json.device|tojson}},
            "id":{{trigger.payload_json.id|tojson}},
-           "where":{{trigger.payload_json.location|tojson}},
-           "who":{{trigger.payload_json.model|tojson}},
-           "what":{{trigger.payload_json.class|tojson}},
-           "why":{{trigger.payload_json.score|float}},
+           "location":{{trigger.payload_json.location|tojson}},
+           "model":{{trigger.payload_json.model|tojson}},
+           "class":{{trigger.payload_json.class|tojson}},
+           "score":{{trigger.payload_json.score|float}},
            "date":{{trigger.payload_json.date|int}}
           }
-    - service: notify.notify
+
+##
+## LISTEN to 'wrong/people/#' 
+##
+
+# NOTIFY BY EMAIL
+- id: aah_false_positive_email
+  alias: aah_false_positive_email
+  initial_state: on
+  trigger:
+    - platform: mqtt
+      topic: 'wrong/people/#'
+  action:
+    - service: notify.ageathome_smtp
       data_template:
-        title: NOT HOME
+        title: FALSE POSITIVE
+        # {% set trigger = { "payload_json": { "triggered": now().timestamp()|int, "device": "roughfog", "id": "YYYYMMDDHHMMSS.####","location": "kitchen","model":"roughfog-#####","class":"david","score":0.90,"date",(now().timestamp()|int) - 30 } } %} {{ trigger }}
         message: >-
           SAW {{ trigger.payload_json.class }} in {{ trigger.payload_json.location }} 
           AT {{ trigger.payload_json.date|int|timestamp_custom("%a %b %d @ %I:%M %p") | default(null) }}
@@ -419,6 +453,35 @@
             url: http://homeassistant.dcmartin.com:8123{{- states(("sensor.camera_",trigger.payload_json.location,"_entity_picture")|join|lower) -}}
             content-type: jpeg
             hide-thumbnail: false
+
+## NOTIFY BY IOS PUSH
+- id: aah_wrong_group_people
+  alias: aah_wrong_group_people
+  initial_state: on
+  trigger:
+    - platform: mqtt
+      topic: 'wrong/people/#'
+  condition: 
+     - condition: template
+       # {% set trigger = { "payload_json": { "triggered": now().timestamp()|int, "device": "roughfog", "id": "YYYYMMDDHHMMSS.####","location": "kitchen","model":"roughfog-#####","class":"david","score":0.90,"date",(now().timestamp()|int) - 30 } } %} {{ trigger }}
+       value_template: >
+         {{ true }}
+  action:
+    - service: notify.notify
+      data_template:
+        title: FALSE POSITIVE
+        data:
+          push:
+            badge: 0
+            sound: "US-EN-Alexa-Motion-Detected-Generic.wav"
+            category: camera 
+          entity_id: >
+            {{ ("camera.ageathome_",trigger.payload_json.location,"")|join|lower }}
+          action_data:
+            entity_id: >
+              {{ ("camera.ageathome_",trigger.payload_json.location,"")|join|lower }}
+            my_custom_data: >
+              {{ trigger.payload_json|tojson }}
 
 ##
 ## NOTIFY MOTION at INTERIORGATE
@@ -440,23 +503,16 @@
   action:
     - service: notify.notify
       data_template:
-        title: INTERIOR GATE
+        title: InteriorGate motion
         message: >-
           SAW {{ trigger.payload_json.class }}
           AT {{ trigger.payload_json.date|int|timestamp_custom("%a %b %d @ %I:%M %p") | default(null) }}
           [ {{ trigger.payload_json.model }} {{ trigger.payload_json.score|float }} {{ trigger.payload_json.id }} ]
         data:
-          push:
-            badge: 0
-            sound: "US-EN-Alexa-Motion-Detected-Generic.wav"
-            category: camera 
-          entity_id: >
-            {{ ("camera.ageathome_",trigger.payload_json.location,"")|join|lower }}
-          action_data:
-            entity_id: >
-              {{ ("camera.ageathome_",trigger.payload_json.location,"")|join|lower }}
-            my_custom_data: >
-              {{ trigger.payload_json.id }}
+          attachment:
+            url: http://homeassistant.dcmartin.com:8123{{- states(("sensor.camera_",trigger.payload_json.location,"_entity_picture")|join|lower) -}}
+            content-type: jpeg
+            hide-thumbnail: false
 
 ##
 ## CAPTURE RESPONSE from IOS NOTIFICATIONS
@@ -522,10 +578,10 @@
            "triggered":{{(now().timestamp()|int)}},
            "device":{{trigger.payload_json.device|tojson}},
            "id":{{trigger.payload_json.id|tojson}},
-           "where":{{trigger.payload_json.location|tojson}},
-           "who":{{trigger.payload_json.model|tojson}},
-           "what":{{trigger.payload_json.class|tojson}},
-           "why":{{trigger.payload_json.score|float}},
+           "location":{{trigger.payload_json.location|tojson}},
+           "model":{{trigger.payload_json.model|tojson}},
+           "class":{{trigger.payload_json.class|tojson}},
+           "score":{{trigger.payload_json.score|float}},
            "date":{{trigger.payload_json.date|int}}
           }
     - service: notify.notify
