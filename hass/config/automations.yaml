@@ -83,6 +83,7 @@
     - service: mqtt.publish
       data_template:
         topic: 'status/camera'
+        retain: true
         payload: >
           {"device":"{{ trigger.to_state.attributes.friendly_name }}","status":"offline"}
     - service: notify.notify
@@ -164,6 +165,7 @@
     - service: mqtt.publish
       data_template:
         topic: status/location
+        retain: true
         payload: >-
           {% set what = trigger.entity_id.replace("group.","").replace("_devices","")|lower %}
           {
@@ -317,6 +319,7 @@
     - service: mqtt.publish
       data_template:
         topic: 'ageathome/notify/score'
+        retain: true
         payload: >
           {"location":{{states('sensor.last_where')|tojson}},"model":{{states('sensor.last_who')|tojson}},"class":{{states('sensor.last_what')|tojson}},"score":{{states('sensor.last_why')}}}
 
@@ -330,6 +333,7 @@
     - service: mqtt.publish
       data_template:
         topic: 'ageathome/notify/score'
+        retain: true
         payload: >
           {"location":{{states('sensor.last_where')|tojson}},"model":{{states('sensor.last_who')|tojson}},"class":{{states('sensor.last_what')|tojson}},"score":{{states('sensor.last_why')}}}
 
@@ -390,7 +394,7 @@
 ###
 
 ##
-## LISTEN to 'presence/+' AND WATCH FOR FALSE POSITIVES (PERSON SEEN but not at HOME)
+## LISTEN to 'presence/#' AND WATCH FOR FALSE POSITIVES (PERSON SEEN but not at HOME)
 ##
 
 - id: aah_person_not_home
@@ -398,7 +402,7 @@
   initial_state: on
   trigger:
     - platform: mqtt
-      topic: 'presence/+'
+      topic: 'presence/#'
   condition: 
      - condition: template
        # {% set trigger = { "payload_json": { "class": "david", "location": "kitchen" } } %}
@@ -414,9 +418,12 @@
     # send MQTT message that a false-positive has occurred
     - service: mqtt.publish
       data_template:
-        topic: 'wrong/people'
+        topic: >
+          wrong/person/{{trigger.payload_json.class|tojson}}
+        retain: true
         payload: >-
           {
+           "type":"not_home",
            "triggered":{{(now().timestamp()|int)}},
            "device":{{trigger.payload_json.device|tojson}},
            "id":{{trigger.payload_json.id|tojson}},
@@ -428,7 +435,7 @@
           }
 
 ##
-## LISTEN to 'wrong/people/#' 
+## LISTEN to 'wrong/person/#' 
 ##
 
 # NOTIFY BY EMAIL
@@ -437,7 +444,7 @@
   initial_state: on
   trigger:
     - platform: mqtt
-      topic: 'wrong/people/#'
+      topic: 'wrong/person/#'
   action:
     - service: notify.ageathome_smtp
       data_template:
@@ -455,19 +462,19 @@
             hide-thumbnail: false
 
 ## NOTIFY BY IOS PUSH
-- id: aah_wrong_group_people
-  alias: aah_wrong_group_people
+- id: aah_wrong_person_notify
+  alias: aah_wrong_person_notify
   initial_state: on
   trigger:
     - platform: mqtt
-      topic: 'wrong/people/#'
+      topic: 'wrong/person/#'
   condition: 
      - condition: template
        # {% set trigger = { "payload_json": { "triggered": now().timestamp()|int, "device": "roughfog", "id": "YYYYMMDDHHMMSS.####","location": "kitchen","model":"roughfog-#####","class":"david","score":0.90,"date",(now().timestamp()|int) - 30 } } %} {{ trigger }}
        value_template: >
          {{ true }}
   action:
-    - service: notify.notify
+    - service: notify.ios_dcms_iphone7
       data_template:
         title: FALSE POSITIVE
         data:
@@ -483,6 +490,45 @@
             my_custom_data: >
               {{ trigger.payload_json|tojson }}
 
+## CAPTURE RESPONSE from IOS NOTIFICATIONS
+#
+# EXAMPLE PAYLOAD FROM IOS NOTIFICATION
+#
+# {
+#  "sourceDeviceName": "Robbie's iPhone 7 Plus",
+#  "sourceDeviceID": "robbies_iphone_7_plus",
+#  "actionName": "SOUND_ALARM",
+#  "sourceDevicePushId": "ab9f02fe-6ac6-47b8-adeb-5dd87b489156",
+#  "textInput": "",
+#  "actionData": {}
+# }
+#
+- id: aah_correction
+  alias: aah_correction
+  initial_state: on
+  trigger:
+    -  platform: event
+       event_type: ios.notification_action_fired
+       # event_data:
+       #   actionName: SOUND_ALARM
+  action:
+    - service: mqtt.publish
+      data_template:
+        topic: 'correction/entity'
+        retain: true
+        payload: >-
+          {
+           "type":"correction",
+           "triggered":{{(now().timestamp()|int)}},
+           "payload":{{trigger.payload_json|tojson}},
+          }
+    - service: notify.ios_dcms_iphone7
+      data_template:
+        title: RECEIVED
+        message: >
+          {{ trigger.payload_json.textInput }} {{ trigger.payload_json.actionData }} 
+
+
 ##
 ## NOTIFY MOTION at INTERIORGATE
 ##
@@ -492,7 +538,7 @@
   initial_state: on
   trigger:
     - platform: mqtt
-      topic: 'presence/interiorgate'
+      topic: 'presence/interiorgate/#'
   condition: 
     condition: and
     conditions:
@@ -501,6 +547,12 @@
       - condition: time
         before: '22:00'
   action:
+    - service: mqtt.publish
+      data_template:
+        topic: 'status/interiorgate'
+        retain: false
+        payload: >-
+          { "type":"motion", "location":"interiorgate", "triggered":{{- (now().timestamp()|int) -}}, "payload":{{- trigger.payload_json|tojson -}} }
     - service: notify.notify
       data_template:
         title: InteriorGate motion
@@ -515,66 +567,26 @@
             hide-thumbnail: false
 
 ##
-## CAPTURE RESPONSE from IOS NOTIFICATIONS
-##
-
-#
-# EXAMPLE PAYLOAD FROM IOS NOTIFICATION
-#
-# {
-#  "sourceDeviceName": "Robbie's iPhone 7 Plus",
-#  "sourceDeviceID": "robbies_iphone_7_plus",
-#  "actionName": "SOUND_ALARM",
-#  "sourceDevicePushId": "ab9f02fe-6ac6-47b8-adeb-5dd87b489156",
-#  "textInput": "",
-#  "actionData": {}
-# }
-#
-
-- id: aah_correction
-  alias: aah_correction
-  initial_state: on
-  trigger:
-    -  platform: event
-       event_type: ios.notification_action_fired
-       # event_data:
-       #   actionName: SOUND_ALARM
-  action:
-    - service: mqtt.publish
-      data_template:
-        topic: 'correction/entity'
-        payload: >-
-          {
-           "type":"correction",
-           "triggered":{{(now().timestamp()|int)}},
-           "payload":{{trigger.payload_json|tojson}},
-          }
-    - service: notify.notify
-      data_template:
-        title: RECEIVED
-        message: >
-          {{ trigger.payload_json.textInput }} {{ trigger.payload_json.actionData }} 
-
-##
 ## SEND NOTIFICATION FOR MARTIN_C70 on ROAD when DAVID is HOME
 ##
 
-- id: aah_location_not_road
-  alias: aah_location_not_road
+- id: aah_vehicle_wrong_detector
+  alias: aah_vehicle_wrong_detector
   initial_state: on
   trigger:
     - platform: mqtt
-      topic: 'presence/road'
+      topic: 'presence/road/#'
   condition: 
      - condition: template
        value_template: '{{ trigger.payload_json.class == "martin_c70" and states("sensor.david_location")|lower == "home" }}'
   action:
     - service: mqtt.publish
       data_template:
-        topic: 'wrong/{{ trigger.payload_json.location }}/{{ trigger.payload_json.class }}'
+        topic: 'wrong/vehicle/{{ trigger.payload_json.class }}'
+        retain: true
         payload: >-
           {
-           "type":"road",
+           "type":"vehicle_not_road",
            "triggered":{{(now().timestamp()|int)}},
            "device":{{trigger.payload_json.device|tojson}},
            "id":{{trigger.payload_json.id|tojson}},
@@ -584,9 +596,17 @@
            "score":{{trigger.payload_json.score|float}},
            "date":{{trigger.payload_json.date|int}}
           }
-    - service: notify.notify
+
+- id: aah_vehicle_wrong_notify
+  alias: aah_vehicle_wrong_notify
+  initial_state: on
+  trigger:
+    - platform: mqtt
+      topic: 'wrong/vehicle/#'
+  action:
+    - service: notify.ios_dcms_iphone7
       data_template:
-        title: NOTROAD1
+        title: WRONG VEHICLE
         message: >-
           saw {{ trigger.payload_json.class }} ( {{ states(("sensor.",trigger.payload_json.class,"_location")|join|lower) }} )
           in {{ trigger.payload_json.location }} 
@@ -638,6 +658,7 @@
     - service: mqtt.publish
       data_template:
         topic: 'state/light/all'
+        retain: true
         payload: >
           {%- for state in states.light -%}
             {%- if loop.first -%}{"category":"light","date":{{ (now().timestamp()|int) }},"items":[
@@ -657,6 +678,7 @@
     - service: mqtt.publish
       data_template:
         topic: 'state/automation/all'
+        retain: true
         payload: >
           {%- for state in states.automation -%}
             {%- if loop.first -%}{"category":"automation","date":{{ (now().timestamp()|int) }},"items":[
@@ -676,6 +698,7 @@
     - service: mqtt.publish
       data_template:
         topic: 'state/binary_sensor/all'
+        retain: true
         payload: >
           {% for state in states.binary_sensor -%}
             {%- if loop.first -%} {"category":"binary_sensor","date":{{ (now().timestamp()|int) }},"items":[
@@ -695,6 +718,7 @@
     - service: mqtt.publish
       data_template:
         topic: 'state/camera/all'
+        retain: true
         payload: >
           {% for state in states.camera -%}
             {%- if loop.first -%}{"category":"camera","date":{{ (now().timestamp()|int) }},"items":[
@@ -714,6 +738,7 @@
     - service: mqtt.publish
       data_template:
         topic: 'state/device_tracker/all'
+        retain: true
         payload: >
          {% for state in states.device_tracker -%}
            {%- if loop.first -%}{"category":"device_tracker","date":{{ (now().timestamp()|int) }},"items":[
@@ -740,6 +765,7 @@
     - service: mqtt.publish
       data_template:
         topic: 'state/media_player/all'
+        retain: true
         payload: >
           {% for state in states.media_player -%}
             {%- if loop.first -%}{"category":"media_player","date":{{ (now().timestamp()|int) }},"items":[
@@ -759,6 +785,7 @@
     - service: mqtt.publish
       data_template:
         topic: 'state/sensor/all'
+        retain: true
         payload: >
          {% for state in states.sensor -%}
            {%- if loop.first -%}{"category":"sensor","date":{{ (now().timestamp()|int) }},"items":[
@@ -781,6 +808,7 @@
     - service: mqtt.publish
       data_template:
         topic: 'state/zone/all'
+        retain: true
         payload: >
           {% for state in states.zone -%}
             {%- if loop.first -%} {"category":"zone","date":{{ (now().timestamp()|int) }},"items":[
@@ -800,6 +828,7 @@
     - service: mqtt.publish
       data_template:
         topic: 'state/all'
+        retain: true
         payload: >
           {%- for i in states -%}
             {%- if loop.first -%}[{%- elif loop.last -%}]{%- else -%},{%- endif -%}
