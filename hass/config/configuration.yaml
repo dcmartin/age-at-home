@@ -163,7 +163,7 @@ panel_iframe:
   cameras:
     title: Cameras
     icon: mdi:webcam
-    url: 'http://192.168.1.32/LOCAL.html'
+    url: 'http://192.168.1.33/LOCAL.html'
 
 ###
 ### SENSORS
@@ -379,7 +379,7 @@ sensor aah_state_template:
               "{{state.entity_id.replace('camera.','')}}",
             {%- endif -%}
           {%- endfor -%}null]
-      aah_devices:
+      devices_aah:
         entity_id: states.device_tracker
         value_template: >
           {%- for state in states.device_tracker -%}
@@ -397,21 +397,21 @@ sensor aah_state_template:
               {"device":"{{state.entity_id.replace('device_tracker.','')}}","name":"{{state.attributes.friendly_name}}"},
             {%- endif -%}
           {%- endfor -%}null]
-      camera_kitchen_entity_picture:
+      kitchen_camera_entity_picture:
         entity_id: camera.ageathome_kitchen
-        value_template: '{{ states.camera.ageathome_kitchen.attributes.entity_picture }}'
-      camera_bathroom_entity_picture:
+        value_template: '{{ states.camera.kitchen_image_annotated.attributes.entity_picture }}'
+      bathroom_camera_entity_picture:
         entity_id: camera.ageathome_bathroom
-        value_template: '{{ states.camera.ageathome_bathroom.attributes.entity_picture }}'
-      camera_frontdoor_entity_picture:
+        value_template: '{{ states.camera.bathroom_image_annotated.attributes.entity_picture }}'
+      frontdoor_camera_entity_picture:
         entity_id: camera.ageathome_frontdoor
-        value_template: '{{ states.camera.ageathome_frontdoor.attributes.entity_picture }}'
+        value_template: '{{ states.camera.frontdoor_image_annotated.attributes.entity_picture }}'
       camera_road_entity_picture:
         entity_id: camera.ageathome_road
-        value_template: '{{ states.camera.ageathome_road.attributes.entity_picture }}'
+        value_template: '{{ states.camera.road_image_annotated.attributes.entity_picture }}'
       camera_interiorgate_entity_picture:
         entity_id: camera.ageathome_interiorgate
-        value_template: '{{ states.camera.ageathome_interiorgate.attributes.entity_picture }}'
+        value_template: '{{ states.camera.interiorgate_image_annotated.attributes.entity_picture }}'
 
 ###
 ### SONOS
@@ -514,7 +514,7 @@ device_tracker dt_nmap:
   - platform: nmap_tracker
     hosts: 192.168.1.1/24
     home_interval: 10
-    track_new_devices: yes
+    track_devices_new: yes
     consider_home: 180
     exclude:
      - 192.168.1.40
@@ -542,18 +542,6 @@ zone: !include zones.yaml
 ### NOTIFY
 ###
 
-## iOS notifications (single targer)
-
-#notify david_ios:
-#  - platform: ios
-#    name: dcmsiphone7
-#    target: !secret david_ios_notify_target
-
-#notify keli_ios:
-#  - platform: ios
-#    name: kelisiphone7
-#    target: !secret david_ios_notify_target
-
 notify ageathome_smtp:
   - name: ageathome_smtp
     sender_name: HomeAssistant-P40
@@ -563,13 +551,13 @@ notify ageathome_smtp:
     sender: ageathome@dcmartin.com
     recipient:
       - ageathome@dcmartin.com
-    server: smtp.dcmartin.com
+    server: 192.168.1.33
+    # encryption: none
+    # port: 25
     encryption: starttls
     port: 587
     timeout: 15
     debug: true
-    # encryption: none
-    # port: 25
 
 ios:
   push:
@@ -597,18 +585,16 @@ ios:
 ### PLEX
 ###
 
-## media player
 media_player david_plex:
   - platform: plex
     name: david_plex
-    ip_address: 192.168.1.32
+    ip_address: 192.168.1.33
     port: 32400
     token: !secret plex_token
 
-## sensor
 sensor david_plex:
   - platform: plex
-    host: 192.168.1.32
+    host: 192.168.1.33
     port: 32400
     name: david_plex
     username: !secret plex_username
@@ -691,11 +677,11 @@ camera wcv80n_interior_gate:
     username: !secret wcv80n_username
     password: !secret wcv80n_password
 
-camera wcv80n_kitchen:
+camera wcv80kitchen_n:
   - platform: mjpeg
     mjpeg_url: http://192.168.1.167/img/video.mjpeg
     still_image_url: http://192.168.1.167/img/snapshot.cgi
-    name: wcv80n_kitchen
+    name: wcv80kitchen_n
     username: !secret wcv80n_username
     password: !secret wcv80n_password
 
@@ -1928,7 +1914,7 @@ sensor error_device:
 camera error_image:
   - platform: generic
     name: error_image
-    still_image_url: 'http://192.168.1.32/CGI/aah-images.cgi?db={{states.sensor.error_device.state}}&id={{states.sensor.error_id.state}}&ext=full'
+    still_image_url: 'http://192.168.1.33/CGI/aah-images.cgi?db={{states.sensor.error_device.state}}&id={{states.sensor.error_id.state}}&ext=full'
 
 ##
 ## WRONG
@@ -2290,42 +2276,42 @@ binary_sensor classifier_wrong:
       entity_id:
         - sensor.kitchen_what
       value_template: >
-        {{ ( is_state('binary_sensor.david_home','off') and is_state('sensor.kitchen_what','david') ) or
-           ( is_state('binary_sensor.keli_home','off') and is_state('sensor.kitchen_what','keli') ) or
-           ( is_state('binary_sensor.hali_home','off') and is_state('sensor.kitchen_what','hali') ) or
-           ( is_state('binary_sensor.ian_home','off') and is_state('sensor.kitchen_what','ian') ) or
-           ( is_state('binary_sensor.riley_home','off') and is_state('sensor.kitchen_what','riley') ) or
-           ( is_state('binary_sensor.ellen_home','off') and is_state('sensor.kitchen_what','ellen') ) }}
+        {{ ( is_state('binary_sensor.home_david','off') and is_state('sensor.kitchen_what','david') ) or
+           ( is_state('binary_sensor.home_keli','off') and is_state('sensor.kitchen_what','keli') ) or
+           ( is_state('binary_sensor.home_hali','off') and is_state('sensor.kitchen_what','hali') ) or
+           ( is_state('binary_sensor.home_ian','off') and is_state('sensor.kitchen_what','ian') ) or
+           ( is_state('binary_sensor.home_riley','off') and is_state('sensor.kitchen_what','riley') ) or
+           ( is_state('binary_sensor.home_ellen','off') and is_state('sensor.kitchen_what','ellen') ) }}
     bathroom_wrong:
       entity_id:
         - sensor.bathroom_what
       value_template: >
-        {{ ( is_state('binary_sensor.david_home','off') and is_state('sensor.bathroom_what','david') ) or
-           ( is_state('binary_sensor.keli_home','off') and is_state('sensor.bathroom_what','keli') ) or
-           ( is_state('binary_sensor.hali_home','off') and is_state('sensor.bathroom_what','hali') ) or
-           ( is_state('binary_sensor.ian_home','off') and is_state('sensor.bathroom_what','ian') ) or
-           ( is_state('binary_sensor.riley_home','off') and is_state('sensor.bathroom_what','riley') ) or
-           ( is_state('binary_sensor.ellen_home','off') and is_state('sensor.bathroom_what','ellen') ) }}
+        {{ ( is_state('binary_sensor.home_david','off') and is_state('sensor.bathroom_what','david') ) or
+           ( is_state('binary_sensor.home_keli','off') and is_state('sensor.bathroom_what','keli') ) or
+           ( is_state('binary_sensor.home_hali','off') and is_state('sensor.bathroom_what','hali') ) or
+           ( is_state('binary_sensor.home_ian','off') and is_state('sensor.bathroom_what','ian') ) or
+           ( is_state('binary_sensor.home_riley','off') and is_state('sensor.bathroom_what','riley') ) or
+           ( is_state('binary_sensor.home_ellen','off') and is_state('sensor.bathroom_what','ellen') ) }}
     frontdoor_wrong:
       entity_id:
         - sensor.frontdoor_what
       value_template: >
-        {{ ( is_state('binary_sensor.david_home','off') and is_state('sensor.frontdoor_what','david') ) or
-           ( is_state('binary_sensor.keli_home','off') and is_state('sensor.frontdoor_what','keli') ) or
-           ( is_state('binary_sensor.hali_home','off') and is_state('sensor.frontdoor_what','hali') ) or
-           ( is_state('binary_sensor.ian_home','off') and is_state('sensor.frontdoor_what','ian') ) or
-           ( is_state('binary_sensor.riley_home','off') and is_state('sensor.frontdoor_what','riley') ) or
-           ( is_state('binary_sensor.ellen_home','off') and is_state('sensor.frontdoor_what','ellen') ) }}
+        {{ ( is_state('binary_sensor.home_david','off') and is_state('sensor.frontdoor_what','david') ) or
+           ( is_state('binary_sensor.home_keli','off') and is_state('sensor.frontdoor_what','keli') ) or
+           ( is_state('binary_sensor.home_hali','off') and is_state('sensor.frontdoor_what','hali') ) or
+           ( is_state('binary_sensor.home_ian','off') and is_state('sensor.frontdoor_what','ian') ) or
+           ( is_state('binary_sensor.home_riley','off') and is_state('sensor.frontdoor_what','riley') ) or
+           ( is_state('binary_sensor.home_ellen','off') and is_state('sensor.frontdoor_what','ellen') ) }}
     road_wrong:
       entity_id:
         - sensor.road_what
       value_template: >
-        {{ is_state('binary_sensor.david_home','on') and is_state('sensor.road_what','martin_c70') }}
+        {{ is_state('binary_sensor.home_david','on') and is_state('sensor.road_what','martin_c70') }}
     interiorgate_wrong:
       entity_id:
         - sensor.interiorgate_what
       value_template: >
-        {{ is_state('binary_sensor.david_home','on') and is_state('sensor.interiorgate_what','martin_c70') }}
+        {{ is_state('binary_sensor.home_david','on') and is_state('sensor.interiorgate_what','martin_c70') }}
 
 
 ##
@@ -2474,48 +2460,48 @@ sensor motion_sensors:
 binary_sensor family_home:
   platform: template
   sensors:
-    family_kitchen:
+    kitchen_family:
       entity_id:
         - sensor.kitchen_what
       value_template: >
-        {{ (states('binary_sensor.david_kitchen') and states('binary_sensor.david_home'))
-           or (states('binary_sensor.keli_kitchen') and states('binary_sensor.keli_home'))
-           or (states('binary_sensor.hali_kitchen') and states('binary_sensor.hali_home'))
-           or (states('binary_sensor.ian_kitchen') and states('binary_sensor.ian_home'))
-           or (states('binary_sensor.riley_kitchen') and states('binary_sensor.riley_home'))
-           or (states('binary_sensor.ellen_kitchen') and states('binary_sensor.ellen_home'))
+        {{ (states('binary_sensor.kitchen_david') and states('binary_sensor.home_david'))
+           or (states('binary_sensor.kitchen_keli') and states('binary_sensor.home_keli'))
+           or (states('binary_sensor.kitchen_hali') and states('binary_sensor.home_hali'))
+           or (states('binary_sensor.kitchen_ian') and states('binary_sensor.home_ian'))
+           or (states('binary_sensor.kitchen_riley') and states('binary_sensor.home_riley'))
+           or (states('binary_sensor.kitchen_ellen') and states('binary_sensor.home_ellen'))
            and states('sensor.kitchen_ago')|int < 30 }}
-    family_bathroom:
+    bathroom_family:
       entity_id:
         - sensor.bathroom_what
       value_template: >
-        {{ (states('binary_sensor.david_bathroom') and states('binary_sensor.david_home'))
-           or (states('binary_sensor.keli_bathroom') and states('binary_sensor.keli_home'))
-           or (states('binary_sensor.hali_bathroom') and states('binary_sensor.hali_home'))
-           or (states('binary_sensor.ian_bathroom') and states('binary_sensor.ian_home'))
-           or (states('binary_sensor.riley_bathroom') and states('binary_sensor.riley_home'))
-           or (states('binary_sensor.ellen_bathroom') and states('binary_sensor.ellen_home'))
+        {{ (states('binary_sensor.bathroom_david') and states('binary_sensor.home_david'))
+           or (states('binary_sensor.bathroom_keli') and states('binary_sensor.home_keli'))
+           or (states('binary_sensor.bathroom_hali') and states('binary_sensor.home_hali'))
+           or (states('binary_sensor.bathroom_ian') and states('binary_sensor.home_ian'))
+           or (states('binary_sensor.bathroom_riley') and states('binary_sensor.home_riley'))
+           or (states('binary_sensor.bathroom_ellen') and states('binary_sensor.home_ellen'))
            and states('sensor.bathroom_ago')|int < 30 }}
-    family_frontdoor:
+    frontdoor_family:
       entity_id:
         - sensor.frontdoor_what
       value_template: >
-        {{ (states('binary_sensor.david_frontdoor') and states('binary_sensor.david_home'))
-           or (states('binary_sensor.keli_frontdoor') and states('binary_sensor.keli_home'))
-           or (states('binary_sensor.hali_frontdoor') and states('binary_sensor.hali_home'))
-           or (states('binary_sensor.ian_frontdoor') and states('binary_sensor.ian_home'))
-           or (states('binary_sensor.riley_frontdoor') and states('binary_sensor.riley_home'))
-           or (states('binary_sensor.ellen_frontdoor') and states('binary_sensor.ellen_home'))
+        {{ (states('binary_sensor.frontdoor_david') and states('binary_sensor.home_david'))
+           or (states('binary_sensor.frontdoor_keli') and states('binary_sensor.home_keli'))
+           or (states('binary_sensor.frontdoor_hali') and states('binary_sensor.home_hali'))
+           or (states('binary_sensor.frontdoor_ian') and states('binary_sensor.home_ian'))
+           or (states('binary_sensor.frontdoor_riley') and states('binary_sensor.home_riley'))
+           or (states('binary_sensor.frontdoor_ellen') and states('binary_sensor.home_ellen'))
            and states('sensor.frontdoor_ago')|int < 30 }}
 
 #
 # ROAD
 #
 
-binary_sensor what_road:
+binary_sensor road_what:
   platform: template
   sensors:
-    martin_road:
+    road_martin:
       entity_id:
         - sensor.road_what
       value_template: >
@@ -2525,106 +2511,105 @@ binary_sensor what_road:
            is_state('sensor.road_what','martin_suburban') or
            is_state('sensor.road_what','martin_xc90') or
            is_state('sensor.road_what','martin_rtv1100' ) }}
-    fletcher_road:
+    road_fletcher:
       entity_id:
         - sensor.road_what
       value_template: >
         {{ is_state('sensor.road_what','fletcher_fordflex') or
            is_state('sensor.road_what','fletcher_hybrid') or
            is_state('sensor.road_what','fletcher_pickup') }}
-    other_road:
+    road_other:
       entity_id:
         - sensor.road_what
       value_template: >
-        {{ is_state('binary_sensor.martin_road','off') and is_state('binary_sensor.fletcher_road','off') }}
+        {{ is_state('binary_sensor.road_martin','off') and is_state('binary_sensor.fletcher_road','off') }}
 
-sensor other_road_count:
+sensor road_other_count:
   - platform: history_stats
-    name: other_road_count
+    name: road_other_count
     entity_id: binary_sensor.other_road
     state: 'on'
     type: count
     start: '{{ now().replace(hour=0).replace(minute=0).replace(second=0) }}'
     end: '{{ now() }}'
 
-sensor other_road_ratio:
+sensor road_other_ratio:
   - platform: history_stats
     icon: mdi:timer
-    name: other_road_ratio
+    name: road_other_ratio
     entity_id: binary_sensor.other_road
     state: 'on'
     type: ratio
     start: '{{ now().replace(hour=0).replace(minute=0).replace(second=0) }}'
     end: '{{ now() }}'
 
-sensor other_road_time:
+sensor road_other_time:
   - platform: history_stats
     icon: mdi:timer
-    name: other_road_time
+    name: road_other_time
     entity_id: binary_sensor.other_road
     state: 'on'
     type: time
     start: '{{ now().replace(hour=0).replace(minute=0).replace(second=0) }}'
     end: '{{ now() }}'
 
-sensor martin_road_count:
+sensor road_martin_count:
   - platform: history_stats
-    name: martin_road_count
-    entity_id: binary_sensor.martin_road
+    name: road_martin_count
+    entity_id: binary_sensor.road_martin
     state: 'on'
     type: count
     start: '{{ now().replace(hour=0).replace(minute=0).replace(second=0) }}'
     end: '{{ now() }}'
 
-sensor martin_road_ratio:
+sensor road_martin_ratio:
   - platform: history_stats
     icon: mdi:timer
-    name: martin_road_ratio
-    entity_id: binary_sensor.martin_road
+    name: road_martin_ratio
+    entity_id: binary_sensor.road_martin
     state: 'on'
     type: ratio
     start: '{{ now().replace(hour=0).replace(minute=0).replace(second=0) }}'
     end: '{{ now() }}'
 
-sensor martin_road_time:
+sensor road_martin_time:
   - platform: history_stats
     icon: mdi:timer
-    name: martin_road_time
-    entity_id: binary_sensor.martin_road
+    name: road_martin_time
+    entity_id: binary_sensor.road_martin
     state: 'on'
     type: time
     start: '{{ now().replace(hour=0).replace(minute=0).replace(second=0) }}'
     end: '{{ now() }}'
 
-sensor fletcher_road_count:
+sensor road_fletcher_count:
   - platform: history_stats
-    name: fletcher_road_count
+    name: road_fletcher_count
     entity_id: binary_sensor.fletcher_road
     state: 'on'
     type: count
     start: '{{ now().replace(hour=0).replace(minute=0).replace(second=0) }}'
     end: '{{ now() }}'
 
-sensor fletcher_road_ratio:
+sensor road_fletcher_ratio:
   - platform: history_stats
     icon: mdi:timer
-    name: fletcher_road_ratio
+    name: road_fletcher_ratio
     entity_id: binary_sensor.fletcher_road
     state: 'on'
     type: ratio
     start: '{{ now().replace(hour=0).replace(minute=0).replace(second=0) }}'
     end: '{{ now() }}'
 
-sensor fletcher_road_time:
+sensor road_fletcher_time:
   - platform: history_stats
     icon: mdi:timer
-    name: fletcher_road_time
+    name: road_fletcher_time
     entity_id: binary_sensor.fletcher_road
     state: 'on'
     type: time
     start: '{{ now().replace(hour=0).replace(minute=0).replace(second=0) }}'
     end: '{{ now() }}'
-
 
 #
 # INTERIOR GATE
@@ -2633,37 +2618,7 @@ sensor fletcher_road_time:
 binary_sensor what_interiorgate:
   platform: template
   sensors:
-    c70_interiorgate:
-      entity_id:
-        - sensor.interiorgate_what
-      value_template: >
-        {{ is_state('sensor.interiorgate_what','martin_c70') }}
-    c30_interiorgate:
-      entity_id:
-        - sensor.interiorgate_what
-      value_template: >
-        {{ is_state('sensor.interiorgate_what','martin_c30') }}
-    xc90_interiorgate:
-      entity_id:
-        - sensor.interiorgate_what
-      value_template: >
-        {{ is_state('sensor.interiorgate_what','martin_xc90') }}
-    sprinter_interiorgate:
-      entity_id:
-        - sensor.interiorgate_what
-      value_template: >
-        {{ is_state('sensor.interiorgate_what','martin_sprinter') }}
-    suburban_interiorgate:
-      entity_id:
-        - sensor.interiorgate_what
-      value_template: >
-        {{ is_state('sensor.interiorgate_what','martin_suburban') }}
-    rtv1100_interiorgate:
-      entity_id:
-        - sensor.interiorgate_what
-      value_template: >
-        {{ is_state('sensor.interiorgate_what','martin_rtv1100') }}
-    martin_interiorgate:
+    interiorgate_martin:
       entity_id:
         - sensor.interiorgate_what
       value_template: >
@@ -2673,94 +2628,65 @@ binary_sensor what_interiorgate:
            is_state('sensor.interiorgate_what','martin_suburban') or
            is_state('sensor.interiorgate_what','martin_xc90') or
            is_state('sensor.interiorgate_what','martin_rtv1100' ) }}
-    other_interiorgate:
+    interiorgate_other:
       entity_id:
         - sensor.interiorgate_what
       value_template: >
-        {{ is_state('binary_sensor.martin_interiorgate','off') }}
+        {{ is_state('binary_sensor.interiorgate_martin','off') }}
 
-sensor other_interiorgate_count:
+sensor interiorgate_other_count:
   - platform: history_stats
-    name: other_interiorgate_count
-    entity_id: binary_sensor.other_interiorgate
+    name: interiorgate_other_count
+    entity_id: binary_sensor.interiorgate_other
     state: 'on'
     type: count
     start: '{{ now().replace(hour=0).replace(minute=0).replace(second=0) }}'
     end: '{{ now() }}'
 
-sensor other_interiorgate_ratio:
+sensor interiorgate_other_ratio:
   - platform: history_stats
     icon: mdi:timer
-    name: other_interiorgate_ratio
-    entity_id: binary_sensor.other_interiorgate
+    name: interiorgate_other_ratio
+    entity_id: binary_sensor.interiorgate_other
     state: 'on'
     type: ratio
     start: '{{ now().replace(hour=0).replace(minute=0).replace(second=0) }}'
     end: '{{ now() }}'
 
-sensor other_interiorgate_time:
+sensor interiorgate_other_time:
   - platform: history_stats
     icon: mdi:timer
-    name: other_interiorgate_time
-    entity_id: binary_sensor.other_interiorgate
+    name: interiorgate_other_time
+    entity_id: binary_sensor.interiorgate_other
     state: 'on'
     type: time
     start: '{{ now().replace(hour=0).replace(minute=0).replace(second=0) }}'
     end: '{{ now() }}'
 
-sensor martin_interiorgate_count:
+sensor interiorgate_martin_count:
   - platform: history_stats
-    name: martin_interiorgate_count
-    entity_id: binary_sensor.martin_interiorgate
+    name: interiorgate_martin_count
+    entity_id: binary_sensor.interiorgate_martin
     state: 'on'
     type: count
     start: '{{ now().replace(hour=0).replace(minute=0).replace(second=0) }}'
     end: '{{ now() }}'
 
-sensor martin_interiorgate_ratio:
+sensor interiorgate_martin_ratio:
   - platform: history_stats
     icon: mdi:timer
-    name: martin_interiorgate_ratio
-    entity_id: binary_sensor.martin_interiorgate
+    name: interiorgate_martin_ratio
+    entity_id: binary_sensor.interiorgate_martin
     state: 'on'
     type: ratio
     start: '{{ now().replace(hour=0).replace(minute=0).replace(second=0) }}'
     end: '{{ now() }}'
 
-sensor martin_interiorgate_time:
+sensor interiorgate_martin_time:
   - platform: history_stats
     icon: mdi:timer
-    name: martin_interiorgate_time
-    entity_id: binary_sensor.martin_interiorgate
-    state: 'on'
-    type: time
-    start: '{{ now().replace(hour=0).replace(minute=0).replace(second=0) }}'
-    end: '{{ now() }}'
-
-sensor c70_interiorgate_count:
-  - platform: history_stats
-    name: c70_interiorgate_count
-    entity_id: binary_sensor.c70_interiorgate
-    state: 'on'
-    type: count
-    start: '{{ now().replace(hour=0).replace(minute=0).replace(second=0) }}'
-    end: '{{ now() }}'
-
-sensor c70_interiorgate_ratio:
-  - platform: history_stats
-    icon: mdi:timer
-    name: c70_interiorgate_ratio
-    entity_id: binary_sensor.c70_interiorgate
-    state: 'on'
-    type: ratio
-    start: '{{ now().replace(hour=0).replace(minute=0).replace(second=0) }}'
-    end: '{{ now() }}'
-
-sensor c70_interiorgate_time:
-  - platform: history_stats
-    icon: mdi:timer
-    name: c70_interiorgate_time
-    entity_id: binary_sensor.c70_interiorgate
+    name: interiorgate_martin_time
+    entity_id: binary_sensor.interiorgate_martin
     state: 'on'
     type: time
     start: '{{ now().replace(hour=0).replace(minute=0).replace(second=0) }}'
@@ -2770,112 +2696,112 @@ sensor c70_interiorgate_time:
 ## DAVID
 ##
 
-binary_sensor david_motion:
+binary_sensor motion_david:
   platform: template
   sensors:
-    david_interior:
+    interior_david:
       entity_id: 
         - sensor.interior_what
       value_template: >
         {{ 'david' in states('sensor.interior_what') }}
-    david_bathroom:
+    bathroom_david:
       entity_id: 
         - sensor.bathroom_what
       value_template: >
         {{ is_state('sensor.bathroom_what','david') }}
-    david_frontdoor:
+    frontdoor_david:
       entity_id: 
         - sensor.frontdoor_what
       value_template: >
         {{ is_state('sensor.frontdoor_what','david') }}
-    david_kitchen:
+    kitchen_david:
       entity_id: 
         - sensor.kitchen_what
       value_template: >
         {{ is_state('sensor.kitchen_what','david') }}
 
-sensor david_kitchen_time:
+sensor kitchen_david_time:
   - platform: history_stats
     icon: mdi:timer
-    name: david_kitchen_time
-    entity_id: binary_sensor.david_kitchen
+    name: kitchen_david_time
+    entity_id: binary_sensor.kitchen_david
     state: 'on'
     type: time
     start: '{{ now().replace(hour=0).replace(minute=0).replace(second=0) }}'
     end: '{{ now() }}'
 
-sensor david_bathroom_time:
+sensor bathroom_david_time:
   - platform: history_stats
     icon: mdi:timer
-    name: david_bathroom_time
-    entity_id: binary_sensor.david_bathroom
+    name: bathroom_david_time
+    entity_id: binary_sensor.bathroom_david
     state: 'on'
     type: time
     start: '{{ now().replace(hour=0).replace(minute=0).replace(second=0) }}'
     end: '{{ now() }}'
 
-sensor david_frontdoor_time:
+sensor frontdoor_david_time:
   - platform: history_stats
     icon: mdi:timer
-    name: david_frontdoor_time
-    entity_id: binary_sensor.david_frontdoor
+    name: frontdoor_david_time
+    entity_id: binary_sensor.frontdoor_david
     state: 'on'
     type: time
     start: '{{ now().replace(hour=0).replace(minute=0).replace(second=0) }}'
     end: '{{ now() }}'
 
-sensor david_kitchen_count:
+sensor kitchen_david_count:
   - platform: history_stats
-    name: david_kitchen_count
-    entity_id: binary_sensor.david_kitchen
+    name: kitchen_david_count
+    entity_id: binary_sensor.kitchen_david
     state: 'on'
     type: count
     start: '{{ now().replace(hour=0).replace(minute=0).replace(second=0) }}'
     end: '{{ now() }}'
 
-sensor david_bathroom_count:
+sensor bathroom_david_count:
   - platform: history_stats
-    name: david_bathroom_count
-    entity_id: binary_sensor.david_bathroom
+    name: bathroom_david_count
+    entity_id: binary_sensor.bathroom_david
     state: 'on'
     type: count
     start: '{{ now().replace(hour=0).replace(minute=0).replace(second=0) }}'
     end: '{{ now() }}'
 
-sensor david_frontdoor_count:
+sensor frontdoor_david_count:
   - platform: history_stats
-    name: david_frontdoor_count
-    entity_id: binary_sensor.david_frontdoor
+    name: frontdoor_david_count
+    entity_id: binary_sensor.frontdoor_david
     state: 'on'
     type: count
     start: '{{ now().replace(hour=0).replace(minute=0).replace(second=0) }}'
     end: '{{ now() }}'
 
-sensor david_kitchen_ratio:
+sensor kitchen_david_ratio:
   - platform: history_stats
     icon: mdi:timer
-    name: david_kitchen_ratio
-    entity_id: binary_sensor.david_kitchen
+    name: kitchen_david_ratio
+    entity_id: binary_sensor.kitchen_david
     state: 'on'
     type: ratio
     start: '{{ now().replace(hour=0).replace(minute=0).replace(second=0) }}'
     end: '{{ now() }}'
 
-sensor david_bathroom_ratio:
+sensor bathroom_david_ratio:
   - platform: history_stats
     icon: mdi:timer
-    name: david_bathroom_ratio
-    entity_id: binary_sensor.david_bathroom
+    name: bathroom_david_ratio
+    entity_id: binary_sensor.bathroom_david
     state: 'on'
     type: ratio
     start: '{{ now().replace(hour=0).replace(minute=0).replace(second=0) }}'
     end: '{{ now() }}'
 
-sensor david_frontdoor_ratio:
+sensor frontdoor_david_ratio:
   - platform: history_stats
     icon: mdi:timer
-    name: david_frontdoor_ratio
-    entity_id: binary_sensor.david_frontdoor
+    name: frontdoor_david_ratio
+    entity_id: binary_sensor.frontdoor_david
     state: 'on'
     type: ratio
     start: '{{ now().replace(hour=0).replace(minute=0).replace(second=0) }}'
@@ -2885,112 +2811,112 @@ sensor david_frontdoor_ratio:
 ## KELI
 ##
 
-binary_sensor keli_motion:
+binary_sensor motion_keli:
   platform: template
   sensors:
-    keli_interior:
+    interior_keli:
       entity_id: 
         - sensor.interior_what
       value_template: >
         {{ 'keli' in states('sensor.interior_what') }}
-    keli_bathroom:
+    bathroom_keli:
       entity_id: 
         - sensor.bathroom_what
       value_template: >
         {{ is_state('sensor.bathroom_what','keli') }}
-    keli_frontdoor:
+    frontdoor_keli:
       entity_id: 
         - sensor.frontdoor_what
       value_template: >
         {{ is_state('sensor.frontdoor_what','keli') }}
-    keli_kitchen:
+    kitchen_keli:
       entity_id: 
         - sensor.kitchen_what
       value_template: >
         {{ is_state('sensor.kitchen_what','keli') }}
 
-sensor keli_kitchen_time:
+sensor kitchen_keli_time:
   - platform: history_stats
     icon: mdi:timer
-    name: keli_kitchen_time
-    entity_id: binary_sensor.keli_kitchen
+    name: kitchen_keli_time
+    entity_id: binary_sensor.kitchen_keli
     state: 'on'
     type: time
     start: '{{ now().replace(hour=0).replace(minute=0).replace(second=0) }}'
     end: '{{ now() }}'
 
-sensor keli_bathroom_time:
+sensor bathroom_keli_time:
   - platform: history_stats
     icon: mdi:timer
-    name: keli_bathroom_time
-    entity_id: binary_sensor.keli_bathroom
+    name: bathroom_keli_time
+    entity_id: binary_sensor.bathroom_keli
     state: 'on'
     type: time
     start: '{{ now().replace(hour=0).replace(minute=0).replace(second=0) }}'
     end: '{{ now() }}'
 
-sensor keli_frontdoor_time:
+sensor frontdoor_keli_time:
   - platform: history_stats
     icon: mdi:timer
-    name: keli_frontdoor_time
-    entity_id: binary_sensor.keli_frontdoor
+    name: frontdoor_keli_time
+    entity_id: binary_sensor.frontdoor_keli
     state: 'on'
     type: time
     start: '{{ now().replace(hour=0).replace(minute=0).replace(second=0) }}'
     end: '{{ now() }}'
 
-sensor keli_kitchen_count:
+sensor kitchen_keli_count:
   - platform: history_stats
-    name: keli_kitchen_count
-    entity_id: binary_sensor.keli_kitchen
+    name: kitchen_keli_count
+    entity_id: binary_sensor.kitchen_keli
     state: 'on'
     type: count
     start: '{{ now().replace(hour=0).replace(minute=0).replace(second=0) }}'
     end: '{{ now() }}'
 
-sensor keli_bathroom_count:
+sensor bathroom_keli_count:
   - platform: history_stats
-    name: keli_bathroom_count
-    entity_id: binary_sensor.keli_bathroom
+    name: bathroom_keli_count
+    entity_id: binary_sensor.bathroom_keli
     state: 'on'
     type: count
     start: '{{ now().replace(hour=0).replace(minute=0).replace(second=0) }}'
     end: '{{ now() }}'
 
-sensor keli_frontdoor_count:
+sensor frontdoor_keli_count:
   - platform: history_stats
-    name: keli_frontdoor_count
-    entity_id: binary_sensor.keli_frontdoor
+    name: frontdoor_keli_count
+    entity_id: binary_sensor.frontdoor_keli
     state: 'on'
     type: count
     start: '{{ now().replace(hour=0).replace(minute=0).replace(second=0) }}'
     end: '{{ now() }}'
 
-sensor keli_kitchen_ratio:
+sensor kitchen_keli_ratio:
   - platform: history_stats
     icon: mdi:timer
-    name: keli_kitchen_ratio
-    entity_id: binary_sensor.keli_kitchen
+    name: kitchen_keli_ratio
+    entity_id: binary_sensor.kitchen_keli
     state: 'on'
     type: ratio
     start: '{{ now().replace(hour=0).replace(minute=0).replace(second=0) }}'
     end: '{{ now() }}'
 
-sensor keli_bathroom_ratio:
+sensor bathroom_keli_ratio:
   - platform: history_stats
     icon: mdi:timer
-    name: keli_bathroom_ratio
-    entity_id: binary_sensor.keli_bathroom
+    name: bathroom_keli_ratio
+    entity_id: binary_sensor.bathroom_keli
     state: 'on'
     type: ratio
     start: '{{ now().replace(hour=0).replace(minute=0).replace(second=0) }}'
     end: '{{ now() }}'
 
-sensor keli_frontdoor_ratio:
+sensor frontdoor_keli_ratio:
   - platform: history_stats
     icon: mdi:timer
-    name: keli_frontdoor_ratio
-    entity_id: binary_sensor.keli_frontdoor
+    name: frontdoor_keli_ratio
+    entity_id: binary_sensor.frontdoor_keli
     state: 'on'
     type: ratio
     start: '{{ now().replace(hour=0).replace(minute=0).replace(second=0) }}'
@@ -3000,112 +2926,112 @@ sensor keli_frontdoor_ratio:
 ## HALI
 ##
 
-binary_sensor hali_motion:
+binary_sensor motion_hali:
   platform: template
   sensors:
-    hali_interior:
+    interior_hali:
       entity_id: 
         - sensor.interior_what
       value_template: >
         {{ 'hali' in states('sensor.interior_what') }}
-    hali_bathroom:
+    bathroom_hali:
       entity_id: 
         - sensor.bathroom_what
       value_template: >
         {{ is_state('sensor.bathroom_what','hali') }}
-    hali_frontdoor:
+    frontdoor_hali:
       entity_id: 
         - sensor.frontdoor_what
       value_template: >
         {{ is_state('sensor.frontdoor_what','hali') }}
-    hali_kitchen:
+    kitchen_hali:
       entity_id: 
         - sensor.kitchen_what
       value_template: >
         {{ is_state('sensor.kitchen_what','hali') }}
 
-sensor hali_kitchen_time:
+sensor kitchen_hali_time:
   - platform: history_stats
     icon: mdi:timer
-    name: hali_kitchen_time
-    entity_id: binary_sensor.hali_kitchen
+    name: kitchen_hali_time
+    entity_id: binary_sensor.kitchen_hali
     state: 'on'
     type: time
     start: '{{ now().replace(hour=0).replace(minute=0).replace(second=0) }}'
     end: '{{ now() }}'
 
-sensor hali_bathroom_time:
+sensor bathroom_hali_time:
   - platform: history_stats
     icon: mdi:timer
-    name: hali_bathroom_time
-    entity_id: binary_sensor.hali_bathroom
+    name: bathroom_hali_time
+    entity_id: binary_sensor.bathroom_hali
     state: 'on'
     type: time
     start: '{{ now().replace(hour=0).replace(minute=0).replace(second=0) }}'
     end: '{{ now() }}'
 
-sensor hali_frontdoor_time:
+sensor frontdoor_hali_time:
   - platform: history_stats
     icon: mdi:timer
-    name: hali_frontdoor_time
-    entity_id: binary_sensor.hali_frontdoor
+    name: frontdoor_hali_time
+    entity_id: binary_sensor.frontdoor_hali
     state: 'on'
     type: time
     start: '{{ now().replace(hour=0).replace(minute=0).replace(second=0) }}'
     end: '{{ now() }}'
 
-sensor hali_kitchen_count:
+sensor kitchen_hali_count:
   - platform: history_stats
-    name: hali_kitchen_count
-    entity_id: binary_sensor.hali_kitchen
+    name: kitchen_hali_count
+    entity_id: binary_sensor.kitchen_hali
     state: 'on'
     type: count
     start: '{{ now().replace(hour=0).replace(minute=0).replace(second=0) }}'
     end: '{{ now() }}'
 
-sensor hali_bathroom_count:
+sensor bathroom_hali_count:
   - platform: history_stats
-    name: hali_bathroom_count
-    entity_id: binary_sensor.hali_bathroom
+    name: bathroom_hali_count
+    entity_id: binary_sensor.bathroom_hali
     state: 'on'
     type: count
     start: '{{ now().replace(hour=0).replace(minute=0).replace(second=0) }}'
     end: '{{ now() }}'
 
-sensor hali_frontdoor_count:
+sensor frontdoor_hali_count:
   - platform: history_stats
-    name: hali_frontdoor_count
-    entity_id: binary_sensor.hali_frontdoor
+    name: frontdoor_hali_count
+    entity_id: binary_sensor.frontdoor_hali
     state: 'on'
     type: count
     start: '{{ now().replace(hour=0).replace(minute=0).replace(second=0) }}'
     end: '{{ now() }}'
 
-sensor hali_kitchen_ratio:
+sensor kitchen_hali_ratio:
   - platform: history_stats
     icon: mdi:timer
-    name: hali_kitchen_ratio
-    entity_id: binary_sensor.hali_kitchen
+    name: kitchen_hali_ratio
+    entity_id: binary_sensor.kitchen_hali
     state: 'on'
     type: ratio
     start: '{{ now().replace(hour=0).replace(minute=0).replace(second=0) }}'
     end: '{{ now() }}'
 
-sensor hali_bathroom_ratio:
+sensor bathroom_hali_ratio:
   - platform: history_stats
     icon: mdi:timer
-    name: hali_bathroom_ratio
-    entity_id: binary_sensor.hali_bathroom
+    name: bathroom_hali_ratio
+    entity_id: binary_sensor.bathroom_hali
     state: 'on'
     type: ratio
     start: '{{ now().replace(hour=0).replace(minute=0).replace(second=0) }}'
     end: '{{ now() }}'
 
-sensor hali_frontdoor_ratio:
+sensor frontdoor_hali_ratio:
   - platform: history_stats
     icon: mdi:timer
-    name: hali_frontdoor_ratio
-    entity_id: binary_sensor.hali_frontdoor
+    name: frontdoor_hali_ratio
+    entity_id: binary_sensor.frontdoor_hali
     state: 'on'
     type: ratio
     start: '{{ now().replace(hour=0).replace(minute=0).replace(second=0) }}'
@@ -3115,112 +3041,112 @@ sensor hali_frontdoor_ratio:
 ## IAN
 ##
 
-binary_sensor ian_motion:
+binary_sensor motion_ian:
   platform: template
   sensors:
-    ian_interior:
+    interior_ian:
       entity_id: 
         - sensor.interior_what
       value_template: >
         {{ 'ian' in states('sensor.interior_what') }}
-    ian_bathroom:
+    bathroom_ian:
       entity_id: 
         - sensor.bathroom_what
       value_template: >
         {{ is_state('sensor.bathroom_what','ian') }}
-    ian_frontdoor:
+    frontdoor_ian:
       entity_id: 
         - sensor.frontdoor_what
       value_template: >
         {{ is_state('sensor.frontdoor_what','ian') }}
-    ian_kitchen:
+    kitchen_ian:
       entity_id: 
         - sensor.kitchen_what
       value_template: >
         {{ is_state('sensor.kitchen_what','ian') }}
 
-sensor ian_kitchen_time:
+sensor kitchen_ian_time:
   - platform: history_stats
     icon: mdi:timer
-    name: ian_kitchen_time
-    entity_id: binary_sensor.ian_kitchen
+    name: kitchen_ian_time
+    entity_id: binary_sensor.kitchen_ian
     state: 'on'
     type: time
     start: '{{ now().replace(hour=0).replace(minute=0).replace(second=0) }}'
     end: '{{ now() }}'
 
-sensor ian_bathroom_time:
+sensor bathroom_ian_time:
   - platform: history_stats
     icon: mdi:timer
-    name: ian_bathroom_time
-    entity_id: binary_sensor.ian_bathroom
+    name: bathroom_ian_time
+    entity_id: binary_sensor.bathroom_ian
     state: 'on'
     type: time
     start: '{{ now().replace(hour=0).replace(minute=0).replace(second=0) }}'
     end: '{{ now() }}'
 
-sensor ian_frontdoor_time:
+sensor frontdoor_ian_time:
   - platform: history_stats
     icon: mdi:timer
-    name: ian_frontdoor_time
-    entity_id: binary_sensor.ian_frontdoor
+    name: frontdoor_ian_time
+    entity_id: binary_sensor.frontdoor_ian
     state: 'on'
     type: time
     start: '{{ now().replace(hour=0).replace(minute=0).replace(second=0) }}'
     end: '{{ now() }}'
 
-sensor ian_kitchen_count:
+sensor kitchen_ian_count:
   - platform: history_stats
-    name: ian_kitchen_count
-    entity_id: binary_sensor.ian_kitchen
+    name: kitchen_ian_count
+    entity_id: binary_sensor.kitchen_ian
     state: 'on'
     type: count
     start: '{{ now().replace(hour=0).replace(minute=0).replace(second=0) }}'
     end: '{{ now() }}'
 
-sensor ian_bathroom_count:
+sensor bathroom_ian_count:
   - platform: history_stats
-    name: ian_bathroom_count
-    entity_id: binary_sensor.ian_bathroom
+    name: bathroom_ian_count
+    entity_id: binary_sensor.bathroom_ian
     state: 'on'
     type: count
     start: '{{ now().replace(hour=0).replace(minute=0).replace(second=0) }}'
     end: '{{ now() }}'
 
-sensor ian_frontdoor_count:
+sensor frontdoor_ian_count:
   - platform: history_stats
-    name: ian_frontdoor_count
-    entity_id: binary_sensor.ian_frontdoor
+    name: frontdoor_ian_count
+    entity_id: binary_sensor.frontdoor_ian
     state: 'on'
     type: count
     start: '{{ now().replace(hour=0).replace(minute=0).replace(second=0) }}'
     end: '{{ now() }}'
 
-sensor ian_kitchen_ratio:
+sensor kitchen_ian_ratio:
   - platform: history_stats
     icon: mdi:timer
-    name: ian_kitchen_ratio
-    entity_id: binary_sensor.ian_kitchen
+    name: kitchen_ian_ratio
+    entity_id: binary_sensor.kitchen_ian
     state: 'on'
     type: ratio
     start: '{{ now().replace(hour=0).replace(minute=0).replace(second=0) }}'
     end: '{{ now() }}'
 
-sensor ian_bathroom_ratio:
+sensor bathroom_ian_ratio:
   - platform: history_stats
     icon: mdi:timer
-    name: ian_bathroom_ratio
-    entity_id: binary_sensor.ian_bathroom
+    name: bathroom_ian_ratio
+    entity_id: binary_sensor.bathroom_ian
     state: 'on'
     type: ratio
     start: '{{ now().replace(hour=0).replace(minute=0).replace(second=0) }}'
     end: '{{ now() }}'
 
-sensor ian_frontdoor_ratio:
+sensor frontdoor_ian_ratio:
   - platform: history_stats
     icon: mdi:timer
-    name: ian_frontdoor_ratio
-    entity_id: binary_sensor.ian_frontdoor
+    name: frontdoor_ian_ratio
+    entity_id: binary_sensor.frontdoor_ian
     state: 'on'
     type: ratio
     start: '{{ now().replace(hour=0).replace(minute=0).replace(second=0) }}'
@@ -3230,112 +3156,112 @@ sensor ian_frontdoor_ratio:
 ## RILEY
 ##
 
-binary_sensor riley_motion:
+binary_sensor motion_riley:
   platform: template
   sensors:
-    riley_interior:
+    interior_riley:
       entity_id: 
         - sensor.interior_what
       value_template: >
         {{ 'riley' in states('sensor.interior_what') }}
-    riley_bathroom:
+    bathroom_riley:
       entity_id: 
         - sensor.bathroom_what
       value_template: >
         {{ is_state('sensor.bathroom_what','riley') }}
-    riley_frontdoor:
+    frontdoor_riley:
       entity_id: 
         - sensor.frontdoor_what
       value_template: >
         {{ is_state('sensor.frontdoor_what','riley') }}
-    riley_kitchen:
+    kitchen_riley:
       entity_id: 
         - sensor.kitchen_what
       value_template: >
         {{ is_state('sensor.kitchen_what','riley') }}
 
-sensor riley_kitchen_time:
+sensor kitchen_riley_time:
   - platform: history_stats
     icon: mdi:timer
-    name: riley_kitchen_time
-    entity_id: binary_sensor.riley_kitchen
+    name: kitchen_riley_time
+    entity_id: binary_sensor.kitchen_riley
     state: 'on'
     type: time
     start: '{{ now().replace(hour=0).replace(minute=0).replace(second=0) }}'
     end: '{{ now() }}'
 
-sensor riley_bathroom_time:
+sensor bathroom_riley_time:
   - platform: history_stats
     icon: mdi:timer
-    name: riley_bathroom_time
-    entity_id: binary_sensor.riley_bathroom
+    name: bathroom_riley_time
+    entity_id: binary_sensor.bathroom_riley
     state: 'on'
     type: time
     start: '{{ now().replace(hour=0).replace(minute=0).replace(second=0) }}'
     end: '{{ now() }}'
 
-sensor riley_frontdoor_time:
+sensor frontdoor_riley_time:
   - platform: history_stats
     icon: mdi:timer
-    name: riley_frontdoor_time
-    entity_id: binary_sensor.riley_frontdoor
+    name: frontdoor_riley_time
+    entity_id: binary_sensor.frontdoor_riley
     state: 'on'
     type: time
     start: '{{ now().replace(hour=0).replace(minute=0).replace(second=0) }}'
     end: '{{ now() }}'
 
-sensor riley_kitchen_count:
+sensor kitchen_riley_count:
   - platform: history_stats
-    name: riley_kitchen_count
-    entity_id: binary_sensor.riley_kitchen
+    name: kitchen_riley_count
+    entity_id: binary_sensor.kitchen_riley
     state: 'on'
     type: count
     start: '{{ now().replace(hour=0).replace(minute=0).replace(second=0) }}'
     end: '{{ now() }}'
 
-sensor riley_bathroom_count:
+sensor bathroom_riley_count:
   - platform: history_stats
-    name: riley_bathroom_count
-    entity_id: binary_sensor.riley_bathroom
+    name: bathroom_riley_count
+    entity_id: binary_sensor.bathroom_riley
     state: 'on'
     type: count
     start: '{{ now().replace(hour=0).replace(minute=0).replace(second=0) }}'
     end: '{{ now() }}'
 
-sensor riley_frontdoor_count:
+sensor frontdoor_riley_count:
   - platform: history_stats
-    name: riley_frontdoor_count
-    entity_id: binary_sensor.riley_frontdoor
+    name: frontdoor_riley_count
+    entity_id: binary_sensor.frontdoor_riley
     state: 'on'
     type: count
     start: '{{ now().replace(hour=0).replace(minute=0).replace(second=0) }}'
     end: '{{ now() }}'
 
-sensor riley_kitchen_ratio:
+sensor kitchen_riley_ratio:
   - platform: history_stats
     icon: mdi:timer
-    name: riley_kitchen_ratio
-    entity_id: binary_sensor.riley_kitchen
+    name: kitchen_riley_ratio
+    entity_id: binary_sensor.kitchen_riley
     state: 'on'
     type: ratio
     start: '{{ now().replace(hour=0).replace(minute=0).replace(second=0) }}'
     end: '{{ now() }}'
 
-sensor riley_bathroom_ratio:
+sensor bathroom_riley_ratio:
   - platform: history_stats
     icon: mdi:timer
-    name: riley_bathroom_ratio
-    entity_id: binary_sensor.riley_bathroom
+    name: bathroom_riley_ratio
+    entity_id: binary_sensor.bathroom_riley
     state: 'on'
     type: ratio
     start: '{{ now().replace(hour=0).replace(minute=0).replace(second=0) }}'
     end: '{{ now() }}'
 
-sensor riley_frontdoor_ratio:
+sensor frontdoor_riley_ratio:
   - platform: history_stats
     icon: mdi:timer
-    name: riley_frontdoor_ratio
-    entity_id: binary_sensor.riley_frontdoor
+    name: frontdoor_riley_ratio
+    entity_id: binary_sensor.frontdoor_riley
     state: 'on'
     type: ratio
     start: '{{ now().replace(hour=0).replace(minute=0).replace(second=0) }}'
@@ -3345,112 +3271,112 @@ sensor riley_frontdoor_ratio:
 ## ELLEN
 ##
 
-binary_sensor ellen_motion:
+binary_sensor motion_ellen:
   platform: template
   sensors:
-    ellen_interior:
+    interior_ellen:
       entity_id: 
         - sensor.interior_what
       value_template: >
         {{ 'ellen' in states('sensor.interior_what') }}
-    ellen_bathroom:
+    bathroom_ellen:
       entity_id: 
         - sensor.bathroom_what
       value_template: >
         {{ is_state('sensor.bathroom_what','ellen') }}
-    ellen_frontdoor:
+    frontdoor_ellen:
       entity_id: 
         - sensor.frontdoor_what
       value_template: >
         {{ is_state('sensor.frontdoor_what','ellen') }}
-    ellen_kitchen:
+    kitchen_ellen:
       entity_id: 
         - sensor.kitchen_what
       value_template: >
         {{ is_state('sensor.kitchen_what','ellen') }}
 
-sensor ellen_kitchen_time:
+sensor kitchen_ellen_time:
   - platform: history_stats
     icon: mdi:timer
-    name: ellen_kitchen_time
-    entity_id: binary_sensor.ellen_kitchen
+    name: kitchen_ellen_time
+    entity_id: binary_sensor.kitchen_ellen
     state: 'on'
     type: time
     start: '{{ now().replace(hour=0).replace(minute=0).replace(second=0) }}'
     end: '{{ now() }}'
 
-sensor ellen_bathroom_time:
+sensor bathroom_ellen_time:
   - platform: history_stats
     icon: mdi:timer
-    name: ellen_bathroom_time
-    entity_id: binary_sensor.ellen_bathroom
+    name: bathroom_ellen_time
+    entity_id: binary_sensor.bathroom_ellen
     state: 'on'
     type: time
     start: '{{ now().replace(hour=0).replace(minute=0).replace(second=0) }}'
     end: '{{ now() }}'
 
-sensor ellen_frontdoor_time:
+sensor frontdoor_ellen_time:
   - platform: history_stats
     icon: mdi:timer
-    name: ellen_frontdoor_time
-    entity_id: binary_sensor.ellen_frontdoor
+    name: frontdoor_ellen_time
+    entity_id: binary_sensor.frontdoor_ellen
     state: 'on'
     type: time
     start: '{{ now().replace(hour=0).replace(minute=0).replace(second=0) }}'
     end: '{{ now() }}'
 
-sensor ellen_kitchen_count:
+sensor kitchen_ellen_count:
   - platform: history_stats
-    name: ellen_kitchen_count
-    entity_id: binary_sensor.ellen_kitchen
+    name: kitchen_ellen_count
+    entity_id: binary_sensor.kitchen_ellen
     state: 'on'
     type: count
     start: '{{ now().replace(hour=0).replace(minute=0).replace(second=0) }}'
     end: '{{ now() }}'
 
-sensor ellen_bathroom_count:
+sensor bathroom_ellen_count:
   - platform: history_stats
-    name: ellen_bathroom_count
-    entity_id: binary_sensor.ellen_bathroom
+    name: bathroom_ellen_count
+    entity_id: binary_sensor.bathroom_ellen
     state: 'on'
     type: count
     start: '{{ now().replace(hour=0).replace(minute=0).replace(second=0) }}'
     end: '{{ now() }}'
 
-sensor ellen_frontdoor_count:
+sensor frontdoor_ellen_count:
   - platform: history_stats
-    name: ellen_frontdoor_count
-    entity_id: binary_sensor.ellen_frontdoor
+    name: frontdoor_ellen_count
+    entity_id: binary_sensor.frontdoor_ellen
     state: 'on'
     type: count
     start: '{{ now().replace(hour=0).replace(minute=0).replace(second=0) }}'
     end: '{{ now() }}'
 
-sensor ellen_kitchen_ratio:
+sensor kitchen_ellen_ratio:
   - platform: history_stats
     icon: mdi:timer
-    name: ellen_kitchen_ratio
-    entity_id: binary_sensor.ellen_kitchen
+    name: kitchen_ellen_ratio
+    entity_id: binary_sensor.kitchen_ellen
     state: 'on'
     type: ratio
     start: '{{ now().replace(hour=0).replace(minute=0).replace(second=0) }}'
     end: '{{ now() }}'
 
-sensor ellen_bathroom_ratio:
+sensor bathroom_ellen_ratio:
   - platform: history_stats
     icon: mdi:timer
-    name: ellen_bathroom_ratio
-    entity_id: binary_sensor.ellen_bathroom
+    name: bathroom_ellen_ratio
+    entity_id: binary_sensor.bathroom_ellen
     state: 'on'
     type: ratio
     start: '{{ now().replace(hour=0).replace(minute=0).replace(second=0) }}'
     end: '{{ now() }}'
 
-sensor ellen_frontdoor_ratio:
+sensor frontdoor_ellen_ratio:
   - platform: history_stats
     icon: mdi:timer
-    name: ellen_frontdoor_ratio
-    entity_id: binary_sensor.ellen_frontdoor
+    name: frontdoor_ellen_ratio
+    entity_id: binary_sensor.frontdoor_ellen
     state: 'on'
     type: ratio
     start: '{{ now().replace(hour=0).replace(minute=0).replace(second=0) }}'
@@ -3548,6 +3474,18 @@ binary_sensor location_motion:
       device_class: motion
       value_template: >
         {{  states('sensor.frontdoor_ago')|int < 30 }}
+    road_motion:
+      entity_id: 
+        - sensor.road_ago
+      device_class: motion
+      value_template: >
+        {{  states('sensor.road_ago')|int < 30 }}
+    interiorgate_motion:
+      entity_id: 
+        - sensor.interiorgate_ago
+      device_class: motion
+      value_template: >
+        {{  states('sensor.interiorgate_ago')|int < 30 }}
     interior_motion:
       device_class: motion
       entity_id:
@@ -3556,18 +3494,13 @@ binary_sensor location_motion:
         - binary_sensor.frontdoor_motion
       value_template: >
         {{ is_state('binary_sensor.kitchen_motion','on') or is_state('binary_sensor.bathroom_motion','on') or is_state('binary_sensor.frontdoor_motion','on') }}
-    road_motion:
-      entity_id: 
-        - sensor.road_ago
-      device_class: motion
-      value_template: >
-        {{  states('sensor.road_ago')|int < 30 }}
     exterior_motion:
       device_class: motion
       entity_id: 
         - binary_sensor.road_motion
+        - binary_sensor.interiorgate_motion
       value_template: >
-        {{ is_state('binary_sensor.road_motion','on') }}
+        {{ is_state('binary_sensor.road_motion','on') or is_state('binary_sensor.interiorgate_motion','on') }}
 
 # RATIO
 
@@ -3629,6 +3562,15 @@ sensor road_motion_count:
     start: '{{ now().replace(hour=0).replace(minute=0).replace(second=0) }}'
     end: '{{ now() }}'
 
+sensor interiorgate_motion_count:
+  - platform: history_stats
+    name: interiorgate_motion_count
+    entity_id: binary_sensor.interiorgate_motion
+    state: 'on'
+    type: count
+    start: '{{ now().replace(hour=0).replace(minute=0).replace(second=0) }}'
+    end: '{{ now() }}'
+
 # TIME
 
 sensor kitchen_motion_time:
@@ -3671,6 +3613,16 @@ sensor road_motion_time:
     start: '{{ now().replace(hour=0).replace(minute=0).replace(second=0) }}'
     end: '{{ now() }}'
 
+sensor interiorgate_motion_time:
+  - platform: history_stats
+    icon: mdi:timer
+    name: interiorgate_motion_time
+    entity_id: binary_sensor.interiorgate_motion
+    state: 'on'
+    type: time
+    start: '{{ now().replace(hour=0).replace(minute=0).replace(second=0) }}'
+    end: '{{ now() }}'
+
 #
 # DETERMINISTIC
 #
@@ -3678,35 +3630,35 @@ sensor road_motion_time:
 binary_sensor probably_home:
   platform: template
   sensors:
-    david_home:
+    home_david:
       entity_id: 
         - device_tracker.dcmsiphone7
         - device_tracker.davids_iphone
       value_template: >
         {{ is_state('device_tracker.dcmsiphone7','home') or is_state('device_tracker.davids_iphone','home') }}
-    keli_home:
+    home_keli:
       entity_id: 
         - device_tracker.kelisiphone7
         - device_tracker.kelis_iphone
       value_template: >
         {{ is_state('device_tracker.kelisiphone7','home') or is_state('device_tracker.kelis_iphone','home') }}
-    hali_home:
+    home_hali:
       entity_id: 
         - device_tracker.halisiphone
       value_template: >
         {{ is_state('device_tracker.halisiphone','home') }}
-    ian_home:
+    home_ian:
       entity_id: 
         - device_tracker.ianmartinsiphone
       value_template: >
         {{ is_state('device_tracker.ianmartinsiphone','home') }}
-    riley_home:
+    home_riley:
       entity_id: 
         - device_tracker.rileysiphone5
         - device_tracker.rileys_iphone
       value_template: >
         {{ is_state('device_tracker.rileysiphone5','home') or is_state('device_tracker.rileys_iphone','home') }}
-    ellen_home:
+    home_ellen:
       entity_id: 
         - device_tracker.ellensiphone5
         - device_tracker.ellens_iphone
@@ -3807,123 +3759,171 @@ binary_sensor ian_maybe_home:
 ### TRACK PEOPLE
 ###
 
-sensor people_status_template:
+sensor status_people_template:
   platform: template
   sensors:
-    david_status:
+    status_david:
       friendly_name: "David's status"
       entity_id:
-        - group.david_devices
+        - group.devices_david
       value_template: >
-       {%- set e = closest(states.group.david_devices) -%}
-       {%- if e is defined -%} 
-         {%- set d = distance(e) -%}
-         {%- if e.source_type == 'gps' -%} 
-           {"device":{{ e.attributes.friendly_name|tojson }},"location":{{e.state|tojson}},"online":{{(e.attributes.device_status == 'online')|tojson}},"feet":{{d*5280.0}}}
-         {%- else -%}
-           {"device":{{ e.attributes.friendly_name|tojson }},"location":"home","online":true,"feet":{{d*5280.0}}}
+       {% if states.group.devices_david is defined %}
+         {%- set e = closest(states.group.devices_david) -%}
+         {%- if e is defined -%} 
+           {%- set d = distance(e) -%}
+           {%- if e.source_type == 'gps' -%} 
+             {"device":{{ e.attributes.friendly_name|tojson }},"location":{{e.state|tojson}},"online":{{(e.attributes.device_status == 'online')|tojson}},"feet":{{d*5280.0}}}
+           {%- else -%}
+             {"device":{{ e.attributes.friendly_name|tojson }},"location":"home","online":true,"feet":{{d*5280.0}}}
+           {%- endif -%}
          {%- endif -%}
+       {%- else -%}
+         {"device":"none","location":"unknown","online":false,"feet":0}}
        {%- endif -%}
-    keli_status:
+    status_keli:
       friendly_name: "Keli's status"
       entity_id:
-        - group.keli_devices
+        - group.devices_keli
       value_template: >
-       {%- set e = closest(states.group.keli_devices) -%}
-       {%- if e is defined -%} 
-         {%- set d = distance(e) -%}
-         {%- if e.source_type == 'gps' -%} 
-           {"device":{{ e.attributes.friendly_name|tojson }},"location":{{e.state|tojson}},"online":{{(e.attributes.device_status == 'online')|tojson}},"feet":{{d*5280.0}}}
-         {%- else -%}
-           {"device":{{ e.attributes.friendly_name|tojson }},"location":"home","online":true,"feet":{{d*5280.0}}}
+       {% if states.group.devices_keli is defined %}
+         {%- set e = closest(states.group.devices_keli) -%}
+         {%- if e is defined -%} 
+           {%- set d = distance(e) -%}
+           {%- if e.source_type == 'gps' -%} 
+             {"device":{{ e.attributes.friendly_name|tojson }},"location":{{e.state|tojson}},"online":{{(e.attributes.device_status == 'online')|tojson}},"feet":{{d*5280.0}}}
+           {%- else -%}
+             {"device":{{ e.attributes.friendly_name|tojson }},"location":"home","online":true,"feet":{{d*5280.0}}}
+           {%- endif -%}
          {%- endif -%}
+       {%- else -%}
+         {"device":"none","location":"unknown","online":false,"feet":0}}
        {%- endif -%}
-    hali_status:
+    status_hali:
       friendly_name: "Hali's status"
       entity_id:
-        - group.hali_devices
+        - group.devices_hali
       value_template: >
-       {%- set e = closest(states.group.hali_devices) -%}
-       {%- if e is defined -%} 
-         {%- set d = distance(e) -%}
-         {%- if e.source_type == 'gps' -%} 
-           {"device":{{ e.attributes.friendly_name|tojson }},"location":{{e.state|tojson}},"online":{{(e.attributes.device_status == 'online')|tojson}},"feet":{{d*5280.0}}}
-         {%- else -%}
-           {"device":{{ e.attributes.friendly_name|tojson }},"location":"home","online":true,"feet":{{d*5280.0}}}
+       {% if states.group.devices_hali is defined %}
+         {%- set e = closest(states.group.devices_hali) -%}
+         {%- if e is defined -%} 
+           {%- set d = distance(e) -%}
+           {%- if e.source_type == 'gps' -%} 
+             {"device":{{ e.attributes.friendly_name|tojson }},"location":{{e.state|tojson}},"online":{{(e.attributes.device_status == 'online')|tojson}},"feet":{{d*5280.0}}}
+           {%- else -%}
+             {"device":{{ e.attributes.friendly_name|tojson }},"location":"home","online":true,"feet":{{d*5280.0}}}
+           {%- endif -%}
          {%- endif -%}
+       {%- else -%}
+         {"device":"none","location":"unknown","online":false,"feet":0}}
        {%- endif -%}
-    ian_status:
+    status_ian:
       friendly_name: "Ian's status"
       entity_id:
-        - group.ian_devices
+        - group.devices_ian
       value_template: >
-       {%- set e = closest(states.group.ian_devices) -%}
-       {%- if e is defined -%} 
-         {%- set d = distance(e) -%}
-         {%- if e.source_type == 'gps' -%} 
-           {"device":{{ e.attributes.friendly_name|tojson }},"location":{{e.state|tojson}},"online":{{(e.attributes.device_status == 'online')|tojson}},"feet":{{d*5280.0}}}
-         {%- else -%}
-           {"device":{{ e.attributes.friendly_name|tojson }},"location":"home","online":true,"feet":{{d*5280.0}}}
+       {% if states.group.devices_ian is defined %}
+       {%- set e = closest(states.group.devices_ian) -%}
+         {%- if e is defined -%} 
+           {%- set d = distance(e) -%}
+           {%- if e.source_type == 'gps' -%} 
+             {"device":{{ e.attributes.friendly_name|tojson }},"location":{{e.state|tojson}},"online":{{(e.attributes.device_status == 'online')|tojson}},"feet":{{d*5280.0}}}
+           {%- else -%}
+             {"device":{{ e.attributes.friendly_name|tojson }},"location":"home","online":true,"feet":{{d*5280.0}}}
+           {%- endif -%}
          {%- endif -%}
+       {%- else -%}
+         {"device":"none","location":"unknown","online":false,"feet":0}}
        {%- endif -%}
-    riley_status:
+    status_riley:
       friendly_name: "Riley's status"
       entity_id:
-        - group.riley_devices
+        - group.devices_riley
       value_template: >
-       {%- set e = closest(states.group.riley_devices) -%}
-       {%- if e is defined -%} 
-         {%- set d = distance(e) -%}
-         {%- if e.source_type == 'gps' -%} 
-           {"device":{{ e.attributes.friendly_name|tojson }},"location":{{e.state|tojson}},"online":{{(e.attributes.device_status == 'online')|tojson}},"feet":{{d*5280.0}}}
-         {%- else -%}
-           {"device":{{ e.attributes.friendly_name|tojson }},"location":"home","online":true,"feet":{{d*5280.0}}}
+       {% if states.group.devices_riley is defined %}
+         {%- set e = closest(states.group.devices_riley) -%}
+         {%- if e is defined -%} 
+           {%- set d = distance(e) -%}
+           {%- if e.source_type == 'gps' -%} 
+             {"device":{{ e.attributes.friendly_name|tojson }},"location":{{e.state|tojson}},"online":{{(e.attributes.device_status == 'online')|tojson}},"feet":{{d*5280.0}}}
+           {%- else -%}
+             {"device":{{ e.attributes.friendly_name|tojson }},"location":"home","online":true,"feet":{{d*5280.0}}}
+           {%- endif -%}
          {%- endif -%}
+       {%- else -%}
+         {"device":"none","location":"unknown","online":false,"feet":0}}
        {%- endif -%}
-    ellen_status:
+    status_ellen:
       friendly_name: "Ellen's status"
       entity_id:
-        - group.ellen_devices
+        - group.devices_ellen
       value_template: >
-       {%- set e = closest(states.group.ellen_devices) -%}
-       {%- if e is defined -%} 
-         {%- set d = distance(e) -%}
-         {%- if e.source_type == 'gps' -%} 
-           {"device":{{ e.attributes.friendly_name|tojson }},"location":{{e.state|tojson}},"online":{{(e.attributes.device_status == 'online')|tojson}},"feet":{{d*5280.0}}}
-         {%- else -%}
-           {"device":{{ e.attributes.friendly_name|tojson }},"location":"home","online":true,"feet":{{d*5280.0}}}
+       {% if states.group.devices_ellen is defined %}
+         {%- set e = closest(states.group.devices_ellen) -%}
+         {%- if e is defined -%} 
+           {%- set d = distance(e) -%}
+           {%- if e.source_type == 'gps' -%} 
+             {"device":{{ e.attributes.friendly_name|tojson }},"location":{{e.state|tojson}},"online":{{(e.attributes.device_status == 'online')|tojson}},"feet":{{d*5280.0}}}
+           {%- else -%}
+             {"device":{{ e.attributes.friendly_name|tojson }},"location":"home","online":true,"feet":{{d*5280.0}}}
+           {%- endif -%}
          {%- endif -%}
+       {%- else -%}
+         {"device":"none","location":"unknown","online":false,"feet":0}}
        {%- endif -%}
-    david_location:
+    location_david:
       friendly_name: "David's location"
-      entity_id: group.david_devices
+      entity_id: group.devices_david
       value_template: >
-        {{ closest(states.group.david_devices).state }}
-    keli_location:
+       {% if states.group.devices_david is defined %}
+        {{ closest(states.group.devices_david).state }}
+       {% else %}
+         'unknown'
+       {% endif %}
+    location_keli:
       friendly_name: "Keli's location"
-      entity_id: group.keli_devices
+      entity_id: group.devices_keli
       value_template: >
-        {{ closest(states.group.keli_devices).state }}
-    hali_location:
+       {% if states.group.devices_keli is defined %}
+        {{ closest(states.group.devices_keli).state }}
+       {% else %}
+         'unknown'
+       {% endif %}
+    location_hali:
       friendly_name: "Hali's location"
-      entity_id: group.hali_devices
+      entity_id: group.devices_hali
       value_template: >
-        {{ closest(states.group.hali_devices).state }}
-    ian_location:
+       {% if states.group.devices_hali is defined %}
+        {{ closest(states.group.devices_hali).state }}
+       {% else %}
+         'unknown'
+       {% endif %}
+    location_ian:
       friendly_name: "Ian's location"
-      entity_id: group.ian_devices
+      entity_id: group.devices_ian
       value_template: >
-        {{ closest(states.group.ian_devices).state }}
-    riley_location:
+       {% if states.group.devices_ian is defined %}
+        {{ closest(states.group.devices_ian).state }}
+       {% else %}
+         'unknown'
+       {% endif %}
+    location_riley:
       friendly_name: "Riley's location"
-      entity_id: group.riley_devices
+      entity_id: group.devices_riley
       value_template: >
-        {{ closest(states.group.riley_devices).state }}
-    ellen_location:
+       {% if states.group.devices_riley is defined %}
+        {{ closest(states.group.devices_riley).state }}
+       {% else %}
+         'unknown'
+       {% endif %}
+    location_ellen:
       friendly_name: "Ellen's location"
-      entity_id: group.ellen_devices
+      entity_id: group.devices_ellen
       value_template: >
-        {{ closest(states.group.ellen_devices).state }}
+       {% if states.group.devices_ellen is defined %}
+        {{ closest(states.group.devices_ellen).state }}
+       {% else %}
+         'unknown'
+       {% endif %}
 
 logger: !include logger.yaml
 group: !include groups.yaml
@@ -3934,7 +3934,7 @@ group: !include groups.yaml
 
 sensor aah_device_count:
   - platform: rest
-    resource: 'http://192.168.1.32/CGI/aah-devices.cgi'
+    resource: 'http://192.168.1.33/CGI/aah-devices.cgi'
     name: aah_device_count
     value_template: >
       {%- if value_json is defined -%}
@@ -3947,7 +3947,7 @@ sensor aah_device_count:
 
 sensor aah_device_names:
   - platform: rest
-    resource: 'http://192.168.1.32/CGI/aah-devices.cgi'
+    resource: 'http://192.168.1.33/CGI/aah-devices.cgi'
     name: aah_device_names
     value_template: >
       {%- if value_json is defined -%}
@@ -3963,7 +3963,7 @@ sensor aah_device_names:
 
 sensor aah_device_dates:
   - platform: rest
-    resource: 'http://192.168.1.32/CGI/aah-devices.cgi'
+    resource: 'http://192.168.1.33/CGI/aah-devices.cgi'
     name: aah_device_dates
     value_template: >
       {%- if value_json is defined -%}
@@ -3980,34 +3980,42 @@ sensor aah_device_dates:
 binary_sensor device_template:
   platform: template
   sensors:
-    online_kitchen:
+    kitchen_online:
       entity_id:
-        - device_tracker.ageathome_kitchen_camera
+        - device_tracker.ageathome_kitchen
       value_template: >
-        {{ states.device_tracker.ageathome_kitchen_camera != None and
-           states.device_tracker.ageathome_kitchen_camera.state != None and
-           states.device_tracker.ageathome_kitchen_camera.state == 'home' }}
-    online_bathroom:
+        {{ states.device_tracker.ageathome_kitchen != None and
+           states.device_tracker.ageathome_kitchen.state != None and
+           states.device_tracker.ageathome_kitchen.state == 'home' }}
+    bathroom_online:
       entity_id:
-        - device_tracker.ageathome_bathroom_camera
+        - device_tracker.ageathome_bathroom
       value_template: >
-        {{ states.device_tracker.ageathome_bathroom_camera != None and
-           states.device_tracker.ageathome_bathroom_camera.state != None and
-           states.device_tracker.ageathome_bathroom_camera.state == 'home' }}
-    online_frontdoor:
+        {{ states.device_tracker.ageathome_bathroom != None and
+           states.device_tracker.ageathome_bathroom.state != None and
+           states.device_tracker.ageathome_bathroom.state == 'home' }}
+    frontdoor_online:
       entity_id:
-        - device_tracker.ageathome_frontdoor_camera
+        - device_tracker.ageathome_frontdoor
       value_template: >
-        {{ states.device_tracker.ageathome_frontdoor_camera != None and
-           states.device_tracker.ageathome_frontdoor_camera.state != None and
-           states.device_tracker.ageathome_frontdoor_camera.state == 'home' }}
-    online_road:
+        {{ states.device_tracker.ageathome_frontdoor != None and
+           states.device_tracker.ageathome_frontdoor.state != None and
+           states.device_tracker.ageathome_frontdoor.state == 'home' }}
+    road_online:
       entity_id:
-        - device_tracker.ageathome_road_camera
+        - device_tracker.ageathome_road
       value_template: >
-        {{ states.device_tracker.ageathome_road_camera != None and
-           states.device_tracker.ageathome_road_camera.state != None and
-           states.device_tracker.ageathome_road_camera.state == 'home' }}
+        {{ states.device_tracker.ageathome_road != None and
+           states.device_tracker.ageathome_road.state != None and
+           states.device_tracker.ageathome_road.state == 'home' }}
+    interiorgate_online:
+      entity_id:
+        - device_tracker.ageathome_interiorgate
+      value_template: >
+        {{ states.device_tracker.ageathome_interiorgate != None and
+           states.device_tracker.ageathome_interiorgate.state != None and
+           states.device_tracker.ageathome_interiorgate.state == 'home' }}
+
 
 ## determine if aah_discovery & aah_config are defined (url, ..)
 binary_sensor template:
@@ -4043,34 +4051,34 @@ history_graph:
   kitchen_time:
     name: Kitchen Time
     entities:
-      - sensor.david_kitchen_time
-      - sensor.keli_kitchen_time
-      - sensor.hali_kitchen_time
-      - sensor.ian_kitchen_time
-      - sensor.riley_kitchen_time
-      - sensor.ellen_kitchen_time
+      - sensor.kitchen_david_time
+      - sensor.kitchen_keli_time
+      - sensor.kitchen_hali_time
+      - sensor.kitchen_ian_time
+      - sensor.kitchen_riley_time
+      - sensor.kitchen_ellen_time
     hours_to_show: 24
     refresh: 60
   kitchen_ratio:
     name: Kitchen Ratio
     entities:
-      - sensor.david_kitchen_ratio
-      - sensor.keli_kitchen_ratio
-      - sensor.hali_kitchen_ratio
-      - sensor.ian_kitchen_ratio
-      - sensor.riley_kitchen_ratio
-      - sensor.ellen_kitchen_ratio
+      - sensor.kitchen_david_ratio
+      - sensor.kitchen_keli_ratio
+      - sensor.kitchen_hali_ratio
+      - sensor.kitchen_ian_ratio
+      - sensor.kitchen_riley_ratio
+      - sensor.kitchen_ellen_ratio
     hours_to_show: 24
     refresh: 60
   kitchen_count:
     name: Kitchen Count
     entities:
-      - sensor.david_kitchen_count
-      - sensor.keli_kitchen_count
-      - sensor.hali_kitchen_count
-      - sensor.ian_kitchen_count
-      - sensor.riley_kitchen_count
-      - sensor.ellen_kitchen_count
+      - sensor.kitchen_david_count
+      - sensor.kitchen_keli_count
+      - sensor.kitchen_hali_count
+      - sensor.kitchen_ian_count
+      - sensor.kitchen_riley_count
+      - sensor.kitchen_ellen_count
       - sensor.kitchen_motion_count
     hours_to_show: 24
     refresh: 60
@@ -4083,34 +4091,34 @@ history_graph:
   bathroom_time:
     name: Bathroom Time
     entities:
-      - sensor.david_bathroom_time
-      - sensor.keli_bathroom_time
-      - sensor.hali_bathroom_time
-      - sensor.ian_bathroom_time
-      - sensor.riley_bathroom_time
-      - sensor.ellen_bathroom_time
+      - sensor.bathroom_david_time
+      - sensor.bathroom_keli_time
+      - sensor.bathroom_hali_time
+      - sensor.bathroom_ian_time
+      - sensor.bathroom_riley_time
+      - sensor.bathroom_ellen_time
     hours_to_show: 24
     refresh: 60
   bathroom_ratio:
     name: Bathroom Ratio
     entities:
-      - sensor.david_bathroom_ratio
-      - sensor.keli_bathroom_ratio
-      - sensor.hali_bathroom_ratio
-      - sensor.ian_bathroom_ratio
-      - sensor.riley_bathroom_ratio
-      - sensor.ellen_bathroom_ratio
+      - sensor.bathroom_david_ratio
+      - sensor.bathroom_keli_ratio
+      - sensor.bathroom_hali_ratio
+      - sensor.bathroom_ian_ratio
+      - sensor.bathroom_riley_ratio
+      - sensor.bathroom_ellen_ratio
     hours_to_show: 24
     refresh: 60
   bathroom_count:
     name: Bathroom Count
     entities:
-      - sensor.david_bathroom_count
-      - sensor.keli_bathroom_count
-      - sensor.hali_bathroom_count
-      - sensor.ian_bathroom_count
-      - sensor.riley_bathroom_count
-      - sensor.ellen_bathroom_count
+      - sensor.bathroom_david_count
+      - sensor.bathroom_keli_count
+      - sensor.bathroom_hali_count
+      - sensor.bathroom_ian_count
+      - sensor.bathroom_riley_count
+      - sensor.bathroom_ellen_count
       - sensor.bathroom_motion_count
     hours_to_show: 24
     refresh: 60
@@ -4123,34 +4131,34 @@ history_graph:
   frontdoor_time:
     name: Frontdoor Time
     entities:
-      - sensor.david_frontdoor_time
-      - sensor.keli_frontdoor_time
-      - sensor.hali_frontdoor_time
-      - sensor.ian_frontdoor_time
-      - sensor.riley_frontdoor_time
-      - sensor.ellen_frontdoor_time
+      - sensor.frontdoor_david_time
+      - sensor.frontdoor_keli_time
+      - sensor.frontdoor_hali_time
+      - sensor.frontdoor_ian_time
+      - sensor.frontdoor_riley_time
+      - sensor.frontdoor_ellen_time
     hours_to_show: 24
     refresh: 60
   frontdoor_ratio:
     name: Frontdoor Ratio
     entities:
-      - sensor.david_frontdoor_ratio
-      - sensor.keli_frontdoor_ratio
-      - sensor.hali_frontdoor_ratio
-      - sensor.ian_frontdoor_ratio
-      - sensor.riley_frontdoor_ratio
-      - sensor.ellen_frontdoor_ratio
+      - sensor.frontdoor_david_ratio
+      - sensor.frontdoor_keli_ratio
+      - sensor.frontdoor_hali_ratio
+      - sensor.frontdoor_ian_ratio
+      - sensor.frontdoor_riley_ratio
+      - sensor.frontdoor_ellen_ratio
     hours_to_show: 24
     refresh: 60
   frontdoor_count:
     name: Frontdoor Count
     entities:
-      - sensor.david_frontdoor_count
-      - sensor.keli_frontdoor_count
-      - sensor.hali_frontdoor_count
-      - sensor.ian_frontdoor_count
-      - sensor.riley_frontdoor_count
-      - sensor.ellen_frontdoor_count
+      - sensor.frontdoor_david_count
+      - sensor.frontdoor_keli_count
+      - sensor.frontdoor_hali_count
+      - sensor.frontdoor_ian_count
+      - sensor.frontdoor_riley_count
+      - sensor.frontdoor_ellen_count
       - sensor.frontdoor_motion_count
     hours_to_show: 24
     refresh: 60
@@ -4163,25 +4171,25 @@ history_graph:
   road_time:
     name: Road Time
     entities:
-      - sensor.martin_road_time
-      - sensor.fletcher_road_time
-      - sensor.other_road_time
+      - sensor.road_martin_time
+      - sensor.road_fletcher_time
+      - sensor.road_other_time
     hours_to_show: 24
     refresh: 60
   road_ratio:
     name: Road Ratio
     entities:
-      - sensor.martin_road_ratio
-      - sensor.fletcher_road_ratio
-      - sensor.other_road_ratio
+      - sensor.road_martin_ratio
+      - sensor.road_fletcher_ratio
+      - sensor.road_other_ratio
     hours_to_show: 24
     refresh: 60
   road_count:
     name: Road Count
     entities:
-      - sensor.martin_road_count
-      - sensor.fletcher_road_count
-      - sensor.other_road_count
+      - sensor.road_martin_count
+      - sensor.road_fletcher_count
+      - sensor.road_other_count
     hours_to_show: 24
     refresh: 60
   interiorgate_accuracy:
@@ -4193,27 +4201,24 @@ history_graph:
   interiorgate_time:
     name: Interior Gate Time
     entities:
-      - sensor.martin_interiorgate_time
-      - sensor.fletcher_interiorgate_time
-      - sensor.other_interiorgate_time
+      - sensor.interiorgate_martin_time
+      - sensor.interiorgate_other_time
     hours_to_show: 24
     refresh: 60
   interiorgate_ratio:
     name: Interior Gate Ratio
     entities:
-      - sensor.martin_interiorgate_ratio
-      - sensor.fletcher_interiorgate_ratio
-      - sensor.other_interiorgate_ratio
-    hours_to_show: 24
+      - sensor.interiorgate_martin_ratio
+      - sensor.interiorgate_other_ratio
     refresh: 60
   interiorgate_count:
     name: Interior Gate Count
     entities:
-      - sensor.martin_interiorgate_count
-      - sensor.fletcher_interiorgate_count
-      - sensor.other_interiorgate_count
+      - sensor.interiorgate_martin_count
+      - sensor.interiorgate_other_count
     hours_to_show: 24
     refresh: 60
+
 ##
 ## INPUT
 ##
@@ -4234,4 +4239,3 @@ script: !include scripts.yaml
 ## AUTOMATIONS
 ##
 
-automation: !include automations.yaml

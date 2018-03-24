@@ -1,55 +1,49 @@
   include:
     entities:
+      - binary_sensor.bathroom_david
+      - binary_sensor.bathroom_ellen
+      - binary_sensor.bathroom_hali
+      - binary_sensor.bathroom_ian
+      - binary_sensor.bathroom_keli
       - binary_sensor.bathroom_motion
+      - binary_sensor.bathroom_riley
       - binary_sensor.bathroom_wrong
-      - binary_sensor.david_bathroom
-      - binary_sensor.david_frontdoor
-      - binary_sensor.david_home
-      - binary_sensor.david_interior
-      - binary_sensor.david_kitchen
-      - binary_sensor.ellen_bathroom
-      - binary_sensor.ellen_frontdoor
-      - binary_sensor.ellen_home
-      - binary_sensor.ellen_interior
-      - binary_sensor.ellen_kitchen
       - binary_sensor.exterior_motion
+      - binary_sensor.frontdoor_david
+      - binary_sensor.frontdoor_ellen
+      - binary_sensor.frontdoor_hali
+      - binary_sensor.frontdoor_ian
+      - binary_sensor.frontdoor_keli
       - binary_sensor.frontdoor_motion
+      - binary_sensor.frontdoor_riley
       - binary_sensor.frontdoor_wrong
-      - binary_sensor.hali_bathroom
-      - binary_sensor.hali_frontdoor
-      - binary_sensor.hali_home
-      - binary_sensor.hali_interior
-      - binary_sensor.hali_kitchen
-      - binary_sensor.ian_bathroom
-      - binary_sensor.ian_frontdoor
-      - binary_sensor.ian_home
-      - binary_sensor.ian_interior
-      - binary_sensor.ian_kitchen
-      - binary_sensor.interior_motion
-      - binary_sensor.keli_bathroom
-      - binary_sensor.keli_frontdoor
-      - binary_sensor.keli_home
-      - binary_sensor.keli_interior
-      - binary_sensor.keli_kitchen
-      - binary_sensor.kitchen_motion
-      - binary_sensor.kitchen_wrong
-      - binary_sensor.martin_c70_road
-      # - binary_sensor.martin_c30_road
-      # - binary_sensor.martin_rtv1100_road
-      # - binary_sensor.martin_sprinter_road
-      # - binary_sensor.martin_suburban_road
-      # - binary_sensor.martin_xc90_road
-      # - binary_sensor.fletcher_fordflex_road
-      - binary_sensor.other_road
-      - binary_sensor.riley_bathroom
-      - binary_sensor.riley_frontdoor
-      - binary_sensor.riley_home
-      - binary_sensor.riley_interior
-      - binary_sensor.riley_kitchen
-      - binary_sensor.road_motion
-      - binary_sensor.road_wrong
+      - binary_sensor.home_david
+      - binary_sensor.home_ellen
+      - binary_sensor.home_hali
+      - binary_sensor.home_ian
+      - binary_sensor.home_keli
+      - binary_sensor.home_riley
+      - binary_sensor.interior_david
+      - binary_sensor.interior_ellen
       - binary_sensor.interiorgate_motion
+      - binary_sensor.interiorgate_other
       - binary_sensor.interiorgate_wrong
+      - binary_sensor.interior_hali
+      - binary_sensor.interior_ian
+      - binary_sensor.interior_keli
+      - binary_sensor.interior_motion
+      - binary_sensor.interior_riley
+      - binary_sensor.kitchen_david
+      - binary_sensor.kitchen_ellen
+      - binary_sensor.kitchen_hali
+      - binary_sensor.kitchen_ian
+      - binary_sensor.kitchen_keli
+      - binary_sensor.kitchen_motion
+      - binary_sensor.kitchen_riley
+      - binary_sensor.kitchen_wrong
+      - binary_sensor.road_motion
+      - binary_sensor.road_other
+      - binary_sensor.road_wrong
       - device_tracker.dcmsiphone7
       - device_tracker.ellensiphone5
       - device_tracker.halisiphone
@@ -57,8 +51,26 @@
       - device_tracker.kelisiphone7
       - device_tracker.rileysiphone5
       - sensor.bathroom_ago
+      - sensor.bathroom_david_count
+      - sensor.bathroom_david_ratio
+      - sensor.bathroom_david_time
+      - sensor.bathroom_ellen_count
+      - sensor.bathroom_ellen_ratio
+      - sensor.bathroom_ellen_time
+      - sensor.bathroom_hali_count
+      - sensor.bathroom_hali_ratio
+      - sensor.bathroom_hali_time
+      - sensor.bathroom_ian_count
+      - sensor.bathroom_ian_ratio
+      - sensor.bathroom_ian_time
+      - sensor.bathroom_keli_count
+      - sensor.bathroom_keli_ratio
+      - sensor.bathroom_keli_time
       - sensor.bathroom_motion_count
       - sensor.bathroom_motion_time
+      - sensor.bathroom_riley_count
+      - sensor.bathroom_riley_ratio
+      - sensor.bathroom_riley_time
       - sensor.bathroom_what
       - sensor.count_automations
       - sensor.count_binary_sensors
@@ -67,103 +79,84 @@
       - sensor.count_media_players
       - sensor.count_sensors
       - sensor.count_zones
-      - sensor.david_bathroom_count
-      - sensor.david_bathroom_ratio
-      - sensor.david_bathroom_time
-      - sensor.david_frontdoor_count
-      - sensor.david_frontdoor_ratio
-      - sensor.david_frontdoor_time
-      - sensor.david_kitchen_count
-      - sensor.david_kitchen_ratio
-      - sensor.david_kitchen_time
-      - sensor.david_location
-      - sensor.david_plex
-      - sensor.ellen_bathroom_count
-      - sensor.ellen_bathroom_ratio
-      - sensor.ellen_bathroom_time
-      - sensor.ellen_frontdoor_count
-      - sensor.ellen_frontdoor_ratio
-      - sensor.ellen_frontdoor_time
-      - sensor.ellen_kitchen_count
-      - sensor.ellen_kitchen_ratio
-      - sensor.ellen_kitchen_time
-      - sensor.ellen_location
       - sensor.exterior_motion_ratio
       - sensor.externalip
-      - sensor.fletcher_road_count
-      - sensor.fletcher_road_ratio
-      - sensor.fletcher_road_time
       - sensor.frontdoor_ago
+      - sensor.frontdoor_david_count
+      - sensor.frontdoor_david_ratio
+      - sensor.frontdoor_david_time
+      - sensor.frontdoor_ellen_count
+      - sensor.frontdoor_ellen_ratio
+      - sensor.frontdoor_ellen_time
+      - sensor.frontdoor_hali_count
+      - sensor.frontdoor_hali_ratio
+      - sensor.frontdoor_hali_time
+      - sensor.frontdoor_ian_count
+      - sensor.frontdoor_ian_ratio
+      - sensor.frontdoor_ian_time
+      - sensor.frontdoor_keli_count
+      - sensor.frontdoor_keli_ratio
+      - sensor.frontdoor_keli_time
       - sensor.frontdoor_motion_count
       - sensor.frontdoor_motion_time
+      - sensor.frontdoor_riley_count
+      - sensor.frontdoor_riley_ratio
+      - sensor.frontdoor_riley_time
       - sensor.frontdoor_what
-      - sensor.hali_bathroom_count
-      - sensor.hali_bathroom_ratio
-      - sensor.hali_bathroom_time
-      - sensor.hali_frontdoor_count
-      - sensor.hali_frontdoor_ratio
-      - sensor.hali_frontdoor_time
-      - sensor.hali_kitchen_count
-      - sensor.hali_kitchen_ratio
-      - sensor.hali_kitchen_time
-      - sensor.hali_location
-      - sensor.ian_bathroom_count
-      - sensor.ian_bathroom_ratio
-      - sensor.ian_bathroom_time
-      - sensor.ian_frontdoor_count
-      - sensor.ian_frontdoor_ratio
-      - sensor.ian_frontdoor_time
-      - sensor.ian_kitchen_count
-      - sensor.ian_kitchen_ratio
-      - sensor.ian_kitchen_time
-      - sensor.ian_location
-      - sensor.interior_motion_ratio
-      - sensor.keli_bathroom_count
-      - sensor.keli_bathroom_ratio
-      - sensor.keli_bathroom_time
-      - sensor.keli_frontdoor_count
-      - sensor.keli_frontdoor_ratio
-      - sensor.keli_frontdoor_time
-      - sensor.keli_kitchen_count
-      - sensor.keli_kitchen_ratio
-      - sensor.keli_kitchen_time
-      - sensor.keli_location
+      - sensor.interiorgate_ago
+      - sensor.interiorgate_martin_count
+      - sensor.interiorgate_martin_ratio
+      - sensor.interiorgate_martin_time
+      - sensor.interiorgate_motion_count
+      - sensor.interiorgate_motion_time
+      - sensor.interiorgate_other_count
+      - sensor.interiorgate_other_ratio
+      - sensor.interiorgate_other_time
+      - sensor.interiorgate_what
       - sensor.kitchen_ago
+      - sensor.kitchen_david_count
+      - sensor.kitchen_david_ratio
+      - sensor.kitchen_david_time
+      - sensor.kitchen_ellen_count
+      - sensor.kitchen_ellen_ratio
+      - sensor.kitchen_ellen_time
+      - sensor.kitchen_hali_count
+      - sensor.kitchen_hali_ratio
+      - sensor.kitchen_hali_time
+      - sensor.kitchen_ian_count
+      - sensor.kitchen_ian_ratio
+      - sensor.kitchen_ian_time
+      - sensor.kitchen_keli_count
+      - sensor.kitchen_keli_ratio
+      - sensor.kitchen_keli_time
       - sensor.kitchen_motion_count
       - sensor.kitchen_motion_time
+      - sensor.kitchen_riley_count
+      - sensor.kitchen_riley_ratio
+      - sensor.kitchen_riley_time
       - sensor.kitchen_what
       - sensor.last_ago
       - sensor.last_what
       - sensor.last_when
-      - sensor.martin_road_count
-      - sensor.martin_road_ratio
-      - sensor.martin_road_time
-      - sensor.other_road_count
-      - sensor.other_road_ratio
-      - sensor.other_road_time
-      - sensor.martin_interiorgate_count
-      - sensor.martin_interiorgate_ratio
-      - sensor.martin_interiorgate_time
-      - sensor.other_interiorgate_count
-      - sensor.other_interiorgate_ratio
-      - sensor.other_interiorgate_time
+      - sensor.location_david
+      - sensor.location_ellen
+      - sensor.location_hali
+      - sensor.location_ian
+      - sensor.location_keli
+      - sensor.location_riley
       - sensor.play1_state
       - sensor.play3_state
-      - sensor.riley_bathroom_count
-      - sensor.riley_bathroom_ratio
-      - sensor.riley_bathroom_time
-      - sensor.riley_frontdoor_count
-      - sensor.riley_frontdoor_ratio
-      - sensor.riley_frontdoor_time
-      - sensor.riley_kitchen_count
-      - sensor.riley_kitchen_ratio
-      - sensor.riley_kitchen_time
-      - sensor.riley_location
+      - sensor.plex_david
       - sensor.road_ago
+      - sensor.road_fletcher_count
+      - sensor.road_fletcher_ratio
+      - sensor.road_fletcher_time
+      - sensor.road_martin_count
+      - sensor.road_martin_ratio
+      - sensor.road_martin_time
       - sensor.road_motion_count
       - sensor.road_motion_time
+      - sensor.road_other_count
+      - sensor.road_other_ratio
+      - sensor.road_other_time
       - sensor.road_what
-      - sensor.interiorgate_ago
-      - sensor.interiorgate_motion_count
-      - sensor.interiorgate_motion_time
-      - sensor.interiorgate_what

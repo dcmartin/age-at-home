@@ -23,49 +23,49 @@ over_view:
 people:
   name: People
   entities:
-    - sensor.david_location
-    - sensor.keli_location
-    - sensor.hali_location
-    - sensor.ian_location
-    - sensor.riley_location
-    - sensor.ellen_location
+    - sensor.location_david
+    - sensor.location_keli
+    - sensor.location_hali
+    - sensor.location_ian
+    - sensor.location_riley
+    - sensor.location_ellen
 
-david_devices:
-  name: david_devices
+devices_david:
+  name: devices_david
   entities:
     - device_tracker.davids_iphone
     - device_tracker.dcmsiphone7
     - device_tracker.davidcsapple_watch
 
-keli_devices:
-  name: keli_devices
+devices_keli:
+  name: devices_keli
   entities:
     - device_tracker.kelisiphone7
     - device_tracker.kelimac
     - device_tracker.kelisapple_watch
 
-hali_devices:
-  name: hali_devices
+devices_hali:
+  name: devices_hali
   entities:
     - device_tracker.halisiphone 
     - device_tracker.haliair
     - device_tracker.halisapple_watch
     - device_tracker.halimartinsipad
 
-ian_devices:
-  name: ian_devices
+devices_ian:
+  name: devices_ian
   entities:
     - device_tracker.ianmartinsiphone
     - device_tracker.ianair
 
-riley_devices:
-  name: riley_devices
+devices_riley:
+  name: devices_riley
   entities:
     - device_tracker.rileymacbookair
     - device_tracker.rileysiphone5
 
-ellen_devices:
-  name: ellen_devices
+devices_ellen:
+  name: devices_ellen
   entities:
     - device_tracker.ellens_ipad4prez
     - device_tracker.ellens_iphone
@@ -134,14 +134,14 @@ family_detection:
     - binary_sensor.family_bathroom
     - binary_sensor.family_kitchen
     - binary_sensor.family_road
-    - binary_sensor.david_kitchen
-    - binary_sensor.keli_kitchen
-    - binary_sensor.david_home
-    - binary_sensor.keli_home
-    - binary_sensor.hali_home
-    - binary_sensor.ian_home
-    - binary_sensor.riley_home
-    - binary_sensor.ellen_home
+    - binary_sensor.kitchen_david
+    - binary_sensor.kitchen_keli
+    - binary_sensor.home_david
+    - binary_sensor.home_keli
+    - binary_sensor.home_hali
+    - binary_sensor.home_ian
+    - binary_sensor.home_riley
+    - binary_sensor.home_ellen
 
 ##
 ## HORIZON
@@ -401,6 +401,8 @@ ageathome_kitchen_view:
   name: AgeAtHome Kitchen View
   icon: mdi:stove
   entities:
+    - camera.ageathome_kitchen
+    - camera.kitchen_image_annotated
     - group.ageathome_kitchen_details
     - history_graph.kitchen_count
     - history_graph.kitchen_time
@@ -427,6 +429,8 @@ ageathome_bathroom_view:
   name: AgeAtHome Bathroom View
   icon: mdi:anchor
   entities:
+    - camera.ageathome_bathroom
+    - camera.bathroom_image_annotated
     - group.ageathome_bathroom_details
     - history_graph.bathroom_count
     - history_graph.bathroom_time
@@ -454,6 +458,8 @@ ageathome_frontdoor_view:
   name: AgeAtHome Bathroom View
   icon: mdi:home-outline
   entities:
+    - camera.ageathome_frontdoor
+    - camera.frontdoor_image_annotated
     - group.ageathome_frontdoor_details
     - history_graph.frontdoor_count
     - history_graph.frontdoor_time
@@ -481,6 +487,8 @@ ageathome_road_view:
   name: AgeAtHome Road View
   icon: mdi:road
   entities:
+    - camera.ageathome_road
+    - camera.road_image_annotated
     - group.ageathome_road_details
     - history_graph.road_count
     - history_graph.road_time
@@ -508,6 +516,8 @@ ageathome_interiorgate_view:
   name: AgeAtHome Interior Gate View
   icon: mdi:gate
   entities:
+    - camera.ageathome_interiorgate
+    - camera.interiorgate_image_annotated
     - group.ageathome_interiorgate_details
     - history_graph.interiorgate_count
     - history_graph.interiorgate_time

@@ -250,6 +250,7 @@ damp-cloud:
   track: true
   vendor: Raspberry Pi Foundation
 
+# 192.168.1.37
 rough-wind:
   mac: B8:27:EB:BD:1D:F3
   name: 'ageathome_frontdoor'
@@ -324,14 +325,6 @@ nvidia_tx2_wlan0:
 mtn_rpi2:
   name: mtn_rpi2
   mac: B8:27:EB:7B:F9:FB
-  picture: https://bluehorizon.network/images/brand.svg
-  track: true
-  hide_if_away: false
-  vendor: Raspberry Pi Foundation
-
-mtn_rpi3:
-  name: mtn_rpi3
-  mac: B8:27:EB:51:A7:48
   picture: https://bluehorizon.network/images/brand.svg
   track: true
   hide_if_away: false
@@ -719,11 +712,11 @@ ellens_ipad4prez:
   track: true
   vendor: Apple, Inc.
 
-rileys_iphone:
-  name: rileys_iphone
-  mac: F8:27:93:82:45:25
-  icon: mdi:cellphone-iphone
-  hide_if_away: false
-  track: true
-  vendor: Apple, Inc.
+# rileys_iphone:
+#   name: rileys_iphone
+#   mac: F8:27:93:82:45:25
+#   icon: mdi:cellphone-iphone
+#   hide_if_away: false
+#   track: true
+#   vendor: Apple, Inc.
 
