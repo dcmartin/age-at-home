@@ -1981,48 +1981,48 @@ sensor aah_wrong_when:
 sensor last_device:
   - platform: mqtt
     name: last_device
-    state_topic: 'presence/+'
+    state_topic: 'presence/#'
     value_template: '{% if value_json is defined %} {{ value_json.device }} {% else %} "none" {% endif %}'
 
 sensor last_id:
   - platform: mqtt
     name: last_id
-    state_topic: 'presence/+'
+    state_topic: 'presence/#'
     value_template: '{% if value_json is defined %} {{ value_json.id }} {% else %} "none" {% endif %}'
 
 sensor last_what:
   - platform: mqtt
-    state_topic: 'presence/+'
+    state_topic: 'presence/#'
     name: last_what
     value_template: '{% if value_json is defined %} {{ value_json.class }} {% else %} "nothing" {% endif %}'
 
 sensor last_who:
   - platform: mqtt
-    state_topic: 'presence/+'
+    state_topic: 'presence/#'
     name: last_who
     value_template: '{% if value_json is defined %} {{ value_json.model }} {% else %} "nobody" {% endif %}'
 
 sensor last_why:
   - platform: mqtt
-    state_topic: 'presence/+'
+    state_topic: 'presence/#'
     name: last_why
     value_template: '{% if value_json is defined %} {{ value_json.score }} {% else %} 0.0 {% endif %}'
 
 sensor last_date:
   - platform: mqtt
-    state_topic: 'presence/+'
+    state_topic: 'presence/#'
     name: last_date
     value_template: '{% if value_json is defined -%} {{ value_json.date|int }} {%- else -%} -1 {%- endif -%}'
 
 sensor last_where:
   - platform: mqtt
-    state_topic: 'presence/+'
+    state_topic: 'presence/#'
     name: last_where
     value_template: '{% if value_json is defined %} {{ value_json.location }} {% else %} "nowhere" {% endif %}'
 
 sensor last_when:
   - platform: mqtt
-    state_topic: 'presence/+'
+    state_topic: 'presence/#'
     name: last_when
     value_template: '{% if value_json is defined %} {{ value_json.date | timestamp_custom("%a %b %d @ %I:%M %p") }} {% else %} "never" {% endif %}'
     icon_template: >-
@@ -2057,33 +2057,33 @@ camera last_image_cropped:
 sensor kitchen_last:
   - platform: mqtt
     name: kitchen_last
-    state_topic: 'presence/kitchen'
+    state_topic: 'presence/kitchen/#'
     value_template: '{% if value_json is defined %} {{ value_json.class }} {% else %} "nothing" {% endif %}'
 
 sensor kitchen_what:
   - platform: mqtt
     name: kitchen_what
     expire_after: 30
-    state_topic: 'presence/kitchen'
+    state_topic: 'presence/kitchen/#'
     value_template: '{% if value_json is defined %} {{ value_json.class }} {% else %} "nothing" {% endif %}'
 
 sensor kitchen_who:
   - platform: mqtt
     name: kitchen_who
-    state_topic: 'presence/kitchen'
+    state_topic: 'presence/kitchen/#'
     value_template: '{% if value_json is defined %} {{ value_json.model }} {% else %} "nobody" {% endif %}'
 
 sensor kitchen_why:
   - platform: mqtt
     name: kitchen_why
-    state_topic: 'presence/kitchen'
+    state_topic: 'presence/kitchen/#'
     value_template: '{% if value_json is defined %} {{ value_json.score }} {% else %} 0.0 {% endif %}'
 
 sensor kitchen_date:
   - platform: mqtt
     name: kitchen_date
     icon: mdi:human-greeting
-    state_topic: 'presence/kitchen'
+    state_topic: 'presence/kitchen/#'
     value_template: '{% if value_json is defined %} {{ value_json.date|int }} {% else %} -1 {% endif %}'
 
 # CAMERA (JPEG)
@@ -2111,33 +2111,33 @@ camera kitchen_image_cropped:
 sensor bathroom_last:
   - platform: mqtt
     name: bathroom_last
-    state_topic: 'presence/bathroom'
+    state_topic: 'presence/bathroom/#'
     value_template: '{% if value_json is defined %} {{ value_json.class }} {% else %} "nothing" {% endif %}'
 
 sensor bathroom_what:
   - platform: mqtt
     name: bathroom_what
     expire_after: 30
-    state_topic: 'presence/bathroom'
+    state_topic: 'presence/bathroom/#'
     value_template: '{% if value_json is defined %} {{ value_json.class }} {% else %} "nothing" {% endif %}'
 
 sensor bathroom_who:
   - platform: mqtt
     name: bathroom_who
-    state_topic: 'presence/bathroom'
+    state_topic: 'presence/bathroom/#'
     value_template: '{% if value_json is defined %} {{ value_json.model }} {% else %} "nobody" {% endif %}'
 
 sensor bathroom_why:
   - platform: mqtt
     name: bathroom_why
-    state_topic: 'presence/bathroom'
+    state_topic: 'presence/bathroom/#'
     value_template: '{% if value_json is defined %} {{ value_json.score }} {% else %} 0.0 {% endif %}'
 
 sensor bathroom_date:
   - platform: mqtt
     name: bathroom_date
     icon: mdi:human-greeting
-    state_topic: 'presence/bathroom'
+    state_topic: 'presence/bathroom/#'
     value_template: '{% if value_json is defined %} {{ value_json.date|int }} {% else %} -1 {% endif %}'
 
 # CAMERA (JPEG)
@@ -2164,33 +2164,33 @@ camera bathroom_image_cropped:
 sensor road_last:
   - platform: mqtt
     name: road_last
-    state_topic: 'presence/road'
+    state_topic: 'presence/road/#'
     value_template: '{% if value_json is defined %} {{ value_json.class }} {% else %} "nothing" {% endif %}'
 
 sensor road_what:
   - platform: mqtt
     name: road_what
     expire_after: 30
-    state_topic: 'presence/road'
+    state_topic: 'presence/road/#'
     value_template: '{% if value_json is defined %} {{ value_json.class }} {% else %} "nothing" {% endif %}'
 
 sensor road_who:
   - platform: mqtt
     name: road_who
-    state_topic: 'presence/road'
+    state_topic: 'presence/road/#'
     value_template: '{% if value_json is defined %} {{ value_json.model }} {% else %} "nobody" {% endif %}'
 
 sensor road_why:
   - platform: mqtt
     name: road_why
-    state_topic: 'presence/road'
+    state_topic: 'presence/road/#'
     value_template: '{% if value_json is defined %} {{ value_json.score }} {% else %} 0.0 {% endif %}'
 
 sensor road_date:
   - platform: mqtt
     name: road_date
     icon: mdi:human-greeting
-    state_topic: 'presence/road'
+    state_topic: 'presence/road/#'
     value_template: '{% if value_json is defined %} {{ value_json.date|int }} {% else %} -1 {% endif %}'
 
 # CAMERA (JPEG)
@@ -2218,33 +2218,33 @@ camera road_image_cropped:
 sensor interiorgate_last:
   - platform: mqtt
     name: interiorgate_last
-    state_topic: 'presence/interiorgate'
+    state_topic: 'presence/interiorgate/#'
     value_template: '{% if value_json is defined %} {{ value_json.class }} {% else %} "nothing" {% endif %}'
 
 sensor interiorgate_what:
   - platform: mqtt
     name: interiorgate_what
     expire_after: 30
-    state_topic: 'presence/interiorgate'
+    state_topic: 'presence/interiorgate/#'
     value_template: '{% if value_json is defined %} {{ value_json.class }} {% else %} "nothing" {% endif %}'
 
 sensor interiorgate_who:
   - platform: mqtt
     name: interiorgate_who
-    state_topic: 'presence/interiorgate'
+    state_topic: 'presence/interiorgate/#'
     value_template: '{% if value_json is defined %} {{ value_json.model }} {% else %} "nobody" {% endif %}'
 
 sensor interiorgate_why:
   - platform: mqtt
     name: interiorgate_why
-    state_topic: 'presence/interiorgate'
+    state_topic: 'presence/interiorgate/#'
     value_template: '{% if value_json is defined %} {{ value_json.score }} {% else %} 0.0 {% endif %}'
 
 sensor interiorgate_date:
   - platform: mqtt
     name: interiorgate_date
     icon: mdi:human-greeting
-    state_topic: 'presence/interiorgate'
+    state_topic: 'presence/interiorgate/#'
     value_template: '{% if value_json is defined %} {{ value_json.date|int }} {% else %} -1 {% endif %}'
 
 # CAMERA (JPEG)
@@ -2321,33 +2321,33 @@ binary_sensor classifier_wrong:
 sensor frontdoor_last:
   - platform: mqtt
     name: frontdoor_last
-    state_topic: 'presence/frontdoor'
+    state_topic: 'presence/frontdoor/#'
     value_template: '{% if value_json is defined %} {{ value_json.class }} {% else %} "nothing" {% endif %}'
 
 sensor frontdoor_what:
   - platform: mqtt
     name: frontdoor_what
     expire_after: 30
-    state_topic: 'presence/frontdoor'
+    state_topic: 'presence/frontdoor/#'
     value_template: '{% if value_json is defined %} {{ value_json.class }} {% else %} "nothing" {% endif %}'
 
 sensor frontdoor_who:
   - platform: mqtt
     name: frontdoor_who
-    state_topic: 'presence/frontdoor'
+    state_topic: 'presence/frontdoor/#'
     value_template: '{% if value_json is defined %} {{ value_json.model }} {% else %} "nobody" {% endif %}'
 
 sensor frontdoor_why:
   - platform: mqtt
     name: frontdoor_why
-    state_topic: 'presence/frontdoor'
+    state_topic: 'presence/frontdoor/#'
     value_template: '{% if value_json is defined %} {{ value_json.score }} {% else %} 0.0 {% endif %}'
 
 sensor frontdoor_date:
   - platform: mqtt
     name: frontdoor_date
     icon: mdi:human-greeting
-    state_topic: 'presence/frontdoor'
+    state_topic: 'presence/frontdoor/#'
     value_template: '{% if value_json is defined %} {{ value_json.date|int }} {% else %} -1 {% endif %}'
 
 # CAMERA (JPEG)
