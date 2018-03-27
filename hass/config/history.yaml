@@ -25,9 +25,14 @@
       - binary_sensor.home_riley
       - binary_sensor.interior_david
       - binary_sensor.interior_ellen
-      - binary_sensor.interiorgate_motion
-      - binary_sensor.interiorgate_other
-      - binary_sensor.interiorgate_wrong
+      - binary_sensor.road_martin
+      - binary_sensor.road_motion
+      - binary_sensor.road_other
+      - binary_sensor.road_wrong
+      - binary_sensor.gate_martin
+      - binary_sensor.gate_motion
+      - binary_sensor.gate_other
+      - binary_sensor.gate_wrong
       - binary_sensor.interior_hali
       - binary_sensor.interior_ian
       - binary_sensor.interior_keli
@@ -41,9 +46,6 @@
       - binary_sensor.kitchen_motion
       - binary_sensor.kitchen_riley
       - binary_sensor.kitchen_wrong
-      - binary_sensor.road_motion
-      - binary_sensor.road_other
-      - binary_sensor.road_wrong
       - device_tracker.dcmsiphone7
       - device_tracker.ellensiphone5
       - device_tracker.halisiphone
@@ -103,16 +105,17 @@
       - sensor.frontdoor_riley_ratio
       - sensor.frontdoor_riley_time
       - sensor.frontdoor_what
-      - sensor.interiorgate_ago
-      - sensor.interiorgate_martin_count
-      - sensor.interiorgate_martin_ratio
-      - sensor.interiorgate_martin_time
-      - sensor.interiorgate_motion_count
-      - sensor.interiorgate_motion_time
-      - sensor.interiorgate_other_count
-      - sensor.interiorgate_other_ratio
-      - sensor.interiorgate_other_time
-      - sensor.interiorgate_what
+      - sensor.gate_ago
+      - sensor.gate_what
+      - sensor.gate_count
+      - sensor.gate_martin_count
+      - sensor.gate_martin_ratio
+      - sensor.gate_martin_time
+      - sensor.gate_motion_count
+      - sensor.gate_motion_time
+      - sensor.gate_other_count
+      - sensor.gate_other_ratio
+      - sensor.gate_other_time
       - sensor.kitchen_ago
       - sensor.kitchen_david_count
       - sensor.kitchen_david_ratio
@@ -148,6 +151,8 @@
       - sensor.play3_state
       - sensor.plex_david
       - sensor.road_ago
+      - sensor.road_what
+      - sensor.road_count
       - sensor.road_fletcher_count
       - sensor.road_fletcher_ratio
       - sensor.road_fletcher_time
@@ -159,4 +164,3 @@
       - sensor.road_other_count
       - sensor.road_other_ratio
       - sensor.road_other_time
-      - sensor.road_what

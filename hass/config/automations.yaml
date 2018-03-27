@@ -75,7 +75,7 @@
         - camera.ageathome_bathroom
         - camera.ageathome_frontdoor
         - camera.ageathome_road
-        - camera.ageathome_interiorgate
+        - camera.ageathome_gate
       to: 'not_home'
       for:
         minutes: 10
@@ -309,32 +309,32 @@
 ### INTERIOR GATE
 ###
 
-- id: interiorgate_open
-  alias: 'Interior Gate Open'
+- id: gate_open
+  alias: 'Gate Open'
   initial_state: on
   trigger:
     platform: state
-    entity_id: cover.interiorgate_opener
+    entity_id: cover.gate_opener
     from: 'closed'
     to: 'open'
   action:
     service: script.turn_on
     entity_id: script.gate_door_alarm
 
-- id: interiorgate_closed
-  alias: 'Interior Gate Closed'
+- id: gate_closed
+  alias: 'Gate Closed'
   initial_state: on
   trigger:
     platform: state
-    entity_id: cover.interiorgate_opener
+    entity_id: cover.gate_opener
     from: 'open'
     to: 'closed'
   action:
     service: script.turn_off
     entity_id: script.gate_door_alarm
 
-- id: interiorgate_opengate
-  alias: 'Open Interior Gate'
+- id: gate_opengate
+  alias: 'Open Gate'
   initial_state: on
   trigger:
     platform: event
@@ -343,10 +343,10 @@
       actionName: OPEN_INTERIORGATE
   action:
     service: cover.open_cover
-    entity_id: cover.interiorgate_opener
+    entity_id: cover.gate_opener
 
-- id: interiorgate_closegate
-  alias: 'Close Interior Gate'
+- id: gate_closegate
+  alias: 'Close Gate'
   initial_state: on
   trigger:
     platform: event
@@ -355,7 +355,7 @@
       actionName: CLOSE_INTERIORGATE
   action:
     service: cover.close_cover
-    entity_id: cover.interiorgate_opener
+    entity_id: cover.gate_opener
 
 ###
 ### NOTIFY IF PERSON SEEN IN LOCATION IS NOT HOME or UNKNOWN (DNE)
@@ -501,12 +501,12 @@
 ## NOTIFY MOTION at INTERIORGATE
 ##
 
-- id: aah_motion_interiorgate
-  alias: aah_motion_interiorgate
+- id: aah_motion_gate
+  alias: aah_motion_gate
   initial_state: on
   trigger:
     - platform: mqtt
-      topic: 'presence/interiorgate/#'
+      topic: 'presence/gate/#'
   condition: 
     condition: and
     conditions:
@@ -517,12 +517,12 @@
   action:
     - service: mqtt.publish
       data_template:
-        topic: 'status/interiorgate'
+        topic: 'status/gate'
         payload: >-
-          { "type":"motion", "location":"interiorgate", "triggered":{{- (now().timestamp()|int) -}}, "payload":{{- trigger.payload_json|tojson -}} }
+          { "type":"motion", "location":"gate", "triggered":{{- (now().timestamp()|int) -}}, "payload":{{- trigger.payload_json|tojson -}} }
     - service: notify.notify
       data_template:
-        title: InteriorGate motion
+        title: Gate motion
         message: >-
           SAW {{ trigger.payload_json.class }}
           AT {{ trigger.payload_json.date|int|timestamp_custom("%a %b %d @ %I:%M %p") | default(null) }}

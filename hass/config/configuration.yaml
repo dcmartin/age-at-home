@@ -409,9 +409,9 @@ sensor aah_state_template:
       camera_road_entity_picture:
         entity_id: camera.ageathome_road
         value_template: '{{ states.camera.road_image_annotated.attributes.entity_picture }}'
-      camera_interiorgate_entity_picture:
-        entity_id: camera.ageathome_interiorgate
-        value_template: '{{ states.camera.interiorgate_image_annotated.attributes.entity_picture }}'
+      camera_gate_entity_picture:
+        entity_id: camera.ageathome_gate
+        value_template: '{{ states.camera.gate_image_annotated.attributes.entity_picture }}'
 
 ###
 ### SONOS
@@ -1815,7 +1815,7 @@ camera roughwind:
 
 camera agedbush:   
   - platform: mjpeg
-    name: ageathome_interiorgate
+    name: ageathome_gate
     mjpeg_url: http://192.168.1.38:8081/
     authentication: basic
     username: !secret wcv80n_username
@@ -2215,55 +2215,55 @@ camera road_image_cropped:
 ## INTERIOR GATE
 ##
 
-sensor interiorgate_last:
+sensor gate_last:
   - platform: mqtt
-    name: interiorgate_last
-    state_topic: 'presence/interiorgate/#'
+    name: gate_last
+    state_topic: 'presence/gate/#'
     value_template: '{% if value_json is defined %} {{ value_json.class }} {% else %} "nothing" {% endif %}'
 
-sensor interiorgate_what:
+sensor gate_what:
   - platform: mqtt
-    name: interiorgate_what
+    name: gate_what
     expire_after: 30
-    state_topic: 'presence/interiorgate/#'
+    state_topic: 'presence/gate/#'
     value_template: '{% if value_json is defined %} {{ value_json.class }} {% else %} "nothing" {% endif %}'
 
-sensor interiorgate_who:
+sensor gate_who:
   - platform: mqtt
-    name: interiorgate_who
-    state_topic: 'presence/interiorgate/#'
+    name: gate_who
+    state_topic: 'presence/gate/#'
     value_template: '{% if value_json is defined %} {{ value_json.model }} {% else %} "nobody" {% endif %}'
 
-sensor interiorgate_why:
+sensor gate_why:
   - platform: mqtt
-    name: interiorgate_why
-    state_topic: 'presence/interiorgate/#'
+    name: gate_why
+    state_topic: 'presence/gate/#'
     value_template: '{% if value_json is defined %} {{ value_json.score }} {% else %} 0.0 {% endif %}'
 
-sensor interiorgate_date:
+sensor gate_date:
   - platform: mqtt
-    name: interiorgate_date
+    name: gate_date
     icon: mdi:human-greeting
-    state_topic: 'presence/interiorgate/#'
+    state_topic: 'presence/gate/#'
     value_template: '{% if value_json is defined %} {{ value_json.date|int }} {% else %} -1 {% endif %}'
 
 # CAMERA (JPEG)
 
-camera interiorgate_image:
+camera gate_image:
   - platform: mqtt
-    name: interiorgate_image
+    name: gate_image
     icon: mdi:image
-    topic: 'image/interiorgate'
+    topic: 'image/gate'
 
-camera interiorgate_image_annotated:
+camera gate_image_annotated:
   - platform: mqtt
-    name: interiorgate_image_annotated
-    topic: 'image-annotated/interiorgate'
+    name: gate_image_annotated
+    topic: 'image-annotated/gate'
 
-camera interiorgate_image_cropped:
+camera gate_image_cropped:
   - platform: mqtt
-    name: interiorgate_image_cropped
-    topic: 'image-cropped/interiorgate'
+    name: gate_image_cropped
+    topic: 'image-cropped/gate'
 
 ##
 ## DETERMINISTIC INDICATOR OF CLASSIFIER FAILURE (100%)
@@ -2307,11 +2307,11 @@ binary_sensor classifier_wrong:
         - sensor.road_what
       value_template: >
         {{ is_state('binary_sensor.home_david','on') and is_state('sensor.road_what','martin_c70') }}
-    interiorgate_wrong:
+    gate_wrong:
       entity_id:
-        - sensor.interiorgate_what
+        - sensor.gate_what
       value_template: >
-        {{ is_state('binary_sensor.home_david','on') and is_state('sensor.interiorgate_what','martin_c70') }}
+        {{ is_state('binary_sensor.home_david','on') and is_state('sensor.gate_what','martin_c70') }}
 
 
 ##
@@ -2410,13 +2410,13 @@ sensor motion_sensors:
       unit_of_measurement: seconds
       value_template: '{{ (now().timestamp()|int) - (states.sensor.road_date.state|int) }}'
       icon_template: '{%- if (states.sensor.road_ago.state|int) > 300 -%} mdi:timer-off {%- else -%} mdi:timer {%- endif -%}'
-    interiorgate_ago:
+    gate_ago:
       entity_id: 
-        - sensor.interiorgate_date
+        - sensor.gate_date
         - sun.sun
       unit_of_measurement: seconds
-      value_template: '{{ (now().timestamp()|int) - (states.sensor.interiorgate_date.state|int) }}'
-      icon_template: '{%- if (states.sensor.interiorgate_ago.state|int) > 300 -%} mdi:timer-off {%- else -%} mdi:timer {%- endif -%}'
+      value_template: '{{ (now().timestamp()|int) - (states.sensor.gate_date.state|int) }}'
+      icon_template: '{%- if (states.sensor.gate_ago.state|int) > 300 -%} mdi:timer-off {%- else -%} mdi:timer {%- endif -%}'
     interior_ago:
       entity_id:
         - sensor.kitchen_ago
@@ -2428,10 +2428,10 @@ sensor motion_sensors:
     exterior_ago:
       entity_id: 
         - sensor.road_ago
-        - sensor.interiorgate_ago
+        - sensor.gate_ago
       unit_of_measurement: seconds
       value_template: >
-        {{ ( states('sensor.road_ago')|int,states('sensor.interiorgate_ago')|int) | list | min }}
+        {{ ( states('sensor.road_ago')|int,states('sensor.gate_ago')|int) | list | min }}
     kitchen_when:
       entity_id: sensor.kitchen_date
       value_template: '{{ (states.sensor.kitchen_date.state|int) | timestamp_custom("%a %b %d @ %I:%M %p") }}'
@@ -2448,10 +2448,10 @@ sensor motion_sensors:
       entity_id: sensor.road_date
       value_template: '{{ (states.sensor.road_date.state|int) | timestamp_custom("%a %b %d @ %I:%M %p") }}'
       icon_template: '{%- if ((states.sensor.road_date.state|int) | timestamp_custom("%p")) == "PM" -%} mdi:weather-night {%- else -%} mdi:weather-sunny {%- endif -%}'
-    interiorgate_when:
-      entity_id: sensor.interiorgate_date
-      value_template: '{{ (states.sensor.interiorgate_date.state|int) | timestamp_custom("%a %b %d @ %I:%M %p") }}'
-      icon_template: '{%- if ((states.sensor.interiorgate_date.state|int) | timestamp_custom("%p")) == "PM" -%} mdi:weather-night {%- else -%} mdi:weather-sunny {%- endif -%}'
+    gate_when:
+      entity_id: sensor.gate_date
+      value_template: '{{ (states.sensor.gate_date.state|int) | timestamp_custom("%a %b %d @ %I:%M %p") }}'
+      icon_template: '{%- if ((states.sensor.gate_date.state|int) | timestamp_custom("%p")) == "PM" -%} mdi:weather-night {%- else -%} mdi:weather-sunny {%- endif -%}'
 
 ##
 ## FAMILY
@@ -2615,78 +2615,78 @@ sensor road_fletcher_time:
 # INTERIOR GATE
 #
 
-binary_sensor what_interiorgate:
+binary_sensor what_gate:
   platform: template
   sensors:
-    interiorgate_martin:
+    gate_martin:
       entity_id:
-        - sensor.interiorgate_what
+        - sensor.gate_what
       value_template: >
-        {{ is_state('sensor.interiorgate_what','martin_c70') or
-           is_state('sensor.interiorgate_what','martin_c30') or
-           is_state('sensor.interiorgate_what','martin_sprinter') or
-           is_state('sensor.interiorgate_what','martin_suburban') or
-           is_state('sensor.interiorgate_what','martin_xc90') or
-           is_state('sensor.interiorgate_what','martin_rtv1100' ) }}
-    interiorgate_other:
+        {{ is_state('sensor.gate_what','martin_c70') or
+           is_state('sensor.gate_what','martin_c30') or
+           is_state('sensor.gate_what','martin_sprinter') or
+           is_state('sensor.gate_what','martin_suburban') or
+           is_state('sensor.gate_what','martin_xc90') or
+           is_state('sensor.gate_what','martin_rtv1100' ) }}
+    gate_other:
       entity_id:
-        - sensor.interiorgate_what
+        - sensor.gate_what
       value_template: >
-        {{ is_state('binary_sensor.interiorgate_martin','off') }}
+        {{ is_state('binary_sensor.gate_martin','off') }}
 
-sensor interiorgate_other_count:
+sensor gate_other_count:
   - platform: history_stats
-    name: interiorgate_other_count
-    entity_id: binary_sensor.interiorgate_other
+    name: gate_other_count
+    entity_id: binary_sensor.gate_other
     state: 'on'
     type: count
     start: '{{ now().replace(hour=0).replace(minute=0).replace(second=0) }}'
     end: '{{ now() }}'
 
-sensor interiorgate_other_ratio:
+sensor gate_other_ratio:
   - platform: history_stats
     icon: mdi:timer
-    name: interiorgate_other_ratio
-    entity_id: binary_sensor.interiorgate_other
+    name: gate_other_ratio
+    entity_id: binary_sensor.gate_other
     state: 'on'
     type: ratio
     start: '{{ now().replace(hour=0).replace(minute=0).replace(second=0) }}'
     end: '{{ now() }}'
 
-sensor interiorgate_other_time:
+sensor gate_other_time:
   - platform: history_stats
     icon: mdi:timer
-    name: interiorgate_other_time
-    entity_id: binary_sensor.interiorgate_other
+    name: gate_other_time
+    entity_id: binary_sensor.gate_other
     state: 'on'
     type: time
     start: '{{ now().replace(hour=0).replace(minute=0).replace(second=0) }}'
     end: '{{ now() }}'
 
-sensor interiorgate_martin_count:
+sensor gate_martin_count:
   - platform: history_stats
-    name: interiorgate_martin_count
-    entity_id: binary_sensor.interiorgate_martin
+    name: gate_martin_count
+    entity_id: binary_sensor.gate_martin
     state: 'on'
     type: count
     start: '{{ now().replace(hour=0).replace(minute=0).replace(second=0) }}'
     end: '{{ now() }}'
 
-sensor interiorgate_martin_ratio:
+sensor gate_martin_ratio:
   - platform: history_stats
     icon: mdi:timer
-    name: interiorgate_martin_ratio
-    entity_id: binary_sensor.interiorgate_martin
+    name: gate_martin_ratio
+    entity_id: binary_sensor.gate_martin
     state: 'on'
     type: ratio
     start: '{{ now().replace(hour=0).replace(minute=0).replace(second=0) }}'
     end: '{{ now() }}'
 
-sensor interiorgate_martin_time:
+sensor gate_martin_time:
   - platform: history_stats
     icon: mdi:timer
-    name: interiorgate_martin_time
-    entity_id: binary_sensor.interiorgate_martin
+    name: gate_martin_time
+    entity_id: binary_sensor.gate_martin
     state: 'on'
     type: time
     start: '{{ now().replace(hour=0).replace(minute=0).replace(second=0) }}'
@@ -3426,6 +3426,16 @@ sensor road_accuracy_ratio:
     start: '{{ now().replace(hour=0).replace(minute=0).replace(second=0) }}'
     end: '{{ now() }}'
 
+sensor gate_accuracy_ratio:
+  - platform: history_stats
+    icon: mdi:bullseye
+    name: gate_accuracy_ratio
+    entity_id: binary_sensor.gate_wrong
+    state: 'on'
+    type: ratio
+    start: '{{ now().replace(hour=0).replace(minute=0).replace(second=0) }}'
+    end: '{{ now() }}'
+
 ##
 ## LAST DETECTION
 ##
@@ -3447,6 +3457,18 @@ sensor interior_entity:
         - sensor.frontdoor_what
       value_template: >
         {{ states('sensor.bathroom_what'),states('sensor.kitchen_what'),states('sensor.frontdoor_what') }}
+    exterior_last:
+      entity_id:
+        - sensor.road_last
+        - sensor.gate_last
+      value_template: >
+        {{ states('sensor.road_last'),states('sensor.gate_last') }}
+    exterior_what:
+      entity_id:
+        - sensor.road_what
+        - sensor.gate_what
+      value_template: >
+        {{ states('sensor.road_what'),states('sensor.gate_what') }}
 
 
 ##
@@ -3480,12 +3502,12 @@ binary_sensor location_motion:
       device_class: motion
       value_template: >
         {{  states('sensor.road_ago')|int < 30 }}
-    interiorgate_motion:
+    gate_motion:
       entity_id: 
-        - sensor.interiorgate_ago
+        - sensor.gate_ago
       device_class: motion
       value_template: >
-        {{  states('sensor.interiorgate_ago')|int < 30 }}
+        {{  states('sensor.gate_ago')|int < 30 }}
     interior_motion:
       device_class: motion
       entity_id:
@@ -3498,9 +3520,9 @@ binary_sensor location_motion:
       device_class: motion
       entity_id: 
         - binary_sensor.road_motion
-        - binary_sensor.interiorgate_motion
+        - binary_sensor.gate_motion
       value_template: >
-        {{ is_state('binary_sensor.road_motion','on') or is_state('binary_sensor.interiorgate_motion','on') }}
+        {{ is_state('binary_sensor.road_motion','on') or is_state('binary_sensor.gate_motion','on') }}
 
 # RATIO
 
@@ -3562,10 +3584,10 @@ sensor road_motion_count:
     start: '{{ now().replace(hour=0).replace(minute=0).replace(second=0) }}'
     end: '{{ now() }}'
 
-sensor interiorgate_motion_count:
+sensor gate_motion_count:
   - platform: history_stats
-    name: interiorgate_motion_count
-    entity_id: binary_sensor.interiorgate_motion
+    name: gate_motion_count
+    entity_id: binary_sensor.gate_motion
     state: 'on'
     type: count
     start: '{{ now().replace(hour=0).replace(minute=0).replace(second=0) }}'
@@ -3613,11 +3635,11 @@ sensor road_motion_time:
     start: '{{ now().replace(hour=0).replace(minute=0).replace(second=0) }}'
     end: '{{ now() }}'
 
-sensor interiorgate_motion_time:
+sensor gate_motion_time:
   - platform: history_stats
     icon: mdi:timer
-    name: interiorgate_motion_time
-    entity_id: binary_sensor.interiorgate_motion
+    name: gate_motion_time
+    entity_id: binary_sensor.gate_motion
     state: 'on'
     type: time
     start: '{{ now().replace(hour=0).replace(minute=0).replace(second=0) }}'
@@ -4008,13 +4030,13 @@ binary_sensor device_template:
         {{ states.device_tracker.ageathome_road != None and
            states.device_tracker.ageathome_road.state != None and
            states.device_tracker.ageathome_road.state == 'home' }}
-    interiorgate_online:
+    gate_online:
       entity_id:
-        - device_tracker.ageathome_interiorgate
+        - device_tracker.ageathome_gate
       value_template: >
-        {{ states.device_tracker.ageathome_interiorgate != None and
-           states.device_tracker.ageathome_interiorgate.state != None and
-           states.device_tracker.ageathome_interiorgate.state == 'home' }}
+        {{ states.device_tracker.ageathome_gate != None and
+           states.device_tracker.ageathome_gate.state != None and
+           states.device_tracker.ageathome_gate.state == 'home' }}
 
 
 ## determine if aah_discovery & aah_config are defined (url, ..)
@@ -4192,30 +4214,31 @@ history_graph:
       - sensor.road_other_count
     hours_to_show: 24
     refresh: 60
-  interiorgate_accuracy:
-    name: Interior Gate Accuracy
+  gate_time:
+    name: Gate Time
     entities:
-      - sensor.interiorgate_accuracy_ratio
+      - sensor.gate_martin_time
+      - sensor.gate_other_time
     hours_to_show: 24
     refresh: 60
-  interiorgate_time:
-    name: Interior Gate Time
+  gate_ratio:
+    name: Gate Ratio
     entities:
-      - sensor.interiorgate_martin_time
-      - sensor.interiorgate_other_time
+      - sensor.gate_martin_ratio
+      - sensor.gate_other_ratio
     hours_to_show: 24
     refresh: 60
-  interiorgate_ratio:
-    name: Interior Gate Ratio
+  gate_count:
+    name: Gate Count
     entities:
-      - sensor.interiorgate_martin_ratio
-      - sensor.interiorgate_other_ratio
+      - sensor.gate_martin_count
+      - sensor.gate_other_count
+    hours_to_show: 24
     refresh: 60
-  interiorgate_count:
-    name: Interior Gate Count
+  gate_accuracy:
+    name: Gate Accuracy
     entities:
-      - sensor.interiorgate_martin_count
-      - sensor.interiorgate_other_count
+      - sensor.gate_accuracy_ratio
     hours_to_show: 24
     refresh: 60
 

@@ -263,7 +263,7 @@ rough-wind:
 # 192.168.1.38
 aged-bush:
   mac: B8:27:EB:51:A7:48
-  name: 'ageathome_interiorgate'
+  name: 'ageathome_gate'
   hide_if_away: false
   icon: mdi:webcam
   picture: http://farm5.static.flickr.com/4100/4930862762_4abbd2b5b3_m.jpg

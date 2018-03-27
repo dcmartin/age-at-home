@@ -302,22 +302,11 @@ ageathome_annotated_images:
   name: AgeAtHome Annotated Images
   icon: mdi:eye
   entities:
-    - camera.interiorgate_image_annotated
+    - camera.gate_image_annotated
     - camera.kitchen_image_annotated
     - camera.bathroom_image_annotated
     - camera.frontdoor_image_annotated
     - camera.road_image_annotated
-
-ageathome_accuracy:
-  view: true
-  icon: mdi:timetable
-  name: AgeAtHome Accuracy
-  entities:
-    - history_graph.kitchen_accuracy
-    - history_graph.bathroom_accuracy
-    - history_graph.frontdoor_accuracy
-    - history_graph.road_accuracy
-    - history_graph.interiorgate_accuracy
 
 ageathome_devices:
   name: AgeAtHome Devices
@@ -336,7 +325,7 @@ ageathome_motion:
     - binary_sensor.frontdoor_motion
     - binary_sensor.kitchen_motion
     - binary_sensor.road_motion
-    - binary_sensor.interiorgate_motion
+    - binary_sensor.gate_motion
     - binary_sensor.interior_motion
     - binary_sensor.exterior_motion
     - sensor.bathroom_motion_time
@@ -347,8 +336,8 @@ ageathome_motion:
     - sensor.kitchen_motion_count
     - sensor.road_motion_time
     - sensor.road_motion_count
-    - sensor.interiorgate_motion_time
-    - sensor.interiorgate_motion_count
+    - sensor.gate_motion_time
+    - sensor.gate_motion_count
 
 ageathome_wrong:
   name: 'AgeAtHome Wrong'
@@ -357,7 +346,7 @@ ageathome_wrong:
     - binary_sensor.bathroom_wrong
     - binary_sensor.frontdoor_wrong
     - binary_sensor.road_wrong
-    - binary_sensor.interiorgate_wrong
+    - binary_sensor.gate_wrong
 
 ageathome_last:
   name: 'AgeAtHome Last'
@@ -372,7 +361,7 @@ ageathome_last:
     - sensor.bathroom_last
     - sensor.frontdoor_last
     - sensor.road_last
-    - sensor.interiorgate_last
+    - sensor.gate_last
 
 ageathome_ago:
   name: 'AgeAtHome Ago' 
@@ -381,7 +370,7 @@ ageathome_ago:
     - sensor.bathroom_ago
     - sensor.frontdoor_ago
     - sensor.road_ago
-    - sensor.interiorgate_ago
+    - sensor.gate_ago
     - sensor.interior_ago
     - sensor.exterior_ago
 
@@ -392,7 +381,7 @@ ageathome_when:
     - sensor.bathroom_when
     - sensor.frontdoor_when
     - sensor.road_when
-    - sensor.interiorgate_when
+    - sensor.gate_when
 
 # KITCHEN
 
@@ -407,6 +396,7 @@ ageathome_kitchen_view:
     - history_graph.kitchen_count
     - history_graph.kitchen_time
     - history_graph.kitchen_ratio
+    - history_graph.kitchen_accuracy
 
 ageathome_kitchen_details:
   name: ageathome_kitchen_details
@@ -435,6 +425,7 @@ ageathome_bathroom_view:
     - history_graph.bathroom_count
     - history_graph.bathroom_time
     - history_graph.bathroom_ratio
+    - history_graph.bathroom_accuracy
 
 ageathome_bathroom_details:
   name: AgeAtHome Bathroom Details
@@ -464,6 +455,7 @@ ageathome_frontdoor_view:
     - history_graph.frontdoor_count
     - history_graph.frontdoor_time
     - history_graph.frontdoor_ratio
+    - history_graph.frontdoor_accuracy
 
 ageathome_frontdoor_details:
   name: AgeAtHome Frontdoor Details
@@ -493,6 +485,7 @@ ageathome_road_view:
     - history_graph.road_count
     - history_graph.road_time
     - history_graph.road_ratio
+    - history_graph.road_accuracy
 
 ageathome_road_details:
   name: AgeAtHome Road Details
@@ -511,32 +504,33 @@ ageathome_road_details:
 
 # INTERIORGATE
 
-ageathome_interiorgate_view:
+ageathome_gate_view:
   view: true
-  name: AgeAtHome Interior Gate View
+  name: AgeAtHome Gate View
   icon: mdi:gate
   entities:
-    - camera.ageathome_interiorgate
-    - camera.interiorgate_image_annotated
-    - group.ageathome_interiorgate_details
-    - history_graph.interiorgate_count
-    - history_graph.interiorgate_time
-    - history_graph.interiorgate_ratio
+    - camera.ageathome_gate
+    - camera.gate_image_annotated
+    - group.ageathome_gate_details
+    - history_graph.gate_count
+    - history_graph.gate_time
+    - history_graph.gate_ratio
+    - history_graph.gate_accuracy
 
-ageathome_interiorgate_details:
-  name: AgeAtHome Interior Gate Details
+ageathome_gate_details:
+  name: AgeAtHome Gate Details
   icon: mdi:gate
   entities:
-    - sensor.interiorgate_who
-    - sensor.interiorgate_what
-    - sensor.interiorgate_when
-    - sensor.interiorgate_why
-    - sensor.interiorgate_ago
-    - sensor.interiorgate_last
-    - binary_sensor.interiorgate_motion
-    - binary_sensor.interiorgate_wrong
-    - sensor.interiorgate_motion_time
-    - sensor.interiorgate_motion_count
+    - sensor.gate_who
+    - sensor.gate_what
+    - sensor.gate_when
+    - sensor.gate_why
+    - sensor.gate_ago
+    - sensor.gate_last
+    - binary_sensor.gate_motion
+    - binary_sensor.gate_wrong
+    - sensor.gate_motion_time
+    - sensor.gate_motion_count
 
 #
 # WEATHER VIEW
@@ -584,7 +578,7 @@ webcams_view:
     - camera.ageathome_bathroom
     - camera.ageathome_frontdoor
     - camera.ageathome_road
-    - camera.ageathome_interiorgate
+    - camera.ageathome_gate
 
 #
 # MEDIAPLAYERS VIEW
