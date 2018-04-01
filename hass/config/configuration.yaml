@@ -2042,13 +2042,23 @@ camera last_image:
 camera last_image_annotated:
   - platform: mqtt
     name: last_image_annotated
-    topic: 'image-annotated/+'
+    topic: 'image-annotated/+/+'
 
 camera last_image_cropped:
   - platform: mqtt
     name: last_image_cropped
     icon: mdi:image
-    topic: 'image-cropped/+'
+    topic: 'image-cropped/+/+'
+
+camera last_image_composite:
+  - platform: mqtt
+    name: last_image_composite
+    topic: 'image-composite/+/+'
+
+camera last_image_animated:
+  - platform: mqtt
+    name: last_image_animated
+    topic: 'image-animated/+/+'
 
 ##
 ## KITCHEN
@@ -2057,33 +2067,33 @@ camera last_image_cropped:
 sensor kitchen_last:
   - platform: mqtt
     name: kitchen_last
-    state_topic: 'presence/kitchen/#'
+    state_topic: 'presence/kitchen/+'
     value_template: '{% if value_json is defined %} {{ value_json.class }} {% else %} "nothing" {% endif %}'
 
 sensor kitchen_what:
   - platform: mqtt
     name: kitchen_what
     expire_after: 30
-    state_topic: 'presence/kitchen/#'
+    state_topic: 'presence/kitchen/+'
     value_template: '{% if value_json is defined %} {{ value_json.class }} {% else %} "nothing" {% endif %}'
 
 sensor kitchen_who:
   - platform: mqtt
     name: kitchen_who
-    state_topic: 'presence/kitchen/#'
+    state_topic: 'presence/kitchen/+'
     value_template: '{% if value_json is defined %} {{ value_json.model }} {% else %} "nobody" {% endif %}'
 
 sensor kitchen_why:
   - platform: mqtt
     name: kitchen_why
-    state_topic: 'presence/kitchen/#'
+    state_topic: 'presence/kitchen/+'
     value_template: '{% if value_json is defined %} {{ value_json.score }} {% else %} 0.0 {% endif %}'
 
 sensor kitchen_date:
   - platform: mqtt
     name: kitchen_date
     icon: mdi:human-greeting
-    state_topic: 'presence/kitchen/#'
+    state_topic: 'presence/kitchen/+'
     value_template: '{% if value_json is defined %} {{ value_json.date|int }} {% else %} -1 {% endif %}'
 
 # CAMERA (JPEG)
@@ -2096,13 +2106,23 @@ camera kitchen_image:
 camera kitchen_image_annotated:
   - platform: mqtt
     name: kitchen_image_annotated
-    topic: 'image-annotated/kitchen'
+    topic: 'image-annotated/kitchen/#'
 
 camera kitchen_image_cropped:
   - platform: mqtt
     name: kitchen_image_cropped
     icon: mdi:image
-    topic: 'image-cropped/kitchen'
+    topic: 'image-cropped/kitchen/#'
+
+camera kitchen_image_composite:
+  - platform: mqtt
+    name: kitchen_image_composite
+    topic: 'image-composite/kitchen/#'
+
+camera kitchen_image_animated:
+  - platform: mqtt
+    name: kitchen_image_animated
+    topic: 'image-animated/kitchen/#'
 
 ##
 ## BATHROOM
@@ -2111,33 +2131,33 @@ camera kitchen_image_cropped:
 sensor bathroom_last:
   - platform: mqtt
     name: bathroom_last
-    state_topic: 'presence/bathroom/#'
+    state_topic: 'presence/bathroom/+'
     value_template: '{% if value_json is defined %} {{ value_json.class }} {% else %} "nothing" {% endif %}'
 
 sensor bathroom_what:
   - platform: mqtt
     name: bathroom_what
     expire_after: 30
-    state_topic: 'presence/bathroom/#'
+    state_topic: 'presence/bathroom/+'
     value_template: '{% if value_json is defined %} {{ value_json.class }} {% else %} "nothing" {% endif %}'
 
 sensor bathroom_who:
   - platform: mqtt
     name: bathroom_who
-    state_topic: 'presence/bathroom/#'
+    state_topic: 'presence/bathroom/+'
     value_template: '{% if value_json is defined %} {{ value_json.model }} {% else %} "nobody" {% endif %}'
 
 sensor bathroom_why:
   - platform: mqtt
     name: bathroom_why
-    state_topic: 'presence/bathroom/#'
+    state_topic: 'presence/bathroom/+'
     value_template: '{% if value_json is defined %} {{ value_json.score }} {% else %} 0.0 {% endif %}'
 
 sensor bathroom_date:
   - platform: mqtt
     name: bathroom_date
     icon: mdi:human-greeting
-    state_topic: 'presence/bathroom/#'
+    state_topic: 'presence/bathroom/+'
     value_template: '{% if value_json is defined %} {{ value_json.date|int }} {% else %} -1 {% endif %}'
 
 # CAMERA (JPEG)
@@ -2150,12 +2170,22 @@ camera bathroom_image:
 camera bathroom_image_annotated:
   - platform: mqtt
     name: bathroom_image_annotated
-    topic: 'image-annotated/bathroom'
+    topic: 'image-annotated/bathroom/#'
 
 camera bathroom_image_cropped:
   - platform: mqtt
     name: bathroom_image_cropped
-    topic: 'image-cropped/bathroom'
+    topic: 'image-cropped/bathroom/#'
+
+camera bathroom_image_composite:
+  - platform: mqtt
+    name: bathroom_image_composite
+    topic: 'image-composite/bathroom/#'
+
+camera bathroom_image_animated:
+  - platform: mqtt
+    name: bathroom_image_animated
+    topic: 'image-animated/bathroom/#'
 
 ##
 ## ROAD
@@ -2164,33 +2194,33 @@ camera bathroom_image_cropped:
 sensor road_last:
   - platform: mqtt
     name: road_last
-    state_topic: 'presence/road/#'
+    state_topic: 'presence/road/+'
     value_template: '{% if value_json is defined %} {{ value_json.class }} {% else %} "nothing" {% endif %}'
 
 sensor road_what:
   - platform: mqtt
     name: road_what
     expire_after: 30
-    state_topic: 'presence/road/#'
+    state_topic: 'presence/road/+'
     value_template: '{% if value_json is defined %} {{ value_json.class }} {% else %} "nothing" {% endif %}'
 
 sensor road_who:
   - platform: mqtt
     name: road_who
-    state_topic: 'presence/road/#'
+    state_topic: 'presence/road/+'
     value_template: '{% if value_json is defined %} {{ value_json.model }} {% else %} "nobody" {% endif %}'
 
 sensor road_why:
   - platform: mqtt
     name: road_why
-    state_topic: 'presence/road/#'
+    state_topic: 'presence/road/+'
     value_template: '{% if value_json is defined %} {{ value_json.score }} {% else %} 0.0 {% endif %}'
 
 sensor road_date:
   - platform: mqtt
     name: road_date
     icon: mdi:human-greeting
-    state_topic: 'presence/road/#'
+    state_topic: 'presence/road/+'
     value_template: '{% if value_json is defined %} {{ value_json.date|int }} {% else %} -1 {% endif %}'
 
 # CAMERA (JPEG)
@@ -2204,12 +2234,22 @@ camera road_image:
 camera road_image_annotated:
   - platform: mqtt
     name: road_image_annotated
-    topic: 'image-annotated/road'
+    topic: 'image-annotated/road/#'
 
 camera road_image_cropped:
   - platform: mqtt
     name: road_image_cropped
-    topic: 'image-cropped/road'
+    topic: 'image-cropped/road/#'
+
+camera road_image_composite:
+  - platform: mqtt
+    name: road_image_composite
+    topic: 'image-composite/road/#'
+
+camera road_image_animated:
+  - platform: mqtt
+    name: road_image_animated
+    topic: 'image-animated/road/#'
 
 ##
 ## INTERIOR GATE
@@ -2218,33 +2258,33 @@ camera road_image_cropped:
 sensor gate_last:
   - platform: mqtt
     name: gate_last
-    state_topic: 'presence/gate/#'
+    state_topic: 'presence/gate/+'
     value_template: '{% if value_json is defined %} {{ value_json.class }} {% else %} "nothing" {% endif %}'
 
 sensor gate_what:
   - platform: mqtt
     name: gate_what
     expire_after: 30
-    state_topic: 'presence/gate/#'
+    state_topic: 'presence/gate/+'
     value_template: '{% if value_json is defined %} {{ value_json.class }} {% else %} "nothing" {% endif %}'
 
 sensor gate_who:
   - platform: mqtt
     name: gate_who
-    state_topic: 'presence/gate/#'
+    state_topic: 'presence/gate/+'
     value_template: '{% if value_json is defined %} {{ value_json.model }} {% else %} "nobody" {% endif %}'
 
 sensor gate_why:
   - platform: mqtt
     name: gate_why
-    state_topic: 'presence/gate/#'
+    state_topic: 'presence/gate/+'
     value_template: '{% if value_json is defined %} {{ value_json.score }} {% else %} 0.0 {% endif %}'
 
 sensor gate_date:
   - platform: mqtt
     name: gate_date
     icon: mdi:human-greeting
-    state_topic: 'presence/gate/#'
+    state_topic: 'presence/gate/+'
     value_template: '{% if value_json is defined %} {{ value_json.date|int }} {% else %} -1 {% endif %}'
 
 # CAMERA (JPEG)
@@ -2258,12 +2298,22 @@ camera gate_image:
 camera gate_image_annotated:
   - platform: mqtt
     name: gate_image_annotated
-    topic: 'image-annotated/gate'
+    topic: 'image-annotated/gate/#'
 
 camera gate_image_cropped:
   - platform: mqtt
     name: gate_image_cropped
-    topic: 'image-cropped/gate'
+    topic: 'image-cropped/gate/#'
+
+camera gate_image_composite:
+  - platform: mqtt
+    name: gate_image_composite
+    topic: 'image-composite/gate/#'
+
+camera gate_image_animated:
+  - platform: mqtt
+    name: gate_image_animated
+    topic: 'image-animated/gate/#'
 
 ##
 ## DETERMINISTIC INDICATOR OF CLASSIFIER FAILURE (100%)
@@ -2321,33 +2371,33 @@ binary_sensor classifier_wrong:
 sensor frontdoor_last:
   - platform: mqtt
     name: frontdoor_last
-    state_topic: 'presence/frontdoor/#'
+    state_topic: 'presence/frontdoor/+'
     value_template: '{% if value_json is defined %} {{ value_json.class }} {% else %} "nothing" {% endif %}'
 
 sensor frontdoor_what:
   - platform: mqtt
     name: frontdoor_what
     expire_after: 30
-    state_topic: 'presence/frontdoor/#'
+    state_topic: 'presence/frontdoor/+'
     value_template: '{% if value_json is defined %} {{ value_json.class }} {% else %} "nothing" {% endif %}'
 
 sensor frontdoor_who:
   - platform: mqtt
     name: frontdoor_who
-    state_topic: 'presence/frontdoor/#'
+    state_topic: 'presence/frontdoor/+'
     value_template: '{% if value_json is defined %} {{ value_json.model }} {% else %} "nobody" {% endif %}'
 
 sensor frontdoor_why:
   - platform: mqtt
     name: frontdoor_why
-    state_topic: 'presence/frontdoor/#'
+    state_topic: 'presence/frontdoor/+'
     value_template: '{% if value_json is defined %} {{ value_json.score }} {% else %} 0.0 {% endif %}'
 
 sensor frontdoor_date:
   - platform: mqtt
     name: frontdoor_date
     icon: mdi:human-greeting
-    state_topic: 'presence/frontdoor/#'
+    state_topic: 'presence/frontdoor/+'
     value_template: '{% if value_json is defined %} {{ value_json.date|int }} {% else %} -1 {% endif %}'
 
 # CAMERA (JPEG)
@@ -2362,13 +2412,23 @@ camera frontdoor_image_annotated:
   - platform: mqtt
     name: frontdoor_image_annotated
     icon: mdi:image
-    topic: 'image-annotated/frontdoor'
+    topic: 'image-annotated/frontdoor/#'
 
 camera frontdoor_image_cropped:
   - platform: mqtt
     name: frontdoor_image_cropped
     icon: mdi:image
-    topic: 'image-cropped/frontdoor'
+    topic: 'image-cropped/frontdoor/#'
+
+camera frontdoor_image_composite:
+  - platform: mqtt
+    name: frontdoor_image_composite
+    topic: 'image-composite/frontdoor/#'
+
+camera frontdoor_image_animated:
+  - platform: mqtt
+    name: frontdoor_image_animated
+    topic: 'image-animated/frontdoor/#'
 
 ## MOTION SENSORS 
 
@@ -4262,3 +4322,4 @@ script: !include scripts.yaml
 ## AUTOMATIONS
 ##
 
+automation: !include automations.yaml

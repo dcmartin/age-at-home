@@ -446,16 +446,17 @@
         title: FALSE POSITIVE
         message: >
           {{ trigger.payload_json.class }} seen {{ trigger.payload_json.location }}
+          http://www.dcmartin.com/CGI/aah-classify.cgi?db={{ trigger.payload_json.device }}&id={{ trigger.payload_json.id }}
         data:
           push:
             badge: 0
-            sound: "US-EN-Alexa-Motion-Detected-Generic.wav"
+            sound: "US-EN-Morgan-Freeman-Motion-Detected.wav"
             category: camera 
           entity_id: >
-            {{ ("camera.ageathome_",trigger.payload_json.location,"")|join|lower }}
+            {{ ("camera.",trigger.payload_json.location,"_image_annotated")|join|lower }}
           action_data:
             entity_id: >
-              {{ ("camera.ageathome_",trigger.payload_json.location,"")|join|lower }}
+              {{ ("camera.",trigger.payload_json.location,"_image_annotated")|join|lower }}
             my_custom_data: >
               {{ trigger.payload_json|tojson }}
 
@@ -812,7 +813,7 @@
     - service: mqtt.publish
       data_template:
         topic: 'debug/{{ trigger.platform }}/{{ trigger.entity_id }}'
-        retain: false
+        retain: true
         payload: >-
           {%- macro dumpState(statePrefix, stateObj) -%}
             {{statePrefix ~ ": "}} {{- stateObj.state }}{{- "\n" -}}

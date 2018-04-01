@@ -289,7 +289,9 @@ ageathome_view:
   name: AgeAtHome View
   icon: mdi:human-male-female
   entities:
+    - camera.last_image
     - camera.last_image_annotated
+    - camera.last_image_animated
     - group.ageathome_devices
     - group.ageathome_last
     - group.ageathome_when
@@ -307,6 +309,11 @@ ageathome_annotated_images:
     - camera.bathroom_image_annotated
     - camera.frontdoor_image_annotated
     - camera.road_image_annotated
+    - camera.gate_image_animated
+    - camera.kitchen_image_animated
+    - camera.bathroom_image_animated
+    - camera.frontdoor_image_animated
+    - camera.road_image_animated
 
 ageathome_devices:
   name: AgeAtHome Devices
@@ -390,8 +397,10 @@ ageathome_kitchen_view:
   name: AgeAtHome Kitchen View
   icon: mdi:stove
   entities:
-    - camera.ageathome_kitchen
+    - camera.kitchen_image
     - camera.kitchen_image_annotated
+    - camera.kitchen_image_animated
+    - camera.kitchen_image_composite
     - group.ageathome_kitchen_details
     - history_graph.kitchen_count
     - history_graph.kitchen_time
@@ -419,8 +428,10 @@ ageathome_bathroom_view:
   name: AgeAtHome Bathroom View
   icon: mdi:anchor
   entities:
-    - camera.ageathome_bathroom
+    - camera.bathroom_image
     - camera.bathroom_image_annotated
+    - camera.bathroom_image_animated
+    - camera.bathroom_image_composite
     - group.ageathome_bathroom_details
     - history_graph.bathroom_count
     - history_graph.bathroom_time
@@ -449,8 +460,10 @@ ageathome_frontdoor_view:
   name: AgeAtHome Bathroom View
   icon: mdi:home-outline
   entities:
-    - camera.ageathome_frontdoor
+    - camera.frontdoor_image
     - camera.frontdoor_image_annotated
+    - camera.frontdoor_image_animated
+    - camera.frontdoor_image_composite
     - group.ageathome_frontdoor_details
     - history_graph.frontdoor_count
     - history_graph.frontdoor_time
@@ -479,8 +492,10 @@ ageathome_road_view:
   name: AgeAtHome Road View
   icon: mdi:road
   entities:
-    - camera.ageathome_road
+    - camera.road_image
     - camera.road_image_annotated
+    - camera.road_image_animated
+    - camera.road_image_composite
     - group.ageathome_road_details
     - history_graph.road_count
     - history_graph.road_time
@@ -509,8 +524,10 @@ ageathome_gate_view:
   name: AgeAtHome Gate View
   icon: mdi:gate
   entities:
-    - camera.ageathome_gate
+    - camera.gate_image
     - camera.gate_image_annotated
+    - camera.gate_image_animated
+    - camera.gate_image_composite
     - group.ageathome_gate_details
     - history_graph.gate_count
     - history_graph.gate_time
