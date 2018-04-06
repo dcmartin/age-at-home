@@ -7,6 +7,10 @@ default_view:
   name: Default View
   icon: mdi:home-variant
   entities:
+    - switch.fronthall_lamp
+    - switch.kitchen_tv
+    - switch.livingroom_tv
+    - switch.ageathome_learning
     - group.people
     - group.weather_today
     - camera.wuradar
@@ -56,12 +60,13 @@ devices_ian:
   name: devices_ian
   entities:
     - device_tracker.ianmartinsiphone
-    - device_tracker.ianair
+    - device_tracker.ianmartinsapple_watch
 
 devices_riley:
   name: devices_riley
   entities:
-    - device_tracker.rileymacbookair
+    - device_tracker.rileysmacbookair
+    - device_tracker.rileys_iphone
     - device_tracker.rileysiphone5
 
 devices_ellen:
@@ -292,6 +297,7 @@ ageathome_view:
     - camera.last_image
     - camera.last_image_annotated
     - camera.last_image_animated
+    - camera.last_image_cropped
     - group.ageathome_devices
     - group.ageathome_last
     - group.ageathome_when

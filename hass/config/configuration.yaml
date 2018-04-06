@@ -33,6 +33,9 @@ logbook: # View all events in a logbook
 updater:
   include_used_components: true
 
+## Enable recording
+recorder:
+
 ## Enables support for tracking state changes over time.
 history: !include history.yaml
 
@@ -121,15 +124,114 @@ hue:
 ### TPLINK switches
 ###
 
-switch tplink-hs100:
+switch tplink_hs100:
   - platform: tplink
     name: poolhouse
+    icon: mdi:power-socket-us
     host: 192.168.1.42
 
-switch tplink-hs105:
+switch fronthall_lamp:
   - platform: tplink
-    name: fronthall
+    name: fronthall_lamp
+    icon: mdi:lamp
     host: 192.168.1.43
+
+switch kitchen_tv:
+  - platform: tplink
+    name: kitchen_tv
+    icon: mdi:television
+    host: 192.168.1.44
+
+switch livingroom_tv:
+  - platform: tplink
+    name: livingroom_tv
+    icon: mdi:television
+    host: 192.168.1.45
+
+###
+### TESTING SWITCHES & SCRIPTS
+###
+
+##
+## LIGHTS
+##
+
+input_boolean:
+  trigger_first_morning:
+    name: Waiting for first morning motion
+    icon: mdi:kettle
+
+##
+## AGEATHOME
+##
+
+# learning on/off
+input_boolean:
+  ageathome_learning:
+    name: ageathome_learning
+    initial: false
+    icon: mdi:train
+
+# learning options { Best, Worst, Random }
+input_select:
+  ageathome_learning_options:
+    name: ageathome_learning_options
+    icon: mdi:select
+    options:
+      - Worst
+      - Best
+      - Random
+
+switch ageathome_learning:
+  - platform: template
+    switches:
+      ageathome_learning:
+        friendly_name: ageathome_learning
+        value_template: >
+          {{ states.input_boolean.ageathome_learning }}
+        turn_on:
+          - service: input_boolean.set_value
+            data_template:
+              entity_id: input_boolean.ageathome_learning
+              value: true
+       #   - service: switch.turn_on
+       #     entity_id: switch.ageathome_learning
+        turn_off:
+          - service: input_boolean.set_value
+            data_template:
+              entity_id: input_boolean.ageathome_learning
+              value: false
+       #   - service: switch.turn_on
+       #     entity_id: switch.ageathome_learning
+
+script ageathome_learning_off:
+    sequence:
+      - condition: state
+        entity_id: input_boolean.ageathome_learning
+        state: 'on'
+      - service: input_boolean.set_value
+        data_template:
+          entity_id: input_boolean.ageathome_learning
+          value: false
+
+script ageathome_learning_on:
+    sequence:
+      - condition: state
+        entity_id: input_boolean.ageathome_learning
+        state: 'off'
+      - service: input_boolean.set_value
+        data_template:
+          entity_id: input_boolean.ageathome_learning
+          value: true
+
+      # - service: input_number.set_value
+      #  data_template:
+      #    entity_id: input_number.portfoliovalue
+      #    value: "{{ value }}"
+      # - service: input_number.set_value
+      #  data_template:
+      #    entity_id: input_number.portfoliochange
+      #    value: "{{ change }}"
 
 ###
 ### PANEL_IFRAME (tabs in HTTP web interface; see "frontend")
@@ -398,19 +500,19 @@ sensor aah_state_template:
             {%- endif -%}
           {%- endfor -%}null]
       kitchen_camera_entity_picture:
-        entity_id: camera.ageathome_kitchen
+        # entity_id: camera.kitchen_image_annotated
         value_template: '{{ states.camera.kitchen_image_annotated.attributes.entity_picture }}'
       bathroom_camera_entity_picture:
-        entity_id: camera.ageathome_bathroom
+        # entity_id: camera.bathroom_image_annotated
         value_template: '{{ states.camera.bathroom_image_annotated.attributes.entity_picture }}'
       frontdoor_camera_entity_picture:
-        entity_id: camera.ageathome_frontdoor
+        # entity_id: camera.frontdoor_image_annotated
         value_template: '{{ states.camera.frontdoor_image_annotated.attributes.entity_picture }}'
       camera_road_entity_picture:
-        entity_id: camera.ageathome_road
+        # entity_id: camera.road_image_annotated
         value_template: '{{ states.camera.road_image_annotated.attributes.entity_picture }}'
       camera_gate_entity_picture:
-        entity_id: camera.ageathome_gate
+        # entity_id: camera.gate_image_annotated
         value_template: '{{ states.camera.gate_image_annotated.attributes.entity_picture }}'
 
 ###
@@ -1079,11 +1181,11 @@ sensor hzn_attribute_ids:
       {%- if value_json is defined and value_json.attributes|length > 0 -%} 
         {%- for attribute in value_json.attributes -%}
           {%- if loop.last -%}
-            {%- if attribute.id != None -%}
+            {%- if attribute.id is defined -%}
               {{- attribute.id|truncate(8,false,'')|tojson -}}
             {%- endif -%}
           {%- else -%}
-            {%- if attribute.id != None -%}
+            {%- if attribute.id is defined -%}
               {{- attribute.id|truncate(8,false,'')|tojson -}},
             {%- endif -%}
           {%- endif -%}
@@ -1109,11 +1211,11 @@ sensor hzn_agreement_active_ids:
       {%- if value_json is defined and value_json.agreements.active|length > 0 -%} 
         {%- for agreement in value_json.agreements.active %}
           {%- if loop.last -%}
-            {%- if agreement.current_agreement_id != None -%}
+            {%- if agreement.current_agreement_id is defined -%}
               {{- agreement.current_agreement_id|tojson -}}
             {%- endif -%}
           {%- else -%}
-            {%- if agreement.current_agreement_id != None -%}
+            {%- if agreement.current_agreement_id is defined -%}
               {{- agreement.current_agreement_id|tojson -}},
             {%- endif -%}
           {%- endif -%}
@@ -1128,11 +1230,11 @@ sensor hzn_agreement_active_urls:
       {%- if value_json is defined and value_json.agreements.active|length > 0 -%} 
         {%- for agreement in value_json.agreements.active %}
           {%- if loop.last -%}
-            {%- if agreement.workload_to_run.url != None -%}
+            {%- if agreement.workload_to_run.url is defined -%}
               {{- agreement.workload_to_run.url|tojson -}}
             {%- endif -%}
           {%- else -%}
-            {%- if agreement.workload_to_run.url != None -%}
+            {%- if agreement.workload_to_run.url is defined -%}
               {{- agreement.workload_to_run.url|tojson -}},
             {%- endif -%}
           {%- endif -%}
@@ -2042,23 +2144,23 @@ camera last_image:
 camera last_image_annotated:
   - platform: mqtt
     name: last_image_annotated
-    topic: 'image-annotated/+/+'
+    topic: 'image-annotated/#'
 
 camera last_image_cropped:
   - platform: mqtt
     name: last_image_cropped
     icon: mdi:image
-    topic: 'image-cropped/+/+'
+    topic: 'image-cropped/#'
 
 camera last_image_composite:
   - platform: mqtt
     name: last_image_composite
-    topic: 'image-composite/+/+'
+    topic: 'image-composite/#'
 
 camera last_image_animated:
   - platform: mqtt
     name: last_image_animated
-    topic: 'image-animated/+/+'
+    topic: 'image-animated/#'
 
 ##
 ## KITCHEN
@@ -3954,7 +4056,9 @@ sensor status_people_template:
        {%- endif -%}
     location_david:
       friendly_name: "David's location"
-      entity_id: group.devices_david
+      entity_id:
+        - group.devices_david
+        - sun.sun
       value_template: >
        {% if states.group.devices_david is defined %}
         {{ closest(states.group.devices_david).state }}
@@ -3963,7 +4067,9 @@ sensor status_people_template:
        {% endif %}
     location_keli:
       friendly_name: "Keli's location"
-      entity_id: group.devices_keli
+      entity_id: 
+        - group.devices_keli
+        - sun.sun
       value_template: >
        {% if states.group.devices_keli is defined %}
         {{ closest(states.group.devices_keli).state }}
@@ -3972,7 +4078,9 @@ sensor status_people_template:
        {% endif %}
     location_hali:
       friendly_name: "Hali's location"
-      entity_id: group.devices_hali
+      entity_id: 
+        - group.devices_hali
+        - sun.sun
       value_template: >
        {% if states.group.devices_hali is defined %}
         {{ closest(states.group.devices_hali).state }}
@@ -3981,7 +4089,9 @@ sensor status_people_template:
        {% endif %}
     location_ian:
       friendly_name: "Ian's location"
-      entity_id: group.devices_ian
+      entity_id: 
+        - group.devices_ian
+        - sun.sun
       value_template: >
        {% if states.group.devices_ian is defined %}
         {{ closest(states.group.devices_ian).state }}
@@ -3990,7 +4100,9 @@ sensor status_people_template:
        {% endif %}
     location_riley:
       friendly_name: "Riley's location"
-      entity_id: group.devices_riley
+      entity_id:
+        - group.devices_riley
+        - sun.sun
       value_template: >
        {% if states.group.devices_riley is defined %}
         {{ closest(states.group.devices_riley).state }}
@@ -3999,7 +4111,9 @@ sensor status_people_template:
        {% endif %}
     location_ellen:
       friendly_name: "Ellen's location"
-      entity_id: group.devices_ellen
+      entity_id:
+        - group.devices_ellen
+        - sun.sun
       value_template: >
        {% if states.group.devices_ellen is defined %}
         {{ closest(states.group.devices_ellen).state }}
@@ -4066,36 +4180,36 @@ binary_sensor device_template:
       entity_id:
         - device_tracker.ageathome_kitchen
       value_template: >
-        {{ states.device_tracker.ageathome_kitchen != None and
-           states.device_tracker.ageathome_kitchen.state != None and
+        {{ states.device_tracker.ageathome_kitchen is defined and
+           states.device_tracker.ageathome_kitchen.state is defined and
            states.device_tracker.ageathome_kitchen.state == 'home' }}
     bathroom_online:
       entity_id:
         - device_tracker.ageathome_bathroom
       value_template: >
-        {{ states.device_tracker.ageathome_bathroom != None and
-           states.device_tracker.ageathome_bathroom.state != None and
+        {{ states.device_tracker.ageathome_bathroom is defined and
+           states.device_tracker.ageathome_bathroom.state is defined and
            states.device_tracker.ageathome_bathroom.state == 'home' }}
     frontdoor_online:
       entity_id:
         - device_tracker.ageathome_frontdoor
       value_template: >
-        {{ states.device_tracker.ageathome_frontdoor != None and
-           states.device_tracker.ageathome_frontdoor.state != None and
+        {{ states.device_tracker.ageathome_frontdoor is defined and
+           states.device_tracker.ageathome_frontdoor.state is defined and
            states.device_tracker.ageathome_frontdoor.state == 'home' }}
     road_online:
       entity_id:
         - device_tracker.ageathome_road
       value_template: >
-        {{ states.device_tracker.ageathome_road != None and
-           states.device_tracker.ageathome_road.state != None and
+        {{ states.device_tracker.ageathome_road is defined and
+           states.device_tracker.ageathome_road.state is defined and
            states.device_tracker.ageathome_road.state == 'home' }}
     gate_online:
       entity_id:
         - device_tracker.ageathome_gate
       value_template: >
-        {{ states.device_tracker.ageathome_gate != None and
-           states.device_tracker.ageathome_gate.state != None and
+        {{ states.device_tracker.ageathome_gate is defined and
+           states.device_tracker.ageathome_gate.state is defined and
            states.device_tracker.ageathome_gate.state == 'home' }}
 
 
@@ -4107,19 +4221,19 @@ binary_sensor template:
         entity_id: 
           - sensor.aah_discovery
         value_template: >
-          {{ states.binary_sensor.aah_discovery != None and
+          {{ states.binary_sensor.aah_discovery is defined and
              states.binary_sensor.aah_discovery.state != 'unknown' and
-             states.binary_sensor.aah_discovery.attributes != None and
-             states.binary_sensor.aah_discovery.attributes.url != None and
+             states.binary_sensor.aah_discovery.attributes is defined and
+             states.binary_sensor.aah_discovery.attributes.url is defined and
              states.binary_sensor.aah_discovery.attributes.url != 'null' }}
       aah_config_complete:
         entity_id: 
           - sensor.aah_config
         value_template: >
-          {{ states.binary_sensor.aah_config != None and
+          {{ states.binary_sensor.aah_config is defined and
              states.binary_sensor.aah_config.state != 'unknown' and
-             states.binary_sensor.aah_config.attributes != None and
-             states.binary_sensor.aah_config.attributes.vr_apikey != None and
+             states.binary_sensor.aah_config.attributes is defined and
+             states.binary_sensor.aah_config.attributes.vr_apikey is defined and
              states.binary_sensor.aah_config.attributes.vr_apikey != 'null' }}
 
 ## HISTORY GRAPH
@@ -4323,3 +4437,9 @@ script: !include scripts.yaml
 ##
 
 automation: !include automations.yaml
+
+##
+## SCENES
+##
+
+scene: !include scenes.yaml

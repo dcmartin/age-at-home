@@ -1,0 +1,17 @@
+  - name: Morning First Motion
+    entities:
+      light.kitchen_ceiling:
+        state: on
+        brightness: 127
+      light.kitchen_bar:
+        state: on
+        brightness: 178
+      light.kitchen_above_cabinet:
+        state: on
+        brightness: 178
+      light.livingroom_ec:
+        state: on
+        brightness: 153
+      light.livingroom_track:
+        state: on
+        brightness: 153

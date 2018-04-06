@@ -11,6 +11,6 @@ logs:
   homeassistant.components.recorder: error 
   homeassistant.components.sensor: error 
   homeassistant.helpers.script: error 
-  homeassistant.components.light.lifx: error 
+  homeassistant.components.light: error 
   homeassistant.components.mqtt: error 
   homeassistant.components.api: error 

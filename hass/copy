@@ -12,7 +12,7 @@ if ($?config == 0) set config = "$share/homeassistant"
 if ($?addons == 0) set addons = "$share/addons/local"
 
 # copy CONFIGURATION
-set yamls = ( scripts known_devices configuration groups history automations templates logger customize secrets zones )
+set yamls = ( scripts known_devices configuration groups history automations templates logger customize secrets zones scenes )
 echo -n "Copying YAML ["
 foreach yaml ( $yamls )
   if (-e "$dir/config/$yaml.yaml") then
