@@ -149,89 +149,55 @@ switch livingroom_tv:
     host: 192.168.1.45
 
 ###
-### TESTING SWITCHES & SCRIPTS
+### HUE lights
 ###
 
-##
-## LIGHTS
-##
-
-input_boolean:
-  trigger_first_morning:
-    name: Waiting for first morning motion
-    icon: mdi:kettle
+switch lights_template:
+  - platform: template
+    switches:
+      livingroom_lights:
+        friendly_name: livingroom_lights
+        value_template: >
+          {{ is_state('light.living_room','on') }}
+        turn_on:
+          - service: homeassistant.turn_on
+            data_template:
+              entity_id: light.living_room
+        turn_off:
+          - service: homeassistant.turn_off
+            data_template:
+              entity_id: light.living_room
 
 ##
 ## AGEATHOME
 ##
 
 # learning on/off
-input_boolean:
-  ageathome_learning:
-    name: ageathome_learning
-    initial: false
-    icon: mdi:train
-
-# learning options { Best, Worst, Random }
-input_select:
-  ageathome_learning_options:
-    name: ageathome_learning_options
-    icon: mdi:select
-    options:
-      - Worst
-      - Best
-      - Random
-
-switch ageathome_learning:
+switch ageathome_template:
   - platform: template
     switches:
       ageathome_learning:
         friendly_name: ageathome_learning
         value_template: >
-          {{ states.input_boolean.ageathome_learning }}
+          {{ is_state('sensor.ageathome_learning','on') }}
         turn_on:
-          - service: input_boolean.set_value
-            data_template:
-              entity_id: input_boolean.ageathome_learning
-              value: true
-       #   - service: switch.turn_on
-       #     entity_id: switch.ageathome_learning
+          - service: script.ageathome_learning_on
         turn_off:
-          - service: input_boolean.set_value
-            data_template:
-              entity_id: input_boolean.ageathome_learning
-              value: false
-       #   - service: switch.turn_on
-       #     entity_id: switch.ageathome_learning
+          - service: script.ageathome_learning_off
 
-script ageathome_learning_off:
-    sequence:
-      - condition: state
-        entity_id: input_boolean.ageathome_learning
-        state: 'on'
-      - service: input_boolean.set_value
-        data_template:
-          entity_id: input_boolean.ageathome_learning
-          value: false
-
-script ageathome_learning_on:
-    sequence:
-      - condition: state
-        entity_id: input_boolean.ageathome_learning
-        state: 'off'
-      - service: input_boolean.set_value
-        data_template:
-          entity_id: input_boolean.ageathome_learning
-          value: true
-
-      # - service: input_number.set_value
-      #  data_template:
-      #    entity_id: input_number.portfoliovalue
-      #    value: "{{ value }}"
-      # - service: input_number.set_value
-      #  data_template:
-      #    entity_id: input_number.portfoliochange
-      #    value: "{{ change }}"
+binary_sensor ageathome_learning_template:
+  - platform: template
+    sensors:
+      ageathome_learning:
+        entity_id: 
+          - input_boolean.ageathome_learning
+        value_template: >
+          {{ is_state('input_boolean.ageathome_learning','on') }}
+      ageathome_notify_email:
+        entity_id: 
+          - input_boolean.ageathome_notify_email
+        value_template: >
+          {{ is_state('input_boolean.ageathome_notify_email','on') }}
 
 ###
 ### PANEL_IFRAME (tabs in HTTP web interface; see "frontend")
@@ -2133,6 +2099,52 @@ sensor last_when:
       {% else %}
         mdi:weather-sunny
       {% endif %}
+
+sensor kitchen_size:
+  - platform: mqtt
+    state_topic: 'presence/kitchen/#'
+    name: kitchen_size
+    value_template: '{% if value_json is defined %} {{ value_json.size }} {% else %} 0 {% endif %}'
+
+sensor bathroom_size:
+  - platform: mqtt
+    state_topic: 'presence/bathroom/#'
+    name: bathroom_size
+    value_template: '{% if value_json is defined %} {{ value_json.size }} {% else %} 0 {% endif %}'
+
+sensor frontdoor_size:
+  - platform: mqtt
+    state_topic: 'presence/frontdoor/#'
+    name: frontdoor_size
+    value_template: '{% if value_json is defined %} {{ value_json.size }} {% else %} 0 {% endif %}'
+
+sensor road_size:
+  - platform: mqtt
+    state_topic: 'presence/road/#'
+    name: road_size
+    value_template: '{% if value_json is defined %} {{ value_json.size }} {% else %} 0 {% endif %}'
+
+sensor gate_size:
+  - platform: mqtt
+    state_topic: 'presence/gate/#'
+    name: gate_size
+    value_template: '{% if value_json is defined %} {{ value_json.size }} {% else %} 0 {% endif %}'
+
+sensor last_size:
+  - platform: mqtt
+    state_topic: 'presence/#'
+    name: last_size
+    value_template: '{% if value_json is defined %} {{ value_json.size }} {% else %} 0 {% endif %}'
+
+sensor image_size_history:
+  - platform: history_stats
+    name: image_size_history
+    entity_id: sensor.last_size
+    state: 'on'
+    type: count
+    start: '{{ now().replace(hour=0).replace(minute=0).replace(second=0) }}'
+    end: '{{ now() }}'
+
 
 # CAMERAS (JPEG)
 
@@ -4417,15 +4429,6 @@ history_graph:
     refresh: 60
 
 ##
-## INPUT
-##
-
-input_text:
-  test1:
-    name: test1
-    initial: type something here
-
-##
 ## SCRIPTS
 ##
 
@@ -4443,3 +4446,16 @@ automation: !include automations.yaml
 ##
 
 scene: !include scenes.yaml
+
+##
+## INPUTS
+##
+
+input_boolean: !include input_booleans.yaml
+input_select: !include input_selects.yaml
+
+input_text:
+  test1:
+    name: test1
+    initial: type something here
+

@@ -1,0 +1,8 @@
+# learning options { Best, Worst, Random }
+ageathome_learning:
+  name: ageathome_learning
+  icon: mdi:select
+  options:
+    - Worst
+    - Best
+    - Random

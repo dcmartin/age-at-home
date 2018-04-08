@@ -1,0 +1,22 @@
+ageathome_learning_off:
+  sequence:
+    - service: input_boolean.set_value
+      data_template:
+        entity_id: input_boolean.ageathome_learning
+        value: false
+
+ageathome_learning_on:
+  sequence:
+    - service: input_boolean.set_value
+      data_template:
+        entity_id: input_boolean.ageathome_learning
+        value: true
+
+      # - service: input_number.set_value
+      #  data_template:
+      #    entity_id: input_number.portfoliovalue
+      #    value: "{{ value }}"
+      # - service: input_number.set_value
+      #  data_template:
+      #    entity_id: input_number.portfoliochange
+      #    value: "{{ change }}"

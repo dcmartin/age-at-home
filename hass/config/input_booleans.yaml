@@ -1,0 +1,9 @@
+ageathome_learning:
+  name: ageathome_learning
+  initial: false
+  icon: mdi:train
+
+ageathome_notify_email:
+  name: ageathome_notify_email
+  initial: false
+  icon: mdi:email

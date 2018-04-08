@@ -677,6 +677,7 @@
            "class":{{trigger.payload_json.class|tojson}},
            "score":{{trigger.payload_json.score|float}},
            "date":{{trigger.payload_json.date|int}}
+           "size":{{trigger.payload_json.size|int}}
           }
 
 ##
@@ -704,16 +705,16 @@
           {% else %}
             {{ false }}
           {% endif %}
-#      - condition: state
-#        entity_id: input_boolean.ageathome_notify_email
-#        state: true
+      - condition: template
+        value_template: >
+          {{ is_state('binary_sensor.ageathome_notify_email','on') }}
   action:
     - service: notify.ageathome_smtp
       data_template:
         title: FALSE POSITIVE
         # {% set trigger = { "payload_json": { "triggered": now().timestamp()|int, "device": "roughfog", "id": "YYYYMMDDHHMMSS.####","location": "kitchen","model":"roughfog-#####","class":"david","score":0.90,"date",(now().timestamp()|int) - 30 } } %} {{ trigger }}
         message: >
-          SAW {{ trigger.payload_json.class }} in {{ trigger.payload_json.location }} 
+          SAW {{ trigger.payload_json.class }} in {{ trigger.payload_json.location }} size {{ trigger.payload_json.size }}
           AT {{ trigger.payload_json.date|int|timestamp_custom("%a %b %d @ %I:%M %p") | default(null) }}
           BUT {{ trigger.payload_json.class }} is {{ states(("sensor.location_",trigger.payload_json.class)|join|lower) }}
           [ {{ trigger.payload_json.model }} {{ trigger.payload_json.score|float }} {{ trigger.payload_json.id }} ]
@@ -750,15 +751,14 @@
             {{ false }}
           {% endif %}
       - condition: template
-        # test if learning mode is enabled
         value_template: >
-          {{ is_state('input_boolean.ageathome_learning','true') }}
+          {{ is_state('binary_sensor.ageathome_learning','on') }}
   action:
     - service: notify.ios_dcms_iphone7
       data_template:
         title: FALSE POSITIVE
         message: >
-          {{ trigger.payload_json.class }} seen {{ trigger.payload_json.location }}
+          {{ trigger.payload_json.class }} seen {{ trigger.payload_json.location }} size {{ trigger.payload_json.size }}
           http://www.dcmartin.com/CGI/aah-classify.cgi?db={{ trigger.payload_json.device }}&id={{ trigger.payload_json.id }}
         data:
           push:
@@ -828,11 +828,7 @@
         after: '06:00'
       - condition: time
         before: '22:00'
-#      - condition: state
-#        entity_id: input_boolean.ageathome_learning
-#        state: true
       - condition: template
-        # {% set trigger = { "payload_json": { "triggered": now().timestamp()|int, "device": "roughfog", "id": "YYYYMMDDHHMMSS.####", "location": "kitchen", "model":"roughfog-#####", "class":"david", "score":0.90,"date":(now().timestamp()|int) - 30 } } %}
         value_template: >
           {{ ((now().timestamp()|int) - trigger.payload_json.date) < 60 }}
   action:
@@ -847,7 +843,7 @@
         message: >-
           SAW {{ trigger.payload_json.class }}
           AT {{ trigger.payload_json.date|int|timestamp_custom("%a %b %d @ %I:%M %p") | default(null) }}
-          [ {{ trigger.payload_json.model }} {{ trigger.payload_json.score|float }} {{ trigger.payload_json.id }} ]
+          [ {{ trigger.payload_json.model }} {{ trigger.payload_json.score|float }} {{ trigger.payload_json.size }} {{ trigger.payload_json.id }} ]
         data:
           attachment:
             url: http://homeassistant.dcmartin.com:8123{{- states(("sensor.camera_",trigger.payload_json.location,"_entity_picture")|join|lower) -}}
@@ -883,6 +879,7 @@
            "class":{{trigger.payload_json.class|tojson}},
            "score":{{trigger.payload_json.score|float}},
            "date":{{trigger.payload_json.date|int}}
+           "size":{{trigger.payload_json.size|int}}
           }
 
 - id: aah_wrong_vehicle_notify
@@ -891,6 +888,10 @@
   trigger:
     - platform: mqtt
       topic: 'wrong/vehicle/#'
+  condition: 
+    - condition: template
+      value_template: >
+        {{ is_state('binary_sensor.ageathome_learning','on') }}
   action:
     - service: notify.ios_dcms_iphone7
       data_template:
@@ -901,7 +902,7 @@
           when {{ trigger.payload_json.date|int|timestamp_custom("%a %b %d @ %I:%M %p") | default(null) }}
           by {{ trigger.payload_json.model }} 
           level {{ trigger.payload_json.score|float }}
-          image {{ trigger.payload_json.id }} 
+          image {{ trigger.payload_json.id }} size {{ trigger.payload_json.size }}
         data:
           attachment:
             url: http://homeassistant.dcmartin.com:8123{{- states(("sensor.camera_",trigger.payload_json.location,"_entity_picture")|join|lower) -}}

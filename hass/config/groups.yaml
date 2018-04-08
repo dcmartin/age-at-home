@@ -7,13 +7,37 @@ default_view:
   name: Default View
   icon: mdi:home-variant
   entities:
-    - switch.fronthall_lamp
-    - switch.kitchen_tv
-    - switch.livingroom_tv
-    - switch.ageathome_learning
+    - group.switches
+    - group.lights
+    - group.learning
     - group.people
     - group.weather_today
     - camera.wuradar
+
+switches:
+  name: Switches
+  icon: mdi:power-socket-us
+  entities:
+    - switch.fronthall_lamp
+    - switch.kitchen_tv
+    - switch.livingroom_tv
+    - switch.livingroom_lights
+
+lights:
+  name: Lights
+  icon: mdi:lamp
+  entities:
+    - light.living_room
+
+learning:
+  name: Learning
+  icon: mdi:train
+  entities:
+    - binary_sensor.ageathome_learning
+    - binary_sensor.ageathome_notify_email
+    - input_boolean.ageathome_notify_email
+    - input_boolean.ageathome_learning
+    - input_select.ageathome_learning
 
 over_view:
   view: true

@@ -138,6 +138,12 @@
       - sensor.kitchen_riley_ratio
       - sensor.kitchen_riley_time
       - sensor.kitchen_what
+      - sensor.last_size
+      - sensor.kitchen_size
+      - sensor.bathroom_size
+      - sensor.frontdoor_size
+      - sensor.road_size
+      - sensor.gate_size
       - sensor.last_ago
       - sensor.last_what
       - sensor.last_when
