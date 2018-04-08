@@ -6,6 +6,7 @@ default_view:
   view: true
   name: Default View
   icon: mdi:home-variant
+  control: hidden
   entities:
     - group.switches
     - group.lights
@@ -17,21 +18,25 @@ default_view:
 switches:
   name: Switches
   icon: mdi:power-socket-us
+  control: hidden
   entities:
     - switch.fronthall_lamp
     - switch.kitchen_tv
     - switch.livingroom_tv
     - switch.livingroom_lights
+    - switch.ian_tv
 
 lights:
   name: Lights
   icon: mdi:lamp
+  control: hidden
   entities:
     - light.living_room
 
 learning:
   name: Learning
   icon: mdi:train
+  control: hidden
   entities:
     - binary_sensor.ageathome_learning
     - binary_sensor.ageathome_notify_email

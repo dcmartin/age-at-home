@@ -676,8 +676,9 @@
            "model":{{trigger.payload_json.model|tojson}},
            "class":{{trigger.payload_json.class|tojson}},
            "score":{{trigger.payload_json.score|float}},
-           "date":{{trigger.payload_json.date|int}}
-           "size":{{trigger.payload_json.size|int}}
+           "date":{{trigger.payload_json.date|int}},
+           "size":{{trigger.payload_json.size|int}},
+           "box":{{trigger.payload_json.box|tojson}}
           }
 
 ##
@@ -878,8 +879,9 @@
            "model":{{trigger.payload_json.model|tojson}},
            "class":{{trigger.payload_json.class|tojson}},
            "score":{{trigger.payload_json.score|float}},
-           "date":{{trigger.payload_json.date|int}}
-           "size":{{trigger.payload_json.size|int}}
+           "date":{{trigger.payload_json.date|int}},
+           "size":{{trigger.payload_json.size|int}},
+           "box":{{trigger.payload_json.box|tojson}}
           }
 
 - id: aah_wrong_vehicle_notify
