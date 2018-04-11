@@ -714,7 +714,7 @@
           {% endif %}
       - condition: template
         value_template: >
-          {{ is_state('binary_sensor.ageathome_notify_email',true) }}
+          {{ is_state('binary_sensor.ageathome_notify_email','on') }}
   action:
     - service: notify.ageathome_smtp
       data_template:
@@ -759,7 +759,7 @@
           {% endif %}
       - condition: template
         value_template: >
-          {{ is_state('binary_sensor.ageathome_learning',true) }}
+          {{ is_state('binary_sensor.ageathome_learning','on') }}
   action:
     - service: notify.ios_dcms_iphone7
       data_template:
@@ -838,9 +838,9 @@
       - condition: template
         value_template: >
           {{ ((now().timestamp()|int) - trigger.payload_json.date) < 60 }}
-#      - condition: template
-#        value_template: >
-#          {{ is_state('binary_sensor.ageathome_notify_gate',true) }}
+      - condition: template
+        value_template: >
+          {{ is_state('binary_sensor.ageathome_notify_gate','on') }}
   action:
     - service: mqtt.publish
       data_template:
@@ -903,7 +903,7 @@
   condition: 
     - condition: template
       value_template: >
-        {{ is_state('binary_sensor.ageathome_learning',true) }}
+        {{ is_state('binary_sensor.ageathome_learning','on') }}
   action:
     - service: notify.ios_dcms_iphone7
       data_template:
