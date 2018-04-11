@@ -270,6 +270,17 @@ aged-bush:
   track: true
   vendor: Raspberry Pi Foundation
 
+# 192.168.1.39
+lively-paper:
+  mac: B8:27:EB:DD:A0:94
+  name: 'ageathome_poolhouse'
+  hide_if_away: false
+  icon: mdi:webcam
+  picture: http://farm5.static.flickr.com/4100/4930862762_4abbd2b5b3_m.jpg
+  track: true
+  vendor: Raspberry Pi Foundation
+
+
 ## HUE
 
 # 192.168.1.49

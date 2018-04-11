@@ -199,6 +199,11 @@ binary_sensor ageathome_learning_template:
           - input_boolean.ageathome_notify_email
         value_template: >
           {{ is_state('input_boolean.ageathome_notify_email','on') }}
+      ageathome_notify_gate:
+        entity_id: 
+          - input_boolean.ageathome_notify_gate
+        value_template: >
+          {{ is_state('input_boolean.ageathome_notify_gate','on') }}
 
 ###
 ### PANEL_IFRAME (tabs in HTTP web interface; see "frontend")
@@ -221,6 +226,10 @@ panel_iframe:
     title: 'DIGITS-P40'
     icon: mdi:format-list-numbers
     url: 'http://192.168.1.40:32769/'
+  controls:
+    title: Control Panel
+    icon: mdi:windows
+    url: http://192.168.1.40:7080
   mtn:
     title: 'Horizon'
     icon: mdi:image-filter-hdr
@@ -1997,6 +2006,22 @@ camera error_image:
 ## WRONG
 ##
 
+sensor aah_wrong_guesses:
+  - platform: mqtt
+    name: aah_wrong_guesses
+    state_topic: 'wrong/+/+'
+    # {% set value_json = {"type":"not_home","triggered":0,"device":"quiet-water","location":"road","date":1523381284,"class":"alabaster_color","model":"default","score":0.9,"id":"20180410102756-15-00","box":"64x64+306+208","size":4096,"scores":[{"classifier_id":"bug_on_lens","name":"quietwater_1275055516","score":0.40912},{"classifier_id":"builder","name":"quietwater_1275055516","score":0.382188},{"classifier_id":"car","name":"quietwater_1275055516","score":0.0498827},{"classifier_id":"fletcher_fordflex","name":"quietwater_1275055516","score":0.639281},{"classifier_id":"martin_c70","name":"quietwater_1275055516","score":0.29407},{"classifier_id":"motorcycle","name":"quietwater_1275055516","score":0.312586},{"classifier_id":"Storm","name":"/nature/Storm","score":0.709},{"classifier_id":"nature","name":"default","score":0.857},{"classifier_id":"hillside","name":"/nature/slope/hillside","score":0.552},{"classifier_id":"slope","name":"default","score":0.565},{"classifier_id":"Wildfire","name":"default","score":0.5},{"classifier_id":"natural elevation","name":"default","score":0.783},{"classifier_id":"tree","name":"default","score":0.788},{"classifier_id":"alabaster color","name":"default","score":0.9},{"classifier_id":"steel blue color","name":"default","score":0.786}]} %}
+    value_template: >
+      {% if value_json is defined %}
+        {"id":"{{value_json.id}}","location":"{{value_json.location}}","count":{{value_json.scores|length}},"guesses":[
+        {%- set scores = value_json.scores|sort(attribute="score") -%}
+        {%- for score in scores -%}
+           {%- if not loop.last -%} "{{ score.classifier_id }}", {%- else -%} "{{ score.classifier_id }}" {%- endif -%}
+        {%- endfor -%}]}
+      {% else %}
+        'unknown'
+      {% endif %}
+
 sensor aah_wrong_device:
   - platform: mqtt
     name: aah_wrong_device
@@ -2125,32 +2150,48 @@ sensor image_size_history:
     end: '{{ now() }}'
 
 
+###
+### GET A PICTURE
+###
+
+camera aah_wrong_kitchen:
+  name: aah_wrong_kitchen
+  platform: generic
+  limit_refetch_to_url_change: false
+  still_image_url: >
+    http://homeassistant.dcmartin.com:8123{{- states(("sensor.camera_","kitchen","_entity_picture")|join|lower) -}}
+
 # CAMERAS (JPEG)
 
 camera last_image:
   - platform: mqtt
     name: last_image
-    topic: 'image/#'
+    topic: 'image/+/+'
+
+camera last_image_classified:
+  - platform: mqtt
+    name: last_image_classified
+    topic: 'image-classified/+'
 
 camera last_image_annotated:
   - platform: mqtt
     name: last_image_annotated
-    topic: 'image-annotated/#'
+    topic: 'image-annotated/+'
 
 camera last_image_cropped:
   - platform: mqtt
     name: last_image_cropped
-    topic: 'image-cropped/#'
+    topic: 'image-cropped/+'
 
 camera last_image_composite:
   - platform: mqtt
     name: last_image_composite
-    topic: 'image-composite/#'
+    topic: 'image-composite/+'
 
 camera last_image_animated:
   - platform: mqtt
     name: last_image_animated
-    topic: 'image-animated/#'
+    topic: 'image-animated/+'
 
 ##
 ## KITCHEN
@@ -2198,28 +2239,32 @@ sensor kitchen_size:
 camera kitchen_image:
   - platform: mqtt
     name: kitchen_image
-    topic: 'image/kitchen'
+    topic: 'image/kitchen/+'
+
+camera kitchen_image_classified:
+  - platform: mqtt
+    name: kitchen_image_classified
+    topic: 'image-classified/kitchen/+'
 
 camera kitchen_image_annotated:
   - platform: mqtt
     name: kitchen_image_annotated
-    topic: 'image-annotated/kitchen/#'
+    topic: 'image-annotated/kitchen'
 
 camera kitchen_image_cropped:
   - platform: mqtt
     name: kitchen_image_cropped
-    icon: mdi:image
-    topic: 'image-cropped/kitchen/#'
+    topic: 'image-cropped/kitchen'
 
 camera kitchen_image_composite:
   - platform: mqtt
     name: kitchen_image_composite
-    topic: 'image-composite/kitchen/#'
+    topic: 'image-composite/kitchen'
 
 camera kitchen_image_animated:
   - platform: mqtt
     name: kitchen_image_animated
-    topic: 'image-animated/kitchen/#'
+    topic: 'image-animated/kitchen'
 
 ##
 ## BATHROOM
@@ -2267,27 +2312,32 @@ sensor bathroom_size:
 camera bathroom_image:
   - platform: mqtt
     name: bathroom_image
-    topic: 'image/bathroom'
+    topic: 'image/bathroom/+'
+
+camera bathroom_image_classified:
+  - platform: mqtt
+    name: bathroom_image_classified
+    topic: 'image-classified/bathroom'
 
 camera bathroom_image_annotated:
   - platform: mqtt
     name: bathroom_image_annotated
-    topic: 'image-annotated/bathroom/#'
+    topic: 'image-annotated/bathroom'
 
 camera bathroom_image_cropped:
   - platform: mqtt
     name: bathroom_image_cropped
-    topic: 'image-cropped/bathroom/#'
+    topic: 'image-cropped/bathroom'
 
 camera bathroom_image_composite:
   - platform: mqtt
     name: bathroom_image_composite
-    topic: 'image-composite/bathroom/#'
+    topic: 'image-composite/bathroom'
 
 camera bathroom_image_animated:
   - platform: mqtt
     name: bathroom_image_animated
-    topic: 'image-animated/bathroom/#'
+    topic: 'image-animated/bathroom'
 
 ##
 ## ROAD
@@ -2335,27 +2385,32 @@ sensor road_size:
 camera road_image:
   - platform: mqtt
     name: road_image
-    topic: 'image/road'
+    topic: 'image/road/+'
+
+camera road_image_classified:
+  - platform: mqtt
+    name: road_image_classified
+    topic: 'image-classified/road/+'
 
 camera road_image_annotated:
   - platform: mqtt
     name: road_image_annotated
-    topic: 'image-annotated/road/#'
+    topic: 'image-annotated/road'
 
 camera road_image_cropped:
   - platform: mqtt
     name: road_image_cropped
-    topic: 'image-cropped/road/#'
+    topic: 'image-cropped/road'
 
 camera road_image_composite:
   - platform: mqtt
     name: road_image_composite
-    topic: 'image-composite/road/#'
+    topic: 'image-composite/road'
 
 camera road_image_animated:
   - platform: mqtt
     name: road_image_animated
-    topic: 'image-animated/road/#'
+    topic: 'image-animated/road'
 
 ##
 ## INTERIOR GATE
@@ -2403,27 +2458,32 @@ sensor gate_size:
 camera gate_image:
   - platform: mqtt
     name: gate_image
-    topic: 'image/gate'
+    topic: 'image/gate/+'
+
+camera gate_image_classified:
+  - platform: mqtt
+    name: gate_image_classified
+    topic: 'image-classified/gate/+'
 
 camera gate_image_annotated:
   - platform: mqtt
     name: gate_image_annotated
-    topic: 'image-annotated/gate/#'
+    topic: 'image-annotated/gate'
 
 camera gate_image_cropped:
   - platform: mqtt
     name: gate_image_cropped
-    topic: 'image-cropped/gate/#'
+    topic: 'image-cropped/gate'
 
 camera gate_image_composite:
   - platform: mqtt
     name: gate_image_composite
-    topic: 'image-composite/gate/#'
+    topic: 'image-composite/gate'
 
 camera gate_image_animated:
   - platform: mqtt
     name: gate_image_animated
-    topic: 'image-animated/gate/#'
+    topic: 'image-animated/gate'
 
 ##
 ## DETERMINISTIC INDICATOR OF CLASSIFIER FAILURE (100%)
@@ -2520,30 +2580,32 @@ sensor frontdoor_size:
 camera frontdoor_image:
   - platform: mqtt
     name: frontdoor_image
-    icon: mdi:image
-    topic: 'image/frontdoor'
+    topic: 'image/frontdoor/+'
+
+camera frontdoor_image_classified:
+  - platform: mqtt
+    name: frontdoor_image_classified
+    topic: 'image-classified/frontdoor/+'
 
 camera frontdoor_image_annotated:
   - platform: mqtt
     name: frontdoor_image_annotated
-    icon: mdi:image
-    topic: 'image-annotated/frontdoor/#'
+    topic: 'image-annotated/frontdoor'
 
 camera frontdoor_image_cropped:
   - platform: mqtt
     name: frontdoor_image_cropped
-    icon: mdi:image
-    topic: 'image-cropped/frontdoor/#'
+    topic: 'image-cropped/frontdoor'
 
 camera frontdoor_image_composite:
   - platform: mqtt
     name: frontdoor_image_composite
-    topic: 'image-composite/frontdoor/#'
+    topic: 'image-composite/frontdoor'
 
 camera frontdoor_image_animated:
   - platform: mqtt
     name: frontdoor_image_animated
-    topic: 'image-animated/frontdoor/#'
+    topic: 'image-animated/frontdoor'
 
 ## MOTION SENSORS 
 

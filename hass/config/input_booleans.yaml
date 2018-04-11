@@ -7,3 +7,9 @@ ageathome_notify_email:
   name: ageathome_notify_email
   initial: false
   icon: mdi:email
+
+ageathome_notify_gate:
+  name: ageathome_notify_gate
+  initial: true
+  icon: mdi:gate
+

@@ -642,7 +642,6 @@
 ##
 ## LISTEN to 'presence/#' AND WATCH FOR FALSE POSITIVES (PERSON SEEN but not at HOME)
 ##
-
 - id: aah_wrong_person_detector
   alias: aah_wrong_person_detector
   initial_state: on
@@ -654,12 +653,14 @@
        # {% set trigger = { "payload_json": { "class": "david", "location": "kitchen" } } %}
        # {{ not ( states(("sensor.location_",trigger.payload_json.class)|join|lower) in ("home","unknown") }}
        value_template: >
+         {% if trigger.payload_json is defined %}
          {%- for state in states.group.people.attributes.entity_id -%}
            {%- set w = state.replace('sensor.location_','')|lower -%}
            {%- if w == trigger.payload_json.class|lower and not states(state)|lower in ('home','unknown') -%} 
             {{ true }}
            {%- endif -%}
          {%- endfor -%}
+         {%- else -%} false {%- endif -%}
   action:
     # send MQTT message that a false-positive has occurred
     - service: mqtt.publish
@@ -678,7 +679,12 @@
            "score":{{trigger.payload_json.score|float}},
            "date":{{trigger.payload_json.date|int}},
            "size":{{trigger.payload_json.size|int}},
-           "box":{{trigger.payload_json.box|tojson}}
+           "box":{{trigger.payload_json.box|tojson}},
+           "scores":[
+            {%- set scores = trigger.payload_json.scores|sort(true,attribute="score") -%}
+            {%- for score in scores -%}
+              {%- if not loop.last -%} "{{ score.classifier_id }}", {%- else -%} "{{ score.classifier_id }}" {%- endif -%}
+            {%- endfor -%}]
           }
 
 ##
@@ -708,7 +714,7 @@
           {% endif %}
       - condition: template
         value_template: >
-          {{ is_state('binary_sensor.ageathome_notify_email','on') }}
+          {{ is_state('binary_sensor.ageathome_notify_email',true) }}
   action:
     - service: notify.ageathome_smtp
       data_template:
@@ -753,7 +759,7 @@
           {% endif %}
       - condition: template
         value_template: >
-          {{ is_state('binary_sensor.ageathome_learning','on') }}
+          {{ is_state('binary_sensor.ageathome_learning',true) }}
   action:
     - service: notify.ios_dcms_iphone7
       data_template:
@@ -816,8 +822,8 @@
 ## NOTIFY MOTION at INTERIORGATE
 ##
 
-- id: aah_motion_gate
-  alias: aah_motion_gate
+- id: aah_notify_gate
+  alias: aah_notify_gate
   initial_state: on
   trigger:
     - platform: mqtt
@@ -832,6 +838,9 @@
       - condition: template
         value_template: >
           {{ ((now().timestamp()|int) - trigger.payload_json.date) < 60 }}
+#      - condition: template
+#        value_template: >
+#          {{ is_state('binary_sensor.ageathome_notify_gate',true) }}
   action:
     - service: mqtt.publish
       data_template:
@@ -881,7 +890,8 @@
            "score":{{trigger.payload_json.score|float}},
            "date":{{trigger.payload_json.date|int}},
            "size":{{trigger.payload_json.size|int}},
-           "box":{{trigger.payload_json.box|tojson}}
+           "box":{{trigger.payload_json.box|tojson}},
+           "scores":{{trigger.payload_json.scores}}
           }
 
 - id: aah_wrong_vehicle_notify
@@ -893,7 +903,7 @@
   condition: 
     - condition: template
       value_template: >
-        {{ is_state('binary_sensor.ageathome_learning','on') }}
+        {{ is_state('binary_sensor.ageathome_learning',true) }}
   action:
     - service: notify.ios_dcms_iphone7
       data_template:

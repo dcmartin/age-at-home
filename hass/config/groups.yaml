@@ -8,12 +8,18 @@ default_view:
   icon: mdi:home-variant
   control: hidden
   entities:
+    - camera.gate_image
     - group.switches
-    - group.lights
-    - group.learning
     - group.people
-    - group.weather_today
-    - camera.wuradar
+    - group.controls
+
+motion:
+  name: Motion
+  icon: mdi:people
+  control: hidden
+  entities:
+    - binary_sensor.interior_motion
+    - binary_sensor.exterior_motion
 
 switches:
   name: Switches
@@ -25,6 +31,10 @@ switches:
     - switch.livingroom_tv
     - switch.livingroom_lights
     - switch.ian_tv
+    - input_boolean.ageathome_learning
+    - input_boolean.ageathome_notify_email
+    - input_boolean.ageathome_notify_gate
+    - input_select.ageathome_learning
 
 lights:
   name: Lights
@@ -33,22 +43,12 @@ lights:
   entities:
     - light.living_room
 
-learning:
-  name: Learning
-  icon: mdi:train
-  control: hidden
-  entities:
-    - binary_sensor.ageathome_learning
-    - binary_sensor.ageathome_notify_email
-    - input_boolean.ageathome_notify_email
-    - input_boolean.ageathome_learning
-    - input_select.ageathome_learning
-
 over_view:
   view: true
   name: Over View
   icon: mdi:looks
   entities:
+    - group.lights
     - group.iphones
     - group.sensor_counts
     - group.family_detection
@@ -323,6 +323,7 @@ ageathome_view:
   name: AgeAtHome View
   icon: mdi:human-male-female
   entities:
+    - group.ageathome_learning
     - camera.last_image
     - camera.last_image_annotated
     - camera.last_image_animated
@@ -334,6 +335,17 @@ ageathome_view:
     - group.ageathome_motion
     - group.ageathome_wrong
 
+ageathome_learning:
+  name: Learning
+  icon: mdi:train
+  control: hidden
+  entities:
+    - binary_sensor.ageathome_learning
+    - binary_sensor.ageathome_notify_email
+    - input_boolean.ageathome_notify_email
+    - input_boolean.ageathome_learning
+    - input_select.ageathome_learning
+
 ageathome_annotated_images:
   view: true
   name: AgeAtHome Annotated Images
@@ -344,11 +356,6 @@ ageathome_annotated_images:
     - camera.bathroom_image_annotated
     - camera.frontdoor_image_annotated
     - camera.road_image_annotated
-    - camera.gate_image_animated
-    - camera.kitchen_image_animated
-    - camera.bathroom_image_animated
-    - camera.frontdoor_image_animated
-    - camera.road_image_animated
 
 ageathome_devices:
   name: AgeAtHome Devices
@@ -593,6 +600,8 @@ weather_view:
   name: Weather View
   icon: mdi:weather-cloudy
   entities:
+    - camera.wuradar
+    - group.weather_today
     - sensor.pws_elevation
     - camera.weatherforecast
     - group.daily_forecast
