@@ -13,3 +13,8 @@ ageathome_notify_gate:
   initial: true
   icon: mdi:gate
 
+ageathome_notify_poolhouse:
+  name: ageathome_notify_poolhouse
+  initial: true
+  icon: mdi:pool
+

@@ -29,10 +29,6 @@
       - binary_sensor.road_motion
       - binary_sensor.road_other
       - binary_sensor.road_wrong
-      - binary_sensor.gate_martin
-      - binary_sensor.gate_motion
-      - binary_sensor.gate_other
-      - binary_sensor.gate_wrong
       - binary_sensor.interior_hali
       - binary_sensor.interior_ian
       - binary_sensor.interior_keli
@@ -105,17 +101,6 @@
       - sensor.frontdoor_riley_ratio
       - sensor.frontdoor_riley_time
       - sensor.frontdoor_what
-      - sensor.gate_ago
-      - sensor.gate_what
-      - sensor.gate_count
-      - sensor.gate_martin_count
-      - sensor.gate_martin_ratio
-      - sensor.gate_martin_time
-      - sensor.gate_motion_count
-      - sensor.gate_motion_time
-      - sensor.gate_other_count
-      - sensor.gate_other_ratio
-      - sensor.gate_other_time
       - sensor.kitchen_ago
       - sensor.kitchen_david_count
       - sensor.kitchen_david_ratio
@@ -143,7 +128,6 @@
       - sensor.bathroom_size
       - sensor.frontdoor_size
       - sensor.road_size
-      - sensor.gate_size
       - sensor.last_ago
       - sensor.last_what
       - sensor.last_when
@@ -170,3 +154,35 @@
       - sensor.road_other_count
       - sensor.road_other_ratio
       - sensor.road_other_time
+      - binary_sensor.gate_martin
+      - binary_sensor.gate_motion
+      - binary_sensor.gate_other
+      - binary_sensor.gate_wrong
+      - sensor.gate_ago
+      - sensor.gate_what
+      - sensor.gate_count
+      - sensor.gate_martin_count
+      - sensor.gate_martin_ratio
+      - sensor.gate_martin_time
+      - sensor.gate_motion_count
+      - sensor.gate_motion_time
+      - sensor.gate_other_count
+      - sensor.gate_other_ratio
+      - sensor.gate_other_time
+      - sensor.gate_size
+      - binary_sensor.poolhouse_martin
+      - binary_sensor.poolhouse_motion
+      - binary_sensor.poolhouse_other
+      - binary_sensor.poolhouse_wrong
+      - sensor.poolhouse_ago
+      - sensor.poolhouse_what
+      - sensor.poolhouse_count
+      - sensor.poolhouse_martin_count
+      - sensor.poolhouse_martin_ratio
+      - sensor.poolhouse_martin_time
+      - sensor.poolhouse_motion_count
+      - sensor.poolhouse_motion_time
+      - sensor.poolhouse_other_count
+      - sensor.poolhouse_other_ratio
+      - sensor.poolhouse_other_time
+      - sensor.poolhouse_size

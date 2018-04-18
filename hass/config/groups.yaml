@@ -8,10 +8,11 @@ default_view:
   icon: mdi:home-variant
   control: hidden
   entities:
-    - camera.gate_image
+    - camera.ageathome_gate
+    - camera.ageathome_poolhouse
+    - camera.last_image
     - group.switches
     - group.people
-    - group.controls
 
 motion:
   name: Motion
@@ -23,7 +24,6 @@ motion:
 
 switches:
   name: Switches
-  icon: mdi:power-socket-us
   control: hidden
   entities:
     - switch.fronthall_lamp
@@ -31,10 +31,6 @@ switches:
     - switch.livingroom_tv
     - switch.livingroom_lights
     - switch.ian_tv
-    - input_boolean.ageathome_learning
-    - input_boolean.ageathome_notify_email
-    - input_boolean.ageathome_notify_gate
-    - input_select.ageathome_learning
 
 lights:
   name: Lights
@@ -340,9 +336,9 @@ ageathome_learning:
   icon: mdi:train
   control: hidden
   entities:
-    - binary_sensor.ageathome_learning
-    - binary_sensor.ageathome_notify_email
     - input_boolean.ageathome_notify_email
+    - input_boolean.ageathome_notify_gate
+    - input_boolean.ageathome_notify_poolhouse
     - input_boolean.ageathome_learning
     - input_select.ageathome_learning
 
@@ -351,6 +347,7 @@ ageathome_annotated_images:
   name: AgeAtHome Annotated Images
   icon: mdi:eye
   entities:
+    - camera.poolhouse_image_annotated
     - camera.gate_image_annotated
     - camera.kitchen_image_annotated
     - camera.bathroom_image_annotated
@@ -375,6 +372,7 @@ ageathome_motion:
     - binary_sensor.kitchen_motion
     - binary_sensor.road_motion
     - binary_sensor.gate_motion
+    - binary_sensor.poolhouse_motion
     - binary_sensor.interior_motion
     - binary_sensor.exterior_motion
     - sensor.bathroom_motion_time
@@ -387,6 +385,8 @@ ageathome_motion:
     - sensor.road_motion_count
     - sensor.gate_motion_time
     - sensor.gate_motion_count
+    - sensor.poolhouse_motion_time
+    - sensor.poolhouse_motion_count
 
 ageathome_wrong:
   name: 'AgeAtHome Wrong'
@@ -396,6 +396,7 @@ ageathome_wrong:
     - binary_sensor.frontdoor_wrong
     - binary_sensor.road_wrong
     - binary_sensor.gate_wrong
+    - binary_sensor.poolhouse_wrong
 
 ageathome_last:
   name: 'AgeAtHome Last'
@@ -411,6 +412,7 @@ ageathome_last:
     - sensor.frontdoor_last
     - sensor.road_last
     - sensor.gate_last
+    - sensor.poolhouse_last
 
 ageathome_ago:
   name: 'AgeAtHome Ago' 
@@ -420,6 +422,7 @@ ageathome_ago:
     - sensor.frontdoor_ago
     - sensor.road_ago
     - sensor.gate_ago
+    - sensor.poolhouse_ago
     - sensor.interior_ago
     - sensor.exterior_ago
 
@@ -431,6 +434,7 @@ ageathome_when:
     - sensor.frontdoor_when
     - sensor.road_when
     - sensor.gate_when
+    - sensor.poolhouse_when
 
 # KITCHEN
 
@@ -566,6 +570,7 @@ ageathome_gate_view:
   name: AgeAtHome Gate View
   icon: mdi:gate
   entities:
+    - camera.ageathome_gate
     - camera.gate_image
     - camera.gate_image_annotated
     - camera.gate_image_animated
@@ -590,6 +595,39 @@ ageathome_gate_details:
     - binary_sensor.gate_wrong
     - sensor.gate_motion_time
     - sensor.gate_motion_count
+
+# poolhouse
+
+ageathome_poolhouse_view:
+  view: true
+  name: AgeAtHome Poolhouse View
+  icon: mdi:pool
+  entities:
+    - camera.ageathome_poolhouse
+    - camera.poolhouse_image
+    - camera.poolhouse_image_annotated
+    - camera.poolhouse_image_animated
+    - camera.poolhouse_image_composite
+    - group.ageathome_poolhouse_details
+    - history_graph.poolhouse_count
+    - history_graph.poolhouse_time
+    - history_graph.poolhouse_ratio
+    - history_graph.poolhouse_accuracy
+
+ageathome_poolhouse_details:
+  name: AgeAtHome Poolhouse Details
+  icon: mdi:pool
+  entities:
+    - sensor.poolhouse_who
+    - sensor.poolhouse_what
+    - sensor.poolhouse_when
+    - sensor.poolhouse_why
+    - sensor.poolhouse_ago
+    - sensor.poolhouse_last
+    - binary_sensor.poolhouse_motion
+    - binary_sensor.poolhouse_wrong
+    - sensor.poolhouse_motion_time
+    - sensor.poolhouse_motion_count
 
 #
 # WEATHER VIEW
@@ -640,6 +678,7 @@ webcams_view:
     - camera.ageathome_frontdoor
     - camera.ageathome_road
     - camera.ageathome_gate
+    - camera.ageathome_poolhouse
 
 #
 # MEDIAPLAYERS VIEW
