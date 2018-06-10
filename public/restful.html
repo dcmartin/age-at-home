@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html>
+<head>
+<link href="https://fonts.googleapis.com/css?family=Open+Sans" rel="stylesheet" type="text/css">
+<style>
+  body {
+    font-family: 'Open+Sans', sans;
+    font-size: 14px;
+  }
+</style>
+<title>ReSTful Services</title>
+</head>
+
+<!-- start Mixpanel -->
+<script type="text/javascript">(function(e,b){if(!b.__SV){var a,f,i,g;window.mixpanel=b;b._i=[];b.init=function(a,e,d){function f(b,h){var a=h.split(".");2==a.length&&(b=b[a[0]],h=a[1]);b[h]=function(){b.push([h].concat(Array.prototype.slice.call(arguments,0)))}}var c=b;"undefined"!==typeof d?c=b[d]=[]:d="mixpanel";c.people=c.people||[];c.toString=function(b){var a="mixpanel";"mixpanel"!==d&&(a+="."+d);b||(a+=" (stub)");return a};c.people.toString=function(){return c.toString(1)+".people (stub)"};i="disable time_event track track_pageview track_links track_forms register register_once alias unregister identify name_tag set_config people.set people.set_once people.increment people.append people.union people.track_charge people.clear_charges people.delete_user".split(" ");
+for(g=0;g<i.length;g++)f(c,i[g]);b._i.push([a,e,d])};b.__SV=1.2;a=e.createElement("script");a.type="text/javascript";a.async=!0;a.src="undefined"!==typeof MIXPANEL_CUSTOM_LIB_URL?MIXPANEL_CUSTOM_LIB_URL:"file:"===e.location.protocol&&"//cdn.mxpnl.com/libs/mixpanel-2-latest.min.js".match(/^\/\//)?"https://cdn.mxpnl.com/libs/mixpanel-2-latest.min.js":"//cdn.mxpnl.com/libs/mixpanel-2-latest.min.js";f=e.getElementsByTagName("script")[0];f.parentNode.insertBefore(a,f)}})(document,window.mixpanel||[]);
+mixpanel.init("8ce3a282a575094e41bbc4b4b0f4bf9e");
+mixpanel.track("restful");
+</script>
+<!-- end Mixpanel -->
+
+<body>
+<a href="/">
+<img width="10%" src="images/age-at-home.jpg">
+</a>
+
+<h1>
+ReSTful Services
+</h1>
+<p>
+With analytical understanding of the event classifier space and corresponding activity for specific classifiers by day of week and interval of day,
+a model can now be constructed to determine the average time of first activity in the AM.  That model is calculated on the server, based on the historical 
+event data and supplied to the device on demand through a Web service.
+The Web service is a HTTP address with parameters that invokes logic to to return a result, e.g. the average score for Person in a given interval of time.
+<p>
+This information is consumed by the RaspberryPi and utilized to compare current events with the historical population statistics.
+Local conditional testing is currently in-progress, utilizing the <code>motion</code> package capability for additional event processing.
+<p>
+Below are some examples of the <code>aah-stats</code> Web service:
+<ul>
+<li>
+Calculates / updates statistical model for device and classifier
+<a href="/CGI/aah-stats.cgi?db=rough-fog&id=Adult"><code>aah-stats?db=rough-fog&id=Adult</code></a>
+<li>
+Calculates / updates statistical model for days of week or device and classifier
+<a href="/CGI/aah-stats.cgi?db=rough-fog&id=Adult&day=all"><code>aah-stats?db=rough-fog&id=Adult&day=all</code></a>
+<li>
+Calculates / updates statistical model for intervals of day for device and classifier
+<a href="/CGI/aah-stats.cgi?db=rough-fog&id=Adult&interval=all"><code>aah-stats?db=rough-fog&id=Adult&interval=all</code></a>
+<li>
+Calculate / update list of all classifiers for device (e.g. "db=rough-fog")
+<a href="/CGI/aah-classifiers.cgi?db=rough-fog"><code>aah-classifiers</code></a> 
+</ul>
+The id= argument can be specified with any of the classifiers.  The day= and interval= arguments can be specified with &quot;all&quot; or a number for day (0-6) or interval (0-95).
+<p>
+<img width="75%" src="images/command-line.png">
+
+</body>
+</html>

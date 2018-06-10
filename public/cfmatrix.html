@@ -344,6 +344,9 @@ Public License instead of this License.
 -->
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
 <head>
+
+<link href="https://fonts.googleapis.com/css?family=IBM+Plex+Sans" rel="stylesheet">
+
 <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
 <title>AAH - Model Quality Calculator</title>
 <link rel="stylesheet" href="css/cfmatrix.css" type="text/css">
@@ -564,7 +567,7 @@ function on_classifiers_load() {
 function get_classifiers(device) {
   console.log("get_classifiers");
 
-  var get = "http://www.dcmartin.com/CGI/aah-cfmatrix.cgi"
+  var get = "/CGI/aah-cfmatrix.cgi"
   var req = new XMLHttpRequest();
 
   if (device) get += "?db=" + device;
@@ -619,7 +622,7 @@ function model_load() {
 function get_model(device,model) {
   console.log("get_model");
 
-  var get = "http://www.dcmartin.com/CGI/aah-cfmatrix.cgi?"
+  var get = "/CGI/aah-cfmatrix.cgi?"
 
   if (device) {
     get += "db=" + device + "&";

@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html>
+<head>
+<link href="https://fonts.googleapis.com/css?family=Open+Sans" rel="stylesheet" type="text/css">
+<style>
+  body {
+    font-family: 'Open+Sans', sans;
+    font-size: 14px;
+  }
+</style>
+<title>Training</title>
+</head>
+
+<!-- start Mixpanel -->
+<script type="text/javascript">(function(e,b){if(!b.__SV){var a,f,i,g;window.mixpanel=b;b._i=[];b.init=function(a,e,d){function f(b,h){var a=h.split(".");2==a.length&&(b=b[a[0]],h=a[1]);b[h]=function(){b.push([h].concat(Array.prototype.slice.call(arguments,0)))}}var c=b;"undefined"!==typeof d?c=b[d]=[]:d="mixpanel";c.people=c.people||[];c.toString=function(b){var a="mixpanel";"mixpanel"!==d&&(a+="."+d);b||(a+=" (stub)");return a};c.people.toString=function(){return c.toString(1)+".people (stub)"};i="disable time_event track track_pageview track_links track_forms register register_once alias unregister identify name_tag set_config people.set people.set_once people.increment people.append people.union people.track_charge people.clear_charges people.delete_user".split(" ");
+for(g=0;g<i.length;g++)f(c,i[g]);b._i.push([a,e,d])};b.__SV=1.2;a=e.createElement("script");a.type="text/javascript";a.async=!0;a.src="undefined"!==typeof MIXPANEL_CUSTOM_LIB_URL?MIXPANEL_CUSTOM_LIB_URL:"file:"===e.location.protocol&&"//cdn.mxpnl.com/libs/mixpanel-2-latest.min.js".match(/^\/\//)?"https://cdn.mxpnl.com/libs/mixpanel-2-latest.min.js":"//cdn.mxpnl.com/libs/mixpanel-2-latest.min.js";f=e.getElementsByTagName("script")[0];f.parentNode.insertBefore(a,f)}})(document,window.mixpanel||[]);
+mixpanel.init("8ce3a282a575094e41bbc4b4b0f4bf9e");
+mixpanel.track("training");
+</script>
+<!-- end Mixpanel -->
+
+<body>
+
+<a href="/">
+<img width="10%" src="images/age-at-home.jpg">
+</a>
+<h1>
+Training
+</h1>
+
+
+<p>
+This project started utilizing the AlchemyAPI (http://www.alchemyapi.com/) recognition algorithm and then was extended to include the VisualInsights recognition algorithm.
+The AlchemyAPI demonstrated a low signal to noise ratio, with most images being classified as "NO_TAG," indicating that none of the known objects were identified; 
+in addition, the algorithm only returned a single result.
+<p>
+The VisualInsights algorithm was made available as beta in December 2005, and I added its analysis capabilities to augment the signal; the VisualInsghts algorithm returns up to twenty-five (25)
+objects per call; the additional objects the VI algorithm could identify was a great benefit, but the signal, while improved, still included signifcant noise; specifically in the 
+identification of "humans" being split across various classifications and without any hierarchical organization into groups.
+<p>
+Sadly, first the VisualInsights algorithm was deprecated in June 2016 and in 2017 the AlchemyAPI will also cease to operate.  The new algorithm, Watson VisualRecognition, 
+is the child of AlchemyAPI and VisualInsights with support for multiple entities per image, as well as a default classifier generating poor signal and still significant noise (n.b. there is now
+a hierarchy, but neither the classes nor the hierarchy is published and must be discovered from results).
+<p>
+Therefore, I embarked on building a training loop for whatever recognition algorithm I might utilize.  This loop would capture the images from the camera's local storage (n.b. uSD card) and
+present those images to the application user community (e.g. elderly individual/couple) and enable manual classification for subsequent training, testing, and deploying of a model specific to both this application context (i.e. people detection) as well as the local environs (e.g. room location, dogs, cats, residents, ...)
+<h3>
+Collecting the images
+</h3>
+<p>
+The images needed to create the training data for Watson VR are stored on each device in a local directory (n.b. <code>/var/lib/motion</code>).  
+The image file names correspond to the date and time of the image, as well as a monotonically increasing sequence number.  
+Access to these images is provided through FTP, restricted to access from the local LAN.
+<p>
+When the end-user engages in curating, a.k.a. labeling, the images into their respective distinct classes (see the next section), another service is invoked (<code>aah-review</code>).
+The <b>review</b> service periodically collects new events stored by the device in the Cloudant noSQL repository (e.g. <a href="https://538e7925-b7f5-478b-bf75-2f292dcf642a-bluemix.cloudant.com/rough-fog"><code>rough-fog</code></a>).
+New events include the image identifier; the device is accessed via FTP and the image is collected and collated.
+When the process is complete, the count of images in each class is updated in Cloudant (e.g. <a href="https://538e7925-b7f5-478b-bf75-2f292dcf642a-bluemix.cloudant.com/rough-fog-review/all"><code>rough-fog/review/all</code></a>), in addition to the sequence number of last event processed.
+<h3>
+Labeling the images
+</h3>
+<p>
+Below is the user-interface for labeling images.  Options are available as buttons (e.g. person, kitchen, dog, ..) based on previous labels assigned; new labels can be added in the text entry box and the 
+image's initial classification and capture date are shown.
+<figure>
+<img src="images/label-web-app.png" width="50%">
+<figcaption>Simple Web application to label images</figcaption>
+</figure>
+<p>
+Ideally, images are labeled if and only if the image contains the entity in question, e.g. a person, and does not contain any of the other entities of interest (e.g. dog or cat).
+The training set also requires negative examples which do not include <i>any</i> entity (i.e. person, dog or cat).
+To achieve this distinction, each camera installation has been pre-defined to a corresponding label (e.g. "kitchen") that is used to identify the negative examples.
+Similarly, other locations may also be suitably classified (e.g. bathroom, dining room, living room, ...)
+<p>
+Labeled images are collated into separate directory structure for their new classes and symbolic links are utilized as a state maintaince indicator (i.e. collected, labeled).
+Once images are labeled they are deemed ready for training; additional curation of the labeled images is performed in the <b>Training</b> phase.
+<p>
+<video width="50%" controls src="images/ImageCuration.mp4" type="video/mp4">
+<h3>
+Training the classifiers
+</h3>
+<p>
+The Watson VisualRecognition service provides for both initial learning as well as updates with new classes and images.  The API does not provide details on images utilized in training for
+either positive or negative examples so an independent record of images utilized must be maintained.  In addition, no standard of practice is defined for validating or measuring the quality
+of the learned model, so independent testing and quality measurement must be constructed.  Finally, as the training process appears to be a required constiuent component, 
+other entities (e.g. myself, my wife, my kids, ..) could also be identified and used to train Watson VR.
+<p>
+The training set is limited to 100 megabytes (MB) of data for each class with a total maximum of 430 MB; minimum number of labeled images is ten (10). Updates can be made against a single
+labeled set at a time, also including negative examples (i.e. not including any previously labeled entities).
+<p>
+Each learned model is referred to by both a name as well as a specific identifier.  The name is being utilized for the device (e.g. rough-fog) and the identifier determines the model and serves
+as an index to keep track of which images have been used for training purposes -- both positive and negative examples.  The 
+<a href="https://github.com/dcmartin/age-at-home/blob/master/bin/train_vr">
+<code>train_vr</code>
+</a>
+script is still in process.  Evident in the 
+<a href="https://github.com/dcmartin/age-at-home/blob/master/bin/aah-train-rough-fog.1479139200.out">
+log</a> are failures of the Watson VR API call, e.g. <code>413 Request Entity Too Large</code>, and corresponding successful repetition.
+<h4>
+Results from Watson VR
+</h4>
+<p>
+Once the process has successfully complete, the updated model is recorded in Cloudant.
+<ul>
+<li><a href="https://538e7925-b7f5-478b-bf75-2f292dcf642a-bluemix.cloudant.com/rough-fog-train/_all_docs?include_docs=true">TRAIN</a>.
+<li><a href="https://538e7925-b7f5-478b-bf75-2f292dcf642a-bluemix.cloudant.com/rough-fog-test/_all_docs?include_docs=true">TEST</a>.
+<li><a href="/CGI/aah-cfmatrix.cgi?model=roughfog_879989469">CONFUSION MATRIX</a>.
+</ul>
+<p>
+I copied a confusion matrix calculator and created a simple Web application to display the matrix for a given model and/or device (i.e. Watson VR <code>classifier_id</code>, and <code>name</code>);
+the prototype is available below:
+<p>
+<figure>
+<a href="http://age-at-home.mybluemix.net/cfmatrix.html">
+<img src="images/confusion-matrix.png" width="75%">
+</a>
+<figcaption>Simple Web application to view model confusion matrix</figcaption>
+</figure>
+<p>
+The results from training the Watson VR algorithm using the curated examples improved the results, but overall the recall was less than 69% and typically under 40%.
+<p>
+<h4>Process Model</h4>
+<p>The script executes a number of steps sequentially based on the output of the <code>aah-classify</code> Web application.
+The curated images are organized in the file-system in a directory structure corresponding to <i>device</i> and <i>class</i>, e.g. <code>rough-fog/person</code>.
+<ul>
+<li>Label images by <i>class</i>
+<li>Split each image <i>class</i> <i>train</i> and <i>test</i> sets
+<li>Separate sets into batches of no more than 100 M-byte
+<li>Build model from <i>train</i> set (iterate batches)
+<li>Apply classifier to <i>test</i> set
+<li>Calculate quality metrics
+<li>Curate sets; iterate build
+<li>QA/QC vs production
+<li>Promote to production
+</ul>
+
+</body>
+</html>
+

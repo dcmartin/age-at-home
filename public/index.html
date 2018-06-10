@@ -1,5 +1,4 @@
 <!DOCTYPE html>
-
 <html>
 <head>
 <meta property="fb:app_id" content="987455534707663"/>
@@ -13,6 +12,7 @@
 </style>
 <title>Age At Home</title>
 </head>
+
 <!-- start Mixpanel -->
 <script type="text/javascript">(function(e,b){if(!b.__SV){var a,f,i,g;window.mixpanel=b;b._i=[];b.init=function(a,e,d){function f(b,h){var a=h.split(".");2==a.length&&(b=b[a[0]],h=a[1]);b[h]=function(){b.push([h].concat(Array.prototype.slice.call(arguments,0)))}}var c=b;"undefined"!==typeof d?c=b[d]=[]:d="mixpanel";c.people=c.people||[];c.toString=function(b){var a="mixpanel";"mixpanel"!==d&&(a+="."+d);b||(a+=" (stub)");return a};c.people.toString=function(){return c.toString(1)+".people (stub)"};i="disable time_event track track_pageview track_links track_forms register register_once alias unregister identify name_tag set_config people.set people.set_once people.increment people.append people.union people.track_charge people.clear_charges people.delete_user".split(" ");
 for(g=0;g<i.length;g++)f(c,i[g]);b._i.push([a,e,d])};b.__SV=1.2;a=e.createElement("script");a.type="text/javascript";a.async=!0;a.src="undefined"!==typeof MIXPANEL_CUSTOM_LIB_URL?MIXPANEL_CUSTOM_LIB_URL:"file:"===e.location.protocol&&"//cdn.mxpnl.com/libs/mixpanel-2-latest.min.js".match(/^\/\//)?"https://cdn.mxpnl.com/libs/mixpanel-2-latest.min.js":"//cdn.mxpnl.com/libs/mixpanel-2-latest.min.js";f=e.getElementsByTagName("script")[0];f.parentNode.insertBefore(a,f)}})(document,window.mixpanel||[]);
@@ -122,41 +122,6 @@ mixpanel.track("home");
 </script>
 <!-- END FACEBOOK -->
 
-<body>
-
-<a href="https://cognitivebuild.bluefundit.com/project/56ee0073f6ec6de43b0d6344">
-<img width="10%" src="images/age-at-home.jpg">
-</a>
-<h1>
-Age-At-Home
-</h1>
-<div
-  class="fb-like"
-  data-share="true"
-  data-width="450"
-  data-show-faces="true">
-</div>
-<fb:login-button scope="public_profile,email" onlogin="checkLoginState();">
-</fb:login-button>
-
-<div id="status">
-</div>
-<h2>What is it?</h2>
-<p>
-Improve the elderlys' ability to age at home through understanding of daily activities inferred from passive sensor analysis.
-This project is an exploration of the IBM Cloud and Watson technologies for the use of high-fidelity, low-latency, private sensing and responding at the edge. 
-<h2>
-NEWS
-</h2>
-<ul>
-<li>2017 May 8-11:  <a href="http://ibm.biz/aah-gputech">"AgeAtHome - Deep Learning at the Edge"</a> at nVidia GPU Technology Conference in San Jose, CA USA
-<li>2018 January 18: <a href="https://www.ibm.com/developerworks/library/iot-lessons-learned-02/">"Lessons learned while building a closed-loop, full-stack cognitive IoT application"</a> on IBM DeveloperWorks
-<li>2018 February 20-22: IBM <a href="https://developer.ibm.com/indexconf/">INDEX Conference</a> in San Francisco, CA USA
-</ul>
-<h2>OVERVIEW VIDEO</h2>
-The video below provides an overview.
-<p>
-<video width="50%" controls src="images/AgeAtHome.mp4" type="video/mp4">
 <script>
 // Include the UserVoice JavaScript SDK (only needed once on a page)
 UserVoice=window.UserVoice||[];(function(){var uv=document.createElement('script');uv.type='text/javascript';uv.async=true;uv.src='//widget.uservoice.com/mZOfplY08hzrPzWhtMMIiA.js';var s=document.getElementsByTagName('script')[0];s.parentNode.insertBefore(uv,s)})();
@@ -200,452 +165,87 @@ UserVoice.push(['addTrigger', {mode: 'contact', trigger_position: 'bottom-right'
 // Autoprompt for Satisfaction and SmartVote (only displayed under certain conditions)
 UserVoice.push(['autoprompt', {}]);
 </script>
+
+<body>
+
+<img width="10%" src="images/age-at-home.jpg">
+<h1>
+Age-At-Home
+</h1>
+<div
+  class="fb-like"
+  data-share="true"
+  data-width="450"
+  data-show-faces="true">
+</div>
+<fb:login-button scope="public_profile,email" onlogin="checkLoginState();">
+</fb:login-button>
+<div id="status"></div>
+<p>
+The need for helping elderly individuals or couples remain in their home is increasing as our global population ages.  
+Cognitive processing offers opportunities to assist the elderly by sensing and responding to their actions, needs, and wishes.
+<p>
+To improve overall health many factors must be considered, including diet, exercise, medication adherence, and many other physical metrics,
+but other non-measurable components (e.g. loneliness) need proxies.
+<p>
+While many approaches require devices to be worn, charged and kept up-to-date, as well as send uncontrolled quantities and details of personal information to the Cloud and potentially unknown consumers, the AgeAtHome experiment is based on minimizing the information shared while 
+maximizing the value for any shared information.
+<p>
+The AgeAtHome project's objective is to improve the lives of people, starting with the elderly, by <i>sensing and responding</i> in the home
+and leveraging the cloud to understand, learn, plan, and share teachings from those interactions.
+<p>
+This project is an exploration of the IBM Watson & Cloud Platform for the use of 
+high-fidelity, low-latency, private, hybrid cognitive applications.
+<p>
+This <a href="video.html">video</a> provides an overview.
+
 <h2>
-How it Works
+NEWS
 </h2>
-<p>
-The need for helping elderly individuals or couples remain in their home is increasing as our global population ages.  Cognitive processing offers opportunities to assist the elderly by processing information to identify opportunities for caregivers to offer assistance and support.
-<p>
-Rather than depending on sensors worn on the body (and needing to be not forgotten, recharged, etc..) or installing sensors on individual devices (e.g. sink, cabinet, refrigerator, etc..), this solution utilizes passive monitoring devices, notably video camera(s) with multi-channel microphones, to sense activity, record events, and build a model of normative behavior.
-<p>
-<img width="75%" src="images/basic-scenario.png">
-<table>
-<tr valigh="top">
-<td>
-<figure> <img width="90%" src="images/camera.png"> <figcaption>Installation on kitchen shelf</figcaption></figure>
-</td>
-<td width="70%">
-Initially we intend to monitor the kitchen and recognizes the presence of a person (not an individual) in the room. From this simple event detection we will build a normative baseline of daily activity and detect when that daily activity exhibits aberrations (e.g. no activity in kitchen after +2 std. dev. past median time).
-The visual recognition algorithm will run on the local device (e.g. RaspberryPi with camera), the issues of round-trip latency to the cloud, or bandwidth required, or security or privacy concerns, will be eliminated.  Only events generated from this recognition will be sent to the cloud to build (and update) the normative behavior model.
-This initial scenario may be easily extended to other passive monitoring capabilities, e.g. audio, motion (sonar), electrical circuit, , ... as well as deployment in other area, e.g. entry way, bathroom, hallway, etc.. to provide support for additional scenarios, e.g. medication adherence, diet, exercise, ... 
-</td>
-</tr>
-</table>
-<p>
-<h2>
-Home Assistant
-</h2>
-The home automation package Home Assistant provides an integration point for both AgeAtHome devices as well as other IoT devices from multiple sensors.  You can find out more about Home Assistant at http://home-assistant.io
-<p>
-<img src="images/Kitchen-HA.png" width="40%">
-<h2>
-First and Last
-</h2>
-The table below has the first and last events today in which a Human classifier was identified.  This result is via a Looker generated SQL provisioning a JSON result that is then cleaned-up using a CGI script.  There is a bug in that the public dashDB instance I am sharing has its timezone set to GMT; this does not appear to something I can change in a simple or straight-forward fashion.  
-The results may be NULL until I find a fix.
-<p>
-<table border="1">
-<tr><th>Location</th><th>First Seen</th><th>Last Seen</th></tr>
-<tr valign="top"><td>Kitchen</td><td><div id="rf_first_div"></div></td><td><div id="rf_div"></div></td></tr>
-<tr valign="top"><td>Bathroom</td><td><div id="dc_first_div"></div></td><td><div id="dc_div"></div></td></tr>
-</table>
-
-<script>
-function dc_handler() {
- if(this.status == 200 && this.responseText != null) {
-   j = JSON.parse(this.responseText);
-   datetime = j.datetime;
-   dc_div.innerHTML = datetime;
- }
-}
-function rf_handler() {
- if(this.status == 200 && this.responseText != null) {
-   j = JSON.parse(this.responseText);
-   datetime = j.datetime;
-   rf_div.innerHTML = datetime;
- }
-}
-function dc_first() {
- if(this.status == 200 && this.responseText != null) {
-   j = JSON.parse(this.responseText);
-   datetime = j.datetime;
-   dc_first_div.innerHTML = datetime;
- }
-}
-function rf_first() {
- if(this.status == 200 && this.responseText != null) {
-   j = JSON.parse(this.responseText);
-   datetime = j.datetime;
-   rf_first_div.innerHTML = datetime;
- }
-}
-
-var dc_first_req = new XMLHttpRequest();
-dc_first_req.onload = dc_first;
-dc_first_req.open("GET", "http://www.dcmartin.com/CGI/aah-first.cgi?db=damp-cloud", true);
-dc_first_req.send();
-var rf_first_req = new XMLHttpRequest();
-rf_first_req.onload = rf_first;
-rf_first_req.open("GET", "http://www.dcmartin.com/CGI/aah-first.cgi?db=rough-fog", true);
-rf_first_req.send();
-
-var dc_req = new XMLHttpRequest();
-dc_req.onload = dc_handler;
-dc_req.open("GET", "http://www.dcmartin.com/CGI/aah-last.cgi?db=damp-cloud", true);
-dc_req.send();
-var rf_req = new XMLHttpRequest();
-rf_req.onload = rf_handler;
-rf_req.open("GET", "http://www.dcmartin.com/CGI/aah-last.cgi?db=rough-fog", true);
-rf_req.send();
-
-</script>
-
-<p>
-<h2>System Overview</h2>
-<p>
-The solution is patterned on a "do-it-yourself" (DIY) approach and utilizes inexpensive hardware, open source software, and free services from the IBM Bluemix cloud.  The local device is comprised of a RaspberryPi computer and PlayStation3 Eye USB camera with four (4) internal microphones.  Total cost of hardware is under US$80 on-line.
-<br>
-<img width="75%" src="images/system-overview.png">
-<p>
-The <a href="http://www.bluemix.net/">IBM Bluemix</a> cloud provides a suite of services for the application, including this Web site, which is a Node.js CloudFoundry application.
-The Bluemix environment enables this application context to apply to other services, 
-notably the IBM Watson <a href="http://www.ibm.com/smarterplanet/us/en/ibmwatson/developercloud/visual-recognition.html">image recognition services</a>.  
-In addition, the <a href="http://cloudant.com/">Cloudant</a> NoSQL repository stores the historical event and image recognition information.
-<p>
-Bluemix also provides the <a href="http://www.ibm.com/software/data/dashdb/">dashDB</a> hybrid relational data warehousing service.  
-This service automatically replicates from the Cloudant repository and provides an SQL interface for SELECT, PROJECT and JOIN.
-This SQL services can also be consumed by <a href="http://watson.analytics.ibmcloud.com">Watson Analytics</a> and other third-party software packages from IBM 
-and business partners (e.g. <a href="http://www.looker.com">Looker</a>).
-<p>
-Also on Bluemix, the IBM <a href="https://internetofthings.ibmcloud.com/">Internet of Things</a> platform and 
-associated <a href="https://iotrti-prod.mam.ibmserviceengage.com/">Real-Time Insights</a> provide device registration and system status monitoring for the RaspberryPi.
-General purpose conditionals can be applied for integration with email, <a href="http://www.ifttt.com">IFTTT</a>, Node.Red and arbitrary web-hook.
-<p>
-In addition, this site utilizes Mixpanel (www.mixpanel.com) to provide user tracking.
-<h2>
-Training
-</h2>
-<p>
-This project started utilizing the AlchemyAPI (http://www.alchemyapi.com/) recognition algorithm and then was extended to include the VisualInsights recognition algorithm.
-The AlchemyAPI demonstrated a low signal to noise ratio, with most images being classified as "NO_TAG," indicating that none of the known objects were identified; 
-in addition, the algorithm only returned a single result.
-<p>
-The VisualInsights algorithm was made available as beta in December 2005, and I added its analysis capabilities to augment the signal; the VisualInsghts algorithm returns up to twenty-five (25)
-objects per call; the additional objects the VI algorithm could identify was a great benefit, but the signal, while improved, still included signifcant noise; specifically in the 
-identification of "humans" being split across various classifications and without any hierarchical organization into groups.
-<p>
-Sadly, first the VisualInsights algorithm was deprecated in June 2016 and in 2017 the AlchemyAPI will also cease to operate.  The new algorithm, Watson VisualRecognition, 
-is the child of AlchemyAPI and VisualInsights with support for multiple entities per image, as well as a default classifier generating poor signal and still significant noise (n.b. there is now
-a hierarchy, but neither the classes nor the hierarchy is published and must be discovered from results).
-<p>
-Therefore, I embarked on building a training loop for whatever recognition algorithm I might utilize.  This loop would capture the images from the camera's local storage (n.b. uSD card) and
-present those images to the application user community (e.g. elderly individual/couple) and enable manual classification for subsequent training, testing, and deploying of a model specific to both this application context (i.e. people detection) as well as the local environs (e.g. room location, dogs, cats, residents, ...)
-<h3>
-Collecting the images
-</h3>
-<p>
-The images needed to create the training data for Watson VR are stored on each device in a local directory (n.b. <code>/var/lib/motion</code>).  
-The image file names correspond to the date and time of the image, as well as a monotonically increasing sequence number.  
-Access to these images is provided through FTP, restricted to access from the local LAN.
-<p>
-When the end-user engages in curating, a.k.a. labeling, the images into their respective distinct classes (see the next section), another service is invoked (<code>aah-review</code>).
-The <b>review</b> service periodically collects new events stored by the device in the Cloudant noSQL repository (e.g. <a href="https://538e7925-b7f5-478b-bf75-2f292dcf642a-bluemix.cloudant.com/rough-fog"><code>rough-fog</code></a>).
-New events include the image identifier; the device is accessed via FTP and the image is collected and collated.
-When the process is complete, the count of images in each class is updated in Cloudant (e.g. <a href="https://538e7925-b7f5-478b-bf75-2f292dcf642a-bluemix.cloudant.com/rough-fog-review/all"><code>rough-fog/review/all</code></a>), in addition to the sequence number of last event processed.
-<h3>
-Labeling the images
-</h3>
-<p>
-Below is the user-interface for labeling images.  Options are available as buttons (e.g. person, kitchen, dog, ..) based on previous labels assigned; new labels can be added in the text entry box and the 
-image's initial classification and capture date are shown.
-<figure>
-<img src="images/label-web-app.png" width="50%">
-<figcaption>Simple Web application to label images</figcaption>
-</figure>
-<p>
-Ideally, images are labeled if and only if the image contains the entity in question, e.g. a person, and does not contain any of the other entities of interest (e.g. dog or cat).
-The training set also requires negative examples which do not include <i>any</i> entity (i.e. person, dog or cat).
-To achieve this distinction, each camera installation has been pre-defined to a corresponding label (e.g. "kitchen") that is used to identify the negative examples.
-Similarly, other locations may also be suitably classified (e.g. bathroom, dining room, living room, ...)
-<p>
-Labeled images are collated into separate directory structure for their new classes and symbolic links are utilized as a state maintaince indicator (i.e. collected, labeled).
-Once images are labeled they are deemed ready for training; additional curation of the labeled images is performed in the <b>Training</b> phase.
-<p>
-<video width="50%" controls src="images/ImageCuration.mp4" type="video/mp4">
-<h3>
-Training the classifiers
-</h3>
-<p>
-The Watson VisualRecognition service provides for both initial learning as well as updates with new classes and images.  The API does not provide details on images utilized in training for
-either positive or negative examples so an independent record of images utilized must be maintained.  In addition, no standard of practice is defined for validating or measuring the quality
-of the learned model, so independent testing and quality measurement must be constructed.  Finally, as the training process appears to be a required constiuent component, 
-other entities (e.g. myself, my wife, my kids, ..) could also be identified and used to train Watson VR.
-<p>
-The training set is limited to 100 megabytes (MB) of data for each class with a total maximum of 430 MB; minimum number of labeled images is ten (10). Updates can be made against a single
-labeled set at a time, also including negative examples (i.e. not including any previously labeled entities).
-<p>
-Each learned model is referred to by both a name as well as a specific identifier.  The name is being utilized for the device (e.g. rough-fog) and the identifier determines the model and serves
-as an index to keep track of which images have been used for training purposes -- both positive and negative examples.  The 
-<a href="https://github.com/dcmartin/age-at-home/blob/master/bin/train_vr">
-<code>train_vr</code>
-</a>
-script is still in process.  Evident in the 
-<a href="https://github.com/dcmartin/age-at-home/blob/master/bin/aah-train-rough-fog.1479139200.out">
-log</a> are failures of the Watson VR API call, e.g. <code>413 Request Entity Too Large</code>, and corresponding successful repetition.
-<h4>
-Results from Watson VR
-</h4>
-<p>
-Once the process has successfully complete, the updated model is recorded in Cloudant.
 <ul>
-<li><a href="https://538e7925-b7f5-478b-bf75-2f292dcf642a-bluemix.cloudant.com/rough-fog-train/_all_docs?include_docs=true">TRAIN</a>.
-<li><a href="https://538e7925-b7f5-478b-bf75-2f292dcf642a-bluemix.cloudant.com/rough-fog-test/_all_docs?include_docs=true">TEST</a>.
-<!-- <li><a href="https://538e7925-b7f5-478b-bf75-2f292dcf642a-bluemix.cloudant.com/rough-fog-matrix/_all_docs?include_docs=true">CONFUSION MATRIX</a>. -->
-<li><a href="http://www.dcmartin.com/CGI/aah-cfmatrix.cgi?model=roughfog_879989469">CONFUSION MATRIX</a>.
+<li>2017 May 8-11:  <a href="http://ibm.biz/aah-gputech">"AgeAtHome - Deep Learning at the Edge"</a> at nVidia GPU Technology Conference in San Jose, CA USA
+<li>2018 January 18: <a href="https://www.ibm.com/developerworks/library/iot-lessons-learned-02/">"Lessons learned while building a closed-loop, full-stack cognitive IoT application"</a> on IBM DeveloperWorks
+<li>2018 February 20-22: IBM <a href="https://developer.ibm.com/indexconf/">INDEX Conference</a> in San Francisco, CA USA
 </ul>
-<p>
-I copied a confusion matrix calculator and created a simple Web application to display the matrix for a given model and/or device (i.e. Watson VR <code>classifier_id</code>, and <code>name</code>);
-the prototype is available below:
-<p>
-<figure>
-<a href="http://age-at-home.mybluemix.net/cfmatrix.html">
-<img src="images/confusion-matrix.png" width="75%">
-</a>
-<figcaption>Simple Web application to view model confusion matrix</figcaption>
-</figure>
-<p>
-The results from training the Watson VR algorithm using the curated examples improved the results, but overall the recall was less than 69% and typically under 40%.
-<p>
-<h4>Process Model</h4>
-<p>The script executes a number of steps sequentially based on the output of the <code>aah-classify</code> Web application.
-The curated images are organized in the file-system in a directory structure corresponding to <i>device</i> and <i>class</i>, e.g. <code>rough-fog/person</code>.
+
+<h2>
+Overview
+</h2>
 <ul>
-<li>Label images by <i>class</i>
-<li>Split each image <i>class</i> <i>train</i> and <i>test</i> sets
-<li>Separate sets into batches of no more than 100 M-byte
-<li>Build model from <i>train</i> set (iterate batches)
-<li>Apply classifier to <i>test</i> set
-<li>Calculate quality metrics
-<li>Curate sets; iterate build
-<li>QA/QC vs production
-<li>Promote to production
+<li><a href="howitworks.html">How it Works</a>
+<li><a href="equipment.html">Equipment</a>
+<li><a href="examples.html">examples</a>
+<li><a href="kitchen.html">kitchen</a>
+<li><a href="resin.html">Resin.io</a>
+<li><a href="wiotp.html">Watson IoT Platform</a>
+<li><a href="setup.html">Setup</a>
+<li><a href="hassio.html">Home Assistant</a>
+<li><a href="firstlast.html">First and Last</a>
+<li><a href="devices.html">Devices</a>
+<li><a href="training.html">Training</a>
+<li><a href="digits.html">nVidia DIGITS</a>
 </ul>
-<h3>nVidia DIGITS</h3>
-<p>
-There is an open source package called DIGITS that provides a graphical interface to numerous deep learning techniques using nVidia GPUs.
-<p>
-The curated image sets created using the Web application above are loaded into DIGITS and trained using the existing GoogLeNet pre-trained (i.e. weighted) Caffe network.
-<p>
-The results indicate significant performance on the TOP1 prediction (i.e. the algorithm got it right).  Below are the training graphs indicating ~ 66% accuracy for rough-fog and ~ 72% accuracy for damp-cloud.
-<figure>
-<img src="images/rough-fog-caffe.png" width="40%">
-<img src="images/damp-cloud-caffe.png" width="40%">
-<figcaption>Results from DIGITS using Caffe & GoogLeNet</figcaption>
-</figure>
+
 <h2>
 Analysis
 </h2>
-<p>
-With several weeks of data collected patterns are emerging.  Initial analysis step was to understand the classsifiers tagged in the images.
-<h3>
-Step 1: Watson Analytics
-</h3>
-<p>
-Data was processed from JSON in Cloudant into CSV files for each device.  Resulting data included listing of all classifiers by fifteen (15) minute interval per day.
 <ul>
-<li> <a href="data/rough-fog-all-intervals.csv">All classifiers by interval for rough-fog</a>
-<li> <a href="data/damp-cloud-all-intervals.csv">All classifiers by interval for damp-cloud</a>
+<li><a href="watson-analytics.html">Watson Analytics</a>
+<li><a href="dsx.html">IBM Data Science Experience</a>
+<li><a href="looker.html">Looker</a>
+<li><a href="excel.html">Analysis with Excel</a>
+<li><a href="restful.html">ReSTful Services</a>
+<li><a href="tree.html">Tree of Watson Visual Recognition classifiers</a>
 </ul>
-<p>
-These images are created using <a href="https://watson.analytics.ibmcloud.com/">Watson Analytics</a>.  It is simple to get a free account and load the CSV files.
-Import these CSV files into Watson Analytics, refine the data model and explore yields the following graphical displays of the classifier space.
-<p>
-<table width="100%">
-<tr valign="top">
-<td width="30%" align="center">
-<figure>
-    <a href="images/classifier-heatmap.png"><img width="95%" src="images/classifier-heatmap.png"></a>
-    <figcaption>Heatmap of classifiers</figcaption>
-</figure>
-</td>
-<td width="30%" align="center">
-<figure>
-    <a href="images/score-hour-classifier.png"><img width="95%" src="images/score-hour-classifier.png"></a>
-    <figcaption>Primary Classifiers</figcaption>
-</figure>
-</td>
-<td width="30%" align="center">
-<figure>
-    <a href="images/hour-classifier-relationship.png"><img width="95%" src="images/hour-classifier-relationship.png"></a>
-    <figcaption>Relationship between hour, day and classifier</figcaption>
-</figure>
-</td>
-</tr>
-</table>
-<p>
-The heatmap of classifiers as well as the primary classifiers across hour of day were both highly informative.  This insight lead the selection of the following classifiers 
-from the VisualInsights recognition algorithms for further investigation using Looker.
-<h3>
-Step 2: Looker
-</h3>
-<p>
-Analysis of the underlying events which generated the classifications lead to analysis using Looker.  Looker generates SQL for the dashDB replicant of the Cloudant JSON event history 
-and then makes that output available for visualization and download as JSON.  The following graphics are "live" views of the rough-fog and damp-cloud events.
-<p>
-<figure>
-<figcaption>Analysis of activity seen by rough-fog for past week</figcaption>
-<a href="https://ibmcds.looker.com/embed/public/Yh9rxzkxzwMBKZdnWSBW7MrpyqYJCSyY">
-<img src="https://ibmcds.looker.com/looks/Yh9rxzkxzwMBKZdnWSBW7MrpyqYJCSyY.png?apply_formatting=true" width='1000' height='350'>
-</a>
-</figure>
-<figure>
-<figcaption>Analysis of activity seen by damp-cloud for past week</figcaption>
-<a href="https://ibmcds.looker.com/embed/public/bnxqgR8HwcSgxJYqft4DbwRpD49hkNFR">
-<img src="https://ibmcds.looker.com/looks/bnxqgR8HwcSgxJYqft4DbwRpD49hkNFR.png?apply_formatting=true" width='1000' height='350'>
-</a>
-</figure>
-<h3>
-Step 3: Excel
-</h3>
-<p>
-The same UNIX script 
-(<code><a href="bin/mkclass">mkclass</a></code>)
-that converts the Cloudant JSON into CSV files suitable to Watson Analytics is also suitable 
-for consumption by Excel.
-The script builds the classifier (or classifier set, e.g. 'people') population statistics model for the specified device.
-The results are processed in the <a href="data/rough-fog-person.xslx">Excel spreadsheet</a> to produce the charts below.
-<ol>
-<li>All Activity; the sum of 'person' events in the kitchen
-<li>Expected Activity; when 'person' count by 'intervals' "near" mean of interval count
-<li>Over Activity; when 'person' count by 'interval' is +2SD over mean of interval count
-<li>Under Activity; when 'person' count by 'interval' is -2SD under mean of interval count
-</ol>
-<table>
-<tr>
-<td><a href="images/person-active.png"><img width="95%" src="images/person-active.png"></a></td>
-<td><a href="images/person-normal-active.png"><img width="95%" src="images/person-normal-active.png"></a></td>
-</tr>
-<tr>
-<td><a href="images/person-over-active.png"><img width="95%" src="images/person-over-active.png"></a></td>
-<td><a href="images/person-under-active.png"><img width="95%" src="images/person-under-active.png"></a></td>
-</tr>
-</table>
-<h2>
-Step 4: Web Services
-</h2>
-With analytical understanding of the event classifier space and corresponding activity for specific classifiers by day of week and interval of day,
-a model can now be constructed to determine the average time of first activity in the AM.  That model is calculated on the server, based on the historical 
-event data and supplied to the device on demand through a Web service.
-The Web service is a HTTP address with parameters that invokes logic to to return a result, e.g. the average score for Person in a given interval of time.
-<p>
-Below are some examples of the <code>aah-stats</code> Web service:
-<ul>
-<li>
-Calculates / updates statistical model for device and classifier
-<a href="http://www.dcmartin.com/CGI/aah-stats.cgi?db=rough-fog&id=Adult"><code>aah-stats?db=rough-fog&id=Adult</code></a>
-<li>
-Calculates / updates statistical model for days of week or device and classifier
-<a href="http://www.dcmartin.com/CGI/aah-stats.cgi?db=rough-fog&id=Adult&day=all"><code>aah-stats?db=rough-fog&id=Adult&day=all</code></a>
-<li>
-Calculates / updates statistical model for intervals of day for device and classifier
-<a href="http://www.dcmartin.com/CGI/aah-stats.cgi?db=rough-fog&id=Adult&interval=all"><code>aah-stats?db=rough-fog&id=Adult&interval=all</code></a>
-<li>
-Calculate / update list of all classifiers for device (e.g. "db=rough-fog")
-<a href="http://www.dcmartin.com/CGI/aah-classifiers.cgi?db=rough-fog"><code>aah-classifiers</code></a> 
-</ul>
-The id= argument can be specified with any of the classifiers.  The day= and interval= arguments can be specified with &quot;all&quot; or a number for day (0-6) or interval (0-95).
-<p>
-<img width="75%" src="images/command-line.png">
-<p>
-This information is consumed by the RaspberryPi and utilized to compare current events with the historical population statistics.
-Local conditional testing is currently in-progress, utilizing the <code>motion</code> package capability for additional event processing.
-<h2>Examples</h2>
-Image captured using motion detection algorithm based on changes in pixel count (bounding box around centroid identifed).
-<p>
-<img width="50%" alt="High confidence example" src="images/hiconf.png">
-<br>
-<img width="50%" alt="Low confidence example" src="images/loconf.png">
-<h2>Equipment</h2>
-The necessary equipment for this project is relatively inexpensive:
-A RaspberryPi3 with 32 GB uSD card and Playstation3 Eye USB camera
-<p>
-<ul>
-<li>RaspberryPi3 ~ US$45.00
-<li>Enclosure, uSD card, power-supply ~ US$30
-<li>Playstation3 Eye camera ~ US$5 (WOW!)
-</ul>
-<b>TOTAL COST: ~ US$80!</b>  For comparison, a DropCam from Nest (aka Google) is ~ US$199.
-<p>
-<img width="25%" src="images/Rp3.png">
-<br>
-<img width="25%" src="images/Rpi3 case.png">
-<img width="25%" src="images/uSD-32bg.png">
-<br>
-<img width="25%" src="images/Rpi3 power.png">
-<img width="25%" src="images/ps3eyecamera.png">
-<p>
-<h2>Infrastructure</h2>
-We are making use of <a href="http://resin.io/">resin.io</a> to manage the build and deployment process to the Raspberry Pi devices.
-<p>
-The resin.io service provides a customizable base image with which to "flash" the uSD card for the RaspberryPi.  The image may be configured 
-with the SSID and password for the local WiFi network.
-<p>
-The "AgeAtHome" application we have defined provides a context in which devices participate.  Each device is assigned to one application.
-Once a device has been flashed and booted, it connects to the resin.io service and presents itself within the application context.
-<p>
-<img width="24%" src="images/resin-app.png">
-<p>
-Each device associated with the application can be inspected, including summary status and logs (e.g. stderr).
-<p>
-<img width="75%" src="images/resin-detail.png">
-<p>
-Including the ability to ssh(1) into a terminal for command line interface:
-<br>
-<img width="75%" src="images/terminal.png">
-<br>
-<i>Listing of motion detection volume data in file system</i>
 
-
-<h2>IBM IoTF Platform</h2>
-I added the IBM IoT Foundation <a href="https://developer.ibm.com/recipes/tutorials/raspberry-pi-4/">Quickstart for Raspberry Pi</a>
-to the environment and you can see a <a href="https://quickstart.internetofthings.ibmcloud.com/#/device/b827eb7bf9fb"> live stream </a>
-of instrumentation data.  The dashboard below is shown once a device is registered to a Bluemix account and affiliated with an organization (another level of indirection 
-off your Bluemix account).
+<h2>GitHub</h2>
 <p>
-<img width="33%" src="images/iotf-platform-dashboard.png">
-<br> <i>IBM IoTF Platform Dashboard</i>
-<p>
-Changes were made to both Dockerfile as well as initial script to enable IoTF/QS and sample C program only sends system status.  Will need to change
-the sample program to progres HTTP requests to send any JSON payloads (i.e. our events).
-<h3>
-IBM IOTF Real-time Insights
-</h3>
-The IBM IOTF Real-time Insights capabilities can be linked to the IOTF Platform 
-through a shared repository for the JSON events received by the platform; the JSON objects in that repository provide schemas for payload processing.
-The IOTF-RTI environment provides for rules to be specified in conjunction with JSON
-payload values using numeric comparison to static values, other payload values, and context parameters (n.b. unsure where or how these values are set).
-<p>
-<img width="33%" src="images/iotf-realtime-insights.png">
-<br><i>IBM IOTF Real-time Insights <i>rule</i> specification</i>
-<p>
-<img width="33%" src="images/iotf-realtime-insights-condition.png">
-<br><i>IBM IOTF Real-time Insights <i>rule</i> <b>condition</b> specification</i>
-<p>
-<img width="33%" src="images/iotf-realtime-insights-action.png">
-<br><i>IBM IOTF Real-time Insights <i>rule</i> <b>action</b> specification</i>
-<h2>
-System Detail
-</h2>
-<p>
-The following image is a more detailed diagram of the system operational components and process.
-<p>
-<a href="images/system-detail.png"><img src="images/system-detail.png" width="75%"></a>
-<p>
-GitHub repositories are publically accessible at:
+The project is openly available on GitHub in two repositories:
 <ul>
 <li><a href="https://github.com/dcmartin/AgeAtHome">RaspberryPi container for resin.io deployment</a>
 <li><a href="https://github.com/dcmartin/age-at-home">Bluemix CloudFoundry application</a>.
 </ul>
-SETUP (in-progress):
-<ol>
-<li><a href="http://www.dcmartin.com/CGI/appstore.cgi">Download</a> RaspberryPi image (Ethernet only; working on WiFi)
-<li>Use <a href="http://www.etcher.io/">Etcher</a> to copy image to SD card
-<li>Insert SD card in RaspberryPi & connect camera and power
-<li>Configure RaspberryPi using Web browser (port <a href="http://192.168.1.97:8080/">8080</a> ; image at port <a href="192.168.1.97:8081">8081</a>)
-<li>Send me an <a href="mailto:dcmartin@us.ibm.com">email</a> to setup server side; working on automation
-<li>View <i>your</i> Looker graphs on-line (in progress)
-<li>Setup conditionals for notification (in progress)
-</ol>
+
 <h2>More Information</h2>
 <h3>
 <a href="http://ibm.biz/ot-aging">IBM Outthink Aging</a>
@@ -674,7 +274,7 @@ economy.
 <li>
 <a href="http://www-03.ibm.com/press/us/en/pressrelease/51197.wss">IBM and Italian Healthcare Provider Sole Cooperativa to Study How Internet of Things Can Improve Senior Housing Facilities</a>
 <li>
-<a href="http://www-03.ibm.com/able/news/bolzano_video.html">IBM Human Centric Solutions Center is making a difference for Italian seniors aging at home in Bolzano</a>
+<a href="https://www.ibm.com/blogs/emerging-technology/projects/smarter-care-in-bolzano/">IBM Human Centric Solutions Center is making a difference for Italian seniors aging at home in Bolzano</a>
 </ul>
 <p>
 If you've read all the way to here and you still want more information, you can find me at the following places; or click on the little blue circle in the lower right of your web browser to talk to me directly:

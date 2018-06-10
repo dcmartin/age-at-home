@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html>
+<head>
+<link href="https://fonts.googleapis.com/css?family=Open+Sans" rel="stylesheet" type="text/css">
+<style>
+  body {
+    font-family: 'Open+Sans', sans;
+    font-size: 14px;
+  }
+</style>
+<title>Setup</title>
+</head>
+
+<!-- start Mixpanel -->
+<script type="text/javascript">(function(e,b){if(!b.__SV){var a,f,i,g;window.mixpanel=b;b._i=[];b.init=function(a,e,d){function f(b,h){var a=h.split(".");2==a.length&&(b=b[a[0]],h=a[1]);b[h]=function(){b.push([h].concat(Array.prototype.slice.call(arguments,0)))}}var c=b;"undefined"!==typeof d?c=b[d]=[]:d="mixpanel";c.people=c.people||[];c.toString=function(b){var a="mixpanel";"mixpanel"!==d&&(a+="."+d);b||(a+=" (stub)");return a};c.people.toString=function(){return c.toString(1)+".people (stub)"};i="disable time_event track track_pageview track_links track_forms register register_once alias unregister identify name_tag set_config people.set people.set_once people.increment people.append people.union people.track_charge people.clear_charges people.delete_user".split(" ");
+for(g=0;g<i.length;g++)f(c,i[g]);b._i.push([a,e,d])};b.__SV=1.2;a=e.createElement("script");a.type="text/javascript";a.async=!0;a.src="undefined"!==typeof MIXPANEL_CUSTOM_LIB_URL?MIXPANEL_CUSTOM_LIB_URL:"file:"===e.location.protocol&&"//cdn.mxpnl.com/libs/mixpanel-2-latest.min.js".match(/^\/\//)?"https://cdn.mxpnl.com/libs/mixpanel-2-latest.min.js":"//cdn.mxpnl.com/libs/mixpanel-2-latest.min.js";f=e.getElementsByTagName("script")[0];f.parentNode.insertBefore(a,f)}})(document,window.mixpanel||[]);
+mixpanel.init("8ce3a282a575094e41bbc4b4b0f4bf9e");
+mixpanel.track("setup");
+</script>
+<!-- end Mixpanel -->
+
+<body>
+<a href="/">
+<img width="10%" src="images/age-at-home.jpg">
+</a>
+
+<h1>
+Setup
+</h1>
+<p>
+The solution is patterned on a "do-it-yourself" (DIY) approach and utilizes inexpensive <a href="equipment.html">hardware</a>, open source software, and free services from the IBM Bluemix cloud.  The local device is comprised of a RaspberryPi computer and PlayStation3 Eye USB camera with four (4) internal microphones.  Total cost of hardware is under US$80 on-line.
+<br>
+<img width="75%" src="images/system-overview.png">
+<p>
+The experimental setup includes several installed devices monitoring areas of the home.
+The <a href="http://www.bluemix.net/">IBM Bluemix</a> cloud provides a suite of services for the application, including this Web site, which is a Node.js CloudFoundry application.
+The Bluemix environment enables this application context to apply to other services, 
+notably the IBM Watson <a href="http://www.ibm.com/smarterplanet/us/en/ibmwatson/developercloud/visual-recognition.html">image recognition services</a>.  
+In addition, the <a href="http://cloudant.com/">Cloudant</a> NoSQL repository stores the historical event and image recognition information.
+<p>
+Bluemix also provides the <a href="http://www.ibm.com/software/data/dashdb/">dashDB</a> hybrid relational data warehousing service.  
+This service automatically replicates from the Cloudant repository and provides an SQL interface for SELECT, PROJECT and JOIN.
+This SQL services can also be consumed by <a href="http://watson.analytics.ibmcloud.com">Watson Analytics</a> and other third-party software packages from IBM 
+and business partners (e.g. <a href="http://www.looker.com">Looker</a>).
+<p>
+Also on Bluemix, the IBM <a href="https://internetofthings.ibmcloud.com/">Internet of Things</a> platform and 
+associated <a href="https://iotrti-prod.mam.ibmserviceengage.com/">Real-Time Insights</a> provide device registration and system status monitoring for the RaspberryPi.
+General purpose conditionals can be applied for integration with email, <a href="http://www.ifttt.com">IFTTT</a>, Node.Red and arbitrary web-hook.
+<p>
+In addition, this site utilizes Mixpanel (www.mixpanel.com) to provide user tracking.
+
+<ol>
+<li><a href="http://www.dcmartin.com/CGI/appstore.cgi">Download</a> RaspberryPi image (Ethernet only; working on WiFi)
+<li>Use <a href="http://www.etcher.io/">Etcher</a> to copy image to SD card
+<li>Insert SD card in RaspberryPi & connect camera and power
+<li>Configure RaspberryPi using Web browser (port <a href="http://192.168.1.97:8080/">8080</a> ; image at port <a href="192.168.1.97:8081">8081</a>)
+<li>Send me an <a href="mailto:dcmartin@us.ibm.com">email</a> to setup server side; working on automation
+<li>View <i>your</i> Looker graphs on-line (in progress)
+<li>Setup conditionals for notification (in progress)
+</ol>
+
+</body>
+</html>

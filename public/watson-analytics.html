@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html>
+<head>
+<link href="https://fonts.googleapis.com/css?family=Open+Sans" rel="stylesheet" type="text/css">
+<style>
+  body {
+    font-family: 'Open+Sans', sans;
+    font-size: 14px;
+  }
+</style>
+<title>Watson Analytics</title>
+</head>
+
+<!-- start Mixpanel -->
+<script type="text/javascript">(function(e,b){if(!b.__SV){var a,f,i,g;window.mixpanel=b;b._i=[];b.init=function(a,e,d){function f(b,h){var a=h.split(".");2==a.length&&(b=b[a[0]],h=a[1]);b[h]=function(){b.push([h].concat(Array.prototype.slice.call(arguments,0)))}}var c=b;"undefined"!==typeof d?c=b[d]=[]:d="mixpanel";c.people=c.people||[];c.toString=function(b){var a="mixpanel";"mixpanel"!==d&&(a+="."+d);b||(a+=" (stub)");return a};c.people.toString=function(){return c.toString(1)+".people (stub)"};i="disable time_event track track_pageview track_links track_forms register register_once alias unregister identify name_tag set_config people.set people.set_once people.increment people.append people.union people.track_charge people.clear_charges people.delete_user".split(" ");
+for(g=0;g<i.length;g++)f(c,i[g]);b._i.push([a,e,d])};b.__SV=1.2;a=e.createElement("script");a.type="text/javascript";a.async=!0;a.src="undefined"!==typeof MIXPANEL_CUSTOM_LIB_URL?MIXPANEL_CUSTOM_LIB_URL:"file:"===e.location.protocol&&"//cdn.mxpnl.com/libs/mixpanel-2-latest.min.js".match(/^\/\//)?"https://cdn.mxpnl.com/libs/mixpanel-2-latest.min.js":"//cdn.mxpnl.com/libs/mixpanel-2-latest.min.js";f=e.getElementsByTagName("script")[0];f.parentNode.insertBefore(a,f)}})(document,window.mixpanel||[]);
+mixpanel.init("8ce3a282a575094e41bbc4b4b0f4bf9e");
+mixpanel.track("watson-analytics");
+</script>
+<!-- end Mixpanel -->
+
+<body>
+
+<a href="/">
+<img width="10%" src="images/age-at-home.jpg">
+</a>
+<h1>
+Watson Analytics
+</h1>
+<p>
+Data was processed from JSON in Cloudant into CSV files for each device.  Resulting data included listing of all classifiers by fifteen (15) minute interval per day.
+<ul>
+<li> <a href="data/rough-fog-all-intervals.csv">All classifiers by interval for rough-fog</a>
+<li> <a href="data/damp-cloud-all-intervals.csv">All classifiers by interval for damp-cloud</a>
+</ul>
+<p>
+These images are created using <a href="https://watson.analytics.ibmcloud.com/">Watson Analytics</a>.  It is simple to get a free account and load the CSV files.
+Import these CSV files into Watson Analytics, refine the data model and explore yields the following graphical displays of the classifier space.
+<p>
+<table width="100%">
+<tr valign="top">
+<td width="30%" align="center">
+<figure>
+    <a href="images/classifier-heatmap.png"><img width="95%" src="images/classifier-heatmap.png"></a>
+    <figcaption>Heatmap of classifiers</figcaption>
+</figure>
+</td>
+<td width="30%" align="center">
+<figure>
+    <a href="images/score-hour-classifier.png"><img width="95%" src="images/score-hour-classifier.png"></a>
+    <figcaption>Primary Classifiers</figcaption>
+</figure>
+</td>
+<td width="30%" align="center">
+<figure>
+    <a href="images/hour-classifier-relationship.png"><img width="95%" src="images/hour-classifier-relationship.png"></a>
+    <figcaption>Relationship between hour, day and classifier</figcaption>
+</figure>
+</td>
+</tr>
+</table>
+<p>
+The heatmap of classifiers as well as the primary classifiers across hour of day were both highly informative.  This insight lead the selection of the following classifiers 
+from the VisualInsights recognition algorithms for further investigation using Looker.
+
+</body>
+</html>
