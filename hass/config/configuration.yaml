@@ -204,6 +204,11 @@ binary_sensor ageathome_learning_template:
           - input_boolean.ageathome_notify_gate
         value_template: >
           {{ is_state('input_boolean.ageathome_notify_gate','on') }}
+      ageathome_notify_poolhouse:
+        entity_id: 
+          - input_boolean.ageathome_notify_poolhouse
+        value_template: >
+          {{ is_state('input_boolean.ageathome_notify_poolhouse','on') }}
 
 ###
 ### PANEL_IFRAME (tabs in HTTP web interface; see "frontend")
@@ -431,6 +436,9 @@ sensor aah_state_template:
       aah_family:
         value_template: >
           {{ ('martin',)|list }}
+      aah_defined_locations:
+        value_template: >
+          {{ ('kitchen','bathroom','frontdoor','road','gate','poolhouse')|list }}
       aah_people:
         value_template: >
           {{ ('david','keli','hali','ian','riley','ellen')|list }}
@@ -461,13 +469,13 @@ sensor aah_state_template:
               "{{state.entity_id.replace('camera.','')}}",
             {%- endif -%}
           {%- endfor -%}null]
-      devices_aah:
+      aah_devices:
         entity_id: states.device_tracker
         value_template: >
           {%- for state in states.device_tracker -%}
             {%- if loop.first -%} [ {%- endif -%}
             {%- if state.attributes.friendly_name.startswith('ageathome_') -%}
-              {"device":"{{state.entity_id.replace('device_tracker.','')}}","location":"{{state.attributes.friendly_name.replace('ageathome_','')}}"},
+              {"dev":"{{state.entity_id.replace('device_tracker.','')}}","loc":"{{state.attributes.friendly_name.replace('ageathome_','')}}"},
             {%- endif -%}
           {%- endfor -%}null]
       aah_icloud:
@@ -479,6 +487,10 @@ sensor aah_state_template:
               {"device":"{{state.entity_id.replace('device_tracker.','')}}","name":"{{state.attributes.friendly_name}}"},
             {%- endif -%}
           {%- endfor -%}null]
+
+sensor aah_entity_picture_template:
+  - platform: template
+    sensors:
       kitchen_camera_entity_picture:
         # entity_id: camera.kitchen_image_annotated
         value_template: '{{ states.camera.kitchen_image_annotated.attributes.entity_picture }}'
@@ -494,6 +506,9 @@ sensor aah_state_template:
       camera_gate_entity_picture:
         # entity_id: camera.gate_image_annotated
         value_template: '{{ states.camera.gate_image_annotated.attributes.entity_picture }}'
+      camera_poolhouse_entity_picture:
+        # entity_id: camera.poolhouse_image_annotated
+        value_template: '{{ states.camera.poolhouse_image_annotated.attributes.entity_picture }}'
 
 ###
 ### SONOS
@@ -1907,6 +1922,14 @@ camera agedbush:
     username: !secret wcv80n_username
     password: !secret wcv80n_password
 
+camera livelypaper:   
+  - platform: mjpeg
+    name: ageathome_poolhouse
+    mjpeg_url: http://192.168.1.39:8081/
+    authentication: basic
+    username: !secret wcv80n_username
+    password: !secret wcv80n_password
+
 ##
 ## STATUS CATCHERS
 ##
@@ -2006,20 +2029,15 @@ camera error_image:
 ## WRONG
 ##
 
-sensor aah_wrong_guesses:
+sensor aah_wrong_classes:
   - platform: mqtt
-    name: aah_wrong_guesses
+    name: aah_wrong_classes
     state_topic: 'wrong/+/+'
-    # {% set value_json = {"type":"not_home","triggered":0,"device":"quiet-water","location":"road","date":1523381284,"class":"alabaster_color","model":"default","score":0.9,"id":"20180410102756-15-00","box":"64x64+306+208","size":4096,"scores":[{"classifier_id":"bug_on_lens","name":"quietwater_1275055516","score":0.40912},{"classifier_id":"builder","name":"quietwater_1275055516","score":0.382188},{"classifier_id":"car","name":"quietwater_1275055516","score":0.0498827},{"classifier_id":"fletcher_fordflex","name":"quietwater_1275055516","score":0.639281},{"classifier_id":"martin_c70","name":"quietwater_1275055516","score":0.29407},{"classifier_id":"motorcycle","name":"quietwater_1275055516","score":0.312586},{"classifier_id":"Storm","name":"/nature/Storm","score":0.709},{"classifier_id":"nature","name":"default","score":0.857},{"classifier_id":"hillside","name":"/nature/slope/hillside","score":0.552},{"classifier_id":"slope","name":"default","score":0.565},{"classifier_id":"Wildfire","name":"default","score":0.5},{"classifier_id":"natural elevation","name":"default","score":0.783},{"classifier_id":"tree","name":"default","score":0.788},{"classifier_id":"alabaster color","name":"default","score":0.9},{"classifier_id":"steel blue color","name":"default","score":0.786}]} %}
     value_template: >
       {% if value_json is defined %}
-        {"id":"{{value_json.id}}","location":"{{value_json.location}}","count":{{value_json.scores|length}},"guesses":[
-        {%- set scores = value_json.scores|sort(attribute="score") -%}
-        {%- for score in scores -%}
-           {%- if not loop.last -%} "{{ score.classifier_id }}", {%- else -%} "{{ score.classifier_id }}" {%- endif -%}
-        {%- endfor -%}]}
+        {% set str = value_json.classes|replace("'","")|replace("[","")|replace("]","") %} {{ str.split(", ") }}
       {% else %}
-        'unknown'
+        {{ null | list }}
       {% endif %}
 
 sensor aah_wrong_device:
@@ -2413,7 +2431,7 @@ camera road_image_animated:
     topic: 'image-animated/road'
 
 ##
-## INTERIOR GATE
+## gate
 ##
 
 sensor gate_last:
@@ -2486,6 +2504,79 @@ camera gate_image_animated:
     topic: 'image-animated/gate'
 
 ##
+## poolhouse
+##
+
+sensor poolhouse_last:
+  - platform: mqtt
+    name: poolhouse_last
+    state_topic: 'presence/poolhouse/#'
+    value_template: '{% if value_json is defined %} {{ value_json.class }} {% else %} "nothing" {% endif %}'
+
+sensor poolhouse_what:
+  - platform: mqtt
+    name: poolhouse_what
+    expire_after: 30
+    state_topic: 'presence/poolhouse/#'
+    value_template: '{% if value_json is defined %} {{ value_json.class }} {% else %} "nothing" {% endif %}'
+
+sensor poolhouse_who:
+  - platform: mqtt
+    name: poolhouse_who
+    state_topic: 'presence/poolhouse/#'
+    value_template: '{% if value_json is defined %} {{ value_json.model }} {% else %} "nobody" {% endif %}'
+
+sensor poolhouse_why:
+  - platform: mqtt
+    name: poolhouse_why
+    state_topic: 'presence/poolhouse/#'
+    value_template: '{% if value_json is defined %} {{ value_json.score }} {% else %} 0.0 {% endif %}'
+
+sensor poolhouse_date:
+  - platform: mqtt
+    name: poolhouse_date
+    state_topic: 'presence/poolhouse/#'
+    value_template: '{% if value_json is defined %} {{ value_json.date|int }} {% else %} -1 {% endif %}'
+
+sensor poolhouse_size:
+  - platform: mqtt
+    name: poolhouse_size
+    state_topic: 'presence/poolhouse/#'
+    value_template: '{% if value_json is defined %} {{ value_json.size|int }} {% else %} -1 {% endif %}'
+
+# CAMERA (JPEG)
+
+camera poolhouse_image:
+  - platform: mqtt
+    name: poolhouse_image
+    topic: 'image/poolhouse/+'
+
+camera poolhouse_image_classified:
+  - platform: mqtt
+    name: poolhouse_image_classified
+    topic: 'image-classified/poolhouse/+'
+
+camera poolhouse_image_annotated:
+  - platform: mqtt
+    name: poolhouse_image_annotated
+    topic: 'image-annotated/poolhouse'
+
+camera poolhouse_image_cropped:
+  - platform: mqtt
+    name: poolhouse_image_cropped
+    topic: 'image-cropped/poolhouse'
+
+camera poolhouse_image_composite:
+  - platform: mqtt
+    name: poolhouse_image_composite
+    topic: 'image-composite/poolhouse'
+
+camera poolhouse_image_animated:
+  - platform: mqtt
+    name: poolhouse_image_animated
+    topic: 'image-animated/poolhouse'
+
+##
 ## DETERMINISTIC INDICATOR OF CLASSIFIER FAILURE (100%)
 ##
 
@@ -2532,6 +2623,11 @@ binary_sensor classifier_wrong:
         - sensor.gate_what
       value_template: >
         {{ is_state('binary_sensor.home_david','on') and is_state('sensor.gate_what','martin_c70') }}
+    poolhouse_wrong:
+      entity_id:
+        - sensor.poolhouse_what
+      value_template: >
+        {{ is_state('binary_sensor.kitchen_david','on') and is_state('sensor.poolhouse_what','david') }}
 
 
 ##
@@ -2654,11 +2750,19 @@ sensor motion_sensors:
       unit_of_measurement: seconds
       value_template: '{{ (now().timestamp()|int) - (states.sensor.gate_date.state|int) }}'
       icon_template: '{%- if (states.sensor.gate_ago.state|int) > 300 -%} mdi:timer-off {%- else -%} mdi:timer {%- endif -%}'
+    poolhouse_ago:
+      entity_id: 
+        - sensor.poolhouse_date
+        - sun.sun
+      unit_of_measurement: seconds
+      value_template: '{{ (now().timestamp()|int) - (states.sensor.poolhouse_date.state|int) }}'
+      icon_template: '{%- if (states.sensor.poolhouse_ago.state|int) > 300 -%} mdi:timer-off {%- else -%} mdi:timer {%- endif -%}'
     interior_ago:
       entity_id:
         - sensor.kitchen_ago
         - sensor.bathroom_ago
         - sensor.frontdoor_ago
+        - sensor.poolhouse_ago
       unit_of_measurement: seconds
       value_template: >
         {{ ( states('sensor.kitchen_ago')|int, states('sensor.bathroom_ago')|int, states('sensor.frontdoor_ago')|int ) | list | min }}
@@ -2689,6 +2793,10 @@ sensor motion_sensors:
       entity_id: sensor.gate_date
       value_template: '{{ (states.sensor.gate_date.state|int) | timestamp_custom("%a %b %d @ %I:%M %p") }}'
       icon_template: '{%- if ((states.sensor.gate_date.state|int) | timestamp_custom("%p")) == "PM" -%} mdi:weather-night {%- else -%} mdi:weather-sunny {%- endif -%}'
+    poolhouse_when:
+      entity_id: sensor.poolhouse_date
+      value_template: '{{ (states.sensor.poolhouse_date.state|int) | timestamp_custom("%a %b %d @ %I:%M %p") }}'
+      icon_template: '{%- if ((states.sensor.poolhouse_date.state|int) | timestamp_custom("%p")) == "PM" -%} mdi:weather-night {%- else -%} mdi:weather-sunny {%- endif -%}'
 
 ##
 ## FAMILY
@@ -3685,15 +3793,17 @@ sensor interior_entity:
         - sensor.bathroom_last
         - sensor.kitchen_last
         - sensor.frontdoor_last
+        - sensor.poolhouse_last
       value_template: >
-        {{ states('sensor.bathroom_last'),states('sensor.kitchen_last'),states('sensor.frontdoor_last') }}
+        {{ states('sensor.bathroom_last'),states('sensor.kitchen_last'),states('sensor.frontdoor_last'),states('sensor.poolhouse_last') }}
     interior_what:
       entity_id:
         - sensor.bathroom_what
         - sensor.kitchen_what
         - sensor.frontdoor_what
+        - sensor.poolhouse_what
       value_template: >
-        {{ states('sensor.bathroom_what'),states('sensor.kitchen_what'),states('sensor.frontdoor_what') }}
+        {{ states('sensor.bathroom_what'),states('sensor.kitchen_what'),states('sensor.frontdoor_what'),states('sensor.poolhouse_what') }}
     exterior_last:
       entity_id:
         - sensor.road_last
@@ -3745,14 +3855,21 @@ binary_sensor aah_motion_template:
       device_class: motion
       value_template: >
         {{  states('sensor.gate_ago')|int < 30 }}
+    poolhouse_motion:
+      entity_id: 
+        - sensor.poolhouse_ago
+      device_class: motion
+      value_template: >
+        {{  states('sensor.poolhouse_ago')|int < 30 }}
     interior_motion:
       device_class: motion
       entity_id:
         - binary_sensor.kitchen_motion
         - binary_sensor.bathroom_motion
         - binary_sensor.frontdoor_motion
+        - binary_sensor.poolhouse_motion
       value_template: >
-        {{ is_state('binary_sensor.kitchen_motion','on') or is_state('binary_sensor.bathroom_motion','on') or is_state('binary_sensor.frontdoor_motion','on') }}
+        {{ is_state('binary_sensor.kitchen_motion','on') or is_state('binary_sensor.bathroom_motion','on') or is_state('binary_sensor.frontdoor_motion','on') or is_state('binary_sensor.poolhouse_motion','on') }}
     exterior_motion:
       device_class: motion
       entity_id: 
@@ -3830,6 +3947,15 @@ sensor gate_motion_count:
     start: '{{ now().replace(hour=0).replace(minute=0).replace(second=0) }}'
     end: '{{ now() }}'
 
+sensor poolhouse_motion_count:
+  - platform: history_stats
+    name: poolhouse_motion_count
+    entity_id: binary_sensor.poolhouse_motion
+    state: 'on'
+    type: count
+    start: '{{ now().replace(hour=0).replace(minute=0).replace(second=0) }}'
+    end: '{{ now() }}'
+
 # TIME
 
 sensor kitchen_motion_time:
@@ -3877,6 +4003,16 @@ sensor gate_motion_time:
     icon: mdi:timer
     name: gate_motion_time
     entity_id: binary_sensor.gate_motion
+    state: 'on'
+    type: time
+    start: '{{ now().replace(hour=0).replace(minute=0).replace(second=0) }}'
+    end: '{{ now() }}'
+
+sensor poolhouse_motion_time:
+  - platform: history_stats
+    icon: mdi:timer
+    name: poolhouse_motion_time
+    entity_id: binary_sensor.poolhouse_motion
     state: 'on'
     type: time
     start: '{{ now().replace(hour=0).replace(minute=0).replace(second=0) }}'
@@ -4286,6 +4422,13 @@ binary_sensor device_template:
         {{ states.device_tracker.ageathome_gate is defined and
            states.device_tracker.ageathome_gate.state is defined and
            states.device_tracker.ageathome_gate.state == 'home' }}
+    poolhouse_online:
+      entity_id:
+        - device_tracker.ageathome_poolhouse
+      value_template: >
+        {{ states.device_tracker.ageathome_poolhouse is defined and
+           states.device_tracker.ageathome_poolhouse.state is defined and
+           states.device_tracker.ageathome_poolhouse.state == 'home' }}
 
 
 ## determine if aah_discovery & aah_config are defined (url, ..)
@@ -4488,6 +4631,33 @@ history_graph:
     name: Gate Accuracy
     entities:
       - sensor.gate_accuracy_ratio
+    hours_to_show: 24
+    refresh: 60
+  poolhouse_time:
+    name: Poolhouse Time
+    entities:
+      - sensor.poolhouse_martin_time
+      - sensor.poolhouse_other_time
+    hours_to_show: 24
+    refresh: 60
+  poolhouse_ratio:
+    name: Poolhouse Ratio
+    entities:
+      - sensor.poolhouse_martin_ratio
+      - sensor.poolhouse_other_ratio
+    hours_to_show: 24
+    refresh: 60
+  poolhouse_count:
+    name: Poolhouse Count
+    entities:
+      - sensor.poolhouse_martin_count
+      - sensor.poolhouse_other_count
+    hours_to_show: 24
+    refresh: 60
+  poolhouse_accuracy:
+    name: Poolhouse Accuracy
+    entities:
+      - sensor.poolhouse_accuracy_ratio
     hours_to_show: 24
     refresh: 60
 

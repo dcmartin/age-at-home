@@ -530,9 +530,9 @@ wcv80n_poolhouse_fridge:
   vendor: Cisco-Linksys, LLC
 
 # 192.168.1.166 00:22:6B:F2:5F:AF (Cisco-Linksys)
-wcv80n_interior_gate:
+wcv80n_fireplace:
   mac: 00:22:6B:F2:5F:AF
-  name: wcv80n_interior_gate
+  name: wcv80n_firelace
   icon: mdi:webcam
   picture: http://www.linksys.com/images/productmt/834045/372.jpg
   track: true
