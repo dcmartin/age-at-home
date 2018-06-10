@@ -1,11 +1,30 @@
-#!/bin/csh -fb
+#!/bin/tcsh -b
 setenv APP "aah"
 setenv API "label"
-setenv LAN "192.168.1"
-setenv WWW "$LAN".32
-setenv DIGITS "$LAN".30
-setenv WAN "www.dcmartin.com"
-setenv TMP "/var/lib/age-at-home"
+
+# debug on/off
+setenv DEBUG true
+setenv VERBOSE true
+
+# environment
+if ($?LAN == 0) setenv LAN "192.168.1"
+if ($?DIGITS == 0) setenv DIGITS "$LAN".30
+if ($?TMP == 0) setenv TMP "/var/lib/age-at-home"
+if ($?CREDENTIALS == 0) setenv CREDENTIALS /usr/local/etc
+if ($?LOGTO == 0) setenv LOGTO /dev/stderr
+
+###
+### dateutils REQUIRED
+###
+
+if ( -e /usr/bin/dateutils.dconv ) then
+   set dateconv = /usr/bin/dateutils.dconv
+else if ( -e /usr/local/bin/dateconv ) then
+   set dateconv = /usr/local/bin/dateconv
+else
+  echo "No date converter; install dateutils" >& /dev/stderr
+  exit 1
+endif
 
 # don't update statistics more than once per (in seconds)
 set TTL = 15
@@ -14,7 +33,7 @@ set DATE = `/bin/echo $SECONDS \/ $TTL \* $TTL | bc`
  
 setenv DEBUG true
 
-/bin/echo `date` "$0 $$ -- START ($QUERY_STRING) from $HTTP_REFERER" >>! $TMP/LOG
+/bin/echo `date` "$0 $$ -- START ($QUERY_STRING) from $HTTP_REFERER" >>! $LOGTO
 
 if ($?QUERY_STRING) then
     set db = `/bin/echo "$QUERY_STRING" | sed 's/.*db=\([^&]*\).*/\1/'`
@@ -50,11 +69,11 @@ if ($?QUERY_STRING) then
     set slave = `/bin/echo "$QUERY_STRING" | sed 's/.*slave=\([^&]*\).*/\1/'`
     if ($slave == "$QUERY_STRING") unset slave
 else
-    /bin/echo `date` "$0 $$ -- no QUERY_STRING" >>! $TMP/LOG
+    /bin/echo `date` "$0 $$ -- no QUERY_STRING" >>! $LOGTO
     goto done
 endif
 
-if ($?DEBUG) /bin/echo `date` "$0 $$ -- $QUERY_STRING" >>! $TMP/LOG
+if ($?DEBUG) /bin/echo `date` "$0 $$ -- $QUERY_STRING" >>! $LOGTO
 
 #
 # handle skipping an image
@@ -70,13 +89,13 @@ if ($?db && $?class && $?old && $?skip) then
 	if (-s "$jpg:r.jpeg") rm -f "$jpg:r.jpeg"
 	# destination is "label/<device>/.skipped"
 	set dest = "$dest/$jpg:t"
-	mv -n "$jpg" "$dest" >>& $TMP/LOG
+	mv -n "$jpg" "$dest" >>& $LOGTO
 	if (-s "$dest" && ! -e "$jpg") then
-	    if ($?DEBUG) /bin/echo `date` "$0 $$ -- moved $jpg -> $dest" >>! $TMP/LOG
+	    if ($?DEBUG) /bin/echo `date` "$0 $$ -- moved $jpg -> $dest" >>! $LOGTO
 	    ln -s "$dest" "$jpg"
 	    set OUTPUT = '{"result":"success","image":"'"$jpg"'","skip":"'"$skip"'"}'
 	else if (-e "$jpg") then
-	    ls -al "$jpg" >>! $TMP/LOG
+	    ls -al "$jpg" >>! $LOGTO
 	    rm -f "$jpg"
 	    if (! -e "$jpg") then
 		ln -s "$dest" "$jpg"
@@ -84,12 +103,12 @@ if ($?db && $?class && $?old && $?skip) then
 	    if (-e "$jpg" && -e "$dest") then
 		set OUTPUT = '{"result":"success","image":"'"$jpg"'","skip":"'"$skip"'"}'
 	    else
-		if ($?DEBUG) /bin/echo `date` "$0 $$ -- FAIL to move $jpg -> $dest" >>! $TMP/LOG
+		if ($?DEBUG) /bin/echo `date` "$0 $$ -- FAIL to move $jpg -> $dest" >>! $LOGTO
 		set OUTPUT = '{"result":"fail-move","image":"'"$jpg"'","skip":"'"$skip"'"}'
 	    endif
 	endif
     else
-	if ($?DEBUG) /bin/echo `date` "$0 $$ -- FAIL to move $jpg -> $dest" >>! $TMP/LOG
+	if ($?DEBUG) /bin/echo `date` "$0 $$ -- FAIL to move $jpg -> $dest" >>! $LOGTO
 	set OUTPUT = '{"result":"fail no image","image":"'"$jpg"'","skip":"'"$skip"'"}'
     endif
     # all done
@@ -108,38 +127,38 @@ if ($?db && $?class && $?image && $?old && ($?new || $?add)) then
     set link = "$TMP/$API/$db/$new/$image"
 
     if (! -d "$TMP/$API/$db/$new") then
-        if ($?DEBUG) /bin/echo `date` "$0 $$ -- making directory $TMP/$API/$db/$new" >>! $TMP/LOG
+        if ($?DEBUG) /bin/echo `date` "$0 $$ -- making directory $TMP/$API/$db/$new" >>! $LOGTO
 	mkdir -p "$TMP/$API/$db/$new"
     endif
 
     if (-s "$jpg") then
-	if ($?DEBUG) /bin/echo `date` "$0 $$ -- old image exists ($jpg)" `ls -l "$jpg"` >>! $TMP/LOG
+	if ($?DEBUG) /bin/echo `date` "$0 $$ -- old image exists ($jpg)" `ls -l "$jpg"` >>! $LOGTO
 	if (-e "$link") then
-	    if ($?DEBUG) /bin/echo `date` "$0 $$ -- labeled image exists ($link)" `ls -l "$link"` >>! $TMP/LOG
+	    if ($?DEBUG) /bin/echo `date` "$0 $$ -- labeled image exists ($link)" `ls -l "$link"` >>! $LOGTO
 	    set OUTPUT = '{"result":"fail-exists","image":"'"$old/$image"'","link":"'"$new/$image"'"}'
 	else 
-	    if ($?DEBUG) /bin/echo `date` "$0 $$ -- moving and linking $jpg -> $link" >>! $TMP/LOG
-	    mv -n "$jpg" "$link" >>& $TMP/LOG
-	    mv -n "$jpg:r.jpeg" "$link:r.jpeg" >>& $TMP/LOG
+	    if ($?DEBUG) /bin/echo `date` "$0 $$ -- moving and linking $jpg -> $link" >>! $LOGTO
+	    mv -n "$jpg" "$link" >>& $LOGTO
+	    mv -n "$jpg:r.jpeg" "$link:r.jpeg" >>& $LOGTO
 	    if (-s "$link") then
-		if ($?DEBUG) /bin/echo `date` "$0 $$ -- move succeeded" `ls -l "$link"` >>! $TMP/LOG
-		ln -s "$link" "$jpg" >>& $TMP/LOG
+		if ($?DEBUG) /bin/echo `date` "$0 $$ -- move succeeded" `ls -l "$link"` >>! $LOGTO
+		ln -s "$link" "$jpg" >>& $LOGTO
 		ln -s "$link:r.jpeg" "$jpg:r.jpeg"
 	    endif
 	    if (-e "$jpg") then
-		if ($?DEBUG) /bin/echo `date` "$0 $$ -- link succeeded" `ls -al "$jpg"` >>! $TMP/LOG
+		if ($?DEBUG) /bin/echo `date` "$0 $$ -- link succeeded" `ls -al "$jpg"` >>! $LOGTO
 		set OUTPUT = '{"result":"success","image":"'"$old/$image"'","link":"'"$new/$image"'"}'
 	    else
-		if ($?DEBUG) /bin/echo `date` "$0 $$ -- link failed ($link)" >>! $TMP/LOG
+		if ($?DEBUG) /bin/echo `date` "$0 $$ -- link failed ($link)" >>! $LOGTO
 		set OUTPUT = '{"result":"fail-link","image":"'"$old/$image"'","link":"'"$new/$image"'"}'
 	    endif
 	endif
     else
-	if ($?DEBUG) /bin/echo `date` "$0 $$ -- DNE or zero ($jpg)" >>! $TMP/LOG
+	if ($?DEBUG) /bin/echo `date` "$0 $$ -- DNE or zero ($jpg)" >>! $LOGTO
 	set OUTPUT = '{"result":"fail-invalid","image":"'"$old/$image"'","link":"'"$new/$image"'"}'
     endif
 else
-    if ($?DEBUG) /bin/echo `date` "$0 $$ -- insufficient arguments" >>! $TMP/LOG
+    if ($?DEBUG) /bin/echo `date` "$0 $$ -- insufficient arguments" >>! $LOGTO
     set OUTPUT = '{"result":"badargs"}'
 endif
 
@@ -150,7 +169,7 @@ output:
 #
 /bin/echo "Content-Type: application/json; charset=utf-8"
 /bin/echo "Cache-Control: no-cache"
-/bin/echo "Last-Modified:" `date -r $DATE '+%a, %d %b %Y %H:%M:%S %Z'`
+/bin/echo "Last-Modified:" `$dateconv -i '%s' -f '%a, %d %b %Y %H:%M:%S %Z' $DATE`
 
 # test parameters
 if ($?HTTP_REFERER && $?db) then
@@ -174,7 +193,7 @@ if ($?HTTP_REFERER && $?db) then
     /bin/echo "Location: $referer"
     unset noglob
 else
-    if ($?DEBUG) /bin/echo `date` "$0 $$ -- no HTTP_REFERER" >>! $TMP/LOG
+    if ($?DEBUG) /bin/echo `date` "$0 $$ -- no HTTP_REFERER" >>! $LOGTO
 endif
 
 /bin/echo ""
@@ -183,4 +202,4 @@ endif
 
 done:
 
-/bin/echo `date` "$0 $$ -- FINISH" >>! $TMP/LOG
+/bin/echo `date` "$0 $$ -- FINISH" >>! $LOGTO

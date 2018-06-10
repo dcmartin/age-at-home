@@ -1,17 +1,36 @@
-#!/bin/csh -fb
+#!/bin/tcsh -b
 setenv APP "aah"
 setenv API "cfmatrix"
 
 # setenv DEBUG true
+# setenv VERBOSE true
 
+# environment
+if ($?LAN == 0) setenv LAN "192.168.1"
+if ($?DIGITS == 0) setenv DIGITS "$LAN".30
 if ($?TMP == 0) setenv TMP "/var/lib/age-at-home"
+if ($?CREDENTIALS == 0) setenv CREDENTIALS /usr/local/etc
+if ($?LOGTO == 0) setenv LOGTO /dev/stderr
 
 # don't update statistics more than once per 15 minutes
 set TTL = `/bin/echo "30 * 1" | bc`
 set SECONDS = `date "+%s"`
 set DATE = `/bin/echo $SECONDS \/ $TTL \* $TTL | bc`
 
-/bin/echo `date` "$0 $$ -- START" >>& "$TMP/LOG"
+###
+### dateutils REQUIRED
+###
+
+if ( -e /usr/bin/dateutils.dconv ) then
+   set dateconv = /usr/bin/dateutils.dconv
+else if ( -e /usr/local/bin/dateconv ) then
+   set dateconv = /usr/local/bin/dateconv
+else
+  echo "No date converter; install dateutils" >& /dev/stderr
+  exit 1
+endif
+
+/bin/echo `date` "$0:t $$ -- START" >>& "$LOGTO"
 
 if ($?QUERY_STRING) then
     set db = `/bin/echo "$QUERY_STRING" | sed 's/.*db=\([^&]*\).*/\1/'`
@@ -31,32 +50,37 @@ else if ($?db) then
     setenv QUERY_STRING "db=$db"
 endif
 
-if (-s ~$USER/.cloudant_url) then
-    set cc = ( `cat ~$USER/.cloudant_url` )
-    if ($#cc > 0) set CU = $cc[1]
-    if ($#cc > 1) set CN = $cc[2]
-endif
-
+##
+## ACCESS CLOUDANT
+##
 if ($?CLOUDANT_URL) then
-    setenv CU $CLOUDANT_URL
-else if ($?CN) then
-    set CU = "$CN.cloudant.com"
+  set CU = $CLOUDANT_URL
+else if (-s $CREDENTIALS/.cloudant_url) then
+  set cc = ( `cat $CREDENTIALS/.cloudant_url` )
+  if ($#cc > 0) set CU = $cc[1]
+  if ($#cc > 1) set CN = $cc[2]
+  if ($#cc > 2) set CP = $cc[3]
+  if ($?CP && $?CN && $?CU) then
+    set CU = 'https://'"$CN"':'"$CP"'@'"$CU"
+  else if ($?CU) then
+    set CU = "https://$CU"
+  endif
 else
-    /bin/echo `date` "$0 $$ -- no Cloudant URL" >>& $TMP/LOG
-    goto done
+  /bin/echo `date` "$0:t $$ -- FAILURE: no Cloudant credentials" >>& $LOGTO
+  goto done
 endif
 
-set creds = ~$USER/.watson.visual-recognition.json
+set creds = $CREDENTIALS/.watson.visual-recognition.json
 if (-s $creds) then
-    set api_key = ( `/usr/local/bin/jq -r '.[0]|.credentials.api_key' "$creds"` )
-    if ($?DEBUG) /bin/echo `date` "$0 $$ -- USING APIKEY $api_key" >>& "$TMP/LOG"
-    set url = ( `/usr/local/bin/jq -r '.[0]|.credentials.url' "$creds"` )
-    if ($?DEBUG) /bin/echo `date` "$0 $$ -- USING URL $url" >>& "$TMP/LOG"
+    set api_key = ( `jq -r '.[0]|.credentials.api_key' "$creds"` )
+    if ($?DEBUG) /bin/echo `date` "$0:t $$ -- USING APIKEY $api_key" >>& "$LOGTO"
+    set url = ( `jq -r '.[0]|.credentials.url' "$creds"` )
+    if ($?DEBUG) /bin/echo `date` "$0:t $$ -- USING URL $url" >>& "$LOGTO"
     # set base
     set TU = $url
-    /bin/echo `date` "$0 $$ -- CREDENTIALS ($creds); $TU" >>& "$TMP/LOG"
+    /bin/echo `date` "$0:t $$ -- CREDENTIALS ($creds); $TU" >>& "$LOGTO"
 else if ($?TU == 0) then
-    /bin/echo `date` "$0 $$ -- NO CREDENTIALS ($creds); create file and copy credentials from visual-recognition service on bluemix.net" >>& "$TMP/LOG"
+    /bin/echo `date` "$0:t $$ -- NO CREDENTIALS ($creds); create file and copy credentials from visual-recognition service on bluemix.net" >>& "$LOGTO"
     goto done
 endif
 
@@ -71,21 +95,21 @@ if (! -s "$CLASSIFIERS") then
 endif
 
 if (-s "$CLASSIFIERS") then
-    set tmp = ( `cat "$CLASSIFIERS" | /usr/local/bin/jq '.'` )
+    set tmp = ( `cat "$CLASSIFIERS" | jq '.'` )
 
     if ($?db == 0 && $?model == 0) then
-	set classifiers = ( `/bin/echo "$tmp" | /usr/local/bin/jq -r '.classifiers[]|select(.status=="ready").classifier_id'` )
+	set classifiers = ( `/bin/echo "$tmp" | jq -r '.classifiers[]|select(.status=="ready").classifier_id'` )
     else if ($?model) then
-	set classifiers = ( `/bin/echo "$tmp" | /usr/local/bin/jq -r '.classifiers[]|select(.classifier_id=="'"$model"'")|select(.status=="ready").classifier_id'` )
+	set classifiers = ( `/bin/echo "$tmp" | jq -r '.classifiers[]|select(.classifier_id=="'"$model"'")|select(.status=="ready").classifier_id'` )
     else  if ($?db) then
-	set classifiers = ( `/bin/echo "$tmp" | /usr/local/bin/jq -r '.classifiers[]|select(.name=="'"$db"'")|select(.status=="ready").classifier_id'` )
+	set classifiers = ( `/bin/echo "$tmp" | jq -r '.classifiers[]|select(.name=="'"$db"'")|select(.status=="ready").classifier_id'` )
     endif
 else
   set classifiers = ()
 endif
 
 if ($#classifiers == 0) then
-  if ($?DEBUG) /bin/echo `date` "$0 $$ -- NO CLASSIFIERS FOUND ($TU/$verid,$vdate)" >>& "$TMP/LOG"
+  if ($?DEBUG) /bin/echo `date` "$0:t $$ -- NO CLASSIFIERS FOUND ($TU/$verid,$vdate)" >>& "$LOGTO"
   /bin/echo "Content-Type: application/json; charset=utf-8"
   /bin/echo "Access-Control-Allow-Origin: *"
   /bin/echo "Cache-Control: no-cache"
@@ -99,17 +123,17 @@ else if ($?model) then
     set AGE = `/bin/echo "$SECONDS - $DATE" | bc`
     /bin/echo "Age: $AGE"
     /bin/echo "Cache-Control: max-age=$TTL"
-    /bin/echo "Last-Modified:" `date -r $DATE '+%a, %d %b %Y %H:%M:%S %Z'`
+    /bin/echo "Last-Modified:" `$dateconv -i '%s' -f '%a, %d %b %Y %H:%M:%S %Z' $DATE`
     /bin/echo ""
     cat "$OUTPUT"
   else
     # return redirect
     set URL = "https://$CU/$db-$API/$model?include_docs=true"
-    /bin/echo `date` "$0 $$ -- returning redirect ($URL)" >>! $TMP/LOG
+    /bin/echo `date` "$0:t $$ -- returning redirect ($URL)" >>! $LOGTO
     set AGE = `/bin/echo "$SECONDS - $DATE" | bc`
     /bin/echo "Age: $AGE"
     /bin/echo "Cache-Control: max-age=$TTL"
-    /bin/echo "Last-Modified:" `date -r $DATE '+%a, %d %b %Y %H:%M:%S %Z'`
+    /bin/echo "Last-Modified:" `$dateconv -i '%s' -f '%a, %d %b %Y %H:%M:%S %Z' $DATE`
     /bin/echo "Status: 302 Found"
     /bin/echo "Location: $URL"
     /bin/echo ""
@@ -134,4 +158,4 @@ endif
 
 done:
 
-/bin/echo `date` "$0 $$ -- FINISH" >>& $TMP/LOG
+/bin/echo `date` "$0:t $$ -- FINISH" >>& $LOGTO

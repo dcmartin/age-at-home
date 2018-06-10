@@ -1,31 +1,40 @@
-#!/bin/csh -fb
+#!/bin/tcsh -b
 setenv APP "aah"
 setenv API "matrix"
-setenv LAN "192.168"
-setenv WWW "$LAN".32
-setenv WAN "www.dcmartin.com"
-if ($?TMP == 0) setenv TMP "/var/lib/age-at-home"
 
+# debug on/off
 setenv DEBUG true
+setenv VERBOSE true
+
+# environment
+if ($?LAN == 0) setenv LAN "192.168.1"
+if ($?DIGITS == 0) setenv DIGITS "$LAN".30
+if ($?TMP == 0) setenv TMP "/var/lib/age-at-home"
+if ($?CREDENTIALS == 0) setenv CREDENTIALS /usr/local/etc
+if ($?LOGTO == 0) setenv LOGTO /dev/stderr
 
 if ($?TTL == 0) set TTL = 5
 if ($?SECONDS == 0) set SECONDS = `/bin/date "+%s"`
 if ($?DATE == 0) set DATE = `/bin/echo $SECONDS \/ $TTL \* $TTL | /usr/bin/bc`
 
-if (-e ~$USER/.cloudant_url) then
-    set cc = ( `cat ~$USER/.cloudant_url` )
-    if ($#cc > 0) set CU = $cc[1]
-    if ($#cc > 1) set CN = $cc[2]
-    if ($#cc > 2) set CP = $cc[3]
-endif
-
+##
+## ACCESS CLOUDANT
+##
 if ($?CLOUDANT_URL) then
-    set CU = $CLOUDANT_URL
-else if ($?CN && $?CP) then
-    set CU = "$CN":"$CP"@"$CN.cloudant.com"
+  set CU = $CLOUDANT_URL
+else if (-s $CREDENTIALS/.cloudant_url) then
+  set cc = ( `cat $CREDENTIALS/.cloudant_url` )
+  if ($#cc > 0) set CU = $cc[1]
+  if ($#cc > 1) set CN = $cc[2]
+  if ($#cc > 2) set CP = $cc[3]
+  if ($?CP && $?CN && $?CU) then
+    set CU = 'https://'"$CN"':'"$CP"'@'"$CU"
+  else if ($?CU) then
+    set CU = "https://$CU"
+  endif
 else
-    if ($?DEBUG) /bin/echo `/bin/date` "$0 $$ -- no Cloudant URL" >>! $TMP/LOG
-    goto done
+  /bin/echo `date` "$0:t $$ -- FAILURE: no Cloudant credentials" >>& $LOGTO
+  goto done
 endif
 
 #
@@ -52,9 +61,9 @@ endif
 # PROCESS THE TEST RESULTS
 #
 
-set sets = ( `/usr/local/bin/jq -r '.sets[].set' "$TEST"` )
+set sets = ( `jq -r '.sets[].set' "$TEST"` )
 if ($#sets) then
-  /bin/echo `date` "$0 $$ -- building $JSON on $#sets ($sets)" >>! "$TMP/LOG"
+  /bin/echo `date` "$0 $$ -- building $JSON on $#sets ($sets)" >>! $LOGTO
 
   unset matrix
   set total = 0
@@ -62,14 +71,14 @@ if ($#sets) then
   foreach this ( $sets )
     /bin/echo -n `date` "$0 $$ -- $this [ " >& /dev/stderr
     if (! -s "$TMP/matrix/$model.$this.json") then
-	/usr/local/bin/jq -c '.sets[]|select(.set=="'"$this"'").results[]?' "$TEST" >! "$TMP/matrix/$model.$this.json"
+	jq -c '.sets[]|select(.set=="'"$this"'").results[]?' "$TEST" >! "$TMP/matrix/$model.$this.json"
     endif
     # make matrix
     if ($?matrix) then
         set matrix = "$matrix"',{"set":"'$this'","truth":'
     else
-	set names = ( `/usr/local/bin/jq '.sets[].set' "$TEST"` )
-	set tested_on = `/usr/local/bin/jq -r '.date' "$TEST"`
+	set names = ( `jq '.sets[].set' "$TEST"` )
+	set tested_on = `jq -r '.date' "$TEST"`
 	set names = `/bin/echo "$names" | sed 's/ /,/g'`
 	set matrix = '{"name":"'"$device"'","model":"'"$model"'","date":'"$tested_on"',"size":'$#sets',"sets":['"$names"'],"matrix":[{"set":"'$this'","truth":'
 	unset names
@@ -82,10 +91,10 @@ if ($#sets) then
 	set noglob
 	@ count = 0
 	foreach line ( `cat "$TMP/matrix/$model.$this.json"` )
-	  set id = `/bin/echo "$line" | /usr/local/bin/jq -r '.id'`
+	  set id = `/bin/echo "$line" | jq -r '.id'`
 	  if ($id != "null") then
-	    set score = `/bin/echo "$line" | /usr/local/bin/jq -r '.classes[]|select(.class=="'"$class"'").score'`
-	    set top = `/bin/echo "$line" | /usr/local/bin/jq -r '.classes|sort_by(.score)[-1].class'`
+	    set score = `/bin/echo "$line" | jq -r '.classes[]|select(.class=="'"$class"'").score'`
+	    set top = `/bin/echo "$line" | jq -r '.classes|sort_by(.score)[-1].class'`
 	    if ($class == $top) @ match++
 	    /bin/echo "$id,$score" >>! "$TMP/matrix/$model.$this.$class.csv.$$"
 	    @ count++
@@ -125,7 +134,7 @@ if ($#sets) then
   end
   set matrix = "$matrix"'],"count":'$total'}'
 
-  /bin/echo "$matrix" | /usr/local/bin/jq . >! "$TMP/matrix/$model.json"
+  /bin/echo "$matrix" | jq . >! "$TMP/matrix/$model.json"
   /bin/echo `date` "$0 $$ -- MADE $TMP/matrix/$model.json" >& /dev/stderr
 
   set out = ( "$TMP/matrix/$model".*.csv )

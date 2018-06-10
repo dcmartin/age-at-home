@@ -1,11 +1,30 @@
-#!/bin/csh -fb
+#!/bin/tcsh -b
 setenv APP "aah"
 setenv API "sets"
-setenv LAN "192.168.1"
-setenv WWW "$LAN".32
-setenv DIGITS "$LAN".30
-setenv WAN "www.dcmartin.com"
-setenv TMP "/var/lib/age-at-home"
+
+# debug on/off
+setenv DEBUG true
+setenv VERBOSE true
+
+# environment
+if ($?LAN == 0) setenv LAN "192.168.1"
+if ($?DIGITS == 0) setenv DIGITS "$LAN".30
+if ($?TMP == 0) setenv TMP "/var/lib/age-at-home"
+if ($?CREDENTIALS == 0) setenv CREDENTIALS /usr/local/etc
+if ($?LOGTO == 0) setenv LOGTO /dev/stderr
+
+###
+### dateutils REQUIRED
+###
+
+if ( -e /usr/bin/dateutils.dconv ) then
+   set dateconv = /usr/bin/dateutils.dconv
+else if ( -e /usr/local/bin/dateconv ) then
+   set dateconv = /usr/local/bin/dateconv
+else
+  echo "No date converter; install dateutils" >& /dev/stderr
+  exit 1
+endif
 
 # don't update statistics more than once per (in seconds)
 set TTL = 360
@@ -21,7 +40,7 @@ endif
 if ($?DB == 0) set DB = rough-fog
 setenv QUERY_STRING "db=$DB"
 
-/bin/echo `date` "$0 $$ -- START ($QUERY_STRING)" >>! $TMP/LOG
+/bin/echo `date` "$0 $$ -- START ($QUERY_STRING)" >>! $LOGTO
 
 #
 # get OUTPUT
@@ -68,7 +87,7 @@ if ($#classes) then
  end
 endif
 /bin/echo "$output"']}' >! "$OUTPUT".$$
-/usr/local/bin/jq -c '.' "$OUTPUT".$$ >! "$OUTPUT"
+jq -c '.' "$OUTPUT".$$ >! "$OUTPUT"
 rm "$OUTPUT".$$
 
 output:
@@ -79,13 +98,13 @@ if (-s "$OUTPUT") then
   set AGE = `/bin/echo "$SECONDS - $DATE" | bc`
   /bin/echo "Age: $AGE"
   /bin/echo "Cache-Control: max-age=$TTL"
-  /bin/echo "Last-Modified:" `date -r $DATE '+%a, %d %b %Y %H:%M:%S %Z'`
+  /bin/echo "Last-Modified:" `$dateconv -i '%s' -f '%a, %d %b %Y %H:%M:%S %Z' $DATE`
   /bin/echo ""
-  /usr/local/bin/jq '.' "$OUTPUT"
+  jq '.' "$OUTPUT"
 else
   /bin/echo '{ "error":"not found" }'
 endif
 
 done:
 
-/bin/echo `date` "$0 $$ -- FINISH" >>! $TMP/LOG
+/bin/echo `date` "$0 $$ -- FINISH" >>! $LOGTO

@@ -1,29 +1,43 @@
-#!/bin/csh -fb
+#!/bin/tcsh -b
 setenv APP "aah"
 setenv API "scores"
+
+# debug on/off
+setenv DEBUG true
+setenv VERBOSE true
+
+# environment
+if ($?LAN == 0) setenv LAN "192.168.1"
+if ($?DIGITS == 0) setenv DIGITS "$LAN".30
 if ($?TMP == 0) setenv TMP "/var/lib/age-at-home"
-setenv LAN "192.168.1"
+if ($?CREDENTIALS == 0) setenv CREDENTIALS /usr/local/etc
+if ($?LOGTO == 0) setenv LOGTO /dev/stderr
+
 # don't update statistics more than once per 12 hours
 set TTL = `/bin/echo "12 * 60 * 60" | bc`
 set SECONDS = `date "+%s"`
 set DATE = `/bin/echo $SECONDS \/ $TTL \* $TTL | bc`
 
-/bin/echo `date` "$0 $$ -- START" >>! $TMP/LOG
+/bin/echo `date` "$0 $$ -- START" >>! $LOGTO
 
-if (-e ~$USER/.cloudant_url) then
-    set cc = ( `cat ~$USER/.cloudant_url` )
-    if ($#cc > 0) set CU = $cc[1]
-    if ($#cc > 1) set CN = $cc[2]
-    if ($#cc > 2) set CP = $cc[3]
-endif
-
+##
+## ACCESS CLOUDANT
+##
 if ($?CLOUDANT_URL) then
-    set CU = $CLOUDANT_URL
-else if ($?CN && $?CP) then
-    set CU = "$CN":"$CP"@"$CN.cloudant.com"
+  set CU = $CLOUDANT_URL
+else if (-s $CREDENTIALS/.cloudant_url) then
+  set cc = ( `cat $CREDENTIALS/.cloudant_url` )
+  if ($#cc > 0) set CU = $cc[1]
+  if ($#cc > 1) set CN = $cc[2]
+  if ($#cc > 2) set CP = $cc[3]
+  if ($?CP && $?CN && $?CU) then
+    set CU = 'https://'"$CN"':'"$CP"'@'"$CU"
+  else if ($?CU) then
+    set CU = "https://$CU"
+  endif
 else
-    /bin/echo `date` "$0 $$ -- no Cloudant URL" >>! $TMP/LOG
-    goto done
+  /bin/echo `date` "$0:t $$ -- FAILURE: no Cloudant credentials" >>& $LOGTO
+  goto done
 endif
 
 if ($?QUERY_STRING) then
@@ -41,7 +55,7 @@ set INPROGRESS = ( `/bin/echo "$JSON".*` )
 
 # check JSON in-progress for current interval
 if ($#INPROGRESS) then
-    /bin/echo `date` "$0 $$ -- in-progress" >>! $TMP/LOG
+    /bin/echo `date` "$0 $$ -- in-progress" >>! $LOGTO
     goto done    
 else
     if ($DB == "damp-cloud") then
@@ -74,31 +88,31 @@ endif
 # update Cloudant
 #
 if ($?CLOUDANT_OFF == 0 && $?CU && $?DB && (-s $JSON)) then
-    set DEVICE_DB = `curl -s -q -X GET "$CU/$DB-$API" | /usr/local/bin/jq '.db_name'`
+    set DEVICE_DB = `curl -s -q -X GET "$CU/$DB-$API" | jq '.db_name'`
     if ( "$DEVICE_DB" == "null" ) then
-	/bin/echo `date` "$0 $$ -- create Cloudant ($DB-$API)" >>! $TMP/LOG
+	/bin/echo `date` "$0 $$ -- create Cloudant ($DB-$API)" >>! $LOGTO
 	# create DB
-	set DEVICE_DB = `curl -s -q -X PUT "$CU/$DB-$API" | /usr/local/bin/jq '.ok'`
+	set DEVICE_DB = `curl -s -q -X PUT "$CU/$DB-$API" | jq '.ok'`
 	# test for success
 	if ( "$DEVICE_DB" != "true" ) then
 	    # failure
-	    /bin/echo `date` "$0 $$ -- FAILED: create Cloudant ($DB-$API)" >>! $TMP/LOG
+	    /bin/echo `date` "$0 $$ -- FAILED: create Cloudant ($DB-$API)" >>! $LOGTO
 	    setenv CLOUDANT_OFF TRUE
 	endif
     endif
     if ( $?CLOUDANT_OFF == 0 ) then
-	set doc = ( `curl -s -q "$CU/$DB-$API/$class" | /usr/local/bin/jq ._id,._rev | sed 's/"//g'` )
+	set doc = ( `curl -s -q "$CU/$DB-$API/$class" | jq ._id,._rev | sed 's/"//g'` )
 	if ($#doc == 2 && $doc[1] == $class && $doc[2] != "") then
 	    set rev = $doc[2]
-	    /bin/echo `date` "$0 $$ -- DELETE $CU/$DB-$API/$class $rev" >>! $TMP/LOG
+	    /bin/echo `date` "$0 $$ -- DELETE $CU/$DB-$API/$class $rev" >>! $LOGTO
 	    curl -s -q -X DELETE "$CU/$DB-$API/$class?rev=$rev"
 	endif
-	/bin/echo `date` "$0 $$ -- STORE $CU/$DB-$API/$class" >>! $TMP/LOG
-	curl -s -q -H "Content-type: application/json" -X PUT "$CU/$DB-$API/$class" -d "@$JSON" >>! $TMP/LOG
+	/bin/echo `date` "$0 $$ -- STORE $CU/$DB-$API/$class" >>! $LOGTO
+	curl -s -q -H "Content-type: application/json" -X PUT "$CU/$DB-$API/$class" -d "@$JSON" >>! $LOGTO
     endif
 else
-    /bin/echo `date` "$0 $$ -- no Cloudant update" >>! $TMP/LOG
+    /bin/echo `date` "$0 $$ -- no Cloudant update" >>! $LOGTO
 endif
 
 done:
-    /bin/echo `date` "$0 $$ -- FINISH" >>! $TMP/LOG
+    /bin/echo `date` "$0 $$ -- FINISH" >>! $LOGTO

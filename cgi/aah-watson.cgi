@@ -1,11 +1,30 @@
-#!/bin/csh -fb
+#!/bin/tcsh -b
 setenv APP "aah"
 setenv API "watson"
-setenv LAN "192.168.1"
-setenv WWW "$LAN".32
-setenv DIGITS "$LAN".30
-setenv WAN "www.dcmartin.com"
-setenv TMP "/var/lib/age-at-home"
+
+# debug on/off
+setenv DEBUG true
+setenv VERBOSE true
+
+# environment
+if ($?LAN == 0) setenv LAN "192.168.1"
+if ($?DIGITS == 0) setenv DIGITS "$LAN".30
+if ($?TMP == 0) setenv TMP "/var/lib/age-at-home"
+if ($?CREDENTIALS == 0) setenv CREDENTIALS /usr/local/etc
+if ($?LOGTO == 0) setenv LOGTO /dev/stderr
+
+###
+### dateutils REQUIRED
+###
+
+if ( -e /usr/bin/dateutils.dconv ) then
+   set dateconv = /usr/bin/dateutils.dconv
+else if ( -e /usr/local/bin/dateconv ) then
+   set dateconv = /usr/local/bin/dateconv
+else
+  echo "No date converter; install dateutils" >& /dev/stderr
+  exit 1
+endif
 
 # don't update statistics more than once per (in seconds)
 set TTL = 1800
@@ -19,7 +38,7 @@ setenv COMPOSITE "__COMPOSITE__"
 
 
 if ($?QUERY_STRING) then
-    /bin/echo `date` "$0 $$ -- START ($QUERY_STRING)" >>! $TMP/LOG
+    /bin/echo `date` "$0 $$ -- START ($QUERY_STRING)" >>! $LOGTO
     set noglob
     set DB = `/bin/echo "$QUERY_STRING" | sed 's/.*db=\([^&]*\).*/\1/'`
     if ("$DB" == "$QUERY_STRING") set DB = rough-fog
@@ -35,7 +54,7 @@ if ($?QUERY_STRING) then
     if ("$level" == "$QUERY_STRING") unset level
     unset noglob
 else
-    /bin/echo `date` "$0 $$ -- EXIT !! NO QUERY_STRING !!" >>! $TMP/LOG
+    /bin/echo `date` "$0 $$ -- EXIT !! NO QUERY_STRING !!" >>! $LOGTO
     exit
 endif
 
@@ -80,7 +99,7 @@ if ($?id) then
     setenv QUERY_STRING "$QUERY_STRING&id=$id"
 endif
 
-if ($?DEBUG) /bin/echo `date` "$0 $$ -- query string ($QUERY_STRING)" >>! $TMP/LOG
+if ($?DEBUG) /bin/echo `date` "$0 $$ -- query string ($QUERY_STRING)" >>! $LOGTO
 
 # check which image (ext = { full, crop } -> type = { jpg, jpeg } )
 if ($?ext) then
@@ -97,7 +116,7 @@ endif
 #
 if ($?id) then
   if (-d "$TMP/$db/.models/$class/$id") then
-    if ($?VERBOSE) /bin/echo `date` "$0 $$ -- got directory $id ($class)" >>! $TMP/LOG
+    if ($?VERBOSE) /bin/echo `date` "$0 $$ -- got directory $id ($class)" >>! $LOGTO
     set ext = "dir"
   endif
 
@@ -110,7 +129,7 @@ if ($?id) then
       set images = ( `find "$base" -type l -print | egrep -v "$COMPOSITE"` )
     endif
 
-    if ($?VERBOSE) /bin/echo `date` "$0 $$ -- BASE ($base) ID ($id) images ($#images)" >>! $TMP/LOG
+    if ($?VERBOSE) /bin/echo `date` "$0 $$ -- BASE ($base) ID ($id) images ($#images)" >>! $LOGTO
 
     if ($#images == 0) then
       /bin/echo "Status: 404 Not Found"
@@ -120,18 +139,18 @@ if ($?id) then
     /bin/echo "Access-Control-Allow-Origin: *"
     /bin/echo "Age: $AGE"
     /bin/echo "Cache-Control: max-age=$TTL"
-    /bin/echo "Last-Modified:" `date -r $DATE '+%a, %d %b %Y %H:%M:%S %Z'`
+    /bin/echo "Last-Modified:" `$dateconv -i '%s' -f '%a, %d %b %Y %H:%M:%S %Z' $DATE`
 
-    /bin/echo "Content-Location: $WWW/CGI/$APP-$API.cgi?$QUERY_STRING"
+    /bin/echo "Content-Location: $HTTP_HOST/CGI/$APP-$API.cgi?$QUERY_STRING"
 
     #  singleton image
     if ($#images == 1 && $ext != "dir") then
 	/bin/echo "Content-Type: image/jpeg"
 	/bin/echo ""
-	if ($?VERBOSE) /bin/echo `date` "$0 $$ -- SINGLETON ($id)" >>! $TMP/LOG
+	if ($?VERBOSE) /bin/echo `date` "$0 $$ -- SINGLETON ($id)" >>! $LOGTO
 	dd if="$images"
     else if ($#images && $ext == "dir") then
-	if ($?VERBOSE) /bin/echo `date` "$0 $$ -- COMPOSITE IMAGES ($#images) " >>! $TMP/LOG
+	if ($?VERBOSE) /bin/echo `date` "$0 $$ -- COMPOSITE IMAGES ($#images) " >>! $LOGTO
 	set blend = "$base/$COMPOSITE.$type"
 	if (-s "$blend") then
 	  set last = ( `stat -r "$blend" | awk '{ print $10 }'` )
@@ -145,7 +164,7 @@ if ($?id) then
        endif
        if (! -e "$blend") then
 	if ($#images > 1) then
-	    /usr/local/bin/composite -blend 50 $images "$blend:r.$$.$blend:e"
+	    composite -blend 50 $images "$blend:r.$$.$blend:e"
 	else
 	    cp "$images" "$blend:r.$$.$blend:e"
 	endif
@@ -159,8 +178,8 @@ if ($?id) then
 	    set psize = "18"
 	    breaksw
 	endsw
-	# /usr/local/bin/montage -label "$id" "$blend:r.$$.$blend:e" -pointsize 48 -frame 0 -geometry +10+10 "$blend"
-        /usr/local/bin/convert \
+	# montage -label "$id" "$blend:r.$$.$blend:e" -pointsize 48 -frame 0 -geometry +10+10 "$blend"
+        convert \
 	  -pointsize "$psize" -size "$csize" \
 	  xc:none -gravity center -stroke black -strokewidth 2 -annotate 0 \
 	  "$id" \
@@ -171,20 +190,20 @@ if ($?id) then
 	  "$blend"
 	/bin/rm -f "$blend:r.$$.$blend:e"
 	if (! -s "$blend") then
-	  if ($?VERBOSE) /bin/echo `date` "$0 $$ -- creation of composite image failed ($images)" >>! $TMP/LOG
+	  if ($?VERBOSE) /bin/echo `date` "$0 $$ -- creation of composite image failed ($images)" >>! $LOGTO
 	  set failure = "composite failure"
           goto done
 	endif
       endif
       /bin/echo "Content-Type: image/jpeg"
       /bin/echo ""
-      if ($?VERBOSE) /bin/echo `date` "$0 $$ -- SINGLETON ($id)" >>! $TMP/LOG
+      if ($?VERBOSE) /bin/echo `date` "$0 $$ -- SINGLETON ($id)" >>! $LOGTO
       dd if="$blend"
     else
 	#  trick is to use id to pass regexp base
 	/bin/echo "Content-Type: application/zip"
 	/bin/echo ""
-	if ($?VERBOSE) /bin/echo `date` "$0 $$ -- MULTIPLE IMAGES ZIP ($#images)" >>! $TMP/LOG
+	if ($?VERBOSE) /bin/echo `date` "$0 $$ -- MULTIPLE IMAGES ZIP ($#images)" >>! $LOGTO
 	zip - $images | dd of=/dev/stdout
     endif
 
@@ -230,13 +249,13 @@ else
   end 
 endif
 
-set MIXPANELJS = "http://$WWW/CGI/script/mixpanel-aah.js"
+set MIXPANELJS = "http://$HTTP_HOST/script/mixpanel-aah.js"
 
 if ($?class) then
-    if ($?VERBOSE) /bin/echo `date` "$0 $$ -- CLASS ($class)" >>! $TMP/LOG
+    if ($?VERBOSE) /bin/echo `date` "$0 $$ -- CLASS ($class)" >>! $LOGTO
     # should make a path name
     set dir = "$db/$class"
-    if ($?VERBOSE) /bin/echo `date` "$0 $$ -- DIR ($dir)" >>! $TMP/LOG
+    if ($?VERBOSE) /bin/echo `date` "$0 $$ -- DIR ($dir)" >>! $LOGTO
     /bin/echo '<html><head><title>Index of '"$dir"'</title></head>' >! "$OUTPUT"
     /bin/echo '<script type="text/javascript" src="'$MIXPANELJS'"></script><script>mixpanel.track('"'"$APP-$API"'"',{"db":"'$db'","dir":"'$dir'"});</script>' >> "$OUTPUT"
     /bin/echo '<body bgcolor="white"><h1>Index of '"$dir"'</h1><hr>' >>! "$OUTPUT"
@@ -244,26 +263,26 @@ if ($?class) then
       /bin/echo '<pre>' >>! "$OUTPUT"
       set parent = "$class:h:h"
       if ($parent != "$class") then
-	/bin/echo '<a href="http://'"$WWW/CGI/$APP-$API.cgi?db=$db&ext=$ext&class=$parent"'">../</a>' >>! "$OUTPUT"
+	/bin/echo '<a href="http://'"$HTTP_HOST/CGI/$APP-$API.cgi?db=$db&ext=$ext&class=$parent"'">../</a>' >>! "$OUTPUT"
       else
-	/bin/echo '<a href="http://'"$WWW/CGI/$APP-$API.cgi?db=$db&ext=$ext"'">../</a>' >>! "$OUTPUT"
+	/bin/echo '<a href="http://'"$HTTP_HOST/CGI/$APP-$API.cgi?db=$db&ext=$ext"'">../</a>' >>! "$OUTPUT"
       endif
     else # display icons for directories
       /bin/echo '<pre>' >>! "$OUTPUT"
       set parent = "$class:h:h"
       if ($parent != "$class") then
-	/bin/echo '<a href="http://'"$WWW/CGI/$APP-$API.cgi?db=$db&ext=$ext&display=icon&class=$parent"'">../</a>' >>! "$OUTPUT"
+	/bin/echo '<a href="http://'"$HTTP_HOST/CGI/$APP-$API.cgi?db=$db&ext=$ext&display=icon&class=$parent"'">../</a>' >>! "$OUTPUT"
       else
-	/bin/echo '<a href="http://'"$WWW/CGI/$APP-$API.cgi?db=$db&ext=$ext&display=icon"'">../</a>' >>! "$OUTPUT"
+	/bin/echo '<a href="http://'"$HTTP_HOST/CGI/$APP-$API.cgi?db=$db&ext=$ext&display=icon"'">../</a>' >>! "$OUTPUT"
       endif
       /bin/echo '</pre>' >>! "$OUTPUT"
     endif
     if ($?classes) then
-      if ($?VERBOSE) /bin/echo `date` "$0 $$ -- SUBCLASSES ($classes)" >>! $TMP/LOG
+      if ($?VERBOSE) /bin/echo `date` "$0 $$ -- SUBCLASSES ($classes)" >>! $LOGTO
       foreach i ( $classes )
 	if ($?display) then
-	  /bin/echo '<a href="http://'"$WWW/CGI/$APP-$API"'.cgi?db='"$db"'&ext='"$ext"'&display=icon&class='"$class/$i"'">' >>! "$OUTPUT"
-	  /bin/echo '<img width="24%" alt="'"$i"'" src="http://'"$WWW/CGI/$APP-$API"'.cgi?db='"$db"'&ext='"$ext"'&class='"$class"'&id='"$i"'">' >>! "$OUTPUT"
+	  /bin/echo '<a href="http://'"$HTTP_HOST/CGI/$APP-$API"'.cgi?db='"$db"'&ext='"$ext"'&display=icon&class='"$class/$i"'">' >>! "$OUTPUT"
+	  /bin/echo '<img width="24%" alt="'"$i"'" src="http://'"$HTTP_HOST/CGI/$APP-$API"'.cgi?db='"$db"'&ext='"$ext"'&class='"$class"'&id='"$i"'">' >>! "$OUTPUT"
 	  /bin/echo '</a>' >>! "$OUTPUT"
 	else 
 	  set name = '<a href="http://www.dcmartin.com/CGI/aah-watson.cgi?db='"$db"'&ext='"$ext"'&class='"$class/$i"'">'"$i"'/</a>'
@@ -276,16 +295,16 @@ if ($?class) then
 
     if ($?display) /bin/echo '<br>' >>! "$OUTPUT"
 
-    if ($?VERBOSE) /bin/echo `date` "$0 $$ -- HANDLING IMAGES ($images)" >>! $TMP/LOG
+    if ($?VERBOSE) /bin/echo `date` "$0 $$ -- HANDLING IMAGES ($images)" >>! $LOGTO
     foreach i ( $images )
       if ($?display) then
         if (! $?classes) then
-	  /bin/echo '<a href="http://'"$WWW/CGI/$APP-$API"'.cgi?db='"$db"'&ext='"$ext"'&class='"$class"'&id='"$i"'">' >>! "$OUTPUT"
-	  /bin/echo '<img width="16%" alt="'"$i.$type"'" src="http://'"$WWW/CGI/$APP-$API"'.cgi?db='"$db"'&ext='"$ext"'&class='"$class"'&id='"$i"'">' >>! "$OUTPUT"
+	  /bin/echo '<a href="http://'"$HTTP_HOST/CGI/$APP-$API"'.cgi?db='"$db"'&ext='"$ext"'&class='"$class"'&id='"$i"'">' >>! "$OUTPUT"
+	  /bin/echo '<img width="16%" alt="'"$i.$type"'" src="http://'"$HTTP_HOST/CGI/$APP-$API"'.cgi?db='"$db"'&ext='"$ext"'&class='"$class"'&id='"$i"'">' >>! "$OUTPUT"
 	  /bin/echo '</a>' >>! "$OUTPUT"
 	endif
       else
-	set file = '<a href="http://'"$WWW/CGI/$APP-$API"'.cgi?db='"$db"'&ext='"$ext"'&class='"$class"'&id='"$i"'">'"$i"'</a>' 
+	set file = '<a href="http://'"$HTTP_HOST/CGI/$APP-$API"'.cgi?db='"$db"'&ext='"$ext"'&class='"$class"'&id='"$i"'">'"$i"'</a>' 
 	set ctime = `date '+%d-%h-%Y %H:%M'`
 	set fsize = `find "$TMP/$db/.model/$class" -name "$i" -print | xargs ls -l | awk '{ print $5 }'`
 	/bin/echo "$file		$ctime		$fsize" >>! "$OUTPUT"
@@ -295,9 +314,9 @@ if ($?class) then
       /bin/echo '</pre>' >>! "$OUTPUT"
     endif
     /bin/echo '<hr></body></html>' >>! "$OUTPUT"
-    if ($?VERBOSE) /bin/echo `date` "$0 $$ -- DONE" >>! $TMP/LOG
+    if ($?VERBOSE) /bin/echo `date` "$0 $$ -- DONE" >>! $LOGTO
 else if ($?classes) then
-  if ($?VERBOSE) /bin/echo `date` "$0 $$ -- TOP-LEVEL ($classes)" >>! $TMP/LOG
+  if ($?VERBOSE) /bin/echo `date` "$0 $$ -- TOP-LEVEL ($classes)" >>! $LOGTO
     # should be a directory listing of directories
     set dir = "$db"
     /bin/echo '<html><head><title>Index of '"$dir"'/</title></head>' >! "$OUTPUT"
@@ -305,10 +324,10 @@ else if ($?classes) then
     /bin/echo '<body bgcolor="white"><h1>Index of '"$dir"'</h1><hr>' >>! "$OUTPUT"
     /bin/echo '<pre>' >>! "$OUTPUT"
     if ($?display) then
-      /bin/echo '<a href="http://'"$WWW/CGI/$APP-$API.cgi?db=$db&ext=$ext"'/">../</a>' >>! "$OUTPUT"
+      /bin/echo '<a href="http://'"$HTTP_HOST/CGI/$APP-$API.cgi?db=$db&ext=$ext"'/">../</a>' >>! "$OUTPUT"
       /bin/echo '</pre>' >>! "$OUTPUT"
     else
-      /bin/echo '<a href="http://'"$WWW/CGI/$APP-$API.cgi?db=$db&ext=$ext&display=icon"'/">../</a>' >>! "$OUTPUT"
+      /bin/echo '<a href="http://'"$HTTP_HOST/CGI/$APP-$API.cgi?db=$db&ext=$ext&display=icon"'/">../</a>' >>! "$OUTPUT"
     endif
     foreach i ( $classes )
       if ($?display == 0) then
@@ -317,8 +336,8 @@ else if ($?classes) then
 	set fsize = `du -sk "$TMP/label/$db/$i" | awk '{ print $1 }'`
 	/bin/echo "$name		$ctime		$fsize" >>! "$OUTPUT"
       else
-	/bin/echo '<a href="http://'"$WWW/CGI/$APP-$API"'.cgi?db='"$db"'&ext='"$ext"'&display=icon&class='"$i"'">' >>! "$OUTPUT"
-	/bin/echo '<img width="24%" alt="'"$i"'" src="http://'"$WWW/CGI/$APP-$API"'.cgi?db='"$db"'&ext='"$ext"'&class=&id='"$i"'">' >>! "$OUTPUT"
+	/bin/echo '<a href="http://'"$HTTP_HOST/CGI/$APP-$API"'.cgi?db='"$db"'&ext='"$ext"'&display=icon&class='"$i"'">' >>! "$OUTPUT"
+	/bin/echo '<img width="24%" alt="'"$i"'" src="http://'"$HTTP_HOST/CGI/$APP-$API"'.cgi?db='"$db"'&ext='"$ext"'&class=&id='"$i"'">' >>! "$OUTPUT"
 	/bin/echo '</a>' >>! "$OUTPUT"
       endif
     end
@@ -333,9 +352,9 @@ output:
 /bin/echo "Access-Control-Allow-Origin: *"
 /bin/echo "Age: $AGE"
 /bin/echo "Cache-Control: max-age=$TTL"
-/bin/echo "Last-Modified:" `date -r $DATE '+%a, %d %b %Y %H:%M:%S %Z'`
+/bin/echo "Last-Modified:" `$dateconv -i '%s' -f '%a, %d %b %Y %H:%M:%S %Z' $DATE`
 /bin/echo "Content-Type: text/html"
-/bin/echo "Content-Location: $WWW/CGI/$APP-$API.cgi?$QUERY_STRING"
+/bin/echo "Content-Location: $HTTP_HOST/CGI/$APP-$API.cgi?$QUERY_STRING"
 /bin/echo ""
 
 cat "$OUTPUT"
@@ -344,4 +363,4 @@ done:
 
 rm -f "$OUTPUT"
 
-/bin/echo `date` "$0 $$ -- FINISH" >>! $TMP/LOG
+/bin/echo `date` "$0 $$ -- FINISH" >>! $LOGTO

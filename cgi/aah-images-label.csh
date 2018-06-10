@@ -1,4 +1,4 @@
-#!/bin/csh -fb
+#!/bin/tcsh -b
 set path = $1
 set class = $2
 set crop = $3
@@ -16,7 +16,7 @@ switch ($path:e)
 endsw
 
 set out = "$path:r.$$.$path:e"
-set xywh = ( `/bin/echo "$crop" | /usr/bin/sed "s/\(.*\)x\(.*\)\([+-]\)\(.*\)\([+-]\)\(.*\)/\3\4 \5\6 \1 \2/"` )
+set xywh = ( `/bin/echo "$crop" | sed "s/\(.*\)x\(.*\)\([+-]\)\(.*\)\([+-]\)\(.*\)/\3\4 \5\6 \1 \2/"` )
 
 if ($path:e == "jpg") then
   @ w = $xywh[3] / 2
@@ -41,7 +41,7 @@ else
   set rect = ( 0 0 224 224 )
 endif
 
-/usr/local/bin/convert \
+convert \
     -pointsize "$psize" -size "$csize" \
     xc:none -gravity center -stroke black -strokewidth 2 -annotate 0 \
     "$class" \

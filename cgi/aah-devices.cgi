@@ -1,21 +1,38 @@
-#!/bin/csh -fb
+#!/bin/tcsh -b
 setenv APP "aah"
 setenv API "devices"
-setenv LAN "192.168.1"
-setenv WWW "$LAN".32
-setenv DIGITS "$LAN".30
-setenv WAN "www.dcmartin.com"
-if ($?TMP == 0) setenv TMP "/var/lib/age-at-home"
 
-setenv DEBUG true
+# debug on/off
+# setenv DEBUG true
+# setenv VERBOSE true
+
+# environment
+if ($?LAN == 0) setenv LAN "192.168.1"
+if ($?DIGITS == 0) setenv DIGITS "$LAN".30
+if ($?TMP == 0) setenv TMP "/var/lib/age-at-home"
+if ($?CREDENTIALS == 0) setenv CREDENTIALS /usr/local/etc
+if ($?LOGTO == 0) setenv LOGTO /dev/stderr
+
+###
+### dateutils REQUIRED
+###
+
+if ( -e /usr/bin/dateutils.dconv ) then
+   set dateconv = /usr/bin/dateutils.dconv
+else if ( -e /usr/local/bin/dateconv ) then
+   set dateconv = /usr/local/bin/dateconv
+else
+  echo "No date converter; install dateutils" >& /dev/stderr
+  exit 1
+endif
 
 # don't update statistics more than once per (in seconds)
 setenv TTL 30
 setenv SECONDS `date "+%s"`
-setenv DATE `/bin/echo $SECONDS \/ $TTL \* $TTL | bc`
+setenv DATE `echo $SECONDS \/ $TTL \* $TTL | bc`
 
 if ($?QUERY_STRING) then
-    set db = `/bin/echo "$QUERY_STRING" | /usr/bin/sed 's/.*db=\([^&]*\).*/\1/'`
+    set db = `echo "$QUERY_STRING" | sed 's/.*db=\([^&]*\).*/\1/'`
     if ($db == "$QUERY_STRING") unset db
 endif
 
@@ -24,61 +41,66 @@ if ($?db == 0) set db = all
 # standardize QUERY_STRING (rendezvous w/ APP-make-API.csh script)
 setenv QUERY_STRING "db=$db"
 
-if ($?VERBOSE) /bin/echo `date` "$0 $$ -- START ($QUERY_STRING)" >>! $TMP/LOG
+if ($?VERBOSE) echo `date` "$0:t $$ -- START ($QUERY_STRING)" >>! $LOGTO
 
-#
-# get read-only access to cloudant
-#
-if (-e ~$USER/.cloudant_url) then
-    set cc = ( `cat ~$USER/.cloudant_url` )
-    if ($#cc > 0) set CU = $cc[1]
-    if ($#cc > 1) set CN = $cc[2]
-    if ($#cc > 2) set CP = $cc[3]
-    set CU = "$CN":"$CP"@"$CU"
-endif
-if ($?CU == 0) then
-    /bin/echo `date` "$0 $$ -- no Cloudant URL" >>! $TMP/LOG
-    goto done
+##
+## ACCESS CLOUDANT
+##
+if ($?CLOUDANT_URL) then
+  set CU = $CLOUDANT_URL
+else if (-s $CREDENTIALS/.cloudant_url) then
+  set cc = ( `cat $CREDENTIALS/.cloudant_url` )
+  if ($#cc > 0) set CU = $cc[1]
+  if ($#cc > 1) set CN = $cc[2]
+  if ($#cc > 2) set CP = $cc[3]
+  if ($?CP && $?CN && $?CU) then
+    set CU = 'https://'"$CN"':'"$CP"'@'"$CU"
+  else if ($?CU) then
+    set CU = "https://$CU"
+  endif
+else
+  /bin/echo `date` "$0:t $$ -- FAILURE: no Cloudant credentials" >>& $LOGTO
+  goto done
 endif
 
 # output target
 set OUTPUT = "$TMP/$APP-$API-$QUERY_STRING.$DATE.json"
 # test if been-there-done-that
-if (-s "$OUTPUT") goto output
+if (-e "$OUTPUT") goto output
 rm -f "$OUTPUT:r:r".*
 
 # find devices
 if ($db == "all") then
-  set devices = ( `curl "$CU/$API/_all_docs" | /usr/local/bin/jq -r '.rows[]?.id'` )
+  set devices = ( `curl -s -q -L "$CU/$API/_all_docs" | jq -r '.rows[]?.id'` )
   if ($#devices == 0) then
-    if ($?VERBOSE) /bin/echo `date` "$0 $$ ++ FAILURE ($url)" >>&! $TMP/LOG
+    if ($?VERBOSE) echo `date` "$0:t $$ ++ Could not retrieve list of devices from ($url)" >>&! $LOGTO
     goto done
   endif
 else
   set devices = ($db)
 endif
 
-if ($?VERBOSE) /bin/echo `date` "$0 $$ ++ SUCCESS -- devices ($devices)" >>&! $TMP/LOG
+if ($?VERBOSE) echo `date` "$0:t $$ ++ Devices in DB ($devices)" >>&! $LOGTO
 
 @ k = 0
 set all = '{"date":'"$DATE"',"devices":['
-foreach d ( $devices )
 
+foreach d ( $devices )
   # get device entry
-  set url = "$API/$d"
-  set out = "/tmp/$0:t.$$.json"
-  curl -s -q -f -L "$CU/$url" -o "$out"
-  if ($status == 22 || $status == 28 || ! -s "$out") then
-    if ($?VERBOSE) /bin/echo `date` "$0 $$ ++ FAILURE ($url) ($status)" >>&! $TMP/LOG
+  set url = "$CU/$API/$d"
+  set out = "$TMP/$APP-$API-$$.json"
+  curl -s -q -L "$url" -o "$out"
+  if (! -e "$out") then
+    if ($?VERBOSE) echo `date` "$0:t $$ ++ FAILURE ($d)" `ls -al $out` >>&! $LOGTO
     rm -f "$out"
     continue
   endif
   if ($db != "all" && $d == "$db") then
-    /usr/local/bin/jq '{"name":.name,"date":.date,"ip_address":.ip_address,"location":.location}' "$out" >! "$OUTPUT"
+    jq '{"name":.name,"date":.date,"ip_address":.ip_address,"location":.location}' "$out" >! "$OUTPUT"
     rm -f "$out"
     goto output
   else if ($db == "all") then
-    set json = `/usr/local/bin/jq '{"name":.name,"date":.date}' "$out"`
+    set json = `jq '{"name":.name,"date":.date}' "$out"`
     rm -f "$out"
   else
     unset json
@@ -91,7 +113,7 @@ foreach d ( $devices )
 end
 set all = "$all"']}'
 
-/bin/echo "$all" | /usr/local/bin/jq -c '.' >! "$OUTPUT"
+echo "$all" | jq -c '.' >! "$OUTPUT"
 
 #
 # output
@@ -99,31 +121,31 @@ set all = "$all"']}'
 
 output:
 
-/bin/echo "Content-Type: application/json; charset=utf-8"
-/bin/echo "Access-Control-Allow-Origin: *"
+echo "Content-Type: application/json; charset=utf-8"
+echo "Access-Control-Allow-Origin: *"
 
-# /bin/echo "Content-Location: $WWW/CGI/$APP-$API.cgi?$QUERY_STRING"
+# echo "Content-Location: $HTTP_HOST/CGI/$APP-$API.cgi?$QUERY_STRING"
 
-if ($?output == 0 && -s "$OUTPUT") then
+if ($?output == 0 && -e "$OUTPUT") then
   @ age = $SECONDS - $DATE
-  /bin/echo "Age: $age"
+  echo "Age: $age"
   @ refresh = $TTL - $age
   # check back if using old
   if ($refresh < 0) @ refresh = $TTL
-  /bin/echo "Refresh: $refresh"
-  /bin/echo "Cache-Control: max-age=$TTL"
-  /bin/echo "Last-Modified:" `date -r $DATE '+%a, %d %b %Y %H:%M:%S %Z'`
-  /bin/echo ""
-  /usr/local/bin/jq -c '.' "$OUTPUT"
-  if ($?VERBOSE) /bin/echo `date` "$0 $$ -- output ($OUTPUT) Age: $age Refresh: $refresh" >>! $TMP/LOG
+  echo "Refresh: $refresh"
+  echo "Cache-Control: max-age=$TTL"
+  echo "Last-Modified:" `$dateconv -i '%s' -f '%a, %d %b %Y %H:%M:%S %Z' $DATE`
+  echo ""
+  jq -c '.' "$OUTPUT"
+  if ($?VERBOSE) echo `date` "$0:t $$ -- output ($OUTPUT) Age: $age Refresh: $refresh" >>! $LOGTO
 else
-  /bin/echo "Cache-Control: no-cache"
-  /bin/echo "Last-Modified:" `date -r $SECONDS '+%a, %d %b %Y %H:%M:%S %Z'`
-  /bin/echo ""
+  echo "Cache-Control: no-cache"
+  echo "Last-Modified:" `$dateconv -i '%s' -f '%a, %d %b %Y %H:%M:%S %Z' $DATE`
+  echo ""
   if ($?output) then
-    /bin/echo "$output"
+    echo "$output"
   else
-    /bin/echo '{ "error": "not found" }'
+    echo '{ "error": "not found" }'
   endif
 endif
 
@@ -131,4 +153,4 @@ endif
 
 done:
 
-if ($?VERBOSE) /bin/echo `date` "$0 $$ -- FINISH ($QUERY_STRING)" >>! $TMP/LOG
+if ($?VERBOSE) echo `date` "$0:t $$ -- FINISH ($QUERY_STRING)" >>! $LOGTO

@@ -1,8 +1,31 @@
-#!/bin/csh -fb
+#!/bin/tcsh -b
 setenv APP "aah"
 setenv API "last"
-setenv LAN "192.168.1"
+
+# debug on/off
+setenv DEBUG true
+setenv VERBOSE true
+
+# environment
+if ($?LAN == 0) setenv LAN "192.168.1"
+if ($?DIGITS == 0) setenv DIGITS "$LAN".30
 if ($?TMP == 0) setenv TMP "/var/lib/age-at-home"
+if ($?CREDENTIALS == 0) setenv CREDENTIALS /usr/local/etc
+if ($?LOGTO == 0) setenv LOGTO /dev/stderr
+
+###
+### dateutils REQUIRED
+###
+
+if ( -e /usr/bin/dateutils.dconv ) then
+   set dateconv = /usr/bin/dateutils.dconv
+else if ( -e /usr/local/bin/dateconv ) then
+   set dateconv = /usr/local/bin/dateconv
+else
+  echo "No date converter; install dateutils" >& /dev/stderr
+  exit 1
+endif
+
 # don't update statistics more than once per 15 minutes
 set TTL = `/bin/echo "30 * 60" | bc`
 set SECONDS = `date "+%s"`
@@ -16,7 +39,7 @@ else
 endif
 setenv QUERY_STRING "db=$DB"
 
-/bin/echo `date` "$0 $$ -- START ($QUERY_STRING)" >>! $TMP/LOG
+/bin/echo `date` "$0 $$ -- START ($QUERY_STRING)" >>! $LOGTO
 
 set OUTPUT = "$TMP/$APP-$API-$QUERY_STRING.$DATE.json"
 if (! -e "$OUTPUT") then
@@ -28,9 +51,9 @@ if (! -e "$OUTPUT") then
     endif
 endif
 if ($DB == "damp-cloud") then
-    set DATETIME = `/usr/local/bin/jq '.[]."dampcloud.alchemy_time"' $OUTPUT`
+    set DATETIME = `jq '.[]."dampcloud.alchemy_time"' $OUTPUT`
 else
-    set DATETIME = `/usr/local/bin/jq '.[]."roughfog.alchemy_time"' $OUTPUT`
+    set DATETIME = `jq '.[]."roughfog.alchemy_time"' $OUTPUT`
 endif
 
 output:
@@ -40,10 +63,10 @@ output:
 set AGE = `/bin/echo "$SECONDS - $DATE" | bc`
 /bin/echo "Age: $AGE"
 /bin/echo "Cache-Control: max-age=$TTL"
-/bin/echo "Last-Modified:" `date -r $DATE '+%a, %d %b %Y %H:%M:%S %Z'`
+/bin/echo "Last-Modified:" `$dateconv -i '%s' -f '%a, %d %b %Y %H:%M:%S %Z' $DATE`
 /bin/echo ""
 /bin/echo '{"device":"'$DB'", "datetime":'$DATETIME' }'
 
 done:
 
-/bin/echo `date` "$0 $$ -- FINISH ($QUERY_STRING)" >>! $TMP/LOG
+/bin/echo `date` "$0 $$ -- FINISH ($QUERY_STRING)" >>! $LOGTO

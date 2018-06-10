@@ -1,27 +1,44 @@
-#!/bin/csh -fb
+#!/bin/tcsh -b
 setenv APP "aah"
 setenv API "updates"
-setenv LAN "192.168.1"
-setenv WWW "$LAN".32
-setenv DIGITS "$LAN".30
-setenv WAN "www.dcmartin.com"
-setenv TMP "/var/lib/age-at-home"
+
+# debug on/off
+setenv DEBUG true
+# setenv VERBOSE true
+
+# environment
+if ($?TMP == 0) setenv TMP "/var/lib/age-at-home"
+if ($?CREDENTIALS == 0) setenv CREDENTIALS /usr/local/etc
+if ($?LOGTO == 0) setenv LOGTO /dev/stderr
+
+###
+### dateutils REQUIRED
+###
+
+if ( -e /usr/bin/dateutils.dconv ) then
+   set dateconv = /usr/bin/dateutils.dconv
+else if ( -e /usr/local/bin/dateconv ) then
+   set dateconv = /usr/local/bin/dateconv
+else
+  echo "No date converter; install dateutils" >& /dev/stderr
+  exit 1
+endif
 
 if ($?TTL == 0) set TTL = 60
-if ($?SECONDS == 0) set SECONDS = `/bin/date "+%s"`
-if ($?DATE == 0) set DATE = `/bin/echo $SECONDS \/ $TTL \* $TTL | /usr/bin/bc`
-
-# setenv DEBUG true
+if ($?SECONDS == 0) set SECONDS = `date "+%s"`
+if ($?DATE == 0) set DATE = `echo $SECONDS \/ $TTL \* $TTL | bc`
 
 # transform image
 setenv CAMERA_MODEL_TRANSFORM "CROP"
 # do not force continued attempts after failure when processing images
 
 if ($?QUERY_STRING) then
-    set device = `/bin/echo "$QUERY_STRING" | sed 's/.*device=\([^&]*\).*/\1/'`
+    set device = `echo "$QUERY_STRING" | sed 's/.*device=\([^&]*\).*/\1/'`
     if ($device == "$QUERY_STRING") unset device
-    set force = `/bin/echo "$QUERY_STRING" | sed 's/.*force=\([^&]*\).*/\1/'`
+    set force = `echo "$QUERY_STRING" | sed 's/.*force=\([^&]*\).*/\1/'`
     if ($force == "$QUERY_STRING") unset force
+    set limit = `echo "$QUERY_STRING" | sed 's/.*limit=\([^&]*\).*/\1/'`
+    if ($limit == "$QUERY_STRING") unset limit
 endif
 
 # DEFAULTS to quiet-water
@@ -30,123 +47,140 @@ if ($?device == 0) set device = "quiet-water"
 # standardize QUERY_STRING
 setenv QUERY_STRING "device=$device"
 
-if ($?VERBOSE) /bin/echo `/bin/date` "$0 $$ -- START ($QUERY_STRING)"  >>&! $TMP/LOG
+if ($?DEBUG) echo `date` "$0:t $$ -- START ($QUERY_STRING)"  >>&! $LOGTO
 
 # OUTPUT target
 set OUTPUT = "$TMP/$APP-$API-$QUERY_STRING.$DATE.json"
 
 if (-s "$OUTPUT") goto done
 
-#
-# SINGLE THREADED (by QUERY_STRING)
-#
-set INPROGRESS = ( `/bin/echo "$OUTPUT".*` )
+##
+## SINGLE THREADED (by QUERY_STRING)
+##
+set INPROGRESS = ( `echo "$OUTPUT".*` )
 if ($#INPROGRESS) then
     foreach ip ( $INPROGRESS )
       set pid = $ip:e
       set eid = ( `ps axw | awk '{ print $1 }' | egrep "$pid"` )
       if ($pid == $eid) then
-        if ($?DEBUG) /bin/echo `/bin/date` "$0 $$ -- PID $pid in-progress ($QUERY_STRING)" >>&! $TMP/LOG
+        if ($?DEBUG) echo `date` "$0:t $$ -- PID $pid in-progress ($QUERY_STRING)" >>&! $LOGTO
         goto done
       else
-        if ($?VERBOSE) /bin/echo `/bin/date` "$0 $$ -- removing $ip" >>&! $TMP/LOG
-        /bin/rm -f "$ip"
+        if ($?DEBUG) echo `date` "$0:t $$ -- removing $ip" >>&! $LOGTO
+        rm -f "$ip"
       endif
     end
-    if ($?VERBOSE) /bin/echo `/bin/date` "$0 $$ -- NO PROCESSES FOUND ($QUERY_STRING)" >>&! $TMP/LOG
+    if ($?VERBOSE) echo `date` "$0:t $$ -- NO PROCESSES FOUND ($QUERY_STRING)" >>&! $LOGTO
 else
-    if ($?VERBOSE) /bin/echo `/bin/date` "$0 $$ -- NO EXISTING $0 ($QUERY_STRING)" >>&! $TMP/LOG
+    if ($?VERBOSE) echo `date` "$0:t $$ -- NOTHING IN-PROGRESS ($QUERY_STRING)" >>&! $LOGTO
 endif
+# remove all old files for this device (drop .$DATE.json)
+rm -f "$OUTPUT:r:r".*
 
-# cleanup if interrupted
-/bin/rm -f "$OUTPUT:r:r".*
-onintr cleanup
+##
+## PREPARE TO PROCESS
+##
+# start output
 touch "$OUTPUT".$$
+# cleanup if interrupted
+onintr cleanup
 
-#
-# GET CLOUDANT CREDENTIALS
-#
-if (-e ~$USER/.cloudant_url) then
-  set cc = ( `cat ~$USER/.cloudant_url` )
+##
+## ACCESS CLOUDANT
+##
+if ($?CLOUDANT_URL) then
+  set CU = $CLOUDANT_URL
+else if (-s $CREDENTIALS/.cloudant_url) then
+  set cc = ( `cat $CREDENTIALS/.cloudant_url` )
   if ($#cc > 0) set CU = $cc[1]
   if ($#cc > 1) set CN = $cc[2]
   if ($#cc > 2) set CP = $cc[3]
-  if ($?CN && $?CP) then
-    set CU = "$CN":"$CP"@"$CU"
-  else
+  if ($?CP && $?CN && $?CU) then
+    set CU = 'https://'"$CN"':'"$CP"'@'"$CU"
+  else if ($?CU) then
+    set CU = "https://$CU"
+  endif
 else
-  /bin/echo `/bin/date` "$0 $$ -- NO ~$USER/.cloudant_url" >>&! $TMP/LOG
+  echo `date` "$0:t $$ -- FAILURE: no Cloudant credentials" >>& $LOGTO
   goto done
 endif
 
 #
 # CREATE device-updates DATABASE 
 #
-if ($?VERBOSE) /bin/echo `/bin/date` "$0 $$ -- test if device exists (device-$API)" >>&! $TMP/LOG
-set devdb = `/usr/bin/curl -f -s -q -L -X GET "$CU/device-$API" | /usr/local/bin/jq '.db_name'`
+if ($?VERBOSE) echo `date` "$0:t $$ -- test if device exists (device-$API)" >>&! $LOGTO
+set devdb = `curl -f -s -q -L -X GET "$CU/device-$API" | jq '.db_name'`
 if ( $devdb == "" || "$devdb" == "null" ) then
-  if ($?VERBOSE) /bin/echo `/bin/date` "$0 $$ -- creating device-$API" >>&! $TMP/LOG
+  if ($?VERBOSE) echo `date` "$0:t $$ -- creating device-$API" >>&! $LOGTO
   # create device
-  set devdb = `/usr/bin/curl -f -s -q -L -X PUT "$CU/device-$API" | /usr/local/bin/jq '.ok'`
+  set devdb = `curl -f -s -q -L -X PUT "$CU/device-$API" | jq '.ok'`
   # test for success
   if ( "$devdb" != "true" ) then
     # failure
-    if ($?VERBOSE) /bin/echo `/bin/date` "$0 $$ -- failure creating Cloudant database (device-$API)" >>&! $TMP/LOG
+    if ($?VERBOSE) echo `date` "$0:t $$ -- failure creating Cloudant database (device-$API)" >>&! $LOGTO
     goto done
   else
-    if ($?VERBOSE) /bin/echo `/bin/date` "$0 $$ -- success creating device (device-$API)" >>&! $TMP/LOG
+    if ($?VERBOSE) echo `date` "$0:t $$ -- success creating device (device-$API)" >>&! $LOGTO
   endif
+else
+  if ($?VERBOSE) echo `date` "$0:t $$ -- DB device-$API exists" >>&! $LOGTO
 endif
 
 #
 # CREATE <device>-updates DATABASE 
 #
-if ($?VERBOSE) /bin/echo `/bin/date` "$0 $$ -- test if exists ($device-$API)" >>&! $TMP/LOG
-set devdb = `/usr/bin/curl -f -s -q -L -X GET "$CU/$device-$API" | /usr/local/bin/jq '.db_name'`
+if ($?VERBOSE) echo `date` "$0:t $$ -- test if exists ($device-$API)" >>&! $LOGTO
+set devdb = `curl -f -s -q -L -X GET "$CU/$device-$API" | jq '.db_name'`
 if ( $devdb == "" || "$devdb" == "null" ) then
-  if ($?VERBOSE) /bin/echo `/bin/date` "$0 $$ -- creating $device-$API" >>&! $TMP/LOG
+  if ($?VERBOSE) echo `date` "$0:t $$ -- creating $device-$API" >>&! $LOGTO
   # create device
-  set devdb = `/usr/bin/curl -f -s -q -L -X PUT "$CU/$device-$API" | /usr/local/bin/jq '.ok'`
+  set devdb = `curl -f -s -q -L -X PUT "$CU/$device-$API" | jq '.ok'`
   # test for success
   if ( "$devdb" != "true" ) then
     # failure
-    if ($?VERBOSE) /bin/echo `/bin/date` "$0 $$ -- failure creating Cloudant database ($device-$API)" >>&! $TMP/LOG
+    if ($?VERBOSE) echo `date` "$0:t $$ -- failure creating Cloudant database ($device-$API)" >>&! $LOGTO
     goto done
   else
-    if ($?VERBOSE) /bin/echo `/bin/date` "$0 $$ -- success creating device ($device-$API)" >>&! $TMP/LOG
+    if ($?VERBOSE) echo `date` "$0:t $$ -- success creating device ($device-$API)" >>&! $LOGTO
   endif
 endif
 
-#
-# GET device-updates/<device>
-#
+##
+## GET device-updates/<device> (2 second connect; 30 second transfer; no retry)
+##
 set url = "device-$API/$device"
 set out = "/tmp/$0:t.$$.json"
-/usr/bin/curl --connect-time 2 -m 30 -f -q -s -L "$CU/$url" -o "$out"
+set connect = 2
+set transfer = 30
+curl --connect-time $connect -m $transfer -f -q -s -L "$CU/$url" -o "$out"
 if ($status == 22 || $status == 28 || ! -s "$out") then
-    if ($?VERBOSE) /bin/echo `/bin/date` "$0 $$ -- FAILED retrieving seqid from device" >>! $TMP/LOG
-    set seqid = 0
+  if ($?DEBUG) echo `date` "$0:t $$ -- FAILED retrieving for device $device; setting SEQID to zero" >>&! $LOGTO
+  set seqid = 0
+  set date = 0
+  set last_total = 0 
 else
-  set devrev = ( `/usr/local/bin/jq -r '._rev' "$out"` )
+  set devrev = ( `jq -r '._rev' "$out"` )
   if ($#devrev == 0 || $devrev == "null") then
+    if ($?DEBUG) echo `date` "$0:t $$ -- no previous revision ($devrev)" >>&! $LOGTO
     unset devrev
   endif
-  set seqid = ( `/usr/local/bin/jq -r '.seqid' "$out"` )
-  set date = ( `/usr/local/bin/jq -r '.date' "$out"` )
-  set last_total = ( `/usr/local/bin/jq -r '.total' "$out"` )
+  set seqid = ( `jq -r '.seqid' "$out"` )
   if ($#seqid) then
-    if ($?VERBOSE) /bin/echo `/bin/date` "$0 $$ -- SUCCESS retrieving seqid from device ($seqid)" >>! $TMP/LOG
     if ($seqid == "null" || $seqid == "") then
-       set seqid = 0
+      if ($?DEBUG) echo `date` "$0:t $$ -- no previous SEQID ($seqid) for device $device; setting SEQID to zero" >>&! $LOGTO
+      set seqid = 0
+    else
+      if ($?DEBUG) echo `date` "$0:t $$ -- SUCCESS retrieving seqid from device ($seqid)" >>&! $LOGTO
     endif
+  else
+      if ($?DEBUG) echo `date` "$0:t $$ -- no previous SEQID ($seqid) for device $device; setting SEQID to zero" >>&! $LOGTO
+    set seqid = 0
   endif
-else
-  if ($?VERBOSE) /bin/echo `/bin/date` "$0 $$ -- fail ($url)" >>! $TMP/LOG
-  set date = 0
-  set seqid = 0
-  set last_total = 0
+  set date = ( `jq -r '.date' "$out"` )
+  set last_total = ( `jq -r '.total' "$out"` )
+  if ($?DEBUG) echo `date` "$0:t $$ -- prior date ($date); last total ($last_total)" >>&! $LOGTO
 endif
-/bin/rm -f "$out"
+rm -f "$out"
 
 # CHANGES target
 set CHANGES = "/tmp/$0:t.$$.$device.$DATE.json"
@@ -154,71 +188,103 @@ set CHANGES = "/tmp/$0:t.$$.$device.$DATE.json"
 #
 # QUICK TEST
 #
-set update_seq = ( `curl -s -q -f -m 1 "$CU/$device" | /usr/local/bin/jq -r '.update_seq'` )
+set update_seq = ( `curl -s -q -f -m 1 "$CU/$device" | jq -r '.update_seq'` )
 if ($#update_seq != 0 && $update_seq != "null") then
   if ($update_seq == $seqid) then
-    if ($?DEBUG) /bin/echo `/bin/date` "$0 $$ -- up-to-date ($seqid)" >>! $TMP/LOG
+    if ($?DEBUG) echo `date` "$0:t $$ -- up-to-date ($seqid)" >>&! $LOGTO
     goto done
   endif
+  if ($?DEBUG) echo `date` "$0:t $$ -- updating from SEQID: $update_seq" >>&! $LOGTO
 endif
 
 #
 # get new CHANGES since last sequence (seqid from device-updates/<device>)
 #
 @ try = 0
-set url = "$device/_changes?include_docs=true&since=$seqid"
+if ($?limit) then
+  set url = "$device/_changes?include_docs=true&since=$seqid&descending=true&limit=$limit"
+else
+  set url = "$device/_changes?include_docs=true&since=$seqid"
+endif
 set out = "/tmp/$0:t.$$.json"
-set connect = 2 
-set transfer = 30
+set trys = 3
+set connect = 2
+set transfer = 10
 
 again: # try again
 
-if ($?VERBOSE) /bin/echo `/bin/date` "$0 $$ -- download _changes ($url)" >>! $TMP/LOG
-/usr/bin/curl -s -q --connect-time $connect -m $transfer -f -L "$CU/$url" -o "$out" >>&! $TMP/LOG
+if ($?DEBUG) echo `date` "$0:t $$ -- download _changes ($url)" >>&! $LOGTO
+curl -s -q --connect-time $connect -m $transfer -f -L "$CU/$url" -o "$out" >>&! $LOGTO
 if ($status != 22 && $status != 28 && -s "$out") then
   # test JSON
-  /usr/local/bin/jq '.' "$out" >&! /dev/null
+  jq '.' "$out" >&! /dev/null
   set result = $status
   if ($result != 0) then
-    /bin/rm -f "$out"
-    if ($try < 4) then
+    rm -f "$out"
+    if ($?DEBUG) echo `date` "$0:t $$ -- INVALID ($result) TRY ($try) TRANSFER ($transfer) CHANGES ($out)" >>&! $LOGTO
+    if ($try < $trys) then
       @ transfer = $transfer + $transfer
       @ try++
       goto again
+    else if ($try > $trys) then
+      goto done
+    else if ($?limit == 0) then
+      set limit = 1000
+      set url = "$url&descending=true&limit=$limit"
+      @ try++
+      if ($?DEBUG) echo `date` "$0:t $$ -- limiting results to last $limit results" >>&! $LOGTO
+      goto again
     endif
-    if ($?VERBOSE) /bin/echo `/bin/date` "$0 $$ -- INVALID ($result) TRY ($try) TRANSFER ($transfer) CHANGES ($out)" >>! $TMP/LOG
-    goto done
-  endif
-  # get last sequence
-  if ($?VERBOSE) /bin/echo `/bin/date` "$0 $$ -- $device -- changes downloaded" >>! $TMP/LOG
-  set last_seq = `/usr/local/bin/jq -r '.last_seq' "$out"`
-  if ($last_seq == $seqid) then
-    if ($?VERBOSE) /bin/echo `/bin/date` "$0 $$ -- $device -- up-to-date ($seqid)" >>! $TMP/LOG
-    /bin/rm -f "$out"
+    if ($?DEBUG) echo `date` "$0:t $$ -- download FAILED ($url)" >& $LOGTO
     goto done
   endif
 
-  if ($?VERBOSE) /bin/echo `/bin/date` "$0 $$ -- $device -- preprocessing into lines reversing order to LIFO" >>! $TMP/LOG
-  /usr/local/bin/jq '{"results":.results|sort_by(.id)|reverse}' "$out" | /usr/local/bin/jq -c '.results[].doc' >! "$CHANGES"
-  /bin/rm -f "$out"
-  set total_changes = `/usr/bin/wc -l "$CHANGES" | /usr/bin/awk '{ print $1 }'`
+  if ($?DEBUG) echo `date` "$0:t $$ -- $device -- changes downloaded ($out)" >>&! $LOGTO
+
+  # get last sequence
+  set last_seq = `jq -r '.last_seq' "$out"`
+  if ($last_seq == $seqid) then
+    if ($?DEBUG) echo `date` "$0:t $$ -- $device -- up-to-date ($seqid)" >>&! $LOGTO
+    rm -f "$out"
+    goto done
+  endif
+
+  if ($?limit == 0) then
+    if ($?DEBUG) echo `date` "$0:t $$ -- $device -- processing" `jq '.results|length' "$out"` "results; reversing to LIFO order" >>&! $LOGTO
+    jq '{"results":.results|sort_by(.id)|reverse}' "$out" | jq -c '.results[].doc' >! "$CHANGES"
+    rm -f "$out"
+  else
+    if ($?DEBUG) echo `date` "$0:t $$ -- $device -- processing $limit results; already in LIFO order" >>&! $LOGTO
+    jq '{"results":.results|sort_by(.id)}' "$out" | jq -c '.results[].doc' >! "$CHANGES"
+    rm -f "$out"
+  endif
+  set total_changes = `wc -l "$CHANGES" | awk '{ print $1 }'`
 else
-  /bin/rm -f "$out"
-  if ($try < 3) then
+  # try again
+  rm -f "$out"
+  if ($try < $trys) then
     @ transfer = $transfer + $transfer
     @ try++
-    if ($?VERBOSE) /bin/echo `/bin/date` "$0 $$ -- RETRY ($url)" >>! $TMP/LOG
+    if ($?DEBUG) echo `date` "$0:t $$ -- RETRY #$try transfer ($transfer) from ($url)" >& $LOGTO
+    goto again
+  else if ($try > $trys) then
+    goto done
+  else if ($?limit == 0) then
+    set limit = 1000
+    set url = "$url&limit=$limit"
+    @ try++
+    if ($?DEBUG) echo `date` "$0:t $$ -- limiting results to last $limit results" >>&! $LOGTO
     goto again
   endif
-  if ($?VERBOSE) /bin/echo `/bin/date` "$0 $$ -- download FAILED ($url)" >>! $TMP/LOG
+  if ($?DEBUG) echo `date` "$0:t $$ -- download FAILED ($url)" >& $LOGTO
   goto done
 endif
+
+if ($?DEBUG) echo `date` "$0:t $$ -- $total_changes EVENTS FOR $device ($seqid)" >& $LOGTO
 
 # check if new events (or start-up == 0)
 if ($total_changes == 0) then
   goto update
-else
-  if ($?DEBUG) /bin/echo `/bin/date` "$0 $$ -- $total_changes EVENTS FOR $device ($seqid)" >>! $TMP/LOG
 endif
 
 #
@@ -232,58 +298,58 @@ set failures = ()
 
 while ($idx <= $total_changes) 
   # get the change
-  set change = ( `/usr/bin/tail +$idx "$CHANGES" | /usr/bin/head -1 | /usr/local/bin/jq '.'` )
+  set change = ( `tail -n +$idx "$CHANGES" | head -1 | jq '.'` )
 
   if ($#change == 0) then
-    if ($?VERBOSE) /bin/echo `/bin/date` "$0 $$ -- BLANK CHANGE ($device @ $idx of $total_changes) in $CHANGES" >>! $TMP/LOG
+    if ($?DEBUG) echo `date` "$0:t $$ -- BLANK CHANGE ($device @ $idx of $total_changes) in $CHANGES" >& $LOGTO
     @ idx++
     continue
   endif
 
-  set file = ( `/bin/echo "$change" | /usr/local/bin/jq -r '.visual.image'` )
-  set scores = ( `/bin/echo "$change" | /usr/local/bin/jq '.visual.scores|sort_by(.score)'` )
-  set class = ( `/bin/echo "$change" | /usr/local/bin/jq -r '.alchemy.text' | sed 's/ /_/g'` )
-  set crop = ( `/bin/echo "$change" | /usr/local/bin/jq -r '.imagebox'` )
+  set file = ( `echo "$change" | jq -r '.visual.image'` )
+  set scores = ( `echo "$change" | jq '.visual.scores|sort_by(.score)'` )
+  set class = ( `echo "$change" | jq -r '.alchemy.text' | sed 's/ /_/g'` )
+  set crop = ( `echo "$change" | jq -r '.imagebox'` )
   set u = "$file:r"
 
   # test if all good
   if ($#file == 0 || $#scores == 0 || $#class == 0 || $#crop == 0) then
-    if ($?VERBOSE) /bin/echo `/bin/date` "$0 $$ -- INVALID CHANGE ($device @ $idx of $total_changes) in $CHANGES -- $file $class $crop $scores -- $change" >>! $TMP/LOG
+    if ($?DEBUG) echo `date` "$0:t $$ -- INVALID CHANGE ($device @ $idx of $total_changes) in $CHANGES -- $file $class $crop $scores -- $change" >& $LOGTO
     @ idx++
     continue
   endif
 
-  if ($?VERBOSE) /bin/echo `/bin/date` "$0 $$ -- PROCESSING CHANGE ($device @ $idx of $total_changes) is $u" >>! $TMP/LOG
+  if ($?VERBOSE) echo `date` "$0:t $$ -- PROCESSING CHANGE ($device @ $idx of $total_changes) is $u" >& $LOGTO
 
   @ idx++
 
   # test if event (<device>/$u) already processed into update (<device>-updates/$u)
   set url = "$device-$API/$u"
   set out = "/tmp/$0:t.$$.json"
-  /usr/bin/curl -m 1 -s -q -f -L -H "Content-type: application/json" "$CU/$url" -o "$out" >>&! $TMP/LOG
+  curl -m 1 -s -q -f -L -H "Content-type: application/json" "$CU/$url" -o "$out" >>&! $LOGTO
   if ($status == 22 || $status == 28 || ! -s "$out") then
-    if ($?VERBOSE) /bin/echo `/bin/date` "$0 $$ -- no existing update ($u)" >>&! $TMP/LOG
-    /bin/rm -f "$out"
+    if ($?VERBOSE) echo `date` "$0:t $$ -- GOOD: no existing update ($u)" >>&! $LOGTO
+    rm -f "$out"
     unset idrev
   else
-    set idrev = ( `/usr/local/bin/jq -r '._rev' "$out"` )
+    set idrev = ( `jq -r '._rev' "$out"` )
     if ($#idrev && $idrev != "null") then
       if ($?force == 0) then
-        if ($?VERBOSE) /bin/echo `/bin/date` "$0 $$ -- BREAKING ($device) CHANGES: $nchange INDEX: $idx COUNT: $total_changes -- existing $u update ($idrev)" >>! $TMP/LOG
-        /bin/rm -f "$out"
+        if ($?DEBUG) echo `date` "$0:t $$ -- STOPPING ($device) CHANGES: $nchange INDEX: $idx COUNT: $total_changes -- existing $u update ($idrev)" >& $LOGTO
+        rm -f "$out"
         break
+      else
+        if ($?DEBUG) echo `date` "$0:t $$ -- FORCING -- EXISTING RECORD ($u) ($idrev)" >& $LOGTO
       endif
-      if ($?VERBOSE) /bin/echo `/bin/date` "$0 $$ -- WARNING -- EXISTING RECORD ($u) ($idrev)" >>! $TMP/LOG
     else
       unset idrev
     endif
-    /bin/rm -f "$out"
+    rm -f "$out"
   endif
 
   #
   # CALCULATE SCORING STATISTICS
   #
-
   set event = "/tmp/$0:t.$$.$u.csv"
   set stats = "/tmp/$0:t.$$.$u.stats.csv"
   set id = "/tmp/$0:t.$$.$u.json"
@@ -295,53 +361,102 @@ while ($idx <= $total_changes)
   #   c (1:"id",2:"class",3:"model",4:score,5:count,6:min,7:max,8:sum,9:mean,10:stdev,11:kurtosis)
   # 3 sort by score
   # 4 choose top1
-  /bin/echo "$scores" | /usr/local/bin/jq -j '.[]|"'"$u"'",",",.classifier_id,",",.name,",",.score,"\n"' | /usr/bin/sed 's/ /_/g' >! "$event"
-  /usr/bin/awk -F, 'BEGIN { c=0;n=1;x=0;s=0; }{ if($4>0){if($4>x){x=$4};if($4<n){n=$4};c++;s+=$4}} END {m=s/c; printf("%s,%d,%f,%f,%f,%f\n",$1,c,n,x,s,m)}' "$event" >! "$stats"
-  if (! -s "$stats") exit
-  /usr/local/bin/csvjoin -H -c 1 "$event" "$stats" \
-    | /usr/bin/tail +2 >! "$stats.$$"
-  if (! -s "$stats.$$") exit
-  /bin/mv -f "$stats.$$" "$stats"
-  /usr/bin/awk -F, 'BEGIN  { v=0;vs=0;e=0 } { c=$5;n=$6;x=$7;s=$8;m=$9;if ($4>0){vs+=($4-m)^2;e+=($4-m)^4;v=vs/c}} END {sd=sqrt(v);k=e/vs^2; printf("%s,%d,%f,%f,%f,%f,%f,%f\n",$1,c,n,x,s,m,sd,k)}' "$stats" >! "$stats.$$"
-  if (! -s "$stats.$$") exit
-  /bin/mv -f "$stats.$$" "$stats"
-  /usr/local/bin/csvjoin -H -c 1 "$event" "$stats" \
-    | /usr/bin/tail +2 >! "$stats.$$"
-  if (! -s "$stats.$$") exit
-  /bin/mv -f "$stats.$$" "$stats"
-  /usr/bin/sort -t, -k4,4 -nr "$stats" | /usr/bin/head -1 >! "$stats.$$"
-  if (! -s "$stats.$$") exit
-  /bin/mv -f "$stats.$$" "$stats"
+
+  # breakdownscore data into individual records 
+  echo "$scores" | jq -r -j '.[]|"'"$u"'",",",.classifier_id,",",.name,",",.score,"\n"' | sed 's/ /_/g' >! "$event"
+  if (! -s "$event") then
+    if ($?VERBOSE) echo `date` "$0:t $$ -- failed events (a)" >& $LOGTO
+    exit
+  else
+    if ($?VERBOSE) echo `date` "$0:t $$ -- made events (a): $event" >& $LOGTO
+  endif
+
+  # calculare count (c), min (n), max (x), sum (s) of events (1:"id",2:"class",3:"model",4:score)
+  awk -F, 'BEGIN { c=0;n=1;x=0;s=0; }{ if($4>0){if($4>x){x=$4};if($4<n){n=$4};c++;s+=$4}} END {if(c!=0){m=s/c}else{m=0}; printf("%s,%d,%f,%f,%f,%f\n",$1,c,n,x,s,m)}' "$event" >! "$stats"
+  if (! -s "$stats") then
+    if ($?VERBOSE) echo `date` "$0:t $$ -- failed statistics (a)" >& $LOGTO
+    exit
+  else
+    if ($?VERBOSE) echo `date` "$0:t $$ -- made statistics (a): $stats" >& $LOGTO
+  endif
+
+  # join events to statistics on first column (id)
+  csvjoin -H -c 1 "$event" "$stats" | tail -n +2 >! "$stats.$$"
+  if (! -s "$stats.$$") then
+    if ($?VERBOSE) echo `date` "$0:t $$ -- failed join (b)" >& $LOGTO
+    exit
+  else
+    mv -f "$stats.$$" "$stats"
+    if ($?VERBOSE) echo `date` "$0:t $$ -- joined data (b)" >& $LOGTO
+  endif
+
+  # process joined data statistics (1:"id",2:"class",3:"model",4:score,5:count,6:min,7:max,8:sum,9:mean) 
+  awk -F, 'BEGIN  { v=0;vs=0;e=0 } { c=$5;n=$6;x=$7;s=$8;m=$9;if ($4>0){vs+=($4-m)^2;e+=($4-m)^4;v=vs/c}} END {sd=sqrt(v);if(vs!=0){k=e/vs^2}else{k=0}; printf("%s,%d,%f,%f,%f,%f,%f,%f\n",$1,c,n,x,s,m,sd,k)}' "$stats" >! "$stats.$$"
+  if (! -s "$stats.$$") then
+    if ($?VERBOSE) echo `date` "$0:t $$ -- failed statistics (b)" >& $LOGTO
+    exit
+  else
+    mv -f "$stats.$$" "$stats"
+    if ($?VERBOSE) echo `date` "$0:t $$ -- made statistics (b)" >& $LOGTO
+  endif
+
+  # join events to statistics on first column (id)
+  csvjoin -H -c 1 "$event" "$stats" | tail -n +2 >! "$stats.$$"
+  if (! -s "$stats.$$") then
+    if ($?VERBOSE) echo `date` "$0:t $$ -- failed join (c)" >& $LOGTO
+    exit
+  else
+    mv -f "$stats.$$" "$stats"
+    if ($?VERBOSE) echo `date` "$0:t $$ -- joined data (c)" >& $LOGTO
+  endif
+
+  # sort joined data (c) on score for highest value
+  sort -t, -k4,4 -nr "$stats" | head -1 >! "$stats.$$"
+  if (! -s "$stats.$$") then
+    if ($?VERBOSE) echo `date` "$0:t $$ -- failed sort (c)" >& $LOGTO
+    exit
+  else
+    mv -f "$stats.$$" "$stats"
+    if ($?VERBOSE) echo `date` "$0:t $$ -- sorted data (c)" >& $LOGTO
+  endif
+
   # get date in seconds since epoch
-  set date = ( `/bin/echo "$change" | /usr/local/bin/jq -j '.year,",",.month,",",.day,",",.hour,",",.minute,",",.second' | /usr/local/bin/gawk -F, '{ t=mktime(sprintf("%4d %2d %2d %2d %2d %2d -1", $1, $2, $3, $4, $5, $6)); printf "%d\n", strftime("%s",t) }'` )
-  /usr/bin/awk -F, '{printf"{\"date\":'"$date"',\"class\":\"%s\",\"model\":\"%s\",\"score\":%f,\"count\":%d,\"min\":%f,\"max\":%f,\"sum\":%f,\"mean\":%f,\"stdev\":%f,\"kurtosis\":%f}\n",$2,$3,$4,$5,$6,$7,$8,$9,$10,$11}' "$stats" >! "$id"
+  
+  set date = ( `echo "$change" | jq -j '.year,"/",.month,"/",.day," ",.hour,":",.minute,":",.second'` )
+  set date = ( `$dateconv -f "%s" -i "%Y/%m/%d %H:%M:%S" "$date"` )
+
+  # create JSON update record for event id
+  awk -F, '{printf"{\"date\":'"$date"',\"class\":\"%s\",\"model\":\"%s\",\"score\":%f,\"count\":%d,\"min\":%f,\"max\":%f,\"sum\":%f,\"mean\":%f,\"stdev\":%f,\"kurtosis\":%f}\n",$2,$3,$4,$5,$6,$7,$8,$9,$10,$11}' "$stats" >! "$id"
 
   # store in <device>-updates/<id>
   set url = "$device-$API/$u"
   if ($?idrev) then
     set url = "$url&rev=$idrev"
   endif
-  /usr/bin/curl -s -q -f -L -H "Content-type: application/json" -X PUT "$CU/$url" -d "@$id" -o /tmp/curl.$$.json >>&! $TMP/LOG
-  if ($status == 22 || $status == 28) then
-    if ($?VERBOSE) /bin/echo `/bin/date` "$0 $$ -- PUT stats FAILURE ($device/$class/$u) :: " `cat /tmp/curl.$$.json` >>&! $TMP/LOG
-    set failures = ( $failures $u )
-  else
-    # another successful change
-    if ($?DEBUG) /bin/echo `/bin/date` "$0 $$ -- PUT stats SUCCESS ($device/$class/$u) ($idx/$total_changes)" >>&! $TMP/LOG
-    set changes = ( $changes $u )
-    @ nchange++
+  if (-s "$id") then
+    curl -s -q -f -L -H "Content-type: application/json" -X PUT "$CU/$url" -d "@$id" -o /tmp/curl.$$.json >>&! $LOGTO
+    if ($status == 22 || $status == 28) then
+      if ($?DEBUG) echo `date` "$0:t $$ -- PUT stats FAILURE ($device/$class/$u)"  >>&! $LOGTO
+      set failures = ( $failures $u )
+    else
+      # another successful change
+      if ($?DEBUG) echo `date` "$0:t $$ -- PUT stats SUCCESS ($device/$class/$u) ($idx/$total_changes)" >>&! $LOGTO
+      set changes = ( $changes $u )
+      @ nchange++
+    endif
   endif
-  /bin/rm /tmp/curl.$$.json
+  rm -f /tmp/curl.$$.json
   # cleanup
-  /bin/rm -f "$event" "$stats" "$id"
+  rm -f "$event" "$stats" "$id"
+
 end
 
 if ($?failures) then
-  if ($?VERBOSE) /bin/echo `/bin/date` "$0 $$ -- WARNING -- FAILURES ($failures)" >>! $TMP/LOG
+  if ($?DEBUG) echo `date` "$0:t $$ -- WARNING -- FAILURES ($failures)" >& $LOGTO
 endif
 
 if ($?CHANGES) then
-  /bin/rm -f "$CHANGES"
+  rm -f "$CHANGES"
 endif
 
 update:
@@ -357,7 +472,7 @@ if ($?last_seq) then
 else if ($?update_seq) then
   set dev = "$dev"'"seqid":"'"$update_seq"'"'
 else
-  if ($?VERBOSE) /bin/echo `/bin/date` "$0 $$ -- FAILURE (no sequence id)" >>&! $TMP/LOG
+  if ($?VERBOSE) echo `date` "$0:t $$ -- FAILURE (no sequence id)" >>&! $LOGTO
   goto done
 endif
 
@@ -382,16 +497,14 @@ if ($?failures) then
     set dev = "$dev"',"fail":null'
   else
     set dev = "$dev"',"fail":['
-    foreach f ( $failures )
-      set dev = "$dev"',"'"$f"'"'
-    end
-    set dev = "$dev"']'
+    set dev = "$dev"`echo "$failures" | sed "s/ /,/"`']'
   endif
 endif
 set dev = "$dev"'}'
 
 # create output
-/bin/echo "$dev" | /usr/local/bin/jq -c '.' >! "$OUTPUT.$$"
+echo "$dev" | jq -c '.' >! "$OUTPUT.$$"
+
 if (-s "$OUTPUT.$$") then
   mv -f "$OUTPUT.$$" "$OUTPUT"
 else
@@ -406,17 +519,17 @@ if ($?devrev) then
   set url = "$url?rev=$devrev"
 endif
 
-if ($?DEBUG) /bin/echo `/bin/date` "$0 $$ -- UPDATING $device ($url)" >>! $TMP/LOG
+if ($?DEBUG) echo `date` "$0:t $$ -- UPDATING $device ($url)" >& $LOGTO
 
 # update record
-set put = ( `/usr/bin/curl -s -q -f -L -H "Content-type: application/json" -X PUT "$CU/$url" -d "@$OUTPUT" | /usr/local/bin/jq '.ok'` )
+set put = ( `curl -s -q -f -L -H "Content-type: application/json" -X PUT "$CU/$url" -d "@$OUTPUT" | jq '.ok'` )
 if ($put != "true") then
-  if ($?VERBOSE) /bin/echo `/bin/date` "$0 $$ -- PUT $url failed returned " `cat /tmp/curl.$$.json` >>&! $TMP/LOG
+  if ($?VERBOSE) echo `date` "$0:t $$ -- PUT $url failed returned " `cat /tmp/curl.$$.json` >>&! $LOGTO
 else
 endif
 
 done:
-if ($?VERBOSE) /bin/echo `/bin/date` "$0 $$ -- FINISH ($QUERY_STRING)"  >>! $TMP/LOG
+if ($?DEBUG) echo `date` "$0:t $$ -- FINISH ($QUERY_STRING)" >& $LOGTO
 
 cleanup:
-/bin/rm -f "$OUTPUT.$$"
+rm -f "$OUTPUT.$$"

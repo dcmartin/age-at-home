@@ -1,13 +1,30 @@
-#!/bin/csh -fb
+#!/bin/tcsh -b
 setenv APP "aah"
 setenv API "samples"
-setenv LAN "192.168.1"
-setenv WWW "$LAN".32
-setenv DIGITS "$LAN".30
-setenv WAN "www.dcmartin.com"
-setenv TMP "/var/lib/age-at-home"
 
-# setenv DEBUG true
+# debug on/off
+setenv DEBUG true
+setenv VERBOSE true
+
+# environment
+if ($?LAN == 0) setenv LAN "192.168.1"
+if ($?DIGITS == 0) setenv DIGITS "$LAN".30
+if ($?TMP == 0) setenv TMP "/var/lib/age-at-home"
+if ($?CREDENTIALS == 0) setenv CREDENTIALS /usr/local/etc
+if ($?LOGTO == 0) setenv LOGTO /dev/stderr
+
+###
+### dateutils REQUIRED
+###
+
+if ( -e /usr/bin/dateutils.dconv ) then
+   set dateconv = /usr/bin/dateutils.dconv
+else if ( -e /usr/local/bin/dateconv ) then
+   set dateconv = /usr/local/bin/dateconv
+else
+  echo "No date converter; install dateutils" >& /dev/stderr
+  exit 1
+endif
 
 # don't update statistics more than once per (in seconds)
 setenv TTL 1800
@@ -34,28 +51,33 @@ if ($?class == 0) set class = all
 setenv QUERY_STRING "db=$db"
 if ($?class) setenv QUERY_STRING "$QUERY_STRING&class=$class"
 
-/bin/echo `/bin/date` "$0 $$ -- START ($QUERY_STRING)" >>! $TMP/LOG
+/bin/echo `/bin/date` "$0 $$ -- START ($QUERY_STRING)" >>! $LOGTO
 
 # initiate new output
-if ($?DEBUG) /bin/echo `/bin/date` "$0 $$ ++ REQUESTING ./$APP-make-$API.bash" >>! $TMP/LOG
+if ($?DEBUG) /bin/echo `/bin/date` "$0 $$ ++ REQUESTING ./$APP-make-$API.bash" >>! $LOGTO
 ./$APP-make-$API.bash
 
 # TARGET 
 set OUTPUT = "$TMP/$APP-$API-$QUERY_STRING.$DATE.json"
 
-#
-# get read-only access to cloudant
-#
-if (-e ~$USER/.cloudant_url) then
-    set cc = ( `cat ~$USER/.cloudant_url` )
-    if ($#cc > 0) set CU = $cc[1]
-    if ($#cc > 1) set CN = $cc[2]
-    if ($#cc > 2) set CP = $cc[3]
-    set CU = "$CN":"$CP"@"$CU"
-endif
-if ($?CU == 0) then
-    /bin/echo `/bin/date` "$0 $$ -- no Cloudant URL" >>! $TMP/LOG
-    goto done
+##
+## ACCESS CLOUDANT
+##
+if ($?CLOUDANT_URL) then
+  set CU = $CLOUDANT_URL
+else if (-s $CREDENTIALS/.cloudant_url) then
+  set cc = ( `cat $CREDENTIALS/.cloudant_url` )
+  if ($#cc > 0) set CU = $cc[1]
+  if ($#cc > 1) set CN = $cc[2]
+  if ($#cc > 2) set CP = $cc[3]
+  if ($?CP && $?CN && $?CU) then
+    set CU = 'https://'"$CN"':'"$CP"'@'"$CU"
+  else if ($?CU) then
+    set CU = "https://$CU"
+  endif
+else
+  /bin/echo `date` "$0:t $$ -- FAILURE: no Cloudant credentials" >>& $LOGTO
+  goto done
 endif
 
 # handle singleton (image)
@@ -65,12 +87,12 @@ if ($db != "all" && $?id) then
   set try = 0
   set time = 2
 again:
-  /usr/bin/curl -s -q -f -m 1 -L "$url" -o "$out"
+  curl -s -q -f -m 1 -L "$url" -o "$out"
   if ($status != 22 && $status != 28 && -s "$out") then
     if ($?class == 0) then
-      set class = ( `/usr/local/bin/jq -r '.alchemy.text?' "$out" | sed 's/ /_/g'` )
+      set class = ( `jq -r '.alchemy.text?' "$out" | sed 's/ /_/g'` )
     else if ($class == "all") then
-      set class = ( `/usr/local/bin/jq -r '.alchemy.text?' "$out" | sed 's/ /_/g'` )
+      set class = ( `jq -r '.alchemy.text?' "$out" | sed 's/ /_/g'` )
     endif
     if ($#class && $class != "null") then
       if ($ext == "full") set path = "$TMP/$db/$class/$id.jpg"
@@ -80,11 +102,11 @@ again:
         set AGE = `/bin/echo "$SECONDS - $stat" | /usr/bin/bc`
         /bin/echo "Access-Control-Allow-Origin: *"
         /bin/echo "Cache-Control: max-age=14400"
-        /bin/echo "Last-Modified:" `/bin/date -r $stat '+%a, %d %b %Y %H:%M:%S %Z'`
-        /bin/echo "Content-Location: $WWW/CGI/$APP-$API.cgi?db=$db&class=$class&id=$id&ext=$ext"
+        /bin/echo "Last-Modified:" `$dateconv -i '%s' -f '%a, %d %b %Y %H:%M:%S %Z' $DATE`
+        /bin/echo "Content-Location: $HTTP_HOST/CGI/$APP-$API.cgi?db=$db&class=$class&id=$id&ext=$ext"
         /bin/echo "Content-Type: image/jpeg"
         /bin/echo ""
-        if ($?VERBOSE) /bin/echo `/bin/date` "$0 $$ -- SINGLETON ($id)" >>! $TMP/LOG
+        if ($?VERBOSE) /bin/echo `/bin/date` "$0 $$ -- SINGLETON ($id)" >>! $LOGTO
         /bin/dd if="$path"
         goto done
       endif
@@ -110,31 +132,31 @@ if (! -s "$OUTPUT") then
     set url = "$db-$API/all"
     set out = "$OUTPUT:r:r".$$.json
 
-    /usr/bin/curl -m 5 -s -q -f -L "$CU/$url" -o "$out"
+    curl -m 5 -s -q -f -L "$CU/$url" -o "$out"
     if ($status != 22 && $status != 28 && -s "$out") then
-      set classes = ( `/usr/local/bin/jq -r '.classes[]?.name' "$out"` )
+      set classes = ( `jq -r '.classes[]?.name' "$out"` )
       if ($#classes) then
-        if ($?DEBUG) /bin/echo `/bin/date` "$0 $$ ++ SUCCESS ($url) -- classes ($classes)" >>&! $TMP/LOG
+        if ($?DEBUG) /bin/echo `/bin/date` "$0 $$ ++ SUCCESS ($url) -- classes ($classes)" >>&! $LOGTO
 	mv "$out" "$OUTPUT"
         goto output
       else
-        if ($?DEBUG) /bin/echo `/bin/date` "$0 $$ ++ FAILURE ($url)" >>&! $TMP/LOG
+        if ($?DEBUG) /bin/echo `/bin/date` "$0 $$ ++ FAILURE ($url)" >>&! $LOGTO
         unset classes
       endif
     else
-      if ($?DEBUG) /bin/echo `/bin/date` "$0 $$ ++ FAILURE ($url)" >>&! $TMP/LOG
+      if ($?DEBUG) /bin/echo `/bin/date` "$0 $$ ++ FAILURE ($url)" >>&! $LOGTO
       /bin/rm -f "$out"
     endif
     # FAILURE -- above should suffice
     if ($?classes == 0) then
       set url = "$db-$API/_all_docs"
-      /usr/bin/curl -m 5 -s -q -f -L "$CU/$url" -o "$out"
+      curl -m 5 -s -q -f -L "$CU/$url" -o "$out"
       if ($status != 22 && $status != 28 && -s "$out") then
-	set classes = ( `/usr/local/bin/jq -r '.rows[].id' "$out" | egrep -v "all"` )
-	if ($?DEBUG) /bin/echo `/bin/date` "$0 $$ ++ SUCCESS ($classes)" >>&! $TMP/LOG
+	set classes = ( `jq -r '.rows[].id' "$out" | egrep -v "all"` )
+	if ($?DEBUG) /bin/echo `/bin/date` "$0 $$ ++ SUCCESS ($classes)" >>&! $LOGTO
         /bin/rm -f "$out"
       else
-	if ($?DEBUG) /bin/echo `/bin/date` "$0 $$ ++ FAILURE ($url)" >>&! $TMP/LOG
+	if ($?DEBUG) /bin/echo `/bin/date` "$0 $$ ++ FAILURE ($url)" >>&! $LOGTO
 	/bin/rm -f "$out"
 	goto output
       endif
@@ -143,20 +165,20 @@ if (! -s "$OUTPUT") then
     set all = '{"date":'"$DATE"',"name":"'"$db"'","count":'$#classes',"classes":['
     foreach c ( $classes )
       set URL = "https://$CU/$db-$API/$c"
-      set json = ( `/usr/bin/curl -s -q -f -L "$URL" | /usr/local/bin/jq '{"name":"'"$c"'","date":.date,"count":.count }'` )
+      set json = ( `curl -s -q -f -L "$URL" | jq '{"name":"'"$c"'","date":.date,"count":.count }'` )
       if ($#json) then
 	if ($k) set all = "$all"','
 	set all = "$all""$json"
 	@ k++
       else
-	if ($?DEBUG) /bin/echo `/bin/date` "$0 $$ ++ FAILED on class $c" >>&! $TMP/LOG
+	if ($?DEBUG) /bin/echo `/bin/date` "$0 $$ ++ FAILED on class $c" >>&! $LOGTO
       endif
     end
     set all = "$all"']}'
     /bin/echo "$all" >! "$OUTPUT"
   else
     set URL = "https://$CU/$db-$API/$class"
-    /usr/bin/curl -s -q -f -L "$URL" | /usr/local/bin/jq '{"name":.name,"date":.date,"count":.count,"ids":.ids}' >! "$OUTPUT"
+    curl -s -q -f -L "$URL" | jq '{"name":.name,"date":.date,"count":.count,"ids":.ids}' >! "$OUTPUT"
   endif
 endif
 
@@ -177,13 +199,13 @@ if ($?output == 0 && -s "$OUTPUT") then
     if ($refresh < 0) @ refresh = $TTL
     /bin/echo "Refresh: $refresh"
     /bin/echo "Cache-Control: max-age=$TTL"
-    /bin/echo "Last-Modified:" `/bin/date -r $DATE '+%a, %d %b %Y %H:%M:%S %Z'`
+    /bin/echo "Last-Modified:" `$dateconv -i '%s' -f '%a, %d %b %Y %H:%M:%S %Z' $DATE`
     /bin/echo ""
-    /usr/local/bin/jq -c '.' "$OUTPUT"
-    if ($?DEBUG) /bin/echo `/bin/date` "$0 $$ -- output ($OUTPUT) Age: $age Refresh: $refresh" >>! $TMP/LOG
+    jq -c '.' "$OUTPUT"
+    if ($?DEBUG) /bin/echo `/bin/date` "$0 $$ -- output ($OUTPUT) Age: $age Refresh: $refresh" >>! $LOGTO
 else
     /bin/echo "Cache-Control: no-cache"
-    /bin/echo "Last-Modified:" `/bin/date -r $SECONDS '+%a, %d %b %Y %H:%M:%S %Z'`
+    /bin/echo "Last-Modified:" `$dateconv -i '%s' -f '%a, %d %b %Y %H:%M:%S %Z' $DATE`
     /bin/echo ""
     if ($?output) then
       /bin/echo "$output"
@@ -196,4 +218,4 @@ endif
 
 done:
 
-/bin/echo `/bin/date` "$0 $$ -- FINISH ($QUERY_STRING)" >>! $TMP/LOG
+/bin/echo `/bin/date` "$0 $$ -- FINISH ($QUERY_STRING)" >>! $LOGTO

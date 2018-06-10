@@ -1,13 +1,30 @@
-#!/bin/csh -fb
+#!/bin/tcsh -b
 setenv APP "aah"
 setenv API "review"
-setenv LAN "192.168.1"
-setenv WWW "$LAN".32
-setenv DIGITS "$LAN".30
-setenv WAN "www.dcmartin.com"
-setenv TMP "/var/lib/age-at-home"
 
-# setenv DEBUG true
+# debug on/off
+setenv DEBUG true
+setenv VERBOSE true
+
+# environment
+if ($?LAN == 0) setenv LAN "192.168.1"
+if ($?DIGITS == 0) setenv DIGITS "$LAN".30
+if ($?TMP == 0) setenv TMP "/var/lib/age-at-home"
+if ($?CREDENTIALS == 0) setenv CREDENTIALS /usr/local/etc
+if ($?LOGTO == 0) setenv LOGTO /dev/stderr
+
+###
+### dateutils REQUIRED
+###
+
+if ( -e /usr/bin/dateutils.dconv ) then
+   set dateconv = /usr/bin/dateutils.dconv
+else if ( -e /usr/local/bin/dateconv ) then
+   set dateconv = /usr/local/bin/dateconv
+else
+  echo "No date converter; install dateutils" >& /dev/stderr
+  exit 1
+endif
 
 # don't update statistics more than once per (in seconds)
 setenv TTL 1800
@@ -39,25 +56,30 @@ if ($?limit) then
   setenv QUERY_STRING "$QUERY_STRING&limit=$limit"
 endif
 
-/bin/echo `date` "$0 $$ -- START ($QUERY_STRING)" >>! $TMP/LOG
+/bin/echo `date` "$0 $$ -- START ($QUERY_STRING)" >>! $LOGTO
 
 # initiate new output
-if ($?DEBUG) /bin/echo `date` "$0 $$ ++ REQUESTING ./$APP-make-$API.bash" >>! $TMP/LOG
+if ($?DEBUG) /bin/echo `date` "$0 $$ ++ REQUESTING ./$APP-make-$API.bash" >>! $LOGTO
 ./$APP-make-$API.bash
 
-#
-# get read-only access to cloudant
-#
-if (-e ~$USER/.cloudant_url) then
-    set cc = ( `cat ~$USER/.cloudant_url` )
-    if ($#cc > 0) set CU = $cc[1]
-    if ($#cc > 1) set CN = $cc[2]
-    if ($#cc > 2) set CP = $cc[3]
-    set CU = "$CN":"$CP"@"$CU"
-endif
-if ($?CU == 0) then
-    /bin/echo `date` "$0 $$ -- no Cloudant URL" >>! $TMP/LOG
-    goto done
+##
+## ACCESS CLOUDANT
+##
+if ($?CLOUDANT_URL) then
+  set CU = $CLOUDANT_URL
+else if (-s $CREDENTIALS/.cloudant_url) then
+  set cc = ( `cat $CREDENTIALS/.cloudant_url` )
+  if ($#cc > 0) set CU = $cc[1]
+  if ($#cc > 1) set CN = $cc[2]
+  if ($#cc > 2) set CP = $cc[3]
+  if ($?CP && $?CN && $?CU) then
+    set CU = 'https://'"$CN"':'"$CP"'@'"$CU"
+  else if ($?CU) then
+    set CU = "https://$CU"
+  endif
+else
+  /bin/echo `date` "$0:t $$ -- FAILURE: no Cloudant credentials" >>& $LOGTO
+  goto done
 endif
 
 #
@@ -68,10 +90,10 @@ set OUTPUT = "$TMP/$APP-$API-$QUERY_STRING.$DATE.json"
 if (! -s "$OUTPUT") then
   /bin/rm -f "$OUTPUT:r:r".*
 
-  /usr/bin/curl -s -q -f -L "$WWW/CGI/aah-images.cgi?db=$db&limit=$limit" \
-        | /usr/local/bin/jq -r '.ids[]?' \
-        | /usr/bin/xargs -I % /usr/bin/curl -s -q -f -L "$WWW/CGI/aah-updates.cgi?db=$db&id=%" \
-        | /usr/local/bin/jq -j '.class,"/",.id,".jpg\n"' >! "$OUTPUT"
+  curl -s -q -f -L "$HTTP_HOST/CGI/aah-images.cgi?db=$db&limit=$limit" \
+        | jq -r '.ids[]?' \
+        | /usr/bin/xargs -I % curl -s -q -f -L "$HTTP_HOST/CGI/aah-updates.cgi?db=$db&id=%" \
+        | jq -j '.class,"/",.id,".jpg\n"' >! "$OUTPUT"
 endif
 
 if (-s "$OUTPUT") then
@@ -86,9 +108,9 @@ if (-s "$OUTPUT") then
 	set stat = "$i"
         set output = "$output"'"'"$i"'"'
       else if (-l "$TMP/$db/$i") then
-        if ($?DEBUG) /bin/echo `date` "$0 $$ -- $TMP/$db/$i linked" >>&! $TMP/LOG
+        if ($?DEBUG) /bin/echo `date` "$0 $$ -- $TMP/$db/$i linked" >>&! $LOGTO
       else
-        if ($?DEBUG) /bin/echo `date` "$0 $$ -- $TMP/$db/$i missing" >>&! $TMP/LOG
+        if ($?DEBUG) /bin/echo `date` "$0 $$ -- $TMP/$db/$i missing" >>&! $LOGTO
       endif
     end
     if ($?stat) then
@@ -99,7 +121,7 @@ if (-s "$OUTPUT") then
     set output = "$output"'}'
     goto output
 else
-  if ($?DEBUG) /bin/echo `date` "$0 $$ -- no $OUTPUT exists" >>&! $TMP/LOG
+  if ($?DEBUG) /bin/echo `date` "$0 $$ -- no $OUTPUT exists" >>&! $LOGTO
   goto done
 endif
 
@@ -108,13 +130,13 @@ endif
   if ($class == "any" || $class == "all") then
     set out = "/tmp/$0:t.$$.json"
     set url = "$db-$API/_all_docs"
-    /usr/bin/curl -m 5 -s -q -f -L "$CU/$url" -o "$out"
+    curl -m 5 -s -q -f -L "$CU/$url" -o "$out"
     if ($status != 22 && $status != 28 && -s "$out") then
-      set classes = ( `/usr/local/bin/jq -r '.rows[]?.id' "$out"` )
-      if ($?DEBUG) /bin/echo `date` "$0 $$ ++ SUCCESS ($classes)" >>&! $TMP/LOG
+      set classes = ( `jq -r '.rows[]?.id' "$out"` )
+      if ($?DEBUG) /bin/echo `date` "$0 $$ ++ SUCCESS ($classes)" >>&! $LOGTO
       rm -f "$out"
     else 
-      if ($?DEBUG) /bin/echo `date` "$0 $$ ++ FAILURE ($url)" >>&! $TMP/LOG
+      if ($?DEBUG) /bin/echo `date` "$0 $$ ++ FAILURE ($url)" >>&! $LOGTO
       rm -f "$out"
       goto done
     endif
@@ -128,18 +150,18 @@ endif
     foreach c ( $classes )
       set url = "$db-$API/$c"
       set out = "/tmp/$0:t.$$.json"
-      /usr/bin/curl -s -q -f -L "$CU/$url" -o "$out"
+      curl -s -q -f -L "$CU/$url" -o "$out"
       if ($status == 22 || ! -s "$out") then
-	if ($?DEBUG) /bin/echo `date` "$0 $$ ++ FAIL ($url)" >>&! $TMP/LOG
+	if ($?DEBUG) /bin/echo `date` "$0 $$ ++ FAIL ($url)" >>&! $LOGTO
 	rm -f "$out"
 	continue
       endif
       if ($class != "any") then
 	if ($k) /bin/echo ',' >> "$OUTPUT.$$"
-        /usr/local/bin/jq '{"name":"'"$c"'","date":.date,"count":.count }' "$out" >> "$OUTPUT.$$"
+        jq '{"name":"'"$c"'","date":.date,"count":.count }' "$out" >> "$OUTPUT.$$"
 	@ k++
       else
-        /usr/local/bin/jq -j '.ids[]?|select(.date>'"$since"')|.date,",","'"$c"'",",",.id,"\n"' "$out" >>! "$all"
+        jq -j '.ids[]?|select(.date>'"$since"')|.date,",","'"$c"'",",",.id,"\n"' "$out" >>! "$all"
       endif
     end
     if ($class == "any") then
@@ -159,10 +181,10 @@ endif
     mv "$OUTPUT.$$" "$OUTPUT"
   else if ($class == "all") then
     set url = "https://$CU/$db-$API/$class"
-    curl -s -q -f -L "$url" | /usr/local/bin/jq '{"name":.name,"date":.date,"count":.count,"classes":.classes}' >! "$OUTPUT"
+    curl -s -q -f -L "$url" | jq '{"name":.name,"date":.date,"count":.count,"classes":.classes}' >! "$OUTPUT"
   else
     set url = "https://$CU/$db-$API/$class"
-    curl -s -q -f -L "$url" | /usr/local/bin/jq '{"name":.name,"date":.date,"count":.count,"ids":.ids}' >! "$OUTPUT"
+    curl -s -q -f -L "$url" | jq '{"name":.name,"date":.date,"count":.count,"ids":.ids}' >! "$OUTPUT"
   endif
 endif
 
@@ -183,13 +205,13 @@ if (-s "$OUTPUT") then
     if ($refresh < 0) @ refresh = $TTL
     /bin/echo "Refresh: $refresh"
     /bin/echo "Cache-Control: max-age=$TTL"
-    /bin/echo "Last-Modified:" `date -r $DATE '+%a, %d %b %Y %H:%M:%S %Z'`
+    /bin/echo "Last-Modified:" `$dateconv -i '%s' -f '%a, %d %b %Y %H:%M:%S %Z' $DATE`
     /bin/echo ""
-    /usr/local/bin/jq -c '.' "$OUTPUT"
-    if ($?DEBUG) /bin/echo `date` "$0 $$ -- output ($OUTPUT) Age: $age Refresh: $refresh" >>! $TMP/LOG
+    jq -c '.' "$OUTPUT"
+    if ($?DEBUG) /bin/echo `date` "$0 $$ -- output ($OUTPUT) Age: $age Refresh: $refresh" >>! $LOGTO
 else
     /bin/echo "Cache-Control: no-cache"
-    /bin/echo "Last-Modified:" `date -r $SECONDS '+%a, %d %b %Y %H:%M:%S %Z'`
+    /bin/echo "Last-Modified:" `$dateconv -i '%s' -f '%a, %d %b %Y %H:%M:%S %Z' $DATE`
     /bin/echo ""
     /bin/echo '{ "error": "not found" }'
 endif
@@ -198,5 +220,5 @@ cleanup:
   rm -f "$OUTPUT".$$
 
 done:
-  /bin/echo `date` "$0 $$ -- FINISH ($QUERY_STRING)" >>! $TMP/LOG
+  /bin/echo `date` "$0 $$ -- FINISH ($QUERY_STRING)" >>! $LOGTO
 

@@ -1,13 +1,29 @@
-#!/bin/csh -fb
+#!/bin/tcsh -b
 setenv APP "aah"
 setenv API "imageLast"
-setenv LAN "192.168.1"
-setenv WWW "$LAN".32
-setenv DIGITS "$LAN".30
-setenv WAN "www.dcmartin.com"
-if ($?TMP == 0) setenv TMP "/var/lib/age-at-home"
 
-setenv DEBUG true
+# setenv DEBUG true
+# setenv VERBOSE true
+
+# environment
+if ($?LAN == 0) setenv LAN "192.168.1"
+if ($?DIGITS == 0) setenv DIGITS "$LAN".30
+if ($?TMP == 0) setenv TMP "/var/lib/age-at-home"
+if ($?CREDENTIALS == 0) setenv CREDENTIALS /usr/local/etc
+if ($?LOGTO == 0) setenv LOGTO /dev/stderr
+
+###
+### dateutils REQUIRED
+###
+
+if ( -e /usr/bin/dateutils.dconv ) then
+   set dateconv = /usr/bin/dateutils.dconv
+else if ( -e /usr/local/bin/dateconv ) then
+   set dateconv = /usr/local/bin/dateconv
+else
+  echo "No date converter; install dateutils" >& /dev/stderr
+  exit 1
+endif
 
 # don't update statistics more than once per (in seconds)
 setenv TTL 60
@@ -22,7 +38,7 @@ if ($?QUERY_STRING) then
 endif
 
 if ($?db == 0) then
-  /bin/echo `/bin/date` "$0 $$ -- no db" >>! $TMP/LOGk
+  /bin/echo `/bin/date` "$0 $$ -- no db" >>! $LOGTOk
   goto done
 endif
 if ($?ext == 0) then
@@ -31,7 +47,7 @@ else if ($ext != "full" && $ext != "crop") then
   set ext = "full"
 endif
 
-if ($?VERBOSE) /bin/echo `/bin/date` "$0 $$ -- START ($db $ext)" >>! $TMP/LOG
+if ($?VERBOSE) /bin/echo `/bin/date` "$0 $$ -- START ($db $ext)" >>! $LOGTO
 
 # find image
 set out = "/tmp/$0:t.$db-$ext.$DATE.jpg"
@@ -39,7 +55,7 @@ set out = "/tmp/$0:t.$db-$ext.$DATE.jpg"
 if (! -s "$out") then
   set old = ( `/bin/echo "$out:r:r".*.jpg` )
 
-  if ($?DEBUG) /bin/echo `/bin/date` "$0 $$ -- ASYNC REQUEST ($db $ext)" >>! $TMP/LOG
+  if ($?DEBUG) /bin/echo `/bin/date` "$0 $$ -- ASYNC REQUEST ($db $ext)" >>! $LOGTO
 
   ./aah-fetch-imageLast.bash "$db" "$ext" "$out"
 
@@ -56,16 +72,15 @@ if (! -s "$out") then
 endif
 
 if (-s "$out") then
-  if ($?DEBUG) /bin/echo `/bin/date` "$0 $$ -- CACHE HIT ($out)" >>! $TMP/LOG
-  /bin/echo "Last-Modified:" `/bin/date -r $DATE '+%a, %d %b %Y %H:%M:%S %Z'`
+  if ($?DEBUG) /bin/echo `/bin/date` "$0 $$ -- CACHE HIT ($out)" >>! $LOGTO
+  /bin/echo "Last-Modified:" `$dateconv -i '%s' -f '%a, %d %b %Y %H:%M:%S %Z' $DATE`
   /bin/echo "Access-Control-Allow-Origin: *"
   /bin/echo "Content-Type: image/jpeg"
-  /bin/echo "Last-Modified:" `/bin/date -r $SECONDS '+%a, %d %b %Y %H:%M:%S %Z'`
   /bin/echo ""
   /bin/dd if="$out"
   goto done
 endif
-  if ($?DEBUG) /bin/echo `/bin/date` "$0 $$ -- FAIL ($db $ext)" >>! $TMP/LOG
+  if ($?DEBUG) /bin/echo `/bin/date` "$0 $$ -- FAIL ($db $ext)" >>! $LOGTO
   set output = '{"error":"not found","db":"'"$db"'","ext":"'"$ext"'"}'
   goto output
 endif
@@ -76,7 +91,7 @@ endif
 
 output:
 
-if ($?DEBUG) /bin/echo `/bin/date` "$0 $$ -- FAIL ($output)" >>! $TMP/LOG
+if ($?DEBUG) /bin/echo `/bin/date` "$0 $$ -- FAIL ($output)" >>! $LOGTO
 
 /bin/echo "Content-Type: application/json; charset=utf-8"
 /bin/echo "Access-Control-Allow-Origin: *"
@@ -92,4 +107,4 @@ endif
 
 done:
 
-if ($?VERBOSE) /bin/echo `/bin/date` "$0 $$ -- FINISH ($DATE)" >>! $TMP/LOG
+if ($?VERBOSE) /bin/echo `/bin/date` "$0 $$ -- FINISH ($DATE)" >>! $LOGTO
