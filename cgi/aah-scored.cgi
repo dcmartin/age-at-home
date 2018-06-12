@@ -2,16 +2,16 @@
 setenv APP "aah"
 setenv API "scored"
 
-# debug on/off
-setenv DEBUG true
-setenv VERBOSE true
+# setenv DEBUG true
+# setenv VERBOSE true
 
 # environment
 if ($?LAN == 0) setenv LAN "192.168.1"
 if ($?DIGITS == 0) setenv DIGITS "$LAN".30
-if ($?TMP == 0) setenv TMP "/var/lib/age-at-home"
+if ($?TMP == 0) setenv TMP "/tmp"
+if ($?AAHDIR == 0) setenv AAHDIR "/var/lib/age-at-home"
 if ($?CREDENTIALS == 0) setenv CREDENTIALS /usr/local/etc
-if ($?LOGTO == 0) setenv LOGTO /dev/stderr
+if ($?LOGTO == 0) setenv LOGTO $TMP/$APP.log
 
 ###
 ### dateutils REQUIRED
@@ -86,7 +86,7 @@ if ($?DEBUG) /bin/echo `date` "$0 $$ -- query string ($QUERY_STRING)" >>! $LOGTO
 
 # handle image
 if ($?id) then
-    set base = "$TMP/$db/$class"
+    set base = "$AAHDIR/$db/$class"
     set images = ( `find "$base" -name "$id.jpg" -type f -print` )
     if ($?DEBUG) /bin/echo `date` "$0 $$ -- IMAGE ($id) count ($#images) " >>! $LOGTO
     # should be singleton image
@@ -138,7 +138,7 @@ touch "$OUTPUT.$$"
 if ($#OLD > 1) rm -f $OLD[2-]
 
 if ($?class) then
-    set base = "$TMP/$db/$class"
+    set base = "$AAHDIR/$db/$class"
     if ($?id) then
 	set images = ( `find "$base" -name "$id.jpg" -type f -print` )
     else if ($?match) then
@@ -147,7 +147,7 @@ if ($?class) then
 	set images = ( `find "$base" -name "*.jpg" -type f -print | sed "s@$base/\(.*\)\.jpg@\1@"` )
     endif
 else 
-    set base = "$TMP/$db"
+    set base = "$AAHDIR/$db"
     set classes = ( `find "$base" -name "[^\.]*" -type d -print | sed "s@$base@@" | sed "s@/@@"` )
 endif
 
@@ -177,7 +177,7 @@ if ($?class) then
     foreach i ( $images )
       set file = '<a href="http://'"$HTTP_HOST/CGI/$APP-$API"'.cgi?db='"$db"'&class='"$class"'&id='"$i"'.jpg">'"$i.jpg"'</a>' 
       set ctime = `date '+%d-%h-%Y %H:%M'`
-      set fsize = `ls -l "$TMP/$db/$class/$i.jpg" | awk '{ print $5 }'`
+      set fsize = `ls -l "$AAHDIR/$db/$class/$i.jpg" | awk '{ print $5 }'`
       /bin/echo "$file		$ctime		$fsize" >>! "$OUTPUT.$$"
     end
     /bin/echo '</pre><hr></body></html>' >>! "$OUTPUT.$$"
@@ -190,7 +190,7 @@ else if ($?classes) then
     foreach i ( $classes )
       set class = '<a href="http://'"$HTTP_HOST/CGI/$APP-$API"'.cgi?db='"$db"'&class='"$i"'/">'"$i"'/</a>' >>! "$OUTPUT.$$"
       set ctime = `date '+%d-%h-%Y %H:%M'`
-      set fsize = `du -sk "$TMP/$db/$i" | awk '{ print $1 }'`
+      set fsize = `du -sk "$AAHDIR/$db/$i" | awk '{ print $1 }'`
       /bin/echo "$class		$ctime		$fsize" >>! "$OUTPUT.$$"
     end
     /bin/echo '</pre><hr></body></html>' >>! "$OUTPUT.$$"

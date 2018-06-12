@@ -8,9 +8,10 @@ setenv API "cfmatrix"
 # environment
 if ($?LAN == 0) setenv LAN "192.168.1"
 if ($?DIGITS == 0) setenv DIGITS "$LAN".30
-if ($?TMP == 0) setenv TMP "/var/lib/age-at-home"
+if ($?TMP == 0) setenv TMP "/tmp"
+if ($?AAHDIR == 0) setenv AAHDIR "/var/lib/age-at-home"
 if ($?CREDENTIALS == 0) setenv CREDENTIALS /usr/local/etc
-if ($?LOGTO == 0) setenv LOGTO /dev/stderr
+if ($?LOGTO == 0) setenv LOGTO $TMP/$APP.log
 
 # don't update statistics more than once per 15 minutes
 set TTL = `/bin/echo "30 * 1" | bc`
@@ -30,7 +31,7 @@ else
   exit 1
 endif
 
-/bin/echo `date` "$0:t $$ -- START" >>& "$LOGTO"
+/bin/echo `date` "$0:t $$ -- START" >>&! $LOGTO
 
 if ($?QUERY_STRING) then
     set db = `/bin/echo "$QUERY_STRING" | sed 's/.*db=\([^&]*\).*/\1/'`
@@ -66,21 +67,21 @@ else if (-s $CREDENTIALS/.cloudant_url) then
     set CU = "https://$CU"
   endif
 else
-  /bin/echo `date` "$0:t $$ -- FAILURE: no Cloudant credentials" >>& $LOGTO
+  /bin/echo `date` "$0:t $$ -- FAILURE: no Cloudant credentials" >>&! $LOGTO
   goto done
 endif
 
 set creds = $CREDENTIALS/.watson.visual-recognition.json
 if (-s $creds) then
     set api_key = ( `jq -r '.[0]|.credentials.api_key' "$creds"` )
-    if ($?DEBUG) /bin/echo `date` "$0:t $$ -- USING APIKEY $api_key" >>& "$LOGTO"
+    if ($?DEBUG) /bin/echo `date` "$0:t $$ -- USING APIKEY $api_key" >>&! $LOGTO
     set url = ( `jq -r '.[0]|.credentials.url' "$creds"` )
-    if ($?DEBUG) /bin/echo `date` "$0:t $$ -- USING URL $url" >>& "$LOGTO"
+    if ($?DEBUG) /bin/echo `date` "$0:t $$ -- USING URL $url" >>&! $LOGTO
     # set base
     set TU = $url
-    /bin/echo `date` "$0:t $$ -- CREDENTIALS ($creds); $TU" >>& "$LOGTO"
+    /bin/echo `date` "$0:t $$ -- CREDENTIALS ($creds); $TU" >>&! $LOGTO
 else if ($?TU == 0) then
-    /bin/echo `date` "$0:t $$ -- NO CREDENTIALS ($creds); create file and copy credentials from visual-recognition service on bluemix.net" >>& "$LOGTO"
+    /bin/echo `date` "$0:t $$ -- NO CREDENTIALS ($creds); create file and copy credentials from visual-recognition service on bluemix.net" >>&! $LOGTO
     goto done
 endif
 
@@ -109,14 +110,14 @@ else
 endif
 
 if ($#classifiers == 0) then
-  if ($?DEBUG) /bin/echo `date` "$0:t $$ -- NO CLASSIFIERS FOUND ($TU/$verid,$vdate)" >>& "$LOGTO"
+  if ($?DEBUG) /bin/echo `date` "$0:t $$ -- NO CLASSIFIERS FOUND ($TU/$verid,$vdate)" >>&! $LOGTO
   /bin/echo "Content-Type: application/json; charset=utf-8"
   /bin/echo "Access-Control-Allow-Origin: *"
   /bin/echo "Cache-Control: no-cache"
   /bin/echo ""
   /bin/echo '{"error":"not found"}'
 else if ($?model) then
-  set OUTPUT = "$TMP/matrix/$model.json"
+  set OUTPUT = "$AAHDIR/matrix/$model.json"
   if (-s "$OUTPUT") then
     /bin/echo "Content-Type: application/json; charset=utf-8"
     /bin/echo "Access-Control-Allow-Origin: *"
@@ -129,7 +130,7 @@ else if ($?model) then
   else
     # return redirect
     set URL = "https://$CU/$db-$API/$model?include_docs=true"
-    /bin/echo `date` "$0:t $$ -- returning redirect ($URL)" >>! $LOGTO
+    /bin/echo `date` "$0:t $$ -- returning redirect ($URL)" >>&! $LOGTO
     set AGE = `/bin/echo "$SECONDS - $DATE" | bc`
     /bin/echo "Age: $AGE"
     /bin/echo "Cache-Control: max-age=$TTL"
@@ -158,4 +159,4 @@ endif
 
 done:
 
-/bin/echo `date` "$0:t $$ -- FINISH" >>& $LOGTO
+/bin/echo `date` "$0:t $$ -- FINISH" >>&! $LOGTO

@@ -30,7 +30,7 @@ devreq.onreadystatechange = function() {
     var jobj = JSON.parse(this.responseText);
 
     jobj.devices.forEach(function(item,index) {
-      devices.innerHTML += '<h2>' + item.name + '</h2>' + '<iframe height="430" width="700" src="CGI/aah-classify.cgi?db=' + item.name + '&limit=2&slave=true"></iframe>'
+      devices.innerHTML += '<h2>' + item.name + '</h2>' + '<iframe height="430" width="700" src="http://age-at-home.dyndns.org:8999/CGI/aah-classify.cgi?db=' + item.name + '&limit=2&slave=true"></iframe>'
     });
   }
 }

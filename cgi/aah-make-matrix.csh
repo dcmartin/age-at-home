@@ -9,9 +9,10 @@ setenv VERBOSE true
 # environment
 if ($?LAN == 0) setenv LAN "192.168.1"
 if ($?DIGITS == 0) setenv DIGITS "$LAN".30
-if ($?TMP == 0) setenv TMP "/var/lib/age-at-home"
+if ($?TMP == 0) setenv TMP "/tmp"
+if ($?AAHDIR == 0) setenv AAHDIR "/var/lib/age-at-home"
 if ($?CREDENTIALS == 0) setenv CREDENTIALS /usr/local/etc
-if ($?LOGTO == 0) setenv LOGTO /dev/stderr
+if ($?LOGTO == 0) setenv LOGTO $TMP/$APP.log
 
 if ($?TTL == 0) set TTL = 5
 if ($?SECONDS == 0) set SECONDS = `/bin/date "+%s"`
@@ -33,7 +34,7 @@ else if (-s $CREDENTIALS/.cloudant_url) then
     set CU = "https://$CU"
   endif
 else
-  /bin/echo `date` "$0:t $$ -- FAILURE: no Cloudant credentials" >>& $LOGTO
+  /bin/echo `date` "$0:t $$ -- FAILURE: no Cloudant credentials" >>&! $LOGTO
   goto done
 endif
 
@@ -44,7 +45,7 @@ endif
 set JSON = "$TMP/$APP-$API-$QUERY_STRING.$DATE.json"
 set TEST = "$TMP/$APP-$API-$QUERY_STRING-test.$DATE.json"
 set CSV = "$TMP/$APP-$API-$QUERY_STRING-test.$DATE.csv"
-set CSV = "$TMP/matrix/$model.csv"
+set CSV = "$AAHDIR/matrix/$model.csv"
 
 if ((-s "$JSON") && (-s "$CSV") && (-M "$JSON") <= (-M "$CSV")) then
     /bin/echo `date` "$0 $$ -- EXISTING && UP-TO-DATE $JSON" >& /dev/stderr
@@ -63,15 +64,15 @@ endif
 
 set sets = ( `jq -r '.sets[].set' "$TEST"` )
 if ($#sets) then
-  /bin/echo `date` "$0 $$ -- building $JSON on $#sets ($sets)" >>! $LOGTO
+  /bin/echo `date` "$0 $$ -- building $JSON on $#sets ($sets)" >>&! $LOGTO
 
   unset matrix
   set total = 0
 
   foreach this ( $sets )
     /bin/echo -n `date` "$0 $$ -- $this [ " >& /dev/stderr
-    if (! -s "$TMP/matrix/$model.$this.json") then
-	jq -c '.sets[]|select(.set=="'"$this"'").results[]?' "$TEST" >! "$TMP/matrix/$model.$this.json"
+    if (! -s "$AAHDIR/matrix/$model.$this.json") then
+	jq -c '.sets[]|select(.set=="'"$this"'").results[]?' "$TEST" >! "$AAHDIR/matrix/$model.$this.json"
     endif
     # make matrix
     if ($?matrix) then
@@ -86,24 +87,24 @@ if ($#sets) then
     unset truth
     foreach class ( $sets )
       /bin/echo -n "$class " >& /dev/stderr
-      if (! -s "$TMP/matrix/$model.$this.$class.csv") then
+      if (! -s "$AAHDIR/matrix/$model.$this.$class.csv") then
 	@ match = 0
 	set noglob
 	@ count = 0
-	foreach line ( `cat "$TMP/matrix/$model.$this.json"` )
+	foreach line ( `cat "$AAHDIR/matrix/$model.$this.json"` )
 	  set id = `/bin/echo "$line" | jq -r '.id'`
 	  if ($id != "null") then
 	    set score = `/bin/echo "$line" | jq -r '.classes[]|select(.class=="'"$class"'").score'`
 	    set top = `/bin/echo "$line" | jq -r '.classes|sort_by(.score)[-1].class'`
 	    if ($class == $top) @ match++
-	    /bin/echo "$id,$score" >>! "$TMP/matrix/$model.$this.$class.csv.$$"
+	    /bin/echo "$id,$score" >>! "$AAHDIR/matrix/$model.$this.$class.csv.$$"
 	    @ count++
 	  endif
 	end
 	unset noglob
-	/bin/echo "id,label,$class" >! "$TMP/matrix/$model.$this.$class.csv"
-	cat "$TMP/matrix/$model.$this.$class.csv.$$" | sed "s/\(.*\),\(.*\)/\1,$this,\2/" >> "$TMP/matrix/$model.$this.$class.csv"
-	rm -f "$TMP/matrix/$model.$this.$class.csv.$$"
+	/bin/echo "id,label,$class" >! "$AAHDIR/matrix/$model.$this.$class.csv"
+	cat "$AAHDIR/matrix/$model.$this.$class.csv.$$" | sed "s/\(.*\),\(.*\)/\1,$this,\2/" >> "$AAHDIR/matrix/$model.$this.$class.csv"
+	rm -f "$AAHDIR/matrix/$model.$this.$class.csv.$$"
 	if ($?found) then
 	  set found = ( $found $class )
 	else
@@ -123,27 +124,27 @@ if ($#sets) then
     endif
     @ total += $count
     if ($?found) then
-      set out = ( "$TMP/matrix/$model.$this".*.csv )
+      set out = ( "$AAHDIR/matrix/$model.$this".*.csv )
       set found = `/bin/echo "$found" | sed 's/ /,/g'`
-      csvjoin -c "id" $out | csvcut -c "id,label,$found" >! "$TMP/matrix/$model.$this.csv"
+      csvjoin -c "id" $out | csvcut -c "id,label,$found" >! "$AAHDIR/matrix/$model.$this.csv"
       unset found
       rm -f $out
     endif
-    rm "$TMP/matrix/$model.$this.json"
+    rm "$AAHDIR/matrix/$model.$this.json"
     /bin/echo "]" >& /dev/stderr
   end
   set matrix = "$matrix"'],"count":'$total'}'
 
-  /bin/echo "$matrix" | jq . >! "$TMP/matrix/$model.json"
-  /bin/echo `date` "$0 $$ -- MADE $TMP/matrix/$model.json" >& /dev/stderr
+  /bin/echo "$matrix" | jq . >! "$AAHDIR/matrix/$model.json"
+  /bin/echo `date` "$0 $$ -- MADE $AAHDIR/matrix/$model.json" >& /dev/stderr
 
-  set out = ( "$TMP/matrix/$model".*.csv )
+  set out = ( "$AAHDIR/matrix/$model".*.csv )
   if ($#out) then
-    head -1 $out[1] >! "$TMP/matrix/$model.csv"
-    tail +2 -q $out >> "$TMP/matrix/$model.csv"
-    /bin/echo `date` "$0 $$ -- MADE $TMP/matrix/$model.csv" >& /dev/stderr
+    head -1 $out[1] >! "$AAHDIR/matrix/$model.csv"
+    tail +2 -q $out >> "$AAHDIR/matrix/$model.csv"
+    /bin/echo `date` "$0 $$ -- MADE $AAHDIR/matrix/$model.csv" >& /dev/stderr
   else
-    /bin/echo `date` "$0 $$ -- FAILURE $TMP/matrix/$model.csv" >& /dev/stderr
+    /bin/echo `date` "$0 $$ -- FAILURE $AAHDIR/matrix/$model.csv" >& /dev/stderr
   endif
 endif
 

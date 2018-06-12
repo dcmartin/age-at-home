@@ -8,9 +8,10 @@ setenv API "imageLast"
 # environment
 if ($?LAN == 0) setenv LAN "192.168.1"
 if ($?DIGITS == 0) setenv DIGITS "$LAN".30
-if ($?TMP == 0) setenv TMP "/var/lib/age-at-home"
+if ($?TMP == 0) setenv TMP "/tmp"
+if ($?AAHDIR == 0) setenv AAHDIR "/var/lib/age-at-home"
 if ($?CREDENTIALS == 0) setenv CREDENTIALS /usr/local/etc
-if ($?LOGTO == 0) setenv LOGTO /dev/stderr
+if ($?LOGTO == 0) setenv LOGTO $TMP/$APP.log
 
 ###
 ### dateutils REQUIRED

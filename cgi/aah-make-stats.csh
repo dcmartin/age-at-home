@@ -9,9 +9,10 @@ setenv VERBOSE true
 # environment
 if ($?LAN == 0) setenv LAN "192.168.1"
 if ($?DIGITS == 0) setenv DIGITS "$LAN".30
-if ($?TMP == 0) setenv TMP "/var/lib/age-at-home"
+if ($?TMP == 0) setenv TMP "/tmp"
+if ($?AAHDIR == 0) setenv AAHDIR "/var/lib/age-at-home"
 if ($?CREDENTIALS == 0) setenv CREDENTIALS /usr/local/etc
-if ($?LOGTO == 0) setenv LOGTO /dev/stderr
+if ($?LOGTO == 0) setenv LOGTO $TMP/$APP.log
 
 if ($?TTL == 0) set TTL = 3600
 if ($?SECONDS == 0) set SECONDS = `/bin/date "+%s"`
@@ -80,7 +81,7 @@ else if (-s $CREDENTIALS/.cloudant_url) then
     set CU = "https://$CU"
   endif
 else
-  /bin/echo `date` "$0:t $$ -- FAILURE: no Cloudant credentials" >>& $LOGTO
+  /bin/echo `date` "$0:t $$ -- FAILURE: no Cloudant credentials" >>&! $LOGTO
   goto done
 endif
 

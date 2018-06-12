@@ -2,14 +2,14 @@
 setenv APP "aah"
 setenv API "devices"
 
-# debug on/off
 # setenv DEBUG true
 # setenv VERBOSE true
 
 # environment
 if ($?LAN == 0) setenv LAN "192.168.1"
 if ($?DIGITS == 0) setenv DIGITS "$LAN".30
-if ($?TMP == 0) setenv TMP "/var/lib/age-at-home"
+if ($?TMP == 0) setenv TMP "/tmp"
+if ($?AAHDIR == 0) setenv AAHDIR "/var/lib/age-at-home"
 if ($?CREDENTIALS == 0) setenv CREDENTIALS /usr/local/etc
 if ($?LOGTO == 0) setenv LOGTO /dev/stderr
 
@@ -41,7 +41,7 @@ if ($?db == 0) set db = all
 # standardize QUERY_STRING (rendezvous w/ APP-make-API.csh script)
 setenv QUERY_STRING "db=$db"
 
-if ($?VERBOSE) echo `date` "$0:t $$ -- START ($QUERY_STRING)" >>! $LOGTO
+if ($?VERBOSE) echo `date` "$0:t $$ -- START ($QUERY_STRING)" >>&! $LOGTO
 
 ##
 ## ACCESS CLOUDANT
@@ -59,7 +59,7 @@ else if (-s $CREDENTIALS/.cloudant_url) then
     set CU = "https://$CU"
   endif
 else
-  /bin/echo `date` "$0:t $$ -- FAILURE: no Cloudant credentials" >>& $LOGTO
+  /bin/echo `date` "$0:t $$ -- FAILURE: no Cloudant credentials" >>&! $LOGTO
   goto done
 endif
 
@@ -137,7 +137,7 @@ if ($?output == 0 && -e "$OUTPUT") then
   echo "Last-Modified:" `$dateconv -i '%s' -f '%a, %d %b %Y %H:%M:%S %Z' $DATE`
   echo ""
   jq -c '.' "$OUTPUT"
-  if ($?VERBOSE) echo `date` "$0:t $$ -- output ($OUTPUT) Age: $age Refresh: $refresh" >>! $LOGTO
+  if ($?VERBOSE) echo `date` "$0:t $$ -- output ($OUTPUT) Age: $age Refresh: $refresh" >>&! $LOGTO
 else
   echo "Cache-Control: no-cache"
   echo "Last-Modified:" `$dateconv -i '%s' -f '%a, %d %b %Y %H:%M:%S %Z' $DATE`
@@ -153,4 +153,4 @@ endif
 
 done:
 
-if ($?VERBOSE) echo `date` "$0:t $$ -- FINISH ($QUERY_STRING)" >>! $LOGTO
+if ($?VERBOSE) echo `date` "$0:t $$ -- FINISH ($QUERY_STRING)" >>&! $LOGTO

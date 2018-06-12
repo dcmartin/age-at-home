@@ -67,20 +67,20 @@ function rf_first() {
 
 var dc_first_req = new XMLHttpRequest();
 dc_first_req.onload = dc_first;
-dc_first_req.open("GET", "/CGI/aah-first.cgi?db=damp-cloud", true);
+dc_first_req.open("GET", "http://age-at-home.dyndns.org:8999/CGI/aah-first.cgi?db=damp-cloud", true);
 dc_first_req.send();
 var rf_first_req = new XMLHttpRequest();
 rf_first_req.onload = rf_first;
-rf_first_req.open("GET", "/CGI/aah-first.cgi?db=rough-fog", true);
+rf_first_req.open("GET", "http://age-at-home.dyndns.org:8999/CGI/aah-first.cgi?db=rough-fog", true);
 rf_first_req.send();
 
 var dc_req = new XMLHttpRequest();
 dc_req.onload = dc_handler;
-dc_req.open("GET", "/CGI/aah-last.cgi?db=damp-cloud", true);
+dc_req.open("GET", "http://age-at-home.dyndns.org:8999/CGI/aah-last.cgi?db=damp-cloud", true);
 dc_req.send();
 var rf_req = new XMLHttpRequest();
 rf_req.onload = rf_handler;
-rf_req.open("GET", "/CGI/aah-last.cgi?db=rough-fog", true);
+rf_req.open("GET", "http://age-at-home.dyndns.org:8999/CGI/aah-last.cgi?db=rough-fog", true);
 rf_req.send();
 
 </script>

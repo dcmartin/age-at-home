@@ -2,16 +2,16 @@
 setenv APP "aah"
 setenv API "images"
 
-# debug on/off
 setenv DEBUG true
 setenv VERBOSE true
 
 # environment
 if ($?LAN == 0) setenv LAN "192.168.1"
 if ($?DIGITS == 0) setenv DIGITS "$LAN".30
-if ($?TMP == 0) setenv TMP "/var/lib/age-at-home"
+if ($?TMP == 0) setenv TMP "/tmp"
+if ($?AAHDIR == 0) setenv AAHDIR "/var/lib/age-at-home"
 if ($?CREDENTIALS == 0) setenv CREDENTIALS /usr/local/etc
-if ($?LOGTO == 0) setenv LOGTO /dev/stderr
+if ($?LOGTO == 0) setenv LOGTO $TMP/$APP.log
 
 ###
 ### dateutils REQUIRED
@@ -62,7 +62,7 @@ else if ($?limit) then
   if ($limit > $IMAGE_LIMIT) set limit = $IMAGE_LIMIT
 endif
 
-if ($?DEBUG) echo `date` "$0 $$ -- START ($QUERY_STRING)" >>! $LOGTO
+if ($?DEBUG) echo `date` "$0 $$ -- $db -- START" >>&! $LOGTO
 
 ##
 ## ACCESS CLOUDANT
@@ -80,7 +80,7 @@ else if (-s $CREDENTIALS/.cloudant_url) then
     set CU = "https://$CU"
   endif
 else
-  echo `date` "$0:t $$ -- FAILURE: no Cloudant credentials" >>& $LOGTO
+  echo `date` "$0:t $$ -- FAILURE: no Cloudant credentials" >>&! $LOGTO
   goto done
 endif
 
@@ -132,7 +132,7 @@ foreach d ( $devices )
       if ($?force) then
         setenv QUERY_STRING "$QUERY_STRING&force=true"
       endif
-      if ($?DEBUG) echo `date` "$0 $$ ++ DELAY ($delay) -- REQUESTING ./$APP-make-$API.bash ($QUERY_STRING)" >>! $LOGTO
+      if ($?DEBUG) echo `date` "$0 $$ ++ DELAY ($delay) -- REQUESTING ./$APP-make-$API.bash ($QUERY_STRING)" >>&! $LOGTO
       ./$APP-make-$API.bash
       setenv QUERY_STRING "$qs"
     endif
@@ -210,10 +210,10 @@ if ($?singleton) then
   endif
 
   # find original
-  if ($ext == "full") set path = "$TMP/$db/$class/$id.jpg"
-  if ($ext == "crop") set path = "$TMP/$db/$class/$id.jpeg"
+  if ($ext == "full") set path = "$AAHDIR/$db/$class/$id.jpg"
+  if ($ext == "crop") set path = "$AAHDIR/$db/$class/$id.jpeg"
   if (-s "$path") then
-    if ($?DEBUG) echo `date` "$0 $$ -- SINGLETON ($path)" >>! $LOGTO
+    if ($?DEBUG) echo `date` "$0 $$ -- SINGLETON ($path)" >>&! $LOGTO
     echo "Last-Modified:" `$dateconv -i '%s' -f '%a, %d %b %Y %H:%M:%S %Z' $DATE`
     echo "Access-Control-Allow-Origin: *"
     echo "Content-Location: $HTTP_HOST/CGI/$APP-$API.cgi?db=$db&id=$id&ext=$ext"
@@ -258,22 +258,20 @@ foreach d ( $devices )
   endif
   /bin/rm -f "$out"
 
-
-
   ####
   #### LOOK AT THIS LATER -- NUMBERS ARE ARBITRARY
   ####
 
   if ($?since) then
     @ delay = $lud - $since
-  else
+  else 
     @ delay = $lud - $lid
   endif
 
   if ($?limit == 0) then
     @ estimate = $delay / 5
   else
-    @ estimate = $limit
+    @ estimate = $IMAGE_SET_LIMIT
   endif
   if ($estimate > $IMAGE_LIMIT) then
     set estimate = $IMAGE_LIMIT
@@ -282,15 +280,14 @@ foreach d ( $devices )
   endif
 
   if ($?DEBUG) then
-    set LUD = `$dateconv -i %s "$lud"` 
-    set LID = `$dateconv -i %s "$lid"` 
-    echo `date` "$0 $$ ++ DEVICE ($d) -- TOTAL ($total_rows) d) delay ($delay) -- estimate ($estimate) -- image: $LID -- update: $LUD" >>&! $LOGTO
+    echo `date` "$0 $$ ++ DEVICE ($d) -- TOTAL ($total_rows) d) delay ($delay) -- estimate ($estimate) -- image: $lid -- update: $lud" >>&! $LOGTO
   endif
 
   # process this db
   if ($db != "all" && $d == "$db") then
     # get recent rows
-    set url = "$CU/$d-images/_all_docs?include_docs=true&&descending=true&limit=$estimate"
+
+    set url = "$CU/$d-images/_all_docs?include_docs=true&descending=true&limit=$estimate"
     set out = "/tmp/$0:t.$$.json"
     @ try = 0
     @ rtt = 5
@@ -310,35 +307,23 @@ foreach d ( $devices )
       goto output
     endif
     # select subset based on limit specified and date
-    if ($?since == 0 && $?limit) then
+    if ($?limit) then
       set ids = ( `jq '[limit('"$limit"';.rows?|sort_by(.id)|reverse[].doc|select(.date<='"$lid"')._id)]' "$out"` )
       set len = ( `echo "$ids" | jq '.|length'` )
-      if ($?DEBUG)  echo `date` "$0:t $$ -- found $len ids" `echo "$ids" | jq -c '.'` >& $LOGTO
+      if ($?DEBUG)  echo `date` "$0:t $$ -- found $len ids" >>&! $LOGTO
       echo '{"name":"'"$d"'","date":'"$lid"',"count":'"$len"',"total":'"$total_rows"',"limit":'"$limit"',"ids":'"$ids"' }' >! "$OUTPUT"
     else if ($?since) then
-      set all = ( `jq -r '[.rows[]?.doc|select(.date<='"$lid"')|select(.date>'"$since"')._id]' "$out"` )
-    else 
-      # the limit will be estimate iff limit was specified
-      set all = ( `jq -r '.rows[]?.doc._id' "$out"` )
-    endif
-    set len = $#all
-    if ($?limit) then
-      if ($limit < $len) then
-	set ids = ( $all[1-$limit] )
+      set ids = ( `jq -r '.rows[]?.doc|select(.date<='"$lid"')|select(.date>'"$since"')._id' "$out"` )
+      set len = $#ids
+      if ($len > 0) then
+        set ids = ( `echo "$ids" | sed 's/\([^ ]*\)/"\1"/g' | sed 's/ /,/g'` )
+      else
+        set ids = ""
       endif
-    else
-      set limit = 0
-    endif
-    set ids = ( $all[1-$len] )
-    set num = $#ids
-    if ($num > 0) then
-      set all = ( `echo "$ids" | sed 's/\([^ ]*\)/"\1"/g' | sed 's/ /,/g'` )
-    else
-      set all = ""
-    endif
-    echo '{"name":"'"$d"'","date":'"$lid"',"count":'"$num"',"total":'"$total_rows"',"limit":'"$limit"',"ids":['"$all"']}' >! "$OUTPUT"
-    rm -f "$out"
-    goto output
+      echo '{"name":"'"$d"'","date":'"$lid"',"count":'"$len"',"total":'"$total_rows"',"limit":'"$limit"',"ids":['"$ids"']}' >! "$OUTPUT"
+      rm -f "$out"
+      goto output
+     endif
   else if ($db == "all") then
     set json = '{"name":"'"$d"'","date":'"$lid"',"total":'"$total_rows"'}'
   else
@@ -374,7 +359,7 @@ if ($?output == 0 && $?OUTPUT) then
     echo "Last-Modified:" `$dateconv -i '%s' -f '%a, %d %b %Y %H:%M:%S %Z' $DATE`
     echo ""
     jq -c '.' "$OUTPUT"
-    if ($?DEBUG) echo `date` "$0 $$ -- output ($OUTPUT) Age: $age Refresh: $refresh" >>! $LOGTO
+    if ($?DEBUG) echo `date` "$0 $$ -- output ($OUTPUT) Age: $age Refresh: $refresh" >>&! $LOGTO
     /bin/rm -f "$OUTPUT"
     goto done
   endif
@@ -396,4 +381,4 @@ done:
 @ now = `date "+%s"`
 @ elapsed = $now - $SECONDS
 
-if ($?DEBUG) echo `date` "$0 $$ -- FINISH ($elapsed)" >>! $LOGTO
+if ($?DEBUG) echo `date` "$0 $$ -- $db -- FINISH ($elapsed)" >>&! $LOGTO

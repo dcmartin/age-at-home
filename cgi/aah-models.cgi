@@ -2,16 +2,16 @@
 setenv APP "aah"
 setenv API "models"
 
-# debug on/off
-setenv DEBUG true
-setenv VERBOSE true
+# setenv DEBUG true
+# setenv VERBOSE true
 
 # environment
 if ($?LAN == 0) setenv LAN "192.168.1"
 if ($?DIGITS == 0) setenv DIGITS "$LAN".30
-if ($?TMP == 0) setenv TMP "/var/lib/age-at-home"
+if ($?TMP == 0) setenv TMP "/tmp"
+if ($?AAHDIR == 0) setenv AAHDIR "/var/lib/age-at-home"
 if ($?CREDENTIALS == 0) setenv CREDENTIALS /usr/local/etc
-if ($?LOGTO == 0) setenv LOGTO /dev/stderr
+if ($?LOGTO == 0) setenv LOGTO $TMP/$APP.log
 
 ###
 ### dateutils REQUIRED
@@ -35,7 +35,7 @@ set DATE = `echo $SECONDS \/ $TTL \* $TTL | bc`
 ### START
 ###
 
-echo "$0:t $$" `date` "START" >>& $LOGTO
+echo "$0:t $$" `date` "START" >>&! $LOGTO
 
 ## PROCESS query string
 if ($?QUERY_STRING) then
@@ -69,7 +69,7 @@ else if (-s $CREDENTIALS/.cloudant_url) then
     set CU = "https://$CU"
   endif
 else
-  echo `date` "$0:t $$ -- FAILURE: no Cloudant credentials" >>& $LOGTO
+  echo `date` "$0:t $$ -- FAILURE: no Cloudant credentials" >>&! $LOGTO
   goto done
 endif
 
@@ -87,10 +87,10 @@ else
   if (! -s "$TRAIN") then
     if ($?VERBOSE) echo "NO TRAINING DATA $TRAIN" >>&! $LOGTO
     set url = "$CU/$db-train/_all_docs?include_docs=true" 
-    if ($?DEBUG) echo "RETRIEVE TRAINING DATA ($TRAIN) FROM CLOUDANT ($url)" >>& $LOGTO
+    if ($?DEBUG) echo "RETRIEVE TRAINING DATA ($TRAIN) FROM CLOUDANT ($url)" >>&! $LOGTO
     curl -s -q -f -L "$url" -o "$TRAIN.$$"
     if ($status == 22 || ! -s "$TRAIN.$$") then
-      if ($?DEBUG) echo "FAILURE -- $TRAIN from $url" >>& $LOGTO
+      if ($?DEBUG) echo "FAILURE -- $TRAIN from $url" >>&! $LOGTO
       set old = ( `echo "$TRAIN:r:r".*` )
       if ($?old) then
         if ($?VERBOSE) echo "OLD TRAINING FILES (COUNT = $#old)" >>&! $LOGTO
@@ -98,58 +98,58 @@ else
           if (-s "$old[$#old]") then
             set TRAIN = "$old[$#old]"
           else
-            if ($?VERBOSE) echo "no existing $old[$#old] for $TRAIN" >>& $LOGTO
+            if ($?VERBOSE) echo "no existing $old[$#old] for $TRAIN" >>&! $LOGTO
             unset TRAIN
           endif
         endif
       else
-        if ($?VERBOSE) echo "NO OLD TRAINING FILES: $TRAIN" >>& $LOGTO
+        if ($?VERBOSE) echo "NO OLD TRAINING FILES: $TRAIN" >>&! $LOGTO
         unset TRAIN
       endif
     else if (-s "$TRAIN.$$") then
-      if ($?VERBOSE) echo "SUCCESS -- $TRAIN from $url" >>& $LOGTO
+      if ($?VERBOSE) echo "SUCCESS -- $TRAIN from $url" >>&! $LOGTO
       mv -f "$TRAIN.$$" "$TRAIN"
       if ($?old) then
         @ i = 1
         while ($i <= $#old) 
-          if ($?DEBUG) echo `date` "$0:t $$ -- DEBUG: removing $i/$#old from $old" >>& $LOGTO
+          if ($?DEBUG) echo `date` "$0:t $$ -- DEBUG: removing $i/$#old from $old" >>&! $LOGTO
           rm -f "$old[$i]"
           @ i++
         end
       endif
     else
-      if ($?DEBUG) echo "FAILURE -- $url" >>& $LOGTO
+      if ($?DEBUG) echo "FAILURE -- $url" >>&! $LOGTO
       unset TRAIN
     endif
   endif
 
   # process training information
   if ($?TRAIN == 0) then
-    if ($?VERBOSE) echo "no training data" >>& $LOGTO
+    if ($?VERBOSE) echo "no training data" >>&! $LOGTO
   else if (! -s "$TRAIN") then
-    if ($?VERBOSE) echo "no training cache $TRAIN" >>& $LOGTO
+    if ($?VERBOSE) echo "no training cache $TRAIN" >>&! $LOGTO
   else
     set models = ( `jq -r '.rows[].id' "$TRAIN"` )
     if ($status == 0 && $#models) then
-      if ($?VERBOSE) echo "found models $models" >>& $LOGTO
+      if ($?VERBOSE) echo "found models $models" >>&! $LOGTO
       foreach m ( $models )
         if ($?model) then
           if ("$m" != "$model") then
-            if ($?VERBOSE) echo "model $model only; skipping non-matching model ($m)" >>& $LOGTO
+            if ($?VERBOSE) echo "model $model only; skipping non-matching model ($m)" >>&! $LOGTO
             continue
           endif
         endif
         if ($?include_ids) then
-          if ($?VERBOSE) echo "finding row for model ($m) including ids" >>& $LOGTO
+          if ($?VERBOSE) echo "finding row for model ($m) including ids" >>&! $LOGTO
           jq '.rows[]|select(.id=="'$m'")' "$TRAIN" | \
             jq '{"model":.id,"date":.doc.date,"device":.doc.name,"labels":[.doc.images[]|{"class":.class,"bytes":.bytes,"count":.count,"ids":.ids}],"negative":.doc.negative,"classes":.doc.classes,"detail":.doc.detail}' >! "$OUTPUT.$$.$$"
         else
-          if ($?VERBOSE) echo "finding row for model ($m)" >>& $LOGTO
+          if ($?VERBOSE) echo "finding row for model ($m)" >>&! $LOGTO
           jq '.rows[]|select(.id=="'$m'")' "$TRAIN" | \
             jq '{"model":.id,"date":.doc.date,"device":.doc.name,"labels":[.doc.images[]|{"class":.class,"bytes":.bytes,"count":.count}],"negative":.doc.negative,"classes":.doc.classes,"detail":.doc.detail}' >! "$OUTPUT.$$.$$"
         endif
         if ($status == 0 && -s "$OUTPUT.$$.$$") then
-          if ($?DEBUG) echo "FOUND model ($m)" >>& $LOGTO
+          if ($?DEBUG) echo "FOUND model ($m)" >>&! $LOGTO
           if ($?model) then
             # found one model
             jq -c '.' "$OUTPUT.$$.$$" >>! "$OUTPUT.$$"
@@ -164,7 +164,7 @@ else
             jq -c '.' "$OUTPUT.$$.$$" >> "$OUTPUT.$$"
           endif
         else
-          if ($?DEBUG) echo "DID NOT FIND model ($m)" >>& $LOGTO
+          if ($?DEBUG) echo "DID NOT FIND model ($m)" >>&! $LOGTO
         endif
         rm -f "$OUTPUT.$$.$$"
       end
@@ -173,21 +173,21 @@ else
         echo ']}' >>! "$OUTPUT.$$"
       endif
       if (-s "$OUTPUT.$$") then
-        if ($?VERBOSE) echo "testing output for JSON" >>& $LOGTO
+        if ($?VERBOSE) echo "testing output for JSON" >>&! $LOGTO
         jq -c '.' "$OUTPUT.$$" >! "$OUTPUT"
 	if ($status != 0) then
-	  if ($?DEBUG) echo "bad json" `cat $OUTPUT.$$` >>& $LOGTO
+	  if ($?DEBUG) echo "bad json" `cat $OUTPUT.$$` >>&! $LOGTO
 	  rm -f "$OUTPUT" "$OUTPUT.$$"
         else
-	  if ($?DEBUG) echo "good json" >>& $LOGTO
+	  if ($?DEBUG) echo "good json" >>&! $LOGTO
           rm -f "$OUTPUT.$$"
 	endif
       else
-        if ($?DEBUG) echo "no or zero size output" >>& $LOGTO
+        if ($?DEBUG) echo "no or zero size output" >>&! $LOGTO
         rm -f "$OUTPUT.$$"
       endif
     else
-      if ($?DEBUG) echo "no models in $TRAIN" >>& $LOGTO
+      if ($?DEBUG) echo "no models in $TRAIN" >>&! $LOGTO
       goto output
     endif
   endif
@@ -196,7 +196,7 @@ endif
 output:
 
 if (! -s "$OUTPUT") then
-  if ($?DEBUG) echo `date` "$0:t $$ -- no models found ($db)" >>& $LOGTO
+  if ($?DEBUG) echo `date` "$0:t $$ -- no models found ($db)" >>&! $LOGTO
   echo "Content-Type: application/json; charset=utf-8"
   echo "Access-Control-Allow-Origin: *"
   echo "Cache-Control: no-cache"
@@ -215,4 +215,4 @@ endif
 
 done:
 
-echo `date` "$0:t $$ -- FINISH" >>& $LOGTO
+echo `date` "$0:t $$ -- FINISH" >>&! $LOGTO

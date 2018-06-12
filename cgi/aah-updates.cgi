@@ -2,9 +2,16 @@
 setenv APP "aah"
 setenv API "updates"
 
-# debug on/off
 setenv DEBUG true
 setenv VERBOSE true
+
+# environment
+if ($?LAN == 0) setenv LAN "192.168.1"
+if ($?DIGITS == 0) setenv DIGITS "$LAN".30
+if ($?TMP == 0) setenv TMP "/tmp"
+if ($?AAHDIR == 0) setenv AAHDIR "/var/lib/age-at-home"
+if ($?CREDENTIALS == 0) setenv CREDENTIALS /usr/local/etc
+if ($?LOGTO == 0) setenv LOGTO $TMP/$APP.log
 
 ###
 ### dateutils REQUIRED
@@ -18,13 +25,6 @@ else
   echo "No date converter; install dateutils" >& /dev/stderr
   exit 1
 endif
-
-# environment
-if ($?LAN == 0) setenv LAN "192.168.1"
-if ($?DIGITS == 0) setenv DIGITS "$LAN".30
-if ($?TMP == 0) setenv TMP "/var/lib/age-at-home"
-if ($?CREDENTIALS == 0) setenv CREDENTIALS /usr/local/etc
-if ($?LOGTO == 0) setenv LOGTO /dev/stderr
 
 # don't update statistics more than once per (in seconds)
 setenv TTL 5
@@ -63,7 +63,7 @@ endif
 # standardize QUERY_STRING (rendezvous w/ APP-make-API.csh script)
 setenv QUERY_STRING "db=$db"
 
-if ($?VERBOSE) echo `date` "$0 $$ -- START ($QUERY_STRING)" >>! $LOGTO
+if ($?VERBOSE) echo `date` "$0:t $$ -- START ($QUERY_STRING)" >>&! $LOGTO
 
 ##
 ## ACCESS CLOUDANT
@@ -81,7 +81,7 @@ else if (-s $CREDENTIALS/.cloudant_url) then
     set CU = "https://$CU"
   endif
 else
-  echo `date` "$0:t $$ -- FAILURE: no Cloudant credentials" >>& $LOGTO
+  echo `date` "$0:t $$ -- FAILURE: no Cloudant credentials" >>&! $LOGTO
   goto done
 endif
 
@@ -169,14 +169,14 @@ if ($db == "all") then
   set url = "$HTTP_HOST/CGI/aah-devices.cgi"
   set devices = ( `curl -s -q -L "$url" | jq -r '.devices[].name'` )
   if ($#devices == 0) then
-    if ($?VERBOSE) echo `date` "$0 $$ ++ FAILURE ($url)" >>&! $LOGTO
+    if ($?VERBOSE) echo `date` "$0:t $$ ++ FAILURE ($url)" >>&! $LOGTO
     goto done
   endif
 else
   set devices = ($db)
 endif
 
-if ($?VERBOSE) echo `date` "$0 $$ ++ SUCCESS -- devices ($devices)" >>&! $LOGTO
+if ($?VERBOSE) echo `date` "$0:t $$ ++ SUCCESS -- devices ($devices)" >>&! $LOGTO
 
 @ k = 0
 set all = '{"date":'"$DATE"',"devices":['
@@ -188,7 +188,7 @@ foreach d ( $devices )
   if ($?force) then
     setenv QUERY_STRING "$QUERY_STRING&force=true"
   endif
-  if ($?DEBUG) echo `date` "$0 $$ ++ REQUESTING ./$APP-make-$API.bash ($QUERY_STRING)" >>! $LOGTO
+  if ($?DEBUG) echo `date` "$0:t $$ ++ REQUESTING ./$APP-make-$API.bash ($QUERY_STRING)" >>&! $LOGTO
   ./$APP-make-$API.bash
   setenv QUERY_STRING "$qs"
 
@@ -197,7 +197,7 @@ foreach d ( $devices )
   set out = "/tmp/$0:t.$$.json"
   curl -s -q -f -L "$CU/$url" -o "$out"
   if ($status == 22 || $status == 28 || ! -s "$out") then
-    if ($?VERBOSE) echo `date` "$0 $$ ++ FAILURE ($url) ($status)" >>&! $LOGTO
+    if ($?VERBOSE) echo `date` "$0:t $$ ++ FAILURE ($url) ($status)" >>&! $LOGTO
     /bin/rm -f "$out"
     continue
   endif
@@ -214,12 +214,12 @@ foreach d ( $devices )
     # get updates
     curl -s -q -f -L "$CU/$url" -o "$out"
     if ($status == 22 || $status == 28 || ! -s "$out") then
-      if ($?VERBOSE) echo `date` "$0 $$ ++ FAILURE ($url) ($status)" >>&! $LOGTO
+      if ($?VERBOSE) echo `date` "$0:t $$ ++ FAILURE ($url) ($status)" >>&! $LOGTO
       echo '{"name":"'"$d"'","date":'"$cd"',"count":0,"total":'"$ct"',"ids":[] }' >! "$OUTPUT"
     else
       set total_rows = ( `jq '.total_rows' "$out"` )
       if ($?since == 0) then
-        set ids = ( `jq '[limit('"$cc"';.rows?|sort_by(.id)|reverse[].doc|select(.date<='"$cd"')._id)]' "$out"` )
+        set ids = ( `jq '[limit('"$limit"';.rows?|sort_by(.id)|reverse[].doc|select(.date<='"$cd"')._id)]' "$out"` )
         set cc = ( `echo "$ids" | jq '.|length'` )
         echo '{"name":"'"$d"'","date":'"$cd"',"count":'"$cc"',"total":'"$ct"',"limit":'"$limit"',"ids":'"$ids"' }' >! "$OUTPUT"
       else if ($?since) then
@@ -283,7 +283,7 @@ if ($?output == 0 && -s "$OUTPUT") then
   echo "Last-Modified:" `$dateconv -i '%s' -f '%a, %d %b %Y %H:%M:%S %Z' $DATE`
   echo ""
   jq -c '.' "$OUTPUT"
-  if ($?VERBOSE) echo `date` "$0 $$ -- output ($OUTPUT) Age: $age Refresh: $refresh" >>! $LOGTO
+  if ($?VERBOSE) echo `date` "$0:t $$ -- output ($OUTPUT) Age: $age Refresh: $refresh" >>&! $LOGTO
 else
   echo "Cache-Control: no-cache"
   echo "Last-Modified:" `$dateconv -i '%s' -f '%a, %d %b %Y %H:%M:%S %Z' $DATE`
@@ -299,4 +299,4 @@ endif
 
 done:
 
-if ($?VERBOSE) echo `date` "$0 $$ -- FINISH ($QUERY_STRING)" >>! $LOGTO
+if ($?VERBOSE) echo `date` "$0:t $$ -- FINISH ($QUERY_STRING)" >>&! $LOGTO

@@ -1,0 +1,12 @@
+bin/
+config/
+coreml/
+hass/
+horizon/
+README.md
+app.js
+manifest.yml
+package.json
+public/images/*.mp4
+cgi/OLD/
+cgi/mtn-*

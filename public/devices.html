@@ -30,8 +30,8 @@ devreq.onreadystatechange = function() {
     jobj.devices.forEach(function(item,index) {
       devices.innerHTML += '<h2>NAME: ' + item.name + '</h2>';
       devices.innerHTML += '<ul>'
-      devices.innerHTML += '<li><a href="/CGI/aah-index.cgi?db=' + item.name + '">View</a> current training set&nbsp;';
-      devices.innerHTML += '<li><a href="/CGI/aah-classify.cgi?db=' + item.name + '">Classify</a> new images&nbsp;';
+      devices.innerHTML += '<li><a href="http://age-at-home.dcmartin.com:8999/CGI/aah-index.cgi?db=' + item.name + '">View</a> current training set&nbsp;';
+      devices.innerHTML += '<li><a href="http://age-at-home.dcmartin.com:8999/CGI/aah-classify.cgi?db=' + item.name + '">Classify</a> new images&nbsp;';
       devices.innerHTML += '<li>Trained models: <ul><div id="' + item.name + '_models' + '"></div></ul>';
       devices.innerHTML += '</ul>';
     });
@@ -59,12 +59,12 @@ devreq.onreadystatechange = function() {
           console.log('null responseText');
         }
       }
-      modreq.open("GET","/CGI/aah-models.cgi?db=" + item.name, true);
+      modreq.open("GET","http://age-at-home.dcmartin.com:8999/CGI/aah-models.cgi?db=" + item.name, true);
       modreq.send();
     });
   }
 }
-devreq.open("GET","/CGI/aah-devices.cgi", true);
+devreq.open("GET","http://age-at-home.dcmartin.com:8999/CGI/aah-devices.cgi", true);
 devreq.send();
 </script>
 
@@ -78,7 +78,7 @@ matreq.onreadystatechange = function() {
     jobj.models.forEach(function(item,index){ matrices.innerHTML = matrices.innerHTML + '<a href="/cfmatrix.html?model=' + item + '">' + item + '</a><br>' });
   }
 }
-matreq.open("GET","/CGI/aah-cfmatrix.cgi", true);
+matreq.open("GET","http://age-at-home.dcmartin.com:8999/CGI/aah-cfmatrix.cgi", true);
 matreq.send();
 </script>
 

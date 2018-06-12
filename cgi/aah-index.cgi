@@ -2,16 +2,16 @@
 setenv APP "aah"
 setenv API "index"
 
-# debug on/off
-setenv DEBUG true
-setenv VERBOSE true
+# setenv DEBUG true
+# setenv VERBOSE true
 
 # environment
 if ($?LAN == 0) setenv LAN "192.168.1"
-if ($?DIGITS == 0) setenv DIGITS "$LAN".30
-if ($?TMP == 0) setenv TMP "/var/lib/age-at-home"
+if ($?DIGITS == 0) setenv DIGITS "$LAN".40
+if ($?TMP == 0) setenv TMP "/tmp"
+if ($?AAHDIR == 0) setenv AAHDIR "/var/lib/age-at-home"
 if ($?CREDENTIALS == 0) setenv CREDENTIALS /usr/local/etc
-if ($?LOGTO == 0) setenv LOGTO /dev/stderr
+if ($?LOGTO == 0) setenv LOGTO $TMP/$APP.log
 
 ###
 ### dateutils REQUIRED
@@ -121,10 +121,10 @@ if ($?id) then
 
     # do the normal thing to find the file with this ID (SLOOOOOOW)
     if ($ext != "dir") then
-      set base = "$TMP/label/$db/$class"
+      set base = "$AAHDIR/label/$db/$class"
       set images = ( `find "$base" -name "$id""*.$type" -type f -print | egrep -v "$COMPOSITE"` )
     else
-      set base = "$TMP/label/$db/$class/$id"
+      set base = "$AAHDIR/label/$db/$class/$id"
       set images = ( `find "$base" -name "*.$type" -type f -print | egrep -v "$COMPOSITE"` )
     endif
 
@@ -215,9 +215,9 @@ endif
 
 if ($?class == 0) then
   # top-level
-  set base = "$TMP/label/$db"
+  set base = "$AAHDIR/label/$db"
 else 
-  set base = "$TMP/label/$db/$class"
+  set base = "$AAHDIR/label/$db/$class"
   if (-e "$base/.images.json") then
     if ((-M "$base/.images.json") < (-M "$base")) then
       rm -f "$base/.images.json"
@@ -306,7 +306,7 @@ if ($?class) then
       else 
 	set name = '<a href="http://'"$HTTP_HOST"'/CGI/aah-index.cgi?db='"$db"'&ext='"$ext"'&class='"$class/$i"'">'"$i"'/</a>'
 	set ctime = `date '+%d-%h-%Y %H:%M'`
-	set fsize = `du -sk "$TMP/label/$db/$class/$i" | awk '{ print $1 }'`
+	set fsize = `du -sk "$AAHDIR/label/$db/$class/$i" | awk '{ print $1 }'`
 	echo "$name		$ctime		$fsize" >>! "$OUTPUT"
       endif
     end
@@ -325,7 +325,7 @@ if ($?class) then
     else
       set file = '<a href="http://'"$HTTP_HOST/CGI/$APP-$API"'.cgi?db='"$db"'&ext='"$ext"'&class='"$class"'&id='"$i"'.'"$type"'">'"$i.$type"'</a>' 
       set ctime = `date '+%d-%h-%Y %H:%M'`
-      set fsize = `find "$TMP/label/$db/$class" -name "$i.$type" -print | xargs ls -l | awk '{ print $5 }'`
+      set fsize = `find "$AAHDIR/label/$db/$class" -name "$i.$type" -print | xargs ls -l | awk '{ print $5 }'`
       echo "$file		$ctime		$fsize" >>! "$OUTPUT"
     endif
   end
@@ -352,7 +352,7 @@ else if ($?classes) then
       if ($?display == 0) then
 	set name = '<a href="http://'"$HTTP_HOST"'/CGI/aah-index.cgi?db='"$db"'&ext='"$ext"'&class='"$i"'/">'"$i"'/</a>' >>! "$OUTPUT"
 	set ctime = `date '+%d-%h-%Y %H:%M'`
-	set fsize = `du -sk "$TMP/label/$db/$i" | awk '{ print $1 }'`
+	set fsize = `du -sk "$AAHDIR/label/$db/$i" | awk '{ print $1 }'`
 	echo "$name		$ctime		$fsize" >>! "$OUTPUT"
       else
 	echo '<a href="http://'"$HTTP_HOST/CGI/$APP-$API"'.cgi?db='"$db"'&ext='"$ext"'&display=icon&class='"$i"'">' >>! "$OUTPUT"

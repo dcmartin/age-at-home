@@ -2,16 +2,16 @@
 setenv APP "aah"
 setenv API "scores"
 
-# debug on/off
-setenv DEBUG true
-setenv VERBOSE true
+# setenv DEBUG true
+# setenv VERBOSE true
 
 # environment
 if ($?LAN == 0) setenv LAN "192.168.1"
 if ($?DIGITS == 0) setenv DIGITS "$LAN".30
-if ($?TMP == 0) setenv TMP "/var/lib/age-at-home"
+if ($?TMP == 0) setenv TMP "/tmp"
+if ($?AAHDIR == 0) setenv AAHDIR "/var/lib/age-at-home"
 if ($?CREDENTIALS == 0) setenv CREDENTIALS /usr/local/etc
-if ($?LOGTO == 0) setenv LOGTO /dev/stderr
+if ($?LOGTO == 0) setenv LOGTO $TMP/$APP.log
 
 ###
 ### dateutils REQUIRED
@@ -31,7 +31,7 @@ set TTL = `/bin/echo "12 * 60 * 60" | bc`
 set SECONDS = `date "+%s"`
 set DATE = `/bin/echo $SECONDS \/ $TTL \* $TTL | bc`
 
-/bin/echo `date` "$0 $$ -- START" >>! $LOGTO
+/bin/echo `date` "$0 $$ -- START" >>&! $LOGTO
 
 ##
 ## ACCESS CLOUDANT
@@ -49,7 +49,7 @@ else if (-s $CREDENTIALS/.cloudant_url) then
     set CU = "https://$CU"
   endif
 else
-  /bin/echo `date` "$0:t $$ -- FAILURE: no Cloudant credentials" >>& $LOGTO
+  /bin/echo `date` "$0:t $$ -- FAILURE: no Cloudant credentials" >>&! $LOGTO
   goto done
 endif
 
@@ -64,19 +64,19 @@ setenv QUERY_STRING "db=$DB&id=$class"
 set OUTPUT = "$TMP/$APP-$API-$QUERY_STRING.$DATE.json"
 
 if (-e "$OUTPUT") then
-    /bin/echo `date` "$0 $$ == CURRENT $OUTPUT $DATE" >>! $LOGTO
+    /bin/echo `date` "$0 $$ == CURRENT $OUTPUT $DATE" >>&! $LOGTO
 else
-    /bin/echo `date` "$0 $$ -- requesting output ($OUTPUT)" >>! $LOGTO
+    /bin/echo `date` "$0 $$ -- requesting output ($OUTPUT)" >>&! $LOGTO
     ./$APP-make-$API.bash
     # remove old results
     set old = ( `ls -1 "$TMP/$APP-$API-$QUERY_STRING".*.json` )
     if ($#old > 0) then
-	/bin/echo `date` "$0 $$ -- removing old output ($old)" >>! $LOGTO
+	/bin/echo `date` "$0 $$ -- removing old output ($old)" >>&! $LOGTO
 	rm -f $old
     endif
     # return redirect
     set URL = "https://$CU/$DB-$API/$class?include_docs=true"
-    /bin/echo `date` "$0 $$ -- returning redirect ($URL)" >>! $LOGTO
+    /bin/echo `date` "$0 $$ -- returning redirect ($URL)" >>&! $LOGTO
     set AGE = `/bin/echo "$SECONDS - $DATE" | bc`
     /bin/echo "Age: $AGE"
     /bin/echo "Cache-Control: max-age=$TTL"
@@ -101,4 +101,4 @@ cat "$OUTPUT"
 
 done:
 
-/bin/echo `date` "$0 $$ -- FINISH" >>! $LOGTO
+/bin/echo `date` "$0 $$ -- FINISH" >>&! $LOGTO

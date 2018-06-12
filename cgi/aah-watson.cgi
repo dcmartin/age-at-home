@@ -2,16 +2,16 @@
 setenv APP "aah"
 setenv API "watson"
 
-# debug on/off
-setenv DEBUG true
-setenv VERBOSE true
+# setenv DEBUG true
+# setenv VERBOSE true
 
 # environment
 if ($?LAN == 0) setenv LAN "192.168.1"
-if ($?DIGITS == 0) setenv DIGITS "$LAN".30
-if ($?TMP == 0) setenv TMP "/var/lib/age-at-home"
+if ($?DIGITS == 0) setenv DIGITS "$LAN".40
+if ($?TMP == 0) setenv TMP "/tmp"
+if ($?AAHDIR == 0) setenv AAHDIR "/var/lib/age-at-home"
 if ($?CREDENTIALS == 0) setenv CREDENTIALS /usr/local/etc
-if ($?LOGTO == 0) setenv LOGTO /dev/stderr
+if ($?LOGTO == 0) setenv LOGTO $TMP/$APP.log
 
 ###
 ### dateutils REQUIRED
@@ -38,7 +38,7 @@ setenv COMPOSITE "__COMPOSITE__"
 
 
 if ($?QUERY_STRING) then
-    /bin/echo `date` "$0 $$ -- START ($QUERY_STRING)" >>! $LOGTO
+    /bin/echo `date` "$0 $$ -- START ($QUERY_STRING)" >>&! $LOGTO
     set noglob
     set DB = `/bin/echo "$QUERY_STRING" | sed 's/.*db=\([^&]*\).*/\1/'`
     if ("$DB" == "$QUERY_STRING") set DB = rough-fog
@@ -54,7 +54,7 @@ if ($?QUERY_STRING) then
     if ("$level" == "$QUERY_STRING") unset level
     unset noglob
 else
-    /bin/echo `date` "$0 $$ -- EXIT !! NO QUERY_STRING !!" >>! $LOGTO
+    /bin/echo `date` "$0 $$ -- EXIT !! NO QUERY_STRING !!" >>&! $LOGTO
     exit
 endif
 
@@ -99,7 +99,7 @@ if ($?id) then
     setenv QUERY_STRING "$QUERY_STRING&id=$id"
 endif
 
-if ($?DEBUG) /bin/echo `date` "$0 $$ -- query string ($QUERY_STRING)" >>! $LOGTO
+if ($?DEBUG) /bin/echo `date` "$0 $$ -- query string ($QUERY_STRING)" >>&! $LOGTO
 
 # check which image (ext = { full, crop } -> type = { jpg, jpeg } )
 if ($?ext) then
@@ -115,21 +115,21 @@ endif
 # handle images (files)
 #
 if ($?id) then
-  if (-d "$TMP/$db/.models/$class/$id") then
-    if ($?VERBOSE) /bin/echo `date` "$0 $$ -- got directory $id ($class)" >>! $LOGTO
+  if (-d "$AAHDIR/$db/.models/$class/$id") then
+    if ($?VERBOSE) /bin/echo `date` "$0 $$ -- got directory $id ($class)" >>&! $LOGTO
     set ext = "dir"
   endif
 
     # do the normal thing to find the file with this ID (SLOOOOOOW)
     if ($ext != "dir") then
-      set base = "$TMP/$db/.models/$class"
+      set base = "$AAHDIR/$db/.models/$class"
       set images = ( `find "$base" -name "$id" -print | egrep -v "$COMPOSITE"` )
     else
-      set base = "$TMP/$db/.models/$class/$id"
+      set base = "$AAHDIR/$db/.models/$class/$id"
       set images = ( `find "$base" -type l -print | egrep -v "$COMPOSITE"` )
     endif
 
-    if ($?VERBOSE) /bin/echo `date` "$0 $$ -- BASE ($base) ID ($id) images ($#images)" >>! $LOGTO
+    if ($?VERBOSE) /bin/echo `date` "$0 $$ -- BASE ($base) ID ($id) images ($#images)" >>&! $LOGTO
 
     if ($#images == 0) then
       /bin/echo "Status: 404 Not Found"
@@ -147,10 +147,10 @@ if ($?id) then
     if ($#images == 1 && $ext != "dir") then
 	/bin/echo "Content-Type: image/jpeg"
 	/bin/echo ""
-	if ($?VERBOSE) /bin/echo `date` "$0 $$ -- SINGLETON ($id)" >>! $LOGTO
+	if ($?VERBOSE) /bin/echo `date` "$0 $$ -- SINGLETON ($id)" >>&! $LOGTO
 	dd if="$images"
     else if ($#images && $ext == "dir") then
-	if ($?VERBOSE) /bin/echo `date` "$0 $$ -- COMPOSITE IMAGES ($#images) " >>! $LOGTO
+	if ($?VERBOSE) /bin/echo `date` "$0 $$ -- COMPOSITE IMAGES ($#images) " >>&! $LOGTO
 	set blend = "$base/$COMPOSITE.$type"
 	if (-s "$blend") then
 	  set last = ( `stat -r "$blend" | awk '{ print $10 }'` )
@@ -190,20 +190,20 @@ if ($?id) then
 	  "$blend"
 	/bin/rm -f "$blend:r.$$.$blend:e"
 	if (! -s "$blend") then
-	  if ($?VERBOSE) /bin/echo `date` "$0 $$ -- creation of composite image failed ($images)" >>! $LOGTO
+	  if ($?VERBOSE) /bin/echo `date` "$0 $$ -- creation of composite image failed ($images)" >>&! $LOGTO
 	  set failure = "composite failure"
           goto done
 	endif
       endif
       /bin/echo "Content-Type: image/jpeg"
       /bin/echo ""
-      if ($?VERBOSE) /bin/echo `date` "$0 $$ -- SINGLETON ($id)" >>! $LOGTO
+      if ($?VERBOSE) /bin/echo `date` "$0 $$ -- SINGLETON ($id)" >>&! $LOGTO
       dd if="$blend"
     else
 	#  trick is to use id to pass regexp base
 	/bin/echo "Content-Type: application/zip"
 	/bin/echo ""
-	if ($?VERBOSE) /bin/echo `date` "$0 $$ -- MULTIPLE IMAGES ZIP ($#images)" >>! $LOGTO
+	if ($?VERBOSE) /bin/echo `date` "$0 $$ -- MULTIPLE IMAGES ZIP ($#images)" >>&! $LOGTO
 	zip - $images | dd of=/dev/stdout
     endif
 
@@ -220,7 +220,7 @@ set OUTPUT = "$TMP/$APP-$API-$$.html"
 #
 
 if ($?class) then
-  set base = "$TMP/$db/.models/$class"
+  set base = "$AAHDIR/$db/.models/$class"
   # find all images in the $class directory
   set images = ( `find "$base" -type l -print | egrep -v "$COMPOSITE" | sed "s@$base"".*/\(.*\)@\1@"` )
   # get subclasses
@@ -235,7 +235,7 @@ if ($?class) then
     endif
   end 
 else 
-  set base = "$TMP/$db/.models"
+  set base = "$AAHDIR/$db/.models"
   # find all directories in the $db directory (not includes those beginning with ".", e.g. ".skipped")
   set allsubdirs = ( `find "$base" -name "[^\.]*" -type d -print | sed "s|$base||" | sed "s|^/||"` )
   foreach c ( $allsubdirs )
@@ -252,10 +252,10 @@ endif
 set MIXPANELJS = "http://$HTTP_HOST/script/mixpanel-aah.js"
 
 if ($?class) then
-    if ($?VERBOSE) /bin/echo `date` "$0 $$ -- CLASS ($class)" >>! $LOGTO
+    if ($?VERBOSE) /bin/echo `date` "$0 $$ -- CLASS ($class)" >>&! $LOGTO
     # should make a path name
     set dir = "$db/$class"
-    if ($?VERBOSE) /bin/echo `date` "$0 $$ -- DIR ($dir)" >>! $LOGTO
+    if ($?VERBOSE) /bin/echo `date` "$0 $$ -- DIR ($dir)" >>&! $LOGTO
     /bin/echo '<html><head><title>Index of '"$dir"'</title></head>' >! "$OUTPUT"
     /bin/echo '<script type="text/javascript" src="'$MIXPANELJS'"></script><script>mixpanel.track('"'"$APP-$API"'"',{"db":"'$db'","dir":"'$dir'"});</script>' >> "$OUTPUT"
     /bin/echo '<body bgcolor="white"><h1>Index of '"$dir"'</h1><hr>' >>! "$OUTPUT"
@@ -278,7 +278,7 @@ if ($?class) then
       /bin/echo '</pre>' >>! "$OUTPUT"
     endif
     if ($?classes) then
-      if ($?VERBOSE) /bin/echo `date` "$0 $$ -- SUBCLASSES ($classes)" >>! $LOGTO
+      if ($?VERBOSE) /bin/echo `date` "$0 $$ -- SUBCLASSES ($classes)" >>&! $LOGTO
       foreach i ( $classes )
 	if ($?display) then
 	  /bin/echo '<a href="http://'"$HTTP_HOST/CGI/$APP-$API"'.cgi?db='"$db"'&ext='"$ext"'&display=icon&class='"$class/$i"'">' >>! "$OUTPUT"
@@ -287,7 +287,7 @@ if ($?class) then
 	else 
 	  set name = '<a href="http://www.dcmartin.com/CGI/aah-watson.cgi?db='"$db"'&ext='"$ext"'&class='"$class/$i"'">'"$i"'/</a>'
 	  set ctime = `date '+%d-%h-%Y %H:%M'`
-	  set fsize = `du -sk "$TMP/label/$db/$class/$i" | awk '{ print $1 }'`
+	  set fsize = `du -sk "$AAHDIR/label/$db/$class/$i" | awk '{ print $1 }'`
 	  /bin/echo "$name		$ctime		$fsize" >>! "$OUTPUT"
 	endif
       end
@@ -295,7 +295,7 @@ if ($?class) then
 
     if ($?display) /bin/echo '<br>' >>! "$OUTPUT"
 
-    if ($?VERBOSE) /bin/echo `date` "$0 $$ -- HANDLING IMAGES ($images)" >>! $LOGTO
+    if ($?VERBOSE) /bin/echo `date` "$0 $$ -- HANDLING IMAGES ($images)" >>&! $LOGTO
     foreach i ( $images )
       if ($?display) then
         if (! $?classes) then
@@ -306,7 +306,7 @@ if ($?class) then
       else
 	set file = '<a href="http://'"$HTTP_HOST/CGI/$APP-$API"'.cgi?db='"$db"'&ext='"$ext"'&class='"$class"'&id='"$i"'">'"$i"'</a>' 
 	set ctime = `date '+%d-%h-%Y %H:%M'`
-	set fsize = `find "$TMP/$db/.model/$class" -name "$i" -print | xargs ls -l | awk '{ print $5 }'`
+	set fsize = `find "$AAHDIR/$db/.model/$class" -name "$i" -print | xargs ls -l | awk '{ print $5 }'`
 	/bin/echo "$file		$ctime		$fsize" >>! "$OUTPUT"
       endif
     end
@@ -314,9 +314,9 @@ if ($?class) then
       /bin/echo '</pre>' >>! "$OUTPUT"
     endif
     /bin/echo '<hr></body></html>' >>! "$OUTPUT"
-    if ($?VERBOSE) /bin/echo `date` "$0 $$ -- DONE" >>! $LOGTO
+    if ($?VERBOSE) /bin/echo `date` "$0 $$ -- DONE" >>&! $LOGTO
 else if ($?classes) then
-  if ($?VERBOSE) /bin/echo `date` "$0 $$ -- TOP-LEVEL ($classes)" >>! $LOGTO
+  if ($?VERBOSE) /bin/echo `date` "$0 $$ -- TOP-LEVEL ($classes)" >>&! $LOGTO
     # should be a directory listing of directories
     set dir = "$db"
     /bin/echo '<html><head><title>Index of '"$dir"'/</title></head>' >! "$OUTPUT"
@@ -333,7 +333,7 @@ else if ($?classes) then
       if ($?display == 0) then
 	set name = '<a href="http://www.dcmartin.com/CGI/aah-watson.cgi?db='"$db"'&ext='"$ext"'&class='"$i"'/">'"$i"'/</a>' >>! "$OUTPUT"
 	set ctime = `date '+%d-%h-%Y %H:%M'`
-	set fsize = `du -sk "$TMP/label/$db/$i" | awk '{ print $1 }'`
+	set fsize = `du -sk "$AAHDIR/label/$db/$i" | awk '{ print $1 }'`
 	/bin/echo "$name		$ctime		$fsize" >>! "$OUTPUT"
       else
 	/bin/echo '<a href="http://'"$HTTP_HOST/CGI/$APP-$API"'.cgi?db='"$db"'&ext='"$ext"'&display=icon&class='"$i"'">' >>! "$OUTPUT"
@@ -363,4 +363,4 @@ done:
 
 rm -f "$OUTPUT"
 
-/bin/echo `date` "$0 $$ -- FINISH" >>! $LOGTO
+/bin/echo `date` "$0 $$ -- FINISH" >>&! $LOGTO

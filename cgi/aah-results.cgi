@@ -2,16 +2,16 @@
 setenv APP "aah"
 setenv API "results"
 
-# debug on/off
-setenv DEBUG true
-setenv VERBOSE true
+# setenv DEBUG true
+# setenv VERBOSE true
 
 # environment
 if ($?LAN == 0) setenv LAN "192.168.1"
 if ($?DIGITS == 0) setenv DIGITS "$LAN".30
-if ($?TMP == 0) setenv TMP "/var/lib/age-at-home"
+if ($?TMP == 0) setenv TMP "/tmp"
+if ($?AAHDIR == 0) setenv AAHDIR "/var/lib/age-at-home"
 if ($?CREDENTIALS == 0) setenv CREDENTIALS /usr/local/etc
-if ($?LOGTO == 0) setenv LOGTO /dev/stderr
+if ($?LOGTO == 0) setenv LOGTO $TMP/$APP.log
 
 ###
 ### dateutils REQUIRED
@@ -31,7 +31,7 @@ set TTL = `/bin/echo "60 * 1 * 1  * 1" | bc`
 set SECONDS = `date "+%s"`
 set DATE = `/bin/echo $SECONDS \/ $TTL \* $TTL | bc`
 
-/bin/echo `date` "$0 $$ -- START" >>& "$LOGTO"
+/bin/echo `date` "$0 $$ -- START" >>&! $LOGTO
 
 if ($?QUERY_STRING) then
     set db = `/bin/echo "$QUERY_STRING" | sed 's/.*db=\([^&]*\).*/\1/'`
@@ -66,7 +66,7 @@ else if (-s $CREDENTIALS/.cloudant_url) then
     set CU = "https://$CU"
   endif
 else
-  /bin/echo `date` "$0:t $$ -- FAILURE: no Cloudant credentials" >>& $LOGTO
+  /bin/echo `date` "$0:t $$ -- FAILURE: no Cloudant credentials" >>&! $LOGTO
   goto done
 endif
 
@@ -75,32 +75,32 @@ if (! -s "$OUTPUT") then
   set TEST = "$TMP/$APP-$API-$db-test.$DATE.json" 
   if (! -s "$TEST") then
     set old = ( `/bin/echo "$TEST:r:r".*` )
-    if ($?DEBUG) /bin/echo `date` "$0 $$ -- DEBUG: variable (old) is defined (0/1)? ($?old)" >>& "$LOGTO"
+    if ($?DEBUG) /bin/echo `date` "$0 $$ -- DEBUG: variable (old) is defined (0/1)? ($?old)" >>&! $LOGTO
 
-    /bin/echo `date` "$0 $$ -- retrieving from Cloudant: $TEST" >>& "$LOGTO"
+    /bin/echo `date` "$0 $$ -- retrieving from Cloudant: $TEST" >>&! $LOGTO
     curl -s -q -f -L "$CU/$db-test/_all_docs?include_docs=true" -o "$TEST.$$"
     if ($status == 22 || ! -s "$TEST.$$") then
-      /bin/echo `date` "$0 $$ -- cannot retrieve $TEST from $CU/$db-test" >>& "$LOGTO"
+      /bin/echo `date` "$0 $$ -- cannot retrieve $TEST from $CU/$db-test" >>&! $LOGTO
       if ($?old) then
         if ($#old) then
 	  if (-s "$old[$#old]") then
 	    set TEST = "$old[$#old]"
 	  else
-	    /bin/echo `date` "$0 $$ -- no existing $old[$#old] for $TEST" >>& "$LOGTO"
+	    /bin/echo `date` "$0 $$ -- no existing $old[$#old] for $TEST" >>&! $LOGTO
 	    unset TEST
 	  endif
 	endif
       else
-	/bin/echo `date` "$0 $$ -- no old for $TEST" >>& "$LOGTO"
+	/bin/echo `date` "$0 $$ -- no old for $TEST" >>&! $LOGTO
 	unset TEST
       endif
     else
-      /bin/echo `date` "$0 $$ -- success retrieving from Cloudant $TEST.$$" >>& "$LOGTO"
+      /bin/echo `date` "$0 $$ -- success retrieving from Cloudant $TEST.$$" >>&! $LOGTO
       mv -f "$TEST.$$" "$TEST"
       if ($?old) then
 	@ i = 1
 	while ($i <= $#old) 
-	  if ($?DEBUG) /bin/echo `date` "$0 $$ -- DEBUG: removing $i/$#old from $old" >>& "$LOGTO"
+	  if ($?DEBUG) /bin/echo `date` "$0 $$ -- DEBUG: removing $i/$#old from $old" >>&! $LOGTO
 	  rm -f "$old[$i]"
 	  @ i++
 	end
@@ -126,7 +126,7 @@ if (! -s "$OUTPUT") then
 	  if ($status == 0 && -s "$OUTPUT.$$.$$") then
 	    jq -c '.' "$OUTPUT.$$.$$" >>! "$OUTPUT.$$"
 	  else
-	    /bin/echo `date` "$0 $$ -- failure model ($m)" >>& "$LOGTO"
+	    /bin/echo `date` "$0 $$ -- failure model ($m)" >>&! $LOGTO
 	  endif
 	  rm -f "$OUTPUT.$$.$$"
 	end
@@ -134,29 +134,29 @@ if (! -s "$OUTPUT") then
 	  jq -c '.' "$OUTPUT.$$" >! "$OUTPUT"
 	endif
 	if ($status != 0) then
-	  /bin/echo `date` "$0 $$ -- bad JSON ($OUTPUT.$$)" >>& "$LOGTO"
+	  /bin/echo `date` "$0 $$ -- bad JSON ($OUTPUT.$$)" >>&! $LOGTO
 	  rm -f "$OUTPUT"
 	endif
 	rm -f "$OUTPUT.$$"
       else
-	/bin/echo `date` "$0 $$ -- no results in $TEST" >>& "$LOGTO"
+	/bin/echo `date` "$0 $$ -- no results in $TEST" >>&! $LOGTO
 	rm -f "$OUTPUT".*
 	goto output
       endif
     else
-      /bin/echo `date` "$0 $$ -- no testing cache $TEST" >>& "$LOGTO"
+      /bin/echo `date` "$0 $$ -- no testing cache $TEST" >>&! $LOGTO
     endif
   else
-    /bin/echo `date` "$0 $$ -- no model data" >>& "$LOGTO"
+    /bin/echo `date` "$0 $$ -- no model data" >>&! $LOGTO
   endif
 else
-  /bin/echo `date` "$0 $$ -- $OUTPUT is up-to-date ($DATE)" >>& "$LOGTO"
+  /bin/echo `date` "$0 $$ -- $OUTPUT is up-to-date ($DATE)" >>&! $LOGTO
 endif
 
 output:
 
 if (! -s "$OUTPUT") then
-  if ($?DEBUG) /bin/echo `date` "$0 $$ -- no results found ($db)" >>& "$LOGTO"
+  if ($?DEBUG) /bin/echo `date` "$0 $$ -- no results found ($db)" >>&! $LOGTO
   /bin/echo "Content-Type: application/json; charset=utf-8"
   /bin/echo "Access-Control-Allow-Origin: *"
   /bin/echo "Cache-Control: no-cache"
@@ -175,4 +175,4 @@ endif
 
 done:
 
-/bin/echo `date` "$0 $$ -- FINISH" >>& $LOGTO
+/bin/echo `date` "$0 $$ -- FINISH" >>&! $LOGTO

@@ -9,9 +9,10 @@ setenv VERBOSE true
 # environment
 if ($?LAN == 0) setenv LAN "192.168.1"
 if ($?DIGITS == 0) setenv DIGITS "$LAN".30
-if ($?TMP == 0) setenv TMP "/var/lib/age-at-home"
+if ($?TMP == 0) setenv TMP "/tmp"
+if ($?AAHDIR == 0) setenv AAHDIR "/var/lib/age-at-home"
 if ($?CREDENTIALS == 0) setenv CREDENTIALS /usr/local/etc
-if ($?LOGTO == 0) setenv LOGTO /dev/stderr
+if ($?LOGTO == 0) setenv LOGTO $TMP/$APP.log
 
 if ($?TTL == 0) set TTL = 1800
 if ($?SECONDS == 0) set SECONDS = `/bin/date "+%s"`
@@ -77,7 +78,7 @@ else if (-s $CREDENTIALS/.cloudant_url) then
     set CU = "https://$CU"
   endif
 else
-  /bin/echo `date` "$0:t $$ -- FAILURE: no Cloudant credentials" >>& $LOGTO
+  /bin/echo `date` "$0:t $$ -- FAILURE: no Cloudant credentials" >>&! $LOGTO
   goto done
 endif
 
@@ -116,14 +117,14 @@ if ($status != 22 && $status != 28 && -s "$out") then
     if ($seqid == "null" || $seqid == "") then
       set seqid = 0
     else
-      if ($?DEBUG) /bin/echo `/bin/date` "$0 $$ -- SUCCESS retrieving seqid ($seqid)" >>! $LOGTO
+      if ($?DEBUG) /bin/echo `/bin/date` "$0 $$ -- SUCCESS retrieving seqid ($seqid)" >>&! $LOGTO
     endif
   else
-    if ($?DEBUG) /bin/echo `/bin/date` "$0 $$ -- FAILED retrieving seqid" >>! $LOGTO
+    if ($?DEBUG) /bin/echo `/bin/date` "$0 $$ -- FAILED retrieving seqid" >>&! $LOGTO
     set seqid = 0
   endif
 else
-  if ($?DEBUG) /bin/echo `/bin/date` "$0 $$ -- fail ($url)" >>! $LOGTO
+  if ($?DEBUG) /bin/echo `/bin/date` "$0 $$ -- fail ($url)" >>&! $LOGTO
   goto done
 endif
 rm -f "$out"
@@ -139,10 +140,10 @@ set transfer = 30
 
 again: # try again
 
-if ($?DEBUG) /bin/echo `/bin/date` "$0 $$ -- download _changes ($url)" >>! $LOGTO
+if ($?DEBUG) /bin/echo `/bin/date` "$0 $$ -- download _changes ($url)" >>&! $LOGTO
 curl -s -q --connect-time $connect -m $transfer -f -L "$CU/$url" -o "$out" >>&! $LOGTO
 if ($status != 22 && $status != 28 && -s "$out") then
-  if ($?DEBUG) /bin/echo `/bin/date` "$0 $$ -- download SUCCESS ($UPDATES)" >>! $LOGTO
+  if ($?DEBUG) /bin/echo `/bin/date` "$0 $$ -- download SUCCESS ($UPDATES)" >>&! $LOGTO
   # test JSON
   jq '.' "$out" >&! /dev/null
   if ($status != 0) then
@@ -152,7 +153,7 @@ if ($status != 22 && $status != 28 && -s "$out") then
       @ try++
       goto again
     endif
-    if ($?DEBUG) /bin/echo `/bin/date` "$0 $$ -- INVALID ($result) TRY ($try) TRANSFER ($transfer) UPDATES ($out)" >>! $LOGTO
+    if ($?DEBUG) /bin/echo `/bin/date` "$0 $$ -- INVALID ($result) TRY ($try) TRANSFER ($transfer) UPDATES ($out)" >>&! $LOGTO
     goto done
   endif
   mv -f "$out" "$UPDATES"
@@ -160,17 +161,17 @@ if ($status != 22 && $status != 28 && -s "$out") then
   # count updates (w/o all record)
   set count = ( `jq -r '.results[]?|select(.id != "all").id' "$UPDATES" | wc -l | awk '{ print $1 }'` )
   if ($last_seq == $seqid) then
-    if ($?DEBUG) /bin/echo `/bin/date` "$0 $$ -- up-to-date ($seqid) records ($count)" >>! $LOGTO
+    if ($?DEBUG) /bin/echo `/bin/date` "$0 $$ -- up-to-date ($seqid) records ($count)" >>&! $LOGTO
   endif
 else
   rm -f "$out"
   if ($try < 3) then
     @ transfer = $transfer + $transfer
     @ try++
-    if ($?DEBUG) /bin/echo `/bin/date` "$0 $$ -- RETRY ($url)" >>! $LOGTO
+    if ($?DEBUG) /bin/echo `/bin/date` "$0 $$ -- RETRY ($url)" >>&! $LOGTO
     goto again
   endif
-  if ($?DEBUG) /bin/echo `/bin/date` "$0 $$ -- download FAILED ($url)" >>! $LOGTO
+  if ($?DEBUG) /bin/echo `/bin/date` "$0 $$ -- download FAILED ($url)" >>&! $LOGTO
   goto done
 endif
 
@@ -178,7 +179,7 @@ endif
 if ($count == 0) then
   goto update
 else
-  if ($?DEBUG) /bin/echo `/bin/date` "$0 $$ -- $count updates FOR $device since $seqid ($UPDATES)" >>! $LOGTO
+  if ($?DEBUG) /bin/echo `/bin/date` "$0 $$ -- $count updates FOR $device since $seqid ($UPDATES)" >>&! $LOGTO
 endif
 
 # start output
@@ -187,11 +188,11 @@ endif
 # get all top1 from UPDATES
 set classes = ( `jq -r '.results[]?.doc.top1.classifier_id' "$out"` )
 if ($#classes == 0 || $classes == "null") then
-  /bin/echo `/bin/date` "$0 $$ !! EXIT --  FOUND NO CLASSES ($UPDATES)" >>! $LOGTO
+  /bin/echo `/bin/date` "$0 $$ !! EXIT --  FOUND NO CLASSES ($UPDATES)" >>&! $LOGTO
   exit
 endif
 
-if ($?DEBUG) /bin/echo `/bin/date` "$0 $$ -- got $#classes ($classes)" >>! $LOGTO
+if ($?DEBUG) /bin/echo `/bin/date` "$0 $$ -- got $#classes ($classes)" >>&! $LOGTO
 
 #
 # PROCESS ALL UPDATES

@@ -2,16 +2,16 @@
 setenv APP "aah"
 setenv API "sets"
 
-# debug on/off
-setenv DEBUG true
-setenv VERBOSE true
+# setenv DEBUG true
+# setenv VERBOSE true
 
 # environment
 if ($?LAN == 0) setenv LAN "192.168.1"
 if ($?DIGITS == 0) setenv DIGITS "$LAN".30
-if ($?TMP == 0) setenv TMP "/var/lib/age-at-home"
+if ($?TMP == 0) setenv TMP "/tmp"
+if ($?AAHDIR == 0) setenv AAHDIR "/var/lib/age-at-home"
 if ($?CREDENTIALS == 0) setenv CREDENTIALS /usr/local/etc
-if ($?LOGTO == 0) setenv LOGTO /dev/stderr
+if ($?LOGTO == 0) setenv LOGTO $TMP/$APP.log
 
 ###
 ### dateutils REQUIRED
@@ -40,7 +40,7 @@ endif
 if ($?DB == 0) set DB = rough-fog
 setenv QUERY_STRING "db=$DB"
 
-/bin/echo `date` "$0 $$ -- START ($QUERY_STRING)" >>! $LOGTO
+/bin/echo `date` "$0 $$ -- START ($QUERY_STRING)" >>&! $LOGTO
 
 #
 # get OUTPUT
@@ -69,17 +69,17 @@ endif
 touch "$OUTPUT".$$
 
 set output = '{"source":"'"$DB"'","date":'"$DATE"',"classes":'
-if (! -d "$TMP/label/$DB") then
+if (! -d "$AAHDIR/label/$DB") then
   set output = "$output"'null}'
   goto output
 endif
-set classes = ( `find "$TMP/label/$DB" -name "[^\.]*" -type d -print | sed "s@$TMP/label/$DB@@" | sed "s@/@@"` )
+set classes = ( `find "$AAHDIR/label/$DB" -name "[^\.]*" -type d -print | sed "s@$AAHDIR/label/$DB@@" | sed "s@/@@"` )
 if ($#classes) then
   set output = "$output"'['
   foreach class ( $classes )
     if ($?comma) set output = "$output"','
     set output = "$output"'{"class":"'"$class"'"'
-    set images = ( `find "$TMP/label/$DB/$class" -name "[^\.]*.jpg" -type f -print | sed "s@$TMP/label/$DB/$class/\(.*\)\.jpg@"'"\1"@'` )
+    set images = ( `find "$AAHDIR/label/$DB/$class" -name "[^\.]*.jpg" -type f -print | sed "s@$AAHDIR/label/$DB/$class/\(.*\)\.jpg@"'"\1"@'` )
     set output = "$output"',"count":'$#images',"images":['
     set images = `/bin/echo "$images" | sed 's/ /,/g'`
     set output = "$output""$images"']}'
@@ -107,4 +107,4 @@ endif
 
 done:
 
-/bin/echo `date` "$0 $$ -- FINISH" >>! $LOGTO
+/bin/echo `date` "$0 $$ -- FINISH" >>&! $LOGTO

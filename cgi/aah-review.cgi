@@ -2,16 +2,16 @@
 setenv APP "aah"
 setenv API "review"
 
-# debug on/off
-setenv DEBUG true
-setenv VERBOSE true
+# setenv DEBUG true
+# setenv VERBOSE true
 
 # environment
 if ($?LAN == 0) setenv LAN "192.168.1"
 if ($?DIGITS == 0) setenv DIGITS "$LAN".30
-if ($?TMP == 0) setenv TMP "/var/lib/age-at-home"
+if ($?TMP == 0) setenv TMP "/tmp"
+if ($?AAHDIR == 0) setenv AAHDIR "/var/lib/age-at-home"
 if ($?CREDENTIALS == 0) setenv CREDENTIALS /usr/local/etc
-if ($?LOGTO == 0) setenv LOGTO /dev/stderr
+if ($?LOGTO == 0) setenv LOGTO $TMP/$APP.log
 
 ###
 ### dateutils REQUIRED
@@ -56,10 +56,10 @@ if ($?limit) then
   setenv QUERY_STRING "$QUERY_STRING&limit=$limit"
 endif
 
-/bin/echo `date` "$0 $$ -- START ($QUERY_STRING)" >>! $LOGTO
+/bin/echo `date` "$0 $$ -- START ($QUERY_STRING)" >>&! $LOGTO
 
 # initiate new output
-if ($?DEBUG) /bin/echo `date` "$0 $$ ++ REQUESTING ./$APP-make-$API.bash" >>! $LOGTO
+if ($?DEBUG) /bin/echo `date` "$0 $$ ++ REQUESTING ./$APP-make-$API.bash" >>&! $LOGTO
 ./$APP-make-$API.bash
 
 ##
@@ -78,7 +78,7 @@ else if (-s $CREDENTIALS/.cloudant_url) then
     set CU = "https://$CU"
   endif
 else
-  /bin/echo `date` "$0:t $$ -- FAILURE: no Cloudant credentials" >>& $LOGTO
+  /bin/echo `date` "$0:t $$ -- FAILURE: no Cloudant credentials" >>&! $LOGTO
   goto done
 endif
 
@@ -99,7 +99,7 @@ endif
 if (-s "$OUTPUT") then
     set output = '{"images":'
     foreach i ( `/bin/cat "$OUTPUT"` )
-      if (-s "$TMP/$db/$i") then
+      if (-s "$AAHDIR/$db/$i") then
         if ($?stat) then
           set output = "$output"','
         else
@@ -107,10 +107,10 @@ if (-s "$OUTPUT") then
         endif
 	set stat = "$i"
         set output = "$output"'"'"$i"'"'
-      else if (-l "$TMP/$db/$i") then
-        if ($?DEBUG) /bin/echo `date` "$0 $$ -- $TMP/$db/$i linked" >>&! $LOGTO
+      else if (-l "$AAHDIR/$db/$i") then
+        if ($?DEBUG) /bin/echo `date` "$0 $$ -- $AAHDIR/$db/$i linked" >>&! $LOGTO
       else
-        if ($?DEBUG) /bin/echo `date` "$0 $$ -- $TMP/$db/$i missing" >>&! $LOGTO
+        if ($?DEBUG) /bin/echo `date` "$0 $$ -- $AAHDIR/$db/$i missing" >>&! $LOGTO
       endif
     end
     if ($?stat) then
@@ -208,7 +208,7 @@ if (-s "$OUTPUT") then
     /bin/echo "Last-Modified:" `$dateconv -i '%s' -f '%a, %d %b %Y %H:%M:%S %Z' $DATE`
     /bin/echo ""
     jq -c '.' "$OUTPUT"
-    if ($?DEBUG) /bin/echo `date` "$0 $$ -- output ($OUTPUT) Age: $age Refresh: $refresh" >>! $LOGTO
+    if ($?DEBUG) /bin/echo `date` "$0 $$ -- output ($OUTPUT) Age: $age Refresh: $refresh" >>&! $LOGTO
 else
     /bin/echo "Cache-Control: no-cache"
     /bin/echo "Last-Modified:" `$dateconv -i '%s' -f '%a, %d %b %Y %H:%M:%S %Z' $DATE`
@@ -220,5 +220,5 @@ cleanup:
   rm -f "$OUTPUT".$$
 
 done:
-  /bin/echo `date` "$0 $$ -- FINISH ($QUERY_STRING)" >>! $LOGTO
+  /bin/echo `date` "$0 $$ -- FINISH ($QUERY_STRING)" >>&! $LOGTO
 

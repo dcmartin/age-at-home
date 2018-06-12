@@ -2,15 +2,16 @@
 setenv APP "aah"
 setenv API "classify"
 
-# setenv DEBUG true
-# setenv VERBOSE true
+setenv DEBUG true
+setenv VERBOSE true
 
 # environment
 if ($?LAN == 0) setenv LAN "192.168.1"
 if ($?DIGITS == 0) setenv DIGITS "$LAN".30
-if ($?TMP == 0) setenv TMP "/var/lib/age-at-home"
+if ($?TMP == 0) setenv TMP "/tmp"
+if ($?AAHDIR == 0) setenv AAHDIR "/var/lib/age-at-home"
 if ($?CREDENTIALS == 0) setenv CREDENTIALS /usr/local/etc
-if ($?LOGTO == 0) setenv LOGTO /dev/stderr
+if ($?LOGTO == 0) setenv LOGTO $TMP/$APP.log
 
 ###
 ### dateutils REQUIRED
@@ -91,7 +92,7 @@ else if (-s $CREDENTIALS/.cloudant_url) then
     set CU = "https://$CU"
   endif
 else
-  echo `date` "$0:t $$ -- FAILURE: no Cloudant credentials" >>& $LOGTO
+  echo `date` "$0:t $$ -- FAILURE: no Cloudant credentials" >>&! $LOGTO
   goto done
 endif
 
@@ -111,7 +112,7 @@ if ($status == 22 || $status == 28 || ! -s "$out") then
   if ($?DEBUG) echo `date` "$0 $$ -- FAIL ($url)" >>&! $LOGTO
   set label_classes = ( )
 else
-  if ($?DEBUG) echo `date` "$0 $$ -- GOT $out" >>&! $LOGTO
+  if ($?VERBOSE) echo `date` "$0 $$ -- GOT $out" >>&! $LOGTO
   set label_classes = ( `jq -r '.classes|sort_by(.name)[].name' "$out"` )
   set label_date = ( `jq -r '.date' "$out"` )
 endif
@@ -149,18 +150,21 @@ echo '<input type="submit" style="background-color:#ff9933" value="CHANGE"></for
 
 # find in one or all directories
 if ($class == "all") then
-    set CDIR = "$TMP/$db"
+    set CDIR = "$AAHDIR/$db"
 else
-    set CDIR = "$TMP/$db/$class"
+    set CDIR = "$AAHDIR/$db/$class"
 endif
 
 # get location
 set location = ( `curl -s -q "$HTTP_HOST/CGI/aah-devices.cgi?db=$db" | jq -r '.location'` )
 
-set images = ( `curl -s -q "$HTTP_HOST/CGI/aah-images.cgi?db=$db&limit=$limit" | jq -r '.ids[]?'` )
+set url = "$HTTP_HOST/CGI/aah-images.cgi?db=$db&limit=$limit"
+if ($?DEBUG) echo "$0:t $$ -- REQUESTING $url" >>&! $LOGTO
+set images = ( `curl -s -q "$url" | jq -r '.ids[]?'` )
 
 # count images
 set nimage = $#images
+if ($?DEBUG) echo "$0:t $$ -- RECEIVED $nimage IMAGES" >>&! $LOGTO
 
 @ ncolumns = 4
 if ($nimage < $ncolumns) @ ncolumns = $nimage
