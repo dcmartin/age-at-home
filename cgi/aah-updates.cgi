@@ -2,8 +2,8 @@
 setenv APP "aah"
 setenv API "updates"
 
-setenv DEBUG true
-setenv VERBOSE true
+# setenv DEBUG true
+# setenv VERBOSE true
 
 # environment
 if ($?LAN == 0) setenv LAN "192.168.1"

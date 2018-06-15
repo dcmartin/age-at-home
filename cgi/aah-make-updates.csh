@@ -2,8 +2,7 @@
 setenv APP "aah"
 setenv API "updates"
 
-# debug on/off
-setenv DEBUG true
+# setenv DEBUG true
 setenv VERBOSE true
 
 # environment
@@ -314,12 +313,12 @@ while ($idx <= $download_total)
   set file = ( `echo "$change" | jq -r '.visual.image'` )
   set scores = ( `echo "$change" | jq '.visual.scores|sort_by(.score)'` )
   set class = ( `echo "$change" | jq -r '.alchemy.text' | sed 's/ /_/g'` )
-  set crop = ( `echo "$change" | jq -r '.imagebox'` )
+  set imagebox = ( `echo "$change" | jq -r '.imagebox'` )
   set u = "$file:r"
 
   # test if all good
-  if ($#file == 0 || $#scores == 0 || $#class == 0 || $#crop == 0) then
-    if ($?VERBOSE) echo `date` "$0:t $$ -- $device -- invalid change ($device @ $idx of $download_total) in $CHANGES -- $file $class $crop $scores -- $change" >>&! $LOGTO
+  if ($#file == 0 || $#scores == 0 || $#class == 0 || $#imagebox == 0) then
+    if ($?VERBOSE) echo `date` "$0:t $$ -- $device -- invalid change ($device @ $idx of $download_total) in $CHANGES -- $file $class $imagebox $scores -- $change" >>&! $LOGTO
     @ idx++
     continue
   endif

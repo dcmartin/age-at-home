@@ -3,7 +3,7 @@ setenv APP "aah"
 setenv API "devices"
 
 # setenv DEBUG true
-# setenv VERBOSE true
+# unsetenv VERBOSE true
 
 # environment
 if ($?LAN == 0) setenv LAN "192.168.1"

@@ -1,3 +1,6 @@
+.cloudant_url
+.ftp_url
+.watson.visual-recognition.json
 cgi
 bin
 hass

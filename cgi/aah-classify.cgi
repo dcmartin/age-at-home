@@ -148,23 +148,18 @@ end
 echo '</select>' >> "$HTML"
 echo '<input type="submit" style="background-color:#ff9933" value="CHANGE"></form>' >> "$HTML"
 
-# find in one or all directories
-if ($class == "all") then
-    set CDIR = "$AAHDIR/$db"
-else
-    set CDIR = "$AAHDIR/$db/$class"
-endif
-
 # get location
 set location = ( `curl -s -q "$HTTP_HOST/CGI/aah-devices.cgi?db=$db" | jq -r '.location'` )
 
-set url = "$HTTP_HOST/CGI/aah-images.cgi?db=$db&limit=$limit"
-if ($?DEBUG) echo "$0:t $$ -- REQUESTING $url" >>&! $LOGTO
-set images = ( `curl -s -q "$url" | jq -r '.ids[]?'` )
-
-# count images
-set nimage = $#images
-if ($?DEBUG) echo "$0:t $$ -- RECEIVED $nimage IMAGES" >>&! $LOGTO
+# get images
+set images = ( `curl -s -q "$HTTP_HOST/CGI/aah-images.cgi?db=$db&limit=$limit" | jq -r '.ids[]?'` )
+if ($#images == 0 || $images == "null") then
+  if ($?DEBUG) echo "$0:t $$ -- $db -- failed to find images" >>&! $LOGTO
+  goto done
+else
+  if ($?VERBOSE) echo "$0:t $$ -- $db -- found $#images images" >>&! $LOGTO
+  set nimage = $#images
+endif
 
 @ ncolumns = 4
 if ($nimage < $ncolumns) @ ncolumns = $nimage
@@ -191,17 +186,12 @@ foreach image ( $images )
   set imginfo = ( `curl -s -q "$HTTP_HOST/CGI/aah-images.cgi?db=$db&id=$image" | jq '.'` )
   # {
   #   "id": "20170802094803-7134-00",
-  #   "class": "ellen",
+  #   "path": "<device>/<year>/<month>/<day>",
   #   "date": 1501692483,
-  #   "type": "JPEG",
-  #   "size": "640x480+0+0",
-  #   "crop": "494x160+68+150",
-  #   "depth": "8-bit",
-  #   "color": "sRGB"
+  #   "imagebox": "494x160+68+150",
+  #   "formats": [ { "ext": "jpg|jpeg", "size": "", "depth"
   # }
-  set dir = ( `echo "$imginfo" | jq -r '.class'` )
   set date = ( `echo "$imginfo" | jq -r '.date'` )
-
   set jpm = `echo "$image" | sed "s/\(.*\)-.*-.*/\1/"` # get the image date for matching
   set time = `echo "$image" | sed "s/\(....\)\(..\)\(..\)\(..\)\(..\).*-.*/\1\/\2\/\3 \4:\5/"` # breakdown image identifier into time components for image label
 
@@ -291,8 +281,8 @@ foreach image ( $images )
   #
   # ENTIRE SECTION IS FOR SINGLE IMAGE DETAIL
   #
-  set record = ( `curl -s -q -L "$CU/$db/$image" | jq -r '.'` )
-  set crop = `echo "$record" | jq -r '.imagebox'`
+  set record = ( `curl -s -q -f -L "$CU/$db/$image" | jq -r '.'` )
+  set imagebox = `echo "$record" | jq -r '.imagebox'`
   set scores = ( `echo "$record" | jq -r '.visual.scores|sort_by(.score)'` )
   set top1 = ( `echo "$record" | jq -r '.visual.scores|sort_by(.score)[-1]'` )
 

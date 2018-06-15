@@ -4,7 +4,7 @@ setenv API "images"
 
 # debug on/off
 setenv DEBUG true
-setenv VERBOSE true
+# setenv VERBOSE true
 
 # environment
 if ($?LAN == 0) setenv LAN "192.168.1"
@@ -14,70 +14,71 @@ if ($?AAHDIR == 0) setenv AAHDIR "/var/lib/age-at-home"
 if ($?CREDENTIALS == 0) setenv CREDENTIALS /usr/local/etc
 if ($?LOGTO == 0) setenv LOGTO $TMP/$APP.log
 
+###
+### dateutils REQUIRED
+###
+
+if ( -e /usr/bin/dateutils.dconv ) then
+   set dateconv = /usr/bin/dateutils.dconv
+else if ( -e /usr/local/bin/dateconv ) then
+   set dateconv = /usr/local/bin/dateconv
+else
+  echo "No date converter; install dateutils" >& /dev/stderr
+  exit 1
+endif
+
+# CAMERA IMAGE DEFAULTS
+if ($?CAMERA_MODEL_TRANDFORM == 0) setenv CAMERA_MODEL_TRANSFORM "CROP"
+if ($?CAMERA_IMAGE_WIDTH == 0) setenv CAMERA_IMAGE_WIDTH 640
+if ($?CAMERA_IMAGE_HEIGHT == 0) setenv CAMERA_IMAGE_HEIGHT 480
+
+# UPDATE INTERVAL
 if ($?TTL == 0) set TTL = 60
 if ($?SECONDS == 0) set SECONDS = `date "+%s"`
 if ($?DATE == 0) set DATE = `echo $SECONDS \/ $TTL \* $TTL | /usr/bin/bc`
 
-setenv DEBUG true
-
-# transform image
-setenv CAMERA_MODEL_TRANSFORM "CROP"
-# retrieve using FTP
-setenv CAMERA_IMAGE_RETRIEVE "FTP"
-# maximum backlog size -- specify force to use all records
-if ($?IMAGE_LIMIT == 0) setenv IMAGE_LIMIT 1000
-
-# do not force continued attempts after failure when processing images
-
+# standardize QUERY_STRING
 if ($?QUERY_STRING) then
     set device = `echo "$QUERY_STRING" | sed 's/.*device=\([^&]*\).*/\1/'`
     if ($device == "$QUERY_STRING") unset device
     set force = `echo "$QUERY_STRING" | sed 's/.*force=\([^&]*\).*/\1/'`
     if ($force == "$QUERY_STRING") unset force
-    set limit = `echo "$QUERY_STRING" | sed 's/.*limit=\([^&]*\).*/\1/'`
-    if ($limit == "$QUERY_STRING") unset limit
 endif
-
-if ($?limit) then
-  if ($limit > $IMAGE_LIMIT) set limit = $IMAGE_LIMIT
-else
-  set limit = $IMAGE_LIMIT
-endif
-
-# standardize QUERY_STRING
 setenv QUERY_STRING "device=$device"
 
-if ($?DEBUG) echo `date` "$0:t $$ -- START ($QUERY_STRING)" >>&! $LOGTO
+##
+## start
+##
+if ($?DEBUG) echo `date` "$0:t $$ -- $device -- START" >>&! $LOGTO
+
+##
+## single threaded by OUTPUT
+##
 
 # OUTPUT target
 set OUTPUT = "$TMP/$APP-$API-$QUERY_STRING.$DATE.json"
-
-if ($?force == 0 && -s "$OUTPUT") goto done
-
-#
-# SINGLE THREADED (by QUERY_STRING)
-#
 set INPROGRESS = ( `echo "$OUTPUT:r:r".*` )
 if ($#INPROGRESS) then
     foreach ip ( $INPROGRESS )
       set pid = $ip:e
       set eid = ( `ps axw | awk '{ print $1 }' | egrep "$pid"` )
       if ($pid == $eid) then
-        if ($?DEBUG) echo `date` "$0:t $$ -- PID $pid in-progress ($QUERY_STRING)"  >>&! $LOGTO
+        if ($?DEBUG) echo `date` "$0:t $$ -- PID $pid in-progress ($QUERY_STRING)" >>&! $LOGTO
         goto done
       else
-        if ($?VERBOSE) echo `date` "$0:t $$ -- removing $ip"  >>&! $LOGTO
+        if ($?VERBOSE) echo `date` "$0:t $$ -- removing $ip" >>&! $LOGTO
         rm -f "$ip"
       endif
     end
-    if ($?VERBOSE) echo `date` "$0:t $$ -- NO PROCESSES FOUND ($QUERY_STRING)"  >>&! $LOGTO
+    if ($?VERBOSE) echo `date` "$0:t $$ -- NO PROCESSES FOUND ($QUERY_STRING)" >>&! $LOGTO
 else
-    if ($?VERBOSE) echo `date` "$0:t $$ -- NO EXISTING $0:t ($QUERY_STRING)"  >>&! $LOGTO
+    if ($?VERBOSE) echo `date` "$0:t $$ -- NO EXISTING $0:t ($QUERY_STRING)" >>&! $LOGTO
 endif
-
-# cleanup if interrupted
+# remove all prior traces
 rm -f "$OUTPUT:r:r".*
+# cleanup if interrupted
 onintr cleanup
+# begin
 touch "$OUTPUT".$$
 
 ##
@@ -100,35 +101,57 @@ else
   goto done
 endif
 
+##
+## ACCESS FTP
+##
+if ($?FTP_URL) then
+  set FTP = $FTP_URL
+else if (-s $CREDENTIALS/.ftp_url) then
+  set cc = ( `cat $CREDENTIALS/.ftp_url` )
+  if ($#cc > 0) set CN = $cc[1]
+  if ($#cc > 1) set CP = $cc[2]
+  if ($?CP && $?CN) then
+    set FTP = 'ftp://'"$CN"':'"$CP"
+  else
+    set FTP = "ftp://ftp:ftp"
+  endif
+else
+  echo `date` "$0:t $$ -- FAILURE: no FTP credentials" >>&! $LOGTO
+  goto done
+endif
+
 #
 # CREATE <device>-images DATABASE 
 #
 if ($?CU && $?device) then
-  if ($?VERBOSE) echo `date` "$0:t $$ -- test if device exists ($CU/$device-$API)"  >>&! $LOGTO
   set dd = `curl -s -q -f -L -X GET "$CU/$device-$API" | jq -r '.db_name'`
   if ( $#dd == 0 || $dd == "null" ) then
-    if ($?VERBOSE) echo `date` "$0:t $$ -- creating device $CU/$device-$API"  >>&! $LOGTO
+    if ($?VERBOSE) echo `date` "$0:t $$ -- $device -- no existing database: $API" >>&! $LOGTO
     # create device
     set dd = `curl -s -q -f -L -X PUT "$CU/$device-$API" | jq '.ok'`
     # test for success
     if ( "$dd" != "true" ) then
       # failure
-      if ($?VERBOSE) echo `date` "$0:t $$ -- failure creating Cloudant database ($device-$API)"  >>&! $LOGTO
+      if ($?DEBUG) echo `date` "$0:t $$ -- $device -- failure creating database: $API" >>&! $LOGTO
       goto done
     else
-      if ($?VERBOSE) echo `date` "$0:t $$ -- success creating device $CU/$device-$API"  >>&! $LOGTO
+      if ($?VERBOSE) echo `date` "$0:t $$ -- $device -- success creating database: $API" >>&! $LOGTO
+      set since = 0
     endif
   endif
 endif
 
-# get last image processed
-set since = 0
-set url = "$CU/$device-images/_all_docs?include_docs=true&descending=true&limit=1"
-set out = "/tmp/$0:t.$$.json"
-curl -s -q -f -L "$url" -o "$out"
-if ($status == 22 || ! -s "$out") then
-  if ($?VERBOSE) echo `date` "$0:t $$ -- failed to retrieve ($url)" >>&! $LOGTO
-else
+# test if DB just created
+if ($?since == 0) then
+  # get last image processed
+  set url = "$CU/$device-$API/_all_docs?include_docs=true&descending=true&limit=1"
+  set out = "$TMP/$0:t.$$.json"
+  curl -s -q -f -L "$url" -o "$out"
+  if ($status == 22 || ! -s "$out") then
+    if ($?DEBUG) echo `date` "$0:t $$ -- $device -- FATAL: failed to retrieve last image from $url" >>&! $LOGTO
+    rm -f "$out"
+    goto done
+  endif
   set total_images = ( `jq -r '.total_rows' "$out"` )
   set since = ( `jq -r '.rows[].doc.date' "$out"` )
   if ($#since == 0 || $since == "null") then
@@ -136,82 +159,38 @@ else
   else
     set since = "$since[$#since]"
   endif
-endif
-if ($?VERBOSE) echo `date` "$0:t $$ -- last image retrieved at ($since)" >>&! $LOGTO
-
-# get updates for this device
-set url = "$WWW/CGI/aah-updates.cgi?db=$device&since=$since"
-set out = "/tmp/$0:t.$$.json"
-curl -s -q -f -L "$url" -o "$out"
-if ($status == 22 || ! -s "$out") then
-  if ($?VERBOSE) echo `date` "$0:t $$ -- failed to retrieve ($url)" >>&! $LOGTO
-  goto done
+  if ($?VERBOSE) echo `date` "$0:t $$ -- $device -- last image retrieved at ($since)" >>&! $LOGTO
+  rm -f "$out"
 else
-  set total_updates = ( `jq -r '.total?' "$out"` )
-  # get date, count and updates
-  set date = ( `jq -r '.date?' "$out"` )
-  if ($#date == 0 || $date == "null") set date = 0
+  if ($?VERBOSE) echo `date` "$0:t $$ -- $device -- new DB; no prior images" >>&! $LOGTO
 endif
-rm -f "$out"
-if ($?VERBOSE) echo `date` "$0:t $$ -- last image retrieved at ($since)" >>&! $LOGTO
 
-# check if up-to-date
-if ($date <= $since) then
-  @ lag = $date - $since
-  if ($?DEBUG) echo `date` "$0:t $$ -- UP TO DATE ($device) - updated $date, images $since ($lag seconds)" >>&! $LOGTO
+# get IP address of this device
+set url = "$HTTP_HOST/CGI/aah-devices.cgi?db=$device"
+set ipaddr = ( `curl -s -q -f -L "$url" | jq -r ".ip_address"` )
+if ($#ipaddr && $ipaddr != "null") then
+  if ($?VERBOSE) echo `date` "$0:t $$ -- $device -- found with address $ipaddr; last update $since" >>&! $LOGTO
+else
+  if ($?DEBUG) echo `date` "$0:t $$ -- $device -- FATAL -- not found ($url)" >>&! $LOGTO
   goto done
 endif
 
-# get updates not processed
-@ try = 0
-@ rtt = 5
-if ($?force) then
-  set url = "$WWW/CGI/aah-updates.cgi?db=$device&since=$since&limit=$IMAGE_LIMIT"
-else
-  set url = "$WWW/CGI/aah-updates.cgi?db=$device&since=$since&limit=$limit"
-endif
-set out = "/tmp/$0:t.$$.json"
-while ($try < 3) 
-  /bin/rm -f "$out"
-  curl -s -q -f -m $rtt -L "$url" -o "$out"
-  if ($status == 22 || $status == 28 || ! -s "$out") then
-    if ($status == 28) then
-      @ try++
-      @ rtt = $rtt + $rtt
-      rm -f "$out"
-      continue
-    endif
-    rm -f "$out"
-  endif
-  break
-end
-if (! -s "$out") then
-  if ($?VERBOSE) echo `date` "$0:t $$ -- failed to retrieve ($url)" >>&! $LOGTO
-  goto done
-endif
+###
+### GET ALL UPDATES
+###
 
-set count = ( `jq -r '.count' "$out"` )
-if ($#count == 0 || $count == "null") set count = 0
-# process updates FIFO
-set updates = ( `jq -r '.ids|reverse[]' "$out"` )
-if ($#updates == 0) then
-  set updates = ()
-endif
-
-# SANITY
-if ($count == 0 || $#updates == 0) then
-  if ($?DEBUG) echo `date` "$0:t $$ -- no updates ($count; $updates)" >>&! $LOGTO
-  goto done
+set url = "$ipaddr/"
+# retrieve updates (JSON) indicating image processed; reverse order to LIFO
+set updates = ( `curl -s -q -f -L "$FTP"'@'"$url" | awk '{ print $9 }' | egrep "json" | sort -r` )
+if ($#updates && $#updates != "null") then
+  if ($?VERBOSE) echo `date` "$0:t $$ -- $device -- found $#updates updates" >>&! $LOGTO
+  @ i = 1
+  while ($i <= $#updates)
+    set updates[$i] = "$updates[$i]:r"
+    @ i++
+  end
 else
-  if ($?DEBUG) echo `date` "$0:t $$ -- $count $#updates ($updates[1] $updates[$#updates])" >>&! $LOGTO
-endif
-
-# get IP address of device
-set ipaddr = ( `curl -s -q -f -L "$WWW/CGI/aah-devices.cgi?db=$device" | jq -r ".ip_address"` )
-if ($#ipaddr) then
-  if ($?VERBOSE) echo `date` "$0:t $$ -- FOUND $device :: $ipaddr" >>&! $LOGTO
-else
-  if ($?VERBOSE) echo `date` "$0:t $$ -- NOT FOUND $device" >>&! $LOGTO
+  if ($?DEBUG) echo `date` "$0:t $$ -- $device -- FATAL: found no updates" >>&! $LOGTO
   goto done
 endif
 
@@ -219,144 +198,141 @@ endif
 # PROCESS ALL UPDATES
 #
 
+# count images processed
 @ nimage = 0
+# process image formats
+set formats = ( "jpg" "jpeg" )
 foreach u ( $updates )
 
-  # retrieve update record (<device>-updates/$u) 
-  set url = "$WWW/CGI/aah-updates.cgi?db=$device&id=$u"
-  set out = "/tmp/$0:t.$$.json"
+  # get relevant update 
+  set url = "$CU/$device/$u"
+  set out = "$TMP/$0:t.$device.$u.$$.json"
   /bin/rm -f "$out"
   curl -s -q -f -L "$url" -o "$out"
-  if ($status == 22 || ! -s "$out") then
-    if ($?VERBOSE) echo `date` "$0:t $$ -- FAILURE -- curl ($url) for update ($u)"  >>&! $LOGTO
-  else if (`jq -r '.error?' "$out"` != "null") then
-    if ($?VERBOSE) echo `date` "$0:t $$ -- NOT FOUND ($device,$u)"  >>&! $LOGTO
+  if (! -s "$out") then
     rm -f "$out"
-    continue 
-  else
-    set update = ( `jq '.' "$out"` )
-  endif
-  rm -f "$out"
-
-  if ($?VERBOSE) echo `date` "$0:t $$ -- FOUND -- existing update ($update)" >>&! $LOGTO
-
-  # get relevant update attributes 
-  set id = ( `echo "$update" | jq -r '.id'` )
-  set class = ( `echo "$update" | jq -r '.class'` )
-  set model = ( `echo "$update" | jq -r '.model'` )
-  set date = ( `echo "$update" | jq -r '.date'` )
-
-  # CHEAT
-  set crop = ( `curl -s -q -f -L "$CU/$device/$u" | jq -r '.imagebox'` )
-  if ($#crop && $crop != "null") then
-    if ($?VERBOSE) echo `date` "$0:t $$ -- got ($crop) for $u" >>&! $LOGTO
-  else
-    if ($?VERBOSE) echo `date` "$0:t $$ -- no crop for $u" >>&! $LOGTO
-    set crop = ""
-  endif
-
-  # test if all good
-  if ($#id == 0 || $#class == 0 || $#crop == 0 || "$class" == "null" || "$model" == "null") then
-    if ($?DEBUG) echo `date` "$0:t $$ -- INVALID update ($device @ $nimage of $count) -- $id $model $class $crop" >>&! $LOGTO
+    if ($?DEBUG) echo `date` "$0:t $$ -- $device -- cannot find update $u; continuing..." >>&! $LOGTO
     continue
   endif
 
-  # test if already done w/ this image
-  set exists = ( `curl -s -q -f -L "$CU/$device-$API/$u" | jq -r '._id,._rev'` )
-  if ($#exists) then
-    if ($#exists > 0 && "$exists[1]" == "$u") then
-      # break if image exists and not forced
-      if ($?force == 0) then
-	if ($?DEBUG) echo `date` "$0:t $$ -- BREAKING ($device) UPDATES: $nimage INDEX: $nimage COUNT: $count -- existing ($exists)" >>&! $LOGTO
-	break
-      endif
-      if ($?VERBOSE) echo `date` "$0:t $$ -- WARNING -- IMAGE EXISTS ($exists)" >>&! $LOGTO
-      set exists = "$exists[2]"
-    else
-      unset exists
-    endif
+  # get update attributes
+  set id = ( `jq -r '._id' "$out"` )
+  set imagebox = ( `jq -r '.imagebox' "$out"` )
+  set year = ( `jq -r '.year' "$out"` )
+  set month = ( `jq -r '.month' "$out"` )
+  set day = ( `jq -r '.day' "$out"` )
+  set hour = ( `jq -r '.hour' "$out"` )
+  set minute = ( `jq -r '.minute' "$out"` )
+  set second = ( `jq -r '.second' "$out"` )
+
+  # done w/ output
+  rm -f "$out"
+
+  # calculate date in seconds since epoch
+  set date = `echo "$year/$month/$day $hour"':'"$month"':'"$second" | $dateconv -i "%Y/%M/%D %H:%M:%S" -f "%s"`
+
+  # test imagebox
+  if ($#imagebox == 0) set imagebox = "null"
+  # test if all good
+  if ($#id == 0 || $#imagebox == 0 || $#date == 0 || "$id" == "null" || "$date" == "null") then
+    if ($?DEBUG) echo `date` "$0:t $$ -- $device -- WARNING: invalid or missing update $u from $url response;continuing..." >>&! $LOGTO
+    continue
   else
-    unset exists
-  endif
-  if ($?exists == 0) then
-    if ($?VERBOSE) echo `date` "$0:t $$ -- NEW IMAGE ($u)" >>&! $LOGTO
+    if ($?VERBOSE) echo `date` "$0:t $$ -- $device -- $id ($imagebox)" >>&! $LOGTO
   endif
 
   # propose destination
-  set image = "$AAHDIR/$device/$class/$id.jpg"
+  set image = "$AAHDIR/$device/$year/$month/$day/$id"
 
   # ensure destination
   /bin/mkdir -p "$image:h"
   # verify destination
   if (! -d "$image:h") then
-    echo `date` "$0:t $$ -- FAILURE -- exit; no directory ($image:h)" >>&! $LOGTO
+    echo `date` "$0:t $$ -- $device -- FATAL: no directory ($image:h)" >>&! $LOGTO
     goto done
   endif
 
-  # try to retreive iff DNE
-  if (! -s "$image" && ! -l "$image") then
-    if ($?VERBOSE) echo `date` "$0:t $$ -- retrieving ($id) with $ipaddr using $CAMERA_IMAGE_RETRIEVE" >>&! $LOGTO
-    switch ($CAMERA_IMAGE_RETRIEVE)
-      case "FTP":
-        if ($?VERBOSE) echo `date` "$0:t $$ -- calling $APP-ftpImage to retrieve $image" >>&! $LOGTO
-        ./$APP-ftpImage.csh "$id" "jpg" "$ipaddr" "$image" >>&! $LOGTO
-        if (! -s "$image") then
-          if ($?VERBOSE) echo `date` "$0:t $$ -- $APP-ftpImage FAILED to retrieve $image" >>&! $LOGTO
-        endif
-        breaksw
-      default:
-        if ($?VERBOSE) echo `date` "$0:t $$ -- unknown CAMERA_IMAGE_RETRIEVE ($CAMERA_IMAGE_RETRIEVE)" >>&! $LOGTO
-        breaksw
-    endsw
-  endif
-
-  # optionally transform image
-  if (-s "$image" && ! -s "$image:r.jpeg" && $?CAMERA_MODEL_TRANSFORM) then
-    if ($?VERBOSE) echo `date` "$0:t $$ -- transforming $image with $crop using $CAMERA_MODEL_TRANSFORM" >>&! $LOGTO
-    set xform = ( `./$APP-transformImage.csh "$image" "$crop"` )
-    if ($?VERBOSE) echo `date` "$0:t $$ -- TRANSFORMED ($u) $xform" >>&! $LOGTO
-  endif
-  
-  # get image characteristics
-  if (-s "$image") then
-    identify "$image" \
-      | /usr/bin/awk '{ printf("{\"type\":\"%s\",\"size\":\"%s\",\"crop\":\"'"$crop"'\",\"depth\":\"%s\",\"color\":\"%s\",\"date\":'"$date"'}\n", $2, $4, $5, $6) }' \
-      >! "$out"
-    if (-s "$out") then
-      # create $devices-images/$u record
-      set url = "$device-images/$u"
-      # this should only happen when force is true and record already exists
-      if ($?exists) then
-        set url = "$url?rev=$exists"
-      endif
-      curl -s -q -f -L -H "Content-type: application/json" -X PUT "$CU/$url" -d "@$out" >&! /dev/null
-      if ($status != 0) then
-        if ($?DEBUG) echo `date` "$0:t $$ -- FAILURE ($u) $nimage of $count " `cat "$out"`  >>&! $LOGTO
+  unset fmts
+  foreach ext ( $formats )
+    # try to retreive iff DNE
+    if (! -s "$image.$ext" && ! -l "$image.$ext") then
+      set url = "ftp://$ipaddr/$id.$ext"
+      set out = "$TMP/$0:t.$device.$id.$$.$ext"
+      if ($?VERBOSE) echo `date` "$0:t $$ -- retrieving ($id) with $ipaddr" >>&! $LOGTO
+      curl -s -q -L -u "ftp:ftp" "$url" -o "$out"
+      if (! -s "$out") then
+	rm -f "$out"
+	if ($?DEBUG) echo `date` "$0:t $$ -- $device -- failed to retrieve $id image format $ext; continuing..." >>&! $LOGTO
+	continue
       else
-        @ nimage++
-        if ($?DEBUG) echo `date` "$0:t $$ -- SUCCESS ($u) $nimage of $count " `jq -c '.' "$out"`  >>&! $LOGTO
+	if ($?VERBOSE) echo `date` "$0:t $$ -- $device -- successful retrieve image $image format $ext" >>&! $LOGTO
+	mv -f "$out" "$image.$ext"
       endif
-      rm -f "$out"
+    else
+      if ($?VERBOSE) echo `date` "$0:t $$ -- $device -- existing image ($id) format $ext" >>&! $LOGTO
     endif
+    set attrs = ( `identify "$image.$ext" | awk '{ print $2, $4, $5, $6 }'` )
+    if ($status == 0 && $#attrs) then
+      if ($?fmts == 0) then
+        set fmts = '['
+      else
+        set fmts = "$fmts"','
+      endif
+      set fmts = "$fmts"'{"ext":"'"$ext"'","type":"'"$attrs[1]"'","size":"'"$attrs[2]"'","depth":"'"$attrs[3]"'","color":"'"$attrs[4]"'"}'
+    else
+      if ($?VERBOSE) echo `date` "$0:t $$ -- $device -- unable to identify image for $id ($ext)" >>&! $LOGTO
+    endif
+  end
+
+  if ($?fmts == 0) then
+    if ($?DEBUG) echo `date` "$0:t $$ -- $device -- update $id lacks images in any format; continuing..." >>&! $LOGTO
+    continue
   else
-    if ($?VERBOSE) echo `date` "$0:t $$ -- WARNING ($u) -- no image ($image)" >>&! $LOGTO
+    set fmts = "$fmts"']'
+    if ($?VERBOSE) echo `date` "$0:t $$ -- $device -- update $id formats" `echo "$fmts" | jq -c '.'` >>&! $LOGTO
   endif
 
-  #
-  # EXPERIMENT 1: STEP 2: BEGIN (STEP 1 in aah-make-updates)
-  #
-  set t = "$AAHDIR/$device/.models/$model/$class"
-  /bin/mkdir -p "$t"
-  /bin/rm -f "$u/$u"
-  /bin/ln -s "$image" "$t/$u" >&! /dev/null
-  #
-  # EXPERIMENT 1: STEP 2: END
-  #
+  # test if image already identified 
+  set url = "$CU/$device-$API/$id"
+  set rev = ( `curl -s -q -f -L "$url" | jq -r '._rev'` )
+  if ($#rev && $rev != "null") then
+    if ($?force) then
+      if ($?VERBOSE) echo `date` "$0:t $$ -- $device -- WARNING -- attempting to update document for $id" >>&! $LOGTO
+      set url = "$url?rev=$rev"
+    else
+      if ($?VERBOSE) echo `date` "$0:t $$ -- $device -- found existing image in database; BREAKING" >>&! $LOGTO
+      rm -f "$out"
+      break
+    endif
+  endif
+   
+  ## write image document to database
+  # create output record
+  set out = "$TMP/$0:t.$device.$id.$$.json"
+  # start record
+  echo '{"id":"'"$id"'","date":'$date',"imagebox":"'"$imagebox"'","path":"'"$device/$year/$month/$day"'","formats":'"$fmts"'}' | jq -c '.' >! "$out"
+  if ($status == 0 && -s "$out") then
+    if ($?VERBOSE) echo `date` "$0:t $$ -- $device -- record for image $id" `jq -c '.' "$out"` >>&! $LOGTO
+  else
+    if ($?DEBUG) echo `date` "$0:t $$ -- $device -- FAILURE: creating JSON for $id" `cat "$out"` >>&! $LOGTO
+    rm -f "$out"
+    break
+  endif
+  # store record
+  curl -s -q -f -L -H "Content-type: application/json" -X PUT "$url" -d "@$out" >&! /dev/null
+  if ($status != 0) then
+    if ($?DEBUG) echo `date` "$0:t $$ -- FAILURE ($id) $nimage of $#updates" `cat "$out"` >>&! $LOGTO
+  else
+    @ nimage++
+    if ($?VERBOSE) echo `date` "$0:t $$ -- SUCCESS ($id) $nimage of $#updates" `jq -c '.' "$out"` >>&! $LOGTO
+  endif
+  rm -f "$out"
 
+## foreach
 end
 
 done:
-if ($?DEBUG) echo `date` "$0:t $$ -- FINISH ($QUERY_STRING)"  >>&! $LOGTO
+if ($?DEBUG) echo `date` "$0:t $$ -- $device -- FINISH" >>&! $LOGTO
 
 cleanup:
 rm -f "$OUTPUT.$$"

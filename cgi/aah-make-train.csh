@@ -3,18 +3,17 @@ setenv APP "aah"
 setenv API "train"
 setenv WWW "www.dcmartin.com"
 
+# setenv DEBUG true 
+# setenv VERBOSE true 
+
 if ($?TMP == 0) setenv TMP "/tmp"
 if ($?AAHDIR == 0) setenv AAHDIR "/var/lib/age-at-home"
 if ($?LOGTO == 0) setenv LOGTO $TMP/$APP.log
-
 
 # don't update file information more than once per (in seconds)
 setenv TTL 28800
 setenv SECONDS `date "+%s"`
 setenv DATE `echo $SECONDS \/ $TTL \* $TTL | bc`
-
-# debug set/not
-set DEBUG = true 
 
 #
 # CLOUDANT SETUP

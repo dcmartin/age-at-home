@@ -2,8 +2,8 @@
 setenv APP "aah"
 setenv API "images"
 
-setenv DEBUG true
-setenv VERBOSE true
+# setenv DEBUG true
+# setenv VERBOSE true
 
 # environment
 if ($?LAN == 0) setenv LAN "192.168.1"
@@ -38,8 +38,8 @@ if ($?IMAGE_SET_LIMIT == 0) setenv IMAGE_SET_LIMIT 100
 if ($?QUERY_STRING) then
     set db = `echo "$QUERY_STRING" | sed 's/.*db=\([^&]*\).*/\1/'`
     if ($db == "$QUERY_STRING") unset db
-    set class = `echo "$QUERY_STRING" | sed 's/.*class=\([^&]*\).*/\1/'`
-    if ($class == "$QUERY_STRING") unset class
+    # set class = `echo "$QUERY_STRING" | sed 's/.*class=\([^&]*\).*/\1/'`
+    # if ($class == "$QUERY_STRING") unset class
     set id = `echo "$QUERY_STRING" | sed 's/.*id=\([^&]*\).*/\1/'`
     if ($id == "$QUERY_STRING") unset id
     set ext = `echo "$QUERY_STRING" | sed 's/.*ext=\([^&]*\).*/\1/'`
@@ -84,51 +84,40 @@ else
   goto done
 endif
 
-# find updates
-set url = "$HTTP_HOST/CGI/aah-updates.cgi"
-set updates = ( `curl -s -q -f -L "$url" | jq '.'` )
-if ($#updates == 0) then
-  if ($?VERBOSE) echo `date` "$0 $$ ++ FAILURE ($url)" >>&! $LOGTO
-  set output = '{"error":"NO UPDATES -- '"$url"'"}'
-  goto output
-endif
-
-# get last check time (seconds since epoch)
-set last_update_check = ( `echo "$updates" | jq -r '.date'`)
-
 # find devices
 if ($db == "all") then
   set url = "$HTTP_HOST/CGI/aah-devices.cgi"
   set devices = ( `curl -s -q -L "$url" | jq -r '.devices[].name'` )
   if ($#devices == 0) then
-    if ($?VERBOSE) echo `date` "$0 $$ ++ FAILURE ($url)" >>&! $LOGTO
+    if ($?DEBUG) echo `date` "$0 $$ -- FAILURE: cannot find devices" >>&! $LOGTO
     goto done
   endif
 else
   set devices = ($db)
 endif
 
-if ($#devices == 0) then
-  if ($?VERBOSE) echo `date` "$0 $$ ++ FAILURE ($url)" >>&! $LOGTO
-  set output = '{"error":"NO DEVICES"}'
-  goto output
-endif
-
-if ($?DEBUG) echo `date` "$0 $$ ++ SUCCESS -- devices ($devices) -- last check: $last_update_check" >>&! $LOGTO
+if ($?VERBOSE) echo `date` "$0 $$ ++ SUCCESS -- devices ($devices)" >>&! $LOGTO
 
 # check all devices
 foreach d ( $devices )
-  # indicate success
   if ($db == "$d") then
-    set last_update_check = ( `echo "$updates" | jq -r '.devices[]|select(.name=="'"$d"'").date'`)
-    if ($#last_update_check == 0) set last_update_check = $DATE
-    set last_image_check = ( `curl -s -q -f -L "$CU/$db-images/_all_docs?include_docs=true&descending=true&limit=1" | jq -r '.rows[].doc.date'` )
-    if ($#last_image_check == 0) set last_image_check = 0
+    # get time of last update from device (should be a local call)
+    set last_update_check = ( `curl -s -q -f -L "$CU/$d/_all_docs?include_docs=true&descending=true&limit=1" | jq -j '.rows[].doc|.year,"/",.month,"/",.day," ",.hour,":",.minute,":",.second' | $dateconv -f '%s' -i '%Y/%m/%d %H:%M:%S'` )
+    if ($#last_update_check == 0 || $last_update_check == "null" ) then
+      if ($?DEBUG) echo `date` "$0 $$ -- $d -- WARNING: cannot determine last_update_check; using $DATE" >>&! $LOGTO
+      set last_update_check = $DATE
+    endif
+    set last_image_check = ( `curl -s -q -f -L "$CU/$db-$API/_all_docs?include_docs=true&descending=true&limit=1" | jq -r '.rows[].doc.date'` )
+    if ($#last_image_check == 0 || $last_image_check == "null") then
+      if ($?DEBUG) echo `date` "$0 $$ -- $d -- WARNING: cannot determine last_update_check; using zero" >>&! $LOGTO
+      set last_image_check = 0
+    endif
     @ delay = $last_update_check - $last_image_check
     if ($delay > $TTL) then
       # initiate new output
       set qs = "$QUERY_STRING"
       setenv QUERY_STRING "device=$d"
+      # unimplemented
       if ($?force) then
         setenv QUERY_STRING "$QUERY_STRING&force=true"
       endif
@@ -142,7 +131,7 @@ foreach d ( $devices )
 end
 
 if ($db != "all") then
-  if  ($?found == 0) then
+  if ($?found == 0) then
     set output = '{"error":"not found","db":"'"$db"'"}'
     goto output
   endif
@@ -164,15 +153,20 @@ endif
 # define OUTPUT
 set OUTPUT = "$TMP/$APP-$API-$QUERY_STRING.$DATE.json"
 
+###
+### HANDLE SINGLETON
+###
+
 if ($?singleton) then
   if ($?id) then
-    set url = "$db-images/$id"
-  else
-    set url = "$db-images/_all_docs?include_docs=true&descending=true&limit=$IMAGE_LIMIT"
+    set url = "$db-$API/$id"
+  else if ($?limit) then
+    set url = "$db-$API/_all_docs?include_docs=true&descending=true&limit=$limit"
   endif
   set out = "/tmp/$0:t.$$.json"
   curl -s -q -f -L "$CU/$url" -o "$out"
   if ($status == 22 || $status == 28 || ! -s "$out") then
+    rm -f "$out"
     if ($?id) then
       set output = '{"error":"not found","db":"'"$db"'","id":"'"$id"'"}'
       goto output
@@ -180,10 +174,12 @@ if ($?singleton) then
       set output = '{"error":"not found","db":"'"$db"'","limit":"'"$limit"'"}'
       goto output
     else
+      # should never happen
       set output = '{"error":"not found","db":"'"$db"'"}'
       goto output
     endif
   endif
+  # one result only
   if ($?limit) then
     set json = ( `jq '.rows[].doc' "$out"` )
   else
@@ -192,138 +188,95 @@ if ($?singleton) then
   # clean-up
   /bin/rm -f "$out"
 
-  # ensure id is specified
-  set id = ( `echo "$json" | jq -r '._id'` )
-  set crop = ( `echo "$json" | jq -r '.crop'` )
-  set class = ( `curl -s -q -f -L "$HTTP_HOST/CGI/aah-updates.cgi?db=$db&id=$id" | jq -r '.class?' | sed 's/ /_/g'` )
-
   # test if non-image (i.e. json) requested
   if ($?ext == 0) then
-    echo "$json" | jq '{"id":._id,"class":"'"$class"'","date":.date,"type":.type,"size":.size,"crop":.crop,"depth":.depth,"color":.color}'  >! "$OUTPUT"
+    echo "$json" | jq '{"id":._id,"date":.date,"imagebox":.imagebox}'  >! "$OUTPUT"
     goto output
-  endif
-
-  # handle singleton (image)
-  if ($#class == 0 || $class == "null") then
-      set output = '{"error":"no class","db":"'"$db"'","id":"'"$id"'"}'
-      goto output
+  else
+    set dirpath = `echo "$json" | jq -r '.path'` 
   endif
 
   # find original
-  if ($ext == "full") set path = "$AAHDIR/$db/$class/$id.jpg"
-  if ($ext == "crop") set path = "$AAHDIR/$db/$class/$id.jpeg"
-  if (-s "$path") then
-    if ($?DEBUG) echo `date` "$0 $$ -- SINGLETON ($path)" >>&! $LOGTO
+  if ($ext == "full") set imgpath = "$AAHDIR/$dirpath/$id.jpg"
+  if ($ext == "crop") set imgpath = "$AAHDIR/$dirpath/$id.jpeg"
+  if (-s "$imgpath") then
+    if ($?DEBUG) echo `date` "$0 $$ -- SINGLETON ($imgpath)" >>&! $LOGTO
     echo "Last-Modified:" `$dateconv -i '%s' -f '%a, %d %b %Y %H:%M:%S %Z' $DATE`
     echo "Access-Control-Allow-Origin: *"
     echo "Content-Location: $HTTP_HOST/CGI/$APP-$API.cgi?db=$db&id=$id&ext=$ext"
     echo "Content-Type: image/jpeg"
     echo ""
-    ./aah-images-label.csh "$path" "$class" "$crop"
+    # dump image
+    dd if="$imgpath" of=/dev/stdout
+    # ./aah-images-label.csh "$imgpath" "$class" "$imagebox"
     goto done
   endif
   set output = '{"error":"not found","db":"'"$db"'","id":"'"$id"'"}'
   goto output
 endif
 
-#
-# NOT A SINGLETON
-#
-
-#
-# PROCESS REQUESTED DEVICES
-#
+###
+### HANDLE MULTIPLE (ALWAYS JSON)
+###
 
 @ k = 0
 set all = '{"date":'"$DATE"',"devices":['
 # handle all (json)
 foreach d ( $devices )
-  set lud = ( `echo "$updates" | jq -r '.devices?[]|select(.name=="'"$d"'")|.date'` )
-
-  if ($?DEBUG) echo `date` "$0 $$ ++ UPDATES ($d) -- last check: $lud" >>&! $LOGTO
-
   # get most recent image available
-  set url = "$CU/$d-images/_all_docs?include_docs=true&limit=1&descending=true"
+  set url = "$CU/$d-$API/_all_docs?include_docs=true&descending=true&limit=1"
   set out = "/tmp/$0:t.$$.json"
   curl -s -q -f -L "$url" -o "$out"
   if ($status != 22 && -s "$out") then
     set lid = ( `jq '.rows[].doc.date' "$out"` )
     set total_rows = ( `jq '.total_rows' "$out"` )
-    if ($#lid == 0 || $lid == "null")  set lid = 0
-    if ($#total_rows == 0 || $total_rows == "null")  set total_rows = 0
+    /bin/rm -f "$out"
+    if ($#lid == 0 || $lid == "null") set lid = 0
+    if ($#total_rows == 0 || $total_rows == "null") set total_rows = 0
   else
-    if ($?DEBUG) echo `date` "$0 $$ ++ NO UPDATES ($d)" >>&! $LOGTO
+    if ($?DEBUG) echo `date` "$0 $$ -- $d -- cannot find last image; continuing..." >>&! $LOGTO
     /bin/rm -f "$out"
     continue
   endif
-  /bin/rm -f "$out"
 
-  ####
-  #### LOOK AT THIS LATER -- NUMBERS ARE ARBITRARY
-  ####
-
-  if ($?since) then
-    @ delay = $lud - $since
-  else 
-    @ delay = $lud - $lid
-  endif
-
-  if ($?limit == 0) then
-    @ estimate = $delay / 5
-  else
-    @ estimate = $IMAGE_SET_LIMIT
-  endif
-  if ($estimate > $IMAGE_LIMIT) then
-    set estimate = $IMAGE_LIMIT
-  else if ($estimate == 0) then
-    @ estimate = 5
-  endif
-
-  if ($?DEBUG) then
-    echo `date` "$0 $$ ++ DEVICE ($d) -- TOTAL ($total_rows) d) delay ($delay) -- estimate ($estimate) -- image: $lid -- update: $lud" >>&! $LOGTO
-  endif
+  if ($?VERBOSE) echo `date` "$0 $$ -- $d -- total images: $total_rows; last update: $lid" >>&! $LOGTO
 
   # process this db
   if ($db != "all" && $d == "$db") then
     # get recent rows
-
-    set url = "$CU/$d-images/_all_docs?include_docs=true&descending=true&limit=$estimate"
-    set out = "/tmp/$0:t.$$.json"
-    @ try = 0
-    @ rtt = 5
-    while ($try < 3)
-      curl -m "$rtt" -s -q -f  -L "$url" -o "$out"
-      if ($status == 22 || $status == 28 || ! -s "$out") then
-	/bin/rm -f "$out"
-	@ try++
-	@ rtt += $rtt
-	continue
-      endif
-      break
-    end
-    if (! -s "$out") then
+    set url = "$CU/$d-$API/_all_docs?include_docs=true&descending=true&limit=$IMAGE_LIMIT"
+    set out = "/tmp/$0:t.$d.$$.json"
+    curl -s -q -f  -L "$url" -o "$out"
+    if ($status == 22 || $status == 28 || ! -s "$out") then
       /bin/rm -f "$out"
-      set output = '{"error":"failure","db":"'"$d-images"'}'
-      goto output
+      if ($?DEBUG) echo `date` "$0 $$ -- $d -- cannot find any images; continuing..." >>&! $LOGTO
+      set output = '{"error":"failure","db":"'"$d-$API"'}'
+      continue
     endif
     # select subset based on limit specified and date
-    if ($?limit) then
-      set ids = ( `jq '[limit('"$limit"';.rows?|sort_by(.id)|reverse[].doc|select(.date<='"$lid"')._id)]' "$out"` )
+    if ($?limit && $?since) then
+      set ids = ( `jq '[limit('"$limit"';.rows?|sort_by(.id)|reverse[].doc|select(.date>'"$since"')._id]' "$out"` )
       set len = ( `echo "$ids" | jq '.|length'` )
-      if ($?DEBUG)  echo `date` "$0:t $$ -- found $len ids" >>&! $LOGTO
-      echo '{"name":"'"$d"'","date":'"$lid"',"count":'"$len"',"total":'"$total_rows"',"limit":'"$limit"',"ids":'"$ids"' }' >! "$OUTPUT"
+      set output = '{"name":"'"$d"'","date":'"$since"',"count":'"$len"',"total":'"$total_rows"',"limit":'"$limit"',"ids":'"$ids"' }'
+      if ($?DEBUG)  echo `date` "$0:t $$ -- found $len ids since $since w/ limit $limit" >>&! $LOGTO
+    else if ($?limit) then
+      set ids = ( `jq '[limit('"$limit"';.rows?|sort_by(.id)|reverse[].doc|._id)]' "$out"` )
+      set len = ( `echo "$ids" | jq '.|length'` )
+      set output = '{"name":"'"$d"'","date":'"$DATE"',"count":'"$len"',"total":'"$total_rows"',"limit":'"$limit"',"ids":'"$ids"' }'
+      if ($?DEBUG)  echo `date` "$0:t $$ -- found $len ids w/ limit $limit" >>&! $LOGTO
     else if ($?since) then
-      set ids = ( `jq -r '.rows[]?.doc|select(.date<='"$lid"')|select(.date>'"$since"')._id' "$out"` )
-      set len = $#ids
-      if ($len > 0) then
-        set ids = ( `echo "$ids" | sed 's/\([^ ]*\)/"\1"/g' | sed 's/ /,/g'` )
-      else
-        set ids = ""
-      endif
-      echo '{"name":"'"$d"'","date":'"$lid"',"count":'"$len"',"total":'"$total_rows"',"limit":'"$limit"',"ids":['"$ids"']}' >! "$OUTPUT"
-      rm -f "$out"
-      goto output
+      set ids = ( `jq '[.rows?|sort_by(.id)|reverse[].doc|select(.date>'"$since"')._id]' "$out"` )
+      set len = ( `echo "$ids" | jq '.|length'` )
+      set output = '{"name":"'"$d"'","date":'"$since"',"count":'"$len"',"total":'"$total_rows"',"limit":'"$IMAGE_LIMIT"',"ids":'"$ids"' }'
+      if ($?DEBUG)  echo `date` "$0:t $$ -- found $len ids since $since" >>&! $LOGTO
+    else
+      set ids = ( `jq '[.rows?|sort_by(.id)|reverse[].doc|._id]' "$out"` )
+      set len = ( `echo "$ids" | jq '.|length'` )
+      set output = '{"name":"'"$d"'","date":'"$DATE"',"count":'"$len"',"total":'"$total_rows"',"limit":'"$IMAGE_LIMIT"',"ids":'"$ids"' }'
+      if ($?DEBUG)  echo `date` "$0:t $$ -- found $len ids" >>&! $LOGTO
      endif
+     rm -f "$out"
+     goto output
   else if ($db == "all") then
     set json = '{"name":"'"$d"'","date":'"$lid"',"total":'"$total_rows"'}'
   else
@@ -348,37 +301,32 @@ output:
 echo "Content-Type: application/json; charset=utf-8"
 echo "Access-Control-Allow-Origin: *"
 
-if ($?output == 0 && $?OUTPUT) then
-  if (-s "$OUTPUT") then
-    @ age = $SECONDS - $DATE
-    echo "Age: $age"
-    @ refresh = $TTL - $age
-    if ($refresh < 0) @ refresh = $TTL
-    echo "Refresh: $refresh"
-    echo "Cache-Control: max-age=$TTL"
-    echo "Last-Modified:" `$dateconv -i '%s' -f '%a, %d %b %Y %H:%M:%S %Z' $DATE`
-    echo ""
-    jq -c '.' "$OUTPUT"
-    if ($?DEBUG) echo `date` "$0 $$ -- output ($OUTPUT) Age: $age Refresh: $refresh" >>&! $LOGTO
-    /bin/rm -f "$OUTPUT"
-    goto done
+if ($?output == 0 && -s "$OUTPUT") then
+  @ age = $SECONDS - $DATE
+  echo "Age: $age"
+  @ refresh = $TTL - $age
+  if ($refresh < 0) @ refresh = $TTL
+  echo "Refresh: $refresh"
+  echo "Cache-Control: max-age=$TTL"
+  echo "Last-Modified:" `$dateconv -i '%s' -f '%a, %d %b %Y %H:%M:%S %Z' $DATE`
+  echo ""
+  jq -c '.' "$OUTPUT"
+  if ($?DEBUG) echo `date` "$0 $$ -- output ($OUTPUT) Age: $age Refresh: $refresh" >>&! $LOGTO
+  /bin/rm -f "$OUTPUT"
+  goto done
+else
+  echo "Cache-Control: no-cache"
+  echo "Last-Modified:" `$dateconv -i '%s' -f '%a, %d %b %Y %H:%M:%S %Z' $DATE`
+  echo ""
+  if ($?output) then
+     echo "$output"
+  else
+     echo '{ "error": "not found" }'
   endif
 endif
 
-echo "Cache-Control: no-cache"
-echo "Last-Modified:" `$dateconv -i '%s' -f '%a, %d %b %Y %H:%M:%S %Z' $DATE`
-echo ""
-if ($?output) then
-   echo "$output"
-else
-   echo '{ "error": "not found" }'
-endif
-
-# done
-
+###
+### done
+###
 done:
-
-@ now = `date "+%s"`
-@ elapsed = $now - $SECONDS
-
-if ($?DEBUG) echo `date` "$0 $$ -- $db -- FINISH ($elapsed)" >>&! $LOGTO
+  if ($?DEBUG) echo `date` "$0 $$ -- $db -- FINISH" >>&! $LOGTO

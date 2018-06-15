@@ -66,7 +66,7 @@ ENV MODEL_IMAGE_WIDTH 224
 ENV MODEL_IMAGE_HEIGHT 224
 ENV CAMERA_MODEL_TRANSFORM CROP
 ENV CREDENTIALS ${CREDIR}
-ENV TMP ${AAHDIR}
+ENV TMP /tmp
 
 # temporary files & credentials
 RUN mkdir -p ${AAHDIR} ${CREDIR}
@@ -79,6 +79,8 @@ COPY ./.cloudant_url ${CREDIR}
 RUN chmod 444 ${CREDIR}/.cloudant_url
 COPY ./.watson.visual-recognition.json ${CREDIR}
 RUN chmod 444 ${CREDIR}/.watson.visual-recognition.json
+COPY ./.ftp_url ${CREDIR}
+RUN chmod 444 ${CREDIR}/.ftp_url
 
 # html
 COPY ./public/ /usr/local/apache2/htdocs/
