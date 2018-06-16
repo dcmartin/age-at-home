@@ -215,6 +215,22 @@ binary_sensor ageathome_learning_template:
 ###
 
 panel_iframe:
+  netdata:
+    title: 'NetData'
+    icon: mdi:database-search
+    url: 'http://192.168.1.40:19999'
+  cloudant:
+    title: 'Cloudant'
+    icon: mdi:sofa
+    url: !secret cloudant_url
+  nodered:
+    title: 'Node-RED'
+    icon: mdi:clipboard-flow
+    url: 'http://192.168.1.40:1880'
+  ageathome:
+    title: 'Age-At-Home'
+    icon: mdi:home-account
+    url: 'http://192.168.1.27:8999/devices.html'
   docsis:
     title: 'Mikrotik'
     icon: mdi:router-wireless
@@ -222,11 +238,7 @@ panel_iframe:
   classify:
     title: 'CLASSIFY'
     icon: mdi:image-filter
-    url: 'http://age-at-home.dcmartin.com/classify.html'
-  digits_tx2:
-    title: 'DIGITS-TX2'
-    icon: mdi:format-list-numbers
-    url: 'http://digits.dcmartin.com:5001'
+    url: 'http://192.168.1.27:8999/classify.html'
   digits_p40:
     title: 'DIGITS-P40'
     icon: mdi:format-list-numbers
@@ -234,11 +246,11 @@ panel_iframe:
   controls:
     title: Control Panel
     icon: mdi:windows
-    url: http://192.168.1.40:7080
-  mtn:
-    title: 'Horizon'
-    icon: mdi:image-filter-hdr
-    url: 'http://192.168.1.40/dashboard'
+    url: 'http://192.168.1.40:7080'
+#  mtn:
+#    title: 'Horizon'
+#    icon: mdi:image-filter-hdr
+#    url: 'http://192.168.1.40/dashboard'
   terminal:
     title: Terminal
     icon: mdi:console
@@ -247,10 +259,10 @@ panel_iframe:
     title: DAVID-PLEX
     icon: mdi:television
     url: 'http://192.168.1.27:8181'
-  cameras:
-    title: Cameras
-    icon: mdi:webcam
-    url: 'http://192.168.1.33/LOCAL.html'
+#  cameras:
+#    title: Cameras
+#    icon: mdi:webcam
+#    url: 'http://www.dcmartin.com/REMOTE.html'
 
 ###
 ### SENSORS
@@ -491,24 +503,41 @@ sensor aah_state_template:
 sensor aah_entity_picture_template:
   - platform: template
     sensors:
-      kitchen_camera_entity_picture:
-        # entity_id: camera.kitchen_image_annotated
-        value_template: '{{ states.camera.kitchen_image_annotated.attributes.entity_picture }}'
-      bathroom_camera_entity_picture:
-        # entity_id: camera.bathroom_image_annotated
-        value_template: '{{ states.camera.bathroom_image_annotated.attributes.entity_picture }}'
-      frontdoor_camera_entity_picture:
-        # entity_id: camera.frontdoor_image_annotated
-        value_template: '{{ states.camera.frontdoor_image_annotated.attributes.entity_picture }}'
-      camera_road_entity_picture:
-        # entity_id: camera.road_image_annotated
-        value_template: '{{ states.camera.road_image_annotated.attributes.entity_picture }}'
-      camera_gate_entity_picture:
-        # entity_id: camera.gate_image_annotated
-        value_template: '{{ states.camera.gate_image_annotated.attributes.entity_picture }}'
-      camera_poolhouse_entity_picture:
-        # entity_id: camera.poolhouse_image_annotated
-        value_template: '{{ states.camera.poolhouse_image_annotated.attributes.entity_picture }}'
+      kitchen_entity_picture:
+        # entity_id: camera.kitchen_image
+        value_template: '{{ states.camera.kitchen_image.attributes.entity_picture }}'
+      bathroom_entity_picture:
+        # entity_id: camera.bathroom_image
+        value_template: '{{ states.camera.bathroom_image.attributes.entity_picture }}'
+      frontdoor_entity_picture:
+        # entity_id: camera.frontdoor_image
+        value_template: '{{ states.camera.frontdoor_image.attributes.entity_picture }}'
+      road_entity_picture:
+        # entity_id: camera.road_image
+        value_template: '{{ states.camera.road_image.attributes.entity_picture }}'
+      gate_entity_picture:
+        # entity_id: camera.gate_image
+        value_template: '{{ states.camera.gate_image.attributes.entity_picture }}'
+      poolhouse_entity_picture:
+        # entity_id: camera.poolhouse_image
+        value_template: '{{ states.camera.poolhouse_image.attributes.entity_picture }}'
+
+###
+### APPLE TV
+###
+
+#media_player apple_tv:
+#  - platform: apple_tv
+
+###
+### ROKU
+###
+
+media_player roku_kitchen:
+  - platform: roku
+
+media_player roku_poolhouse:
+  - platform: roku
 
 ###
 ### SONOS
@@ -905,970 +934,7 @@ camera wcv80n_backyard:
 ###
 ### HORIZON
 ###
-
-## STATUS
-
-# CONFIGURATION
-
-sensor hzn_connectivity:
-  - platform: rest
-    resource: 'http://192.168.1.40/status'
-    name: horizon_connectivity
-    value_template: >
-      {%- if value_json is defined and value_json.configuration is defined -%} 
-        {{ value_json.connectivity | default(null) }}
-      {%- else -%} 'undefined' {%- endif -%}
-
-sensor hzn_exchange:
-  - platform: rest
-    resource: 'http://192.168.1.40/status'
-    name: horizon_exchange
-    value_template: >
-      {%- if value_json is defined and value_json.configuration is defined -%} 
-        {{ value_json.configuration.exchange_api | default(null) }}
-      {%- else -%} 'undefined' {%- endif -%}
-
-sensor hzn_architecture:
-  - platform: rest
-    resource: 'http://192.168.1.40/status'
-    name: horizon_architecture
-    value_template: >
-      {%- if value_json is defined and value_json.configuration is defined -%} 
-        {{ value_json.configuration.architecture | default(null) }}
-      {%- else -%} 'undefined' {%- endif -%}
-
-# ETHEREUM
-
-sensor hzn_balance:
-  - platform: rest
-    resource: 'http://192.168.1.40/status'
-    name: horizon_balance
-    value_template: >
-      {%- if value_json is defined -%}
-        {%- if value_json.geth is defined -%}
-          {%- if value_json.geth != [] -%} 
-            {{ value_json.geth.eth_balance|int }}
-          {%- else -%}
-            0
-          {%- endif -%}
-        {%- else -%}
-          -1
-        {%- endif -%}
-      {%- else -%}
-        'undefined'
-      {%- endif -%}
-
-sensor hzn_peer_count:
-  - platform: rest
-    resource: 'http://192.168.1.40/status'
-    name: horizon_net_peer_count
-    value_template: >
-      {%- if value_json is defined -%}
-        {%- if value_json.geth is defined -%}
-          {%- if value_json.geth != [] -%} 
-            {{ value_json.geth.net_peer_count|int }}
-          {%- else -%}
-            0
-          {%- endif -%}
-        {%- else -%}
-          -1
-        {%- endif -%}
-      {%- else -%}
-        'undefined'
-      {%- endif -%}
-
-sensor hzn_syncing:
-  - platform: rest
-    resource: 'http://192.168.1.40/status'
-    name: horizon_syncing
-    value_template: >
-      {%- if value_json is defined -%}
-        {%- if value_json.geth is defined -%}
-          {%- if value_json.geth != [] -%} 
-            {{ value_json.geth.eth_syncing }}
-          {%- else -%}
-            null
-          {%- endif -%}
-        {%- else -%}
-          'undefined'
-        {%- endif -%}
-      {%- else -%}
-        'undefined'
-      {%- endif -%}
-
-sensor hzn_blocknumber:
-  - platform: rest
-    resource: 'http://192.168.1.40/status'
-    name: horizon_blocknumber
-    value_template: >
-      {%- if value_json is defined -%}
-        {%- if value_json.geth is defined -%}
-          {%- if value_json.geth != [] -%} 
-            {{ value_json.geth.eth_blocknumber|int }}
-          {%- else -%}
-            0
-          {%- endif -%}
-        {%- else -%}
-          -1
-        {%- endif -%}
-      {%- else -%}
-        'undefined'
-      {%- endif -%}
-
-sensor hzn_account:
-  - platform: rest
-    resource: 'http://192.168.1.40/status'
-    name: horizon_account
-    value_template: >
-      {%- if value_json is defined -%}
-        {%- if value_json.geth is defined -%}
-          {%- if value_json.geth != [] -%} 
-            {{ value_json.geth.eth_accounts[0] }}
-          {%- else -%}
-            null
-          {%- endif -%}
-        {%- else -%}
-          'undefined'
-        {%- endif -%}
-      {%- else -%}
-        'undefined'
-      {%- endif -%}
-
-## NODE
-
-sensor hzn_node_id:
-  - platform: rest
-    resource: 'http://192.168.1.40/node'
-    name: horizon_node_id
-    value_template: >
-      {%- if value_json is defined -%} 
-        {{ value_json.id | default(null) }}
-      {%- else -%} 'undefined' {%- endif -%}
-
-sensor hzn_node_organization:
-  - platform: rest
-    resource: 'http://192.168.1.40/node'
-    name: horizon_node_organization
-    value_template: >
-      {%- if value_json is defined -%} 
-        {{ value_json.organization | default(null) }}
-      {%- else -%} 'undefined' {%- endif -%}
-
-sensor hzn_node_pattern:
-  - platform: rest
-    resource: 'http://192.168.1.40/node'
-    name: horizon_node_pattern
-    value_template: >
-      {%- if value_json is defined -%} 
-        {{ value_json.pattern | default(null) }}
-      {%- else -%} 'undefined' {%- endif -%}
-
-sensor hzn_node_name:
-  - platform: rest
-    resource: 'http://192.168.1.40/node'
-    name: horizon_node_name
-    value_template: >
-      {%- if value_json is defined -%} 
-        {{ value_json.name | default(null) }}
-      {%- else -%} 'undefined' {%- endif -%}
-
-sensor hzn_node_valid:
-  - platform: rest
-    resource: 'http://192.168.1.40/node'
-    name: horizon_node_valid
-    value_template: >
-      {%- if value_json is defined -%} 
-        {{ value_json.token_valid | default(null) }}
-      {%- else -%} 'undefined' {%- endif -%}
-
-sensor hzn_node_valid_time:
-  - platform: rest
-    resource: 'http://192.168.1.40/node'
-    name: horizon_node_valid_time
-    value_template: >
-      {%- if value_json is defined -%} 
-        {{ value_json.token_valid|int|timestamp_custom("%a %b %d @ %I:%M %p") | default(null) }}
-      {%- else -%} 'undefined' {%- endif -%}
-
-# CONFIG
-
-sensor hzn_node_state:
-  - platform: rest
-    resource: 'http://192.168.1.40/node'
-    name: horizon_node_state
-    value_template: >
-      {%- if value_json is defined -%} 
-        {{ value_json.configstate.state | default(null) }}
-      {%- else -%} 'undefined' {%- endif -%}
-
-sensor hzn_node_update:
-  - platform: rest
-    resource: 'http://192.168.1.40/node'
-    name: horizon_node_update
-    value_template: >
-      {%- if value_json is defined -%} 
-        {{ value_json.configstate.last_update_time|int|timestamp_custom("%a %b %d @ %I:%M %p") | default(null) }}
-      {%- else -%} 'undefined' {%- endif -%}
-
-## MICROSERVICE
-
-sensor hzn_microservice_config_count:
-  - platform: rest
-    resource: 'http://192.168.1.40/microservice'
-    name: horizon_microservice_config_count
-    value_template: >
-      {%- if value_json is defined and value_json.config is defined -%} 
-        {{ ( value_json.config | length ) | default(0)  }}
-      {%- else -%} 'undefined' {%- endif -%}
-
-sensor hzn_microservice_instance_active_count:
-  - platform: rest
-    resource: 'http://192.168.1.40/microservice'
-    name: horizon_microservice_instance_active_count
-    value_template: >
-      {%- if value_json is defined and value_json.instances is defined -%} 
-        {{ ( value_json.instances.active | length ) | default(0) }}
-      {%- else -%} 'undefined' {%- endif -%}
-
-sensor hzn_microservice_instance_archived_count:
-  - platform: rest
-    resource: 'http://192.168.1.40/microservice'
-    name: horizon_microservice_instance_archived_count
-    value_template: >
-      {%- if value_json is defined and value_json.instances is defined -%} 
-        {{ ( value_json.instances.archived | length ) | default(0) }}
-      {%- else -%} 'undefined' {%- endif -%}
-
-sensor hzn_microservice_definition_active_count:
-  - platform: rest
-    resource: 'http://192.168.1.40/microservice'
-    name: horizon_microservice_definition_active_count
-    value_template: >
-      {%- if value_json is defined and value_json.definitions is defined -%} 
-        {{ ( value_json.definitions.active | length ) | default(0) }}
-      {%- else -%} 'undefined' {%- endif -%}
-
-sensor hzn_microservice_definition_archived_count:
-  - platform: rest
-    resource: 'http://192.168.1.40/microservice'
-    name: horizon_microservice_definition_archived_count
-    value_template: >
-      {%- if value_json is defined and value_json.definitions is defined -%} 
-        {{ ( value_json.definitions.archived | length ) | default(0) }}
-      {%- else -%} 'undefined' {%- endif -%}
-
-## ATTRIBUTE
-
-sensor hzn_attribute_count:
-  - platform: rest
-    resource: 'http://192.168.1.40/attribute'
-    name: horizon_attribute_count
-    value_template: >
-      {%- if value_json is defined -%} 
-        {{ ( value_json.attributes | length ) | default(0) }}
-      {%- else -%} 'undefined' {%- endif -%}
-
-sensor hzn_attribute_ids:
-  - platform: rest
-    resource: 'http://192.168.1.40/attribute'
-    name: horizon_attribute_ids
-    value_template: >
-      {%- if value_json is defined and value_json.attributes|length > 0 -%} 
-        {%- for attribute in value_json.attributes -%}
-          {%- if loop.last -%}
-            {%- if attribute.id is defined -%}
-              {{- attribute.id|truncate(8,false,'')|tojson -}}
-            {%- endif -%}
-          {%- else -%}
-            {%- if attribute.id is defined -%}
-              {{- attribute.id|truncate(8,false,'')|tojson -}},
-            {%- endif -%}
-          {%- endif -%}
-        {%- endfor -%}
-      {%- else -%} 'undefined' {%- endif -%}
-
-## HORIZON AGREEMENT
-
-sensor hzn_agreement_active_count:
-  - platform: rest
-    resource: 'http://192.168.1.40/agreement'
-    name: horizon_agreement_active_count
-    value_template: >
-      {%- if value_json is defined -%} 
-        {{ ( value_json.agreements.active | length ) | default(0) }}
-      {%- else -%} 0 {%- endif -%}
-
-sensor hzn_agreement_active_ids:
-  - platform: rest
-    resource: 'http://192.168.1.40/agreement'
-    name: horizon_agreement_active_ids
-    value_template: >
-      {%- if value_json is defined and value_json.agreements.active|length > 0 -%} 
-        {%- for agreement in value_json.agreements.active %}
-          {%- if loop.last -%}
-            {%- if agreement.current_agreement_id is defined -%}
-              {{- agreement.current_agreement_id|tojson -}}
-            {%- endif -%}
-          {%- else -%}
-            {%- if agreement.current_agreement_id is defined -%}
-              {{- agreement.current_agreement_id|tojson -}},
-            {%- endif -%}
-          {%- endif -%}
-        {%- endfor -%}
-      {%- else -%} 'undefined' {%- endif -%}
-
-sensor hzn_agreement_active_urls:
-  - platform: rest
-    resource: 'http://192.168.1.40/agreement'
-    name: horizon_agreement_active_urls
-    value_template: >
-      {%- if value_json is defined and value_json.agreements.active|length > 0 -%} 
-        {%- for agreement in value_json.agreements.active %}
-          {%- if loop.last -%}
-            {%- if agreement.workload_to_run.url is defined -%}
-              {{- agreement.workload_to_run.url|tojson -}}
-            {%- endif -%}
-          {%- else -%}
-            {%- if agreement.workload_to_run.url is defined -%}
-              {{- agreement.workload_to_run.url|tojson -}},
-            {%- endif -%}
-          {%- endif -%}
-        {%- endfor -%}
-      {%- else -%} 'undefined' {%- endif -%}
-
-sensor hzn_agreement_archived_count:
-  - platform: rest
-    resource: 'http://192.168.1.40/agreement'
-    name: horizon_agreement_archived_count
-    value_template: >
-      {%- if value_json is defined -%} 
-        {{ ( value_json.agreements.archived | length ) | default(0) }}
-      {%- else -%} 0 {%- endif -%}
-
-# HORIZON WORKLOAD
-
-sensor hzn_workload_container_count:
-  - platform: rest
-    resource: 'http://192.168.1.40/workload'
-    name: horizon_workload_container_count
-    value_template: >
-      {%- if value_json is defined -%} 
-        {{ ( value_json.containers | length ) | default(0) }}
-      {%- else -%} 'undefined' {%- endif -%}
-
-## AGREEMENTS
-
-# AGREEMENT #0
-
-sensor hzn_agreement0_name:
-  - platform: rest
-    resource: 'http://192.168.1.40/agreement'
-    name: horizon_agreement0_name
-    value_template: >
-      {%- if value_json is defined and states('sensor.horizon_agreement_active_count')|int > 0 -%} 
-        {{ value_json.agreements.active[0].name | default(null) }}
-      {%- else -%} null {%- endif -%}
-
-sensor hzn_agreement0_id:
-  - platform: rest
-    resource: 'http://192.168.1.40/agreement'
-    name: horizon_agreement0_id
-    value_template: >
-      {%- if value_json is defined and states('sensor.horizon_agreement_active_count')|int > 0 -%} 
-        {{ value_json.agreements.active[0].current_agreement_id | default(null) }}
-      {%- else -%} null {%- endif -%}
-
-sensor hzn_agreement0_consumer:
-  - platform: rest
-    resource: 'http://192.168.1.40/agreement'
-    name: horizon_agreement0_consumer
-    value_template: >
-      {%- if value_json is defined and states('sensor.horizon_agreement_active_count')|int > 0 -%} 
-        {{ value_json.agreements.active[0].consumer_id | default(null) }}
-      {%- else -%} null {%- endif -%}
-
-sensor hzn_agreement0_counterparty:
-  - platform: rest
-    resource: 'http://192.168.1.40/agreement'
-    name: horizon_agreement0_counterparty
-    value_template: >
-      {%- if value_json is defined and states('sensor.horizon_agreement_active_count')|int > 0 -%} 
-        {{ value_json.agreements.active[0].counterparty_address | default(null) }}
-      {%- else -%} null {%- endif -%}
-
-sensor hzn_agreement0_protocol:
-  - platform: rest
-    resource: 'http://192.168.1.40/agreement'
-    name: horizon_agreement0_protocol
-    value_template: >
-      {%- if value_json is defined and states('sensor.horizon_agreement_active_count')|int > 0 -%} 
-        {{ value_json.agreements.active[0].agreement_protocol | default(null) }}
-      {%- else -%} null {%- endif -%}
-
-sensor hzn_agreement0_create:
-  - platform: rest
-    resource: 'http://192.168.1.40/agreement'
-    name: horizon_agreement0_create
-    value_template: >
-      {%- if value_json is defined and states('sensor.horizon_agreement_active_count')|int > 0 -%} 
-          {{ value_json.agreements.active[0].agreement_creation_time | timestamp_custom("%a %b %d @ %I:%M %p") }}
-      {%- else -%}
-        {{ 'no agreement' }}
-      {%- endif -%}
-
-sensor hzn_agreement0_accept:
-  - platform: rest
-    resource: 'http://192.168.1.40/agreement'
-    name: horizon_agreement0_accept
-    value_template: >
-      {%- if value_json is defined and states('sensor.horizon_agreement_active_count')|int > 0 -%} 
-        {{ value_json.agreements.active[0].agreement_accepted_time | timestamp_custom("%a %b %d @ %I:%M %p") }}
-      {%- else -%}
-        {{ 'no agreement' }}
-      {%- endif -%}
-
-sensor hzn_agreement0_finalize:
-  - platform: rest
-    resource: 'http://192.168.1.40/agreement'
-    name: horizon_agreement0_finalize
-    value_template: >
-      {%- if value_json is defined and states('sensor.horizon_agreement_active_count')|int > 0 -%} 
-        {{ value_json.agreements.active[0].agreement_finalized_time | timestamp_custom("%a %b %d @ %I:%M %p") }}
-      {%- else -%}
-        {{ 'no agreement' }}
-      {%- endif -%}
-
-sensor hzn_agreement0_receive:
-  - platform: rest
-    resource: 'http://192.168.1.40/agreement'
-    name: horizon_agreement0_receive
-    value_template: >
-      {%- if value_json is defined and states('sensor.horizon_agreement_active_count')|int > 0 -%} 
-        {{ value_json.agreements.active[0].agreement_data_received_time | timestamp_custom("%a %b %d @ %I:%M %p") }}
-      {%- else -%}
-        {{ 'no agreement' }}
-      {%- endif -%}
-
-sensor hzn_agreement0_start:
-  - platform: rest
-    resource: 'http://192.168.1.40/agreement'
-    name: horizon_agreement0_start
-    value_template: >
-      {%- if value_json is defined and states('sensor.horizon_agreement_active_count')|int > 0 -%} 
-        {{ value_json.agreements.active[0].agreement_execution_start_time | timestamp_custom("%a %b %d @ %I:%M %p") }}
-      {%- else -%}
-        {{ 'no agreement' }}
-      {%- endif -%}
-
-# AGREEMENT #1
-
-sensor hzn_agreement1_name:
-  - platform: rest
-    resource: 'http://192.168.1.40/agreement'
-    name: horizon_agreement1_name
-    value_template: >
-      {%- if value_json is defined and states('sensor.horizon_agreement_active_count')|int > 1 -%} 
-        {{ value_json.agreements.active[1].name | default(null) }}
-      {%- else -%} null {%- endif -%}
-
-sensor hzn_agreement1_id:
-  - platform: rest
-    resource: 'http://192.168.1.40/agreement'
-    name: horizon_agreement1_id
-    value_template: >
-      {%- if value_json is defined and states('sensor.horizon_agreement_active_count')|int > 1 -%} 
-        {{ value_json.agreements.active[1].current_agreement_id | default(null) }}
-      {%- else -%} null {%- endif -%}
-
-sensor hzn_agreement1_consumer:
-  - platform: rest
-    resource: 'http://192.168.1.40/agreement'
-    name: horizon_agreement1_consumer
-    value_template: >
-      {%- if value_json is defined and states('sensor.horizon_agreement_active_count')|int > 1 -%} 
-        {{ value_json.agreements.active[1].consumer_id | default(null) }}
-      {%- else -%} null {%- endif -%}
-
-sensor hzn_agreement1_counterparty:
-  - platform: rest
-    resource: 'http://192.168.1.40/agreement'
-    name: horizon_agreement1_counterparty
-    value_template: >
-      {%- if value_json is defined and states('sensor.horizon_agreement_active_count')|int > 1 -%} 
-        {{ value_json.agreements.active[1].counterparty_address | default(null) }}
-      {%- else -%} null {%- endif -%}
-
-sensor hzn_agreement1_protocol:
-  - platform: rest
-    resource: 'http://192.168.1.40/agreement'
-    name: horizon_agreement1_protocol
-    value_template: >
-      {%- if value_json is defined and states('sensor.horizon_agreement_active_count')|int > 1 -%} 
-        {{ value_json.agreements.active[1].agreement_protocol | default(null) }}
-      {%- else -%} null {%- endif -%}
-
-sensor hzn_agreement1_create:
-  - platform: rest
-    resource: 'http://192.168.1.40/agreement'
-    name: horizon_agreement1_create
-    value_template: >
-      {%- if value_json is defined and states('sensor.horizon_agreement_active_count')|int > 1 -%} 
-          {{ value_json.agreements.active[1].agreement_creation_time | timestamp_custom("%a %b %d @ %I:%M %p") }}
-      {%- else -%}
-        {{ 'no agreement' }}
-      {%- endif -%}
-
-sensor hzn_agreement1_accept:
-  - platform: rest
-    resource: 'http://192.168.1.40/agreement'
-    name: horizon_agreement1_accept
-    value_template: >
-      {%- if value_json is defined and states('sensor.horizon_agreement_active_count')|int > 1 -%} 
-        {{ value_json.agreements.active[1].agreement_accepted_time | timestamp_custom("%a %b %d @ %I:%M %p") }}
-      {%- else -%}
-        {{ 'no agreement' }}
-      {%- endif -%}
-
-sensor hzn_agreement1_finalize:
-  - platform: rest
-    resource: 'http://192.168.1.40/agreement'
-    name: horizon_agreement1_finalize
-    value_template: >
-      {%- if value_json is defined and states('sensor.horizon_agreement_active_count')|int > 1 -%} 
-        {{ value_json.agreements.active[1].agreement_finalized_time | timestamp_custom("%a %b %d @ %I:%M %p") }}
-      {%- else -%}
-        {{ 'no agreement' }}
-      {%- endif -%}
-
-sensor hzn_agreement1_receive:
-  - platform: rest
-    resource: 'http://192.168.1.40/agreement'
-    name: horizon_agreement1_receive
-    value_template: >
-      {%- if value_json is defined and states('sensor.horizon_agreement_active_count')|int > 1 -%} 
-        {{ value_json.agreements.active[1].agreement_data_received_time | timestamp_custom("%a %b %d @ %I:%M %p") }}
-      {%- else -%}
-        {{ 'no agreement' }}
-      {%- endif -%}
-
-sensor hzn_agreement1_start:
-  - platform: rest
-    resource: 'http://192.168.1.40/agreement'
-    name: horizon_agreement1_start
-    value_template: >
-      {%- if value_json is defined and states('sensor.horizon_agreement_active_count')|int > 1 -%} 
-        {{ value_json.agreements.active[1].agreement_execution_start_time | timestamp_custom("%a %b %d @ %I:%M %p") }}
-      {%- else -%}
-        {{ 'no agreement' }}
-      {%- endif -%}
-
-# AGREEMENT #2
-
-sensor hzn_agreement2_name:
-  - platform: rest
-    resource: 'http://192.168.1.40/agreement'
-    name: horizon_agreement2_name
-    value_template: >
-      {%- if value_json is defined and states('sensor.horizon_agreement_active_count')|int > 2 -%} 
-        {{ value_json.agreements.active[2].name | default(null) }}
-      {%- else -%} null {%- endif -%}
-
-sensor hzn_agreement2_id:
-  - platform: rest
-    resource: 'http://192.168.1.40/agreement'
-    name: horizon_agreement2_id
-    value_template: >
-      {%- if value_json is defined and states('sensor.horizon_agreement_active_count')|int > 2 -%} 
-        {{ value_json.agreements.active[2].current_agreement_id | default(null) }}
-      {%- else -%} null {%- endif -%}
-
-sensor hzn_agreement2_consumer:
-  - platform: rest
-    resource: 'http://192.168.1.40/agreement'
-    name: horizon_agreement2_consumer
-    value_template: >
-      {%- if value_json is defined and states('sensor.horizon_agreement_active_count')|int > 2 -%} 
-        {{ value_json.agreements.active[2].consumer_id | default(null) }}
-      {%- else -%} null {%- endif -%}
-
-sensor hzn_agreement2_counterparty:
-  - platform: rest
-    resource: 'http://192.168.1.40/agreement'
-    name: horizon_agreement2_counterparty
-    value_template: >
-      {%- if value_json is defined and states('sensor.horizon_agreement_active_count')|int > 2 -%} 
-        {{ value_json.agreements.active[2].counterparty_address | default(null) }}
-      {%- else -%} null {%- endif -%}
-
-sensor hzn_agreement2_protocol:
-  - platform: rest
-    resource: 'http://192.168.1.40/agreement'
-    name: horizon_agreement2_protocol
-    value_template: >
-      {%- if value_json is defined and states('sensor.horizon_agreement_active_count')|int > 2 -%} 
-        {{ value_json.agreements.active[2].agreement_protocol | default(null) }}
-      {%- else -%} null {%- endif -%}
-
-sensor hzn_agreement2_create:
-  - platform: rest
-    resource: 'http://192.168.1.40/agreement'
-    name: horizon_agreement2_create
-    value_template: >
-      {%- if value_json is defined and states('sensor.horizon_agreement_active_count')|int > 2 -%} 
-          {{ value_json.agreements.active[2].agreement_creation_time | timestamp_custom("%a %b %d @ %I:%M %p") }}
-      {%- else -%}
-        {{ 'no agreement' }}
-      {%- endif -%}
-
-sensor hzn_agreement2_accept:
-  - platform: rest
-    resource: 'http://192.168.1.40/agreement'
-    name: horizon_agreement2_accept
-    value_template: >
-      {%- if value_json is defined and states('sensor.horizon_agreement_active_count')|int > 2 -%} 
-        {{ value_json.agreements.active[2].agreement_accepted_time | timestamp_custom("%a %b %d @ %I:%M %p") }}
-      {%- else -%}
-        {{ 'no agreement' }}
-      {%- endif -%}
-
-sensor hzn_agreement2_finalize:
-  - platform: rest
-    resource: 'http://192.168.1.40/agreement'
-    name: horizon_agreement2_finalize
-    value_template: >
-      {%- if value_json is defined and states('sensor.horizon_agreement_active_count')|int > 2 -%} 
-        {{ value_json.agreements.active[2].agreement_finalized_time | timestamp_custom("%a %b %d @ %I:%M %p") }}
-      {%- else -%}
-        {{ 'no agreement' }}
-      {%- endif -%}
-
-sensor hzn_agreement2_receive:
-  - platform: rest
-    resource: 'http://192.168.1.40/agreement'
-    name: horizon_agreement2_receive
-    value_template: >
-      {%- if value_json is defined and states('sensor.horizon_agreement_active_count')|int > 2 -%} 
-        {{ value_json.agreements.active[2].agreement_data_received_time | timestamp_custom("%a %b %d @ %I:%M %p") }}
-      {%- else -%}
-        {{ 'no agreement' }}
-      {%- endif -%}
-
-sensor hzn_agreement2_start:
-  - platform: rest
-    resource: 'http://192.168.1.40/agreement'
-    name: horizon_agreement2_start
-    value_template: >
-      {%- if value_json is defined and states('sensor.horizon_agreement_active_count')|int > 2 -%} 
-        {{ value_json.agreements.active[2].agreement_execution_start_time | timestamp_custom("%a %b %d @ %I:%M %p") }}
-      {%- else -%}
-        {{ 'no agreement' }}
-      {%- endif -%}
-
-# AGREEMENT #3
-
-sensor hzn_agreement3_name:
-  - platform: rest
-    resource: 'http://192.168.1.40/agreement'
-    name: horizon_agreement3_name
-    value_template: >
-      {%- if value_json is defined and states('sensor.horizon_agreement_active_count')|int > 3 -%} 
-        {{ value_json.agreements.active[3].name | default(null) }}
-      {%- else -%} null {%- endif -%}
-
-sensor hzn_agreement3_id:
-  - platform: rest
-    resource: 'http://192.168.1.40/agreement'
-    name: horizon_agreement3_id
-    value_template: >
-      {%- if value_json is defined and states('sensor.horizon_agreement_active_count')|int > 3 -%} 
-        {{ value_json.agreements.active[3].current_agreement_id | default(null) }}
-      {%- else -%} null {%- endif -%}
-
-sensor hzn_agreement3_consumer:
-  - platform: rest
-    resource: 'http://192.168.1.40/agreement'
-    name: horizon_agreement3_consumer
-    value_template: >
-      {%- if value_json is defined and states('sensor.horizon_agreement_active_count')|int > 3 -%} 
-        {{ value_json.agreements.active[3].consumer_id | default(null) }}
-      {%- else -%} null {%- endif -%}
-
-sensor hzn_agreement3_counterparty:
-  - platform: rest
-    resource: 'http://192.168.1.40/agreement'
-    name: horizon_agreement3_counterparty
-    value_template: >
-      {%- if value_json is defined and states('sensor.horizon_agreement_active_count')|int > 3 -%} 
-        {{ value_json.agreements.active[3].counterparty_address | default(null) }}
-      {%- else -%} null {%- endif -%}
-
-sensor hzn_agreement3_protocol:
-  - platform: rest
-    resource: 'http://192.168.1.40/agreement'
-    name: horizon_agreement3_protocol
-    value_template: >
-      {%- if value_json is defined and states('sensor.horizon_agreement_active_count')|int > 3 -%} 
-        {{ value_json.agreements.active[3].agreement_protocol | default(null) }}
-      {%- else -%} null {%- endif -%}
-
-sensor hzn_agreement3_create:
-  - platform: rest
-    resource: 'http://192.168.1.40/agreement'
-    name: horizon_agreement3_create
-    value_template: >
-      {%- if value_json is defined and states('sensor.horizon_agreement_active_count')|int > 3 -%} 
-          {{ value_json.agreements.active[3].agreement_creation_time | timestamp_custom("%a %b %d @ %I:%M %p") }}
-      {%- else -%}
-        {{ 'no agreement' }}
-      {%- endif -%}
-
-sensor hzn_agreement3_accept:
-  - platform: rest
-    resource: 'http://192.168.1.40/agreement'
-    name: horizon_agreement3_accept
-    value_template: >
-      {%- if value_json is defined and states('sensor.horizon_agreement_active_count')|int > 3 -%} 
-        {{ value_json.agreements.active[3].agreement_accepted_time | timestamp_custom("%a %b %d @ %I:%M %p") }}
-      {%- else -%}
-        {{ 'no agreement' }}
-      {%- endif -%}
-
-sensor hzn_agreement3_finalize:
-  - platform: rest
-    resource: 'http://192.168.1.40/agreement'
-    name: horizon_agreement3_finalize
-    value_template: >
-      {%- if value_json is defined and states('sensor.horizon_agreement_active_count')|int > 3 -%} 
-        {{ value_json.agreements.active[3].agreement_finalized_time | timestamp_custom("%a %b %d @ %I:%M %p") }}
-      {%- else -%}
-        {{ 'no agreement' }}
-      {%- endif -%}
-
-sensor hzn_agreement3_receive:
-  - platform: rest
-    resource: 'http://192.168.1.40/agreement'
-    name: horizon_agreement3_receive
-    value_template: >
-      {%- if value_json is defined and states('sensor.horizon_agreement_active_count')|int > 3 -%} 
-        {{ value_json.agreements.active[3].agreement_data_received_time | timestamp_custom("%a %b %d @ %I:%M %p") }}
-      {%- else -%}
-        {{ 'no agreement' }}
-      {%- endif -%}
-
-sensor hzn_agreement3_start:
-  - platform: rest
-    resource: 'http://192.168.1.40/agreement'
-    name: horizon_agreement3_start
-    value_template: >
-      {%- if value_json is defined and states('sensor.horizon_agreement_active_count')|int > 3 -%} 
-        {{ value_json.agreements.active[3].agreement_execution_start_time | timestamp_custom("%a %b %d @ %I:%M %p") }}
-      {%- else -%}
-        {{ 'no agreement' }}
-      {%- endif -%}
-
-# AGREEMENT #4
-
-sensor hzn_agreement4_name:
-  - platform: rest
-    resource: 'http://192.168.1.40/agreement'
-    name: horizon_agreement4_name
-    value_template: >
-      {%- if value_json is defined and states('sensor.horizon_agreement_active_count')|int > 4 -%} 
-        {{ value_json.agreements.active[4].name | default(null) }}
-      {%- else -%} null {%- endif -%}
-
-sensor hzn_agreement4_id:
-  - platform: rest
-    resource: 'http://192.168.1.40/agreement'
-    name: horizon_agreement4_id
-    value_template: >
-      {%- if value_json is defined and states('sensor.horizon_agreement_active_count')|int > 4 -%} 
-        {{ value_json.agreements.active[4].current_agreement_id | default(null) }}
-      {%- else -%} null {%- endif -%}
-
-sensor hzn_agreement4_consumer:
-  - platform: rest
-    resource: 'http://192.168.1.40/agreement'
-    name: horizon_agreement4_consumer
-    value_template: >
-      {%- if value_json is defined and states('sensor.horizon_agreement_active_count')|int > 4 -%} 
-        {{ value_json.agreements.active[4].consumer_id | default(null) }}
-      {%- else -%} null {%- endif -%}
-
-sensor hzn_agreement4_counterparty:
-  - platform: rest
-    resource: 'http://192.168.1.40/agreement'
-    name: horizon_agreement4_counterparty
-    value_template: >
-      {%- if value_json is defined and states('sensor.horizon_agreement_active_count')|int > 4 -%} 
-        {{ value_json.agreements.active[4].counterparty_address | default(null) }}
-      {%- else -%} null {%- endif -%}
-
-sensor hzn_agreement4_protocol:
-  - platform: rest
-    resource: 'http://192.168.1.40/agreement'
-    name: horizon_agreement4_protocol
-    value_template: >
-      {%- if value_json is defined and states('sensor.horizon_agreement_active_count')|int > 4 -%} 
-        {{ value_json.agreements.active[4].agreement_protocol | default(null) }}
-      {%- else -%} null {%- endif -%}
-
-sensor hzn_agreement4_create:
-  - platform: rest
-    resource: 'http://192.168.1.40/agreement'
-    name: horizon_agreement4_create
-    value_template: >
-      {%- if value_json is defined and states('sensor.horizon_agreement_active_count')|int > 4 -%} 
-          {{ value_json.agreements.active[4].agreement_creation_time | timestamp_custom("%a %b %d @ %I:%M %p") }}
-      {%- else -%}
-        {{ 'no agreement' }}
-      {%- endif -%}
-
-sensor hzn_agreement4_accept:
-  - platform: rest
-    resource: 'http://192.168.1.40/agreement'
-    name: horizon_agreement4_accept
-    value_template: >
-      {%- if value_json is defined and states('sensor.horizon_agreement_active_count')|int > 4 -%} 
-        {{ value_json.agreements.active[4].agreement_accepted_time | timestamp_custom("%a %b %d @ %I:%M %p") }}
-      {%- else -%}
-        {{ 'no agreement' }}
-      {%- endif -%}
-
-sensor hzn_agreement4_finalize:
-  - platform: rest
-    resource: 'http://192.168.1.40/agreement'
-    name: horizon_agreement4_finalize
-    value_template: >
-      {%- if value_json is defined and states('sensor.horizon_agreement_active_count')|int > 4 -%} 
-        {{ value_json.agreements.active[4].agreement_finalized_time | timestamp_custom("%a %b %d @ %I:%M %p") }}
-      {%- else -%}
-        {{ 'no agreement' }}
-      {%- endif -%}
-
-sensor hzn_agreement4_receive:
-  - platform: rest
-    resource: 'http://192.168.1.40/agreement'
-    name: horizon_agreement4_receive
-    value_template: >
-      {%- if value_json is defined and states('sensor.horizon_agreement_active_count')|int > 4 -%} 
-        {{ value_json.agreements.active[4].agreement_data_received_time | timestamp_custom("%a %b %d @ %I:%M %p") }}
-      {%- else -%}
-        {{ 'no agreement' }}
-      {%- endif -%}
-
-sensor hzn_agreement4_start:
-  - platform: rest
-    resource: 'http://192.168.1.40/agreement'
-    name: horizon_agreement4_start
-    value_template: >
-      {%- if value_json is defined and states('sensor.horizon_agreement_active_count')|int > 4 -%} 
-        {{ value_json.agreements.active[4].agreement_execution_start_time | timestamp_custom("%a %b %d @ %I:%M %p") }}
-      {%- else -%}
-        {{ 'no agreement' }}
-      {%- endif -%}
-
-# AGREEMENT #5
-
-sensor hzn_agreement5_name:
-  - platform: rest
-    resource: 'http://192.168.1.40/agreement'
-    name: horizon_agreement5_name
-    value_template: >
-      {%- if value_json is defined and states('sensor.horizon_agreement_active_count')|int > 5 -%} 
-        {{ value_json.agreements.active[5].name | default(null) }}
-      {%- else -%} null {%- endif -%}
-
-sensor hzn_agreement5_id:
-  - platform: rest
-    resource: 'http://192.168.1.40/agreement'
-    name: horizon_agreement5_id
-    value_template: >
-      {%- if value_json is defined and states('sensor.horizon_agreement_active_count')|int > 5 -%} 
-        {{ value_json.agreements.active[5].current_agreement_id | default(null) }}
-      {%- else -%} null {%- endif -%}
-
-sensor hzn_agreement5_consumer:
-  - platform: rest
-    resource: 'http://192.168.1.40/agreement'
-    name: horizon_agreement5_consumer
-    value_template: >
-      {%- if value_json is defined and states('sensor.horizon_agreement_active_count')|int > 5 -%} 
-        {{ value_json.agreements.active[5].consumer_id | default(null) }}
-      {%- else -%} null {%- endif -%}
-
-sensor hzn_agreement5_counterparty:
-  - platform: rest
-    resource: 'http://192.168.1.40/agreement'
-    name: horizon_agreement5_counterparty
-    value_template: >
-      {%- if value_json is defined and states('sensor.horizon_agreement_active_count')|int > 5 -%} 
-        {{ value_json.agreements.active[5].counterparty_address | default(null) }}
-      {%- else -%} null {%- endif -%}
-
-sensor hzn_agreement5_protocol:
-  - platform: rest
-    resource: 'http://192.168.1.40/agreement'
-    name: horizon_agreement5_protocol
-    value_template: >
-      {%- if value_json is defined and states('sensor.horizon_agreement_active_count')|int > 5 -%} 
-        {{ value_json.agreements.active[5].agreement_protocol | default(null) }}
-      {%- else -%} null {%- endif -%}
-
-sensor hzn_agreement5_create:
-  - platform: rest
-    resource: 'http://192.168.1.40/agreement'
-    name: horizon_agreement5_create
-    value_template: >
-      {%- if value_json is defined and states('sensor.horizon_agreement_active_count')|int > 5 -%} 
-          {{ value_json.agreements.active[5].agreement_creation_time | timestamp_custom("%a %b %d @ %I:%M %p") }}
-      {%- else -%}
-        {{ 'no agreement' }}
-      {%- endif -%}
-
-sensor hzn_agreement5_accept:
-  - platform: rest
-    resource: 'http://192.168.1.40/agreement'
-    name: horizon_agreement5_accept
-    value_template: >
-      {%- if value_json is defined and states('sensor.horizon_agreement_active_count')|int > 5 -%} 
-        {{ value_json.agreements.active[5].agreement_accepted_time | timestamp_custom("%a %b %d @ %I:%M %p") }}
-      {%- else -%}
-        {{ 'no agreement' }}
-      {%- endif -%}
-
-sensor hzn_agreement5_finalize:
-  - platform: rest
-    resource: 'http://192.168.1.40/agreement'
-    name: horizon_agreement5_finalize
-    value_template: >
-      {%- if value_json is defined and states('sensor.horizon_agreement_active_count')|int > 5 -%} 
-        {{ value_json.agreements.active[5].agreement_finalized_time | timestamp_custom("%a %b %d @ %I:%M %p") }}
-      {%- else -%}
-        {{ 'no agreement' }}
-      {%- endif -%}
-
-sensor hzn_agreement5_receive:
-  - platform: rest
-    resource: 'http://192.168.1.40/agreement'
-    name: horizon_agreement5_receive
-    value_template: >
-      {%- if value_json is defined and states('sensor.horizon_agreement_active_count')|int > 5 -%} 
-        {{ value_json.agreements.active[5].agreement_data_received_time | timestamp_custom("%a %b %d @ %I:%M %p") }}
-      {%- else -%}
-        {{ 'no agreement' }}
-      {%- endif -%}
-
-sensor hzn_agreement5_start:
-  - platform: rest
-    resource: 'http://192.168.1.40/agreement'
-    name: horizon_agreement5_start
-    value_template: >
-      {%- if value_json is defined and states('sensor.horizon_agreement_active_count')|int > 5 -%} 
-        {{ value_json.agreements.active[5].agreement_execution_start_time | timestamp_custom("%a %b %d @ %I:%M %p") }}
-      {%- else -%}
-        {{ 'no agreement' }}
-      {%- endif -%}
+# !include horizon.yaml
 
 ###
 ### AGE-AT-HOME
@@ -2177,7 +1243,7 @@ camera aah_wrong_kitchen:
   platform: generic
   limit_refetch_to_url_change: false
   still_image_url: >
-    http://homeassistant.dcmartin.com:8123{{- states(("sensor.camera_","kitchen","_entity_picture")|join|lower) -}}
+    http://homeassistant.dcmartin.com:8123{{- states(("sensor.","kitchen","_entity_picture")|join|lower) -}}
 
 # CAMERAS (JPEG)
 
@@ -4685,10 +3751,8 @@ scene: !include scenes.yaml
 ##
 
 input_boolean: !include input_booleans.yaml
+
 input_select: !include input_selects.yaml
 
-input_text:
-  test1:
-    name: test1
-    initial: type something here
+# input_text: !include input_texts.yaml
 

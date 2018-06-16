@@ -11,8 +11,18 @@ endif
 if ($?config == 0) set config = "$share/homeassistant"
 if ($?addons == 0) set addons = "$share/addons/local"
 
+if (! -d "$config") then
+  echo "[Info] making $config"
+  mkdir -p "$config"
+endif
+
+if (! -d "$addons") then
+  echo "[Info] making $addons"
+  mkdir -p "$addons"
+endif
+
 # copy CONFIGURATION
-set yamls = ( scripts known_devices configuration groups history automations templates logger customize secrets zones scenes input_booleans input_selects )
+set yamls = ( scripts known_devices configuration groups history automations templates logger customize secrets zones scenes input_booleans input_selects input_texts )
 echo -n "Copying YAML ["
 foreach yaml ( $yamls )
   if (-e "$dir/config/$yaml.yaml") then
@@ -34,25 +44,42 @@ else
 endif
 
 # copy ADDONS
-echo "Copying ADDONS"
-foreach i ( "$dir"/addons/* )
-  echo -n "$i:t ["
-  if (-d "$i") then
-    mkdir -p "$addons/$i:t"
-    foreach j ( "$i"/* )
-      echo -n "$j:t "
-      if (-d "$j") then
-        mkdir -p "$addons/$i:t/$j:t"
-        foreach k ( "$j"/* )
-          echo -n "$k:t "
-          cp "$k" "$addons"/"$i:t"/"$j:t"/"$k:t"
-        end
-      else
-        cp "$j" "$addons"/"$i:t"/"$j:t"
-      endif
-    end
+if (-d "$dir/addons") then
+  echo "Copying ADDONS"
+  # check for repository definition
+  set r = "$dir/addons/repository.json"
+  if (-e "$r") then
+    echo "Copying $r"
+    cp "$r" "$addons"/"$r:t"
   else
-    cp "$j" "$addons"/"$i:t"/"$j:t"
+    echo "No repository defined; please create $r"
   endif
-  echo "]"
-end
+  foreach i ( "$dir"/addons/* )
+    if (! -d "$i") then
+      echo "skipping $i"
+      continue
+    endif
+    echo -n "$i:t ["
+    if (-d "$i") then
+      mkdir -p "$addons/$i:t"
+      foreach j ( "$i"/* )
+	echo -n "$j:t "
+	if (-d "$j") then
+	  mkdir -p "$addons/$i:t/$j:t"
+	  foreach k ( "$j"/* )
+	    echo -n "$k:t "
+	    cp "$k" "$addons"/"$i:t"/"$j:t"/"$k:t"
+	  end
+	else
+	  cp "$j" "$addons"/"$i:t"/"$j:t"
+	endif
+      end
+    else
+      cp "$j" "$addons"/"$i:t"/"$j:t"
+    endif
+    echo "]"
+  end
+else if (-d "$addons") then
+  echo "[Info] Removing $addons"
+  rm -rf "$addons"
+endif

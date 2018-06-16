@@ -90,17 +90,15 @@ devices_ian:
 devices_riley:
   name: devices_riley
   entities:
-    - device_tracker.rileysmacbookair
-    - device_tracker.rileys_iphone
     - device_tracker.rileysiphone5
+    - device_tracker.rileysmacbookair
 
 devices_ellen:
   name: devices_ellen
   entities:
     - device_tracker.ellens_ipad4prez
-    - device_tracker.ellens_iphone
+    - device_tracker.ellensiphone5
     - device_tracker.ellensipadpro
-    - device_tracker.ellensiphone
 
 iphones:
   name: iPhones
@@ -177,142 +175,11 @@ family_detection:
 ## HORIZON
 ##
 
-horizon_view:
-  view: true
-  name: Horizon View
-  icon: mdi:image-filter-hdr
-  entities:
-    - group.horizon_status
-    - group.horizon_agreement0
-    - group.horizon_agreement1
-    - group.horizon_agreement2
-    - group.horizon_agreement3
-    - group.horizon_agreement4
-    - group.horizon_agreement5
+# !include horizon_groups.yaml
 
-# RPI2
-
-horizon_status:
-  name: Horizon Status
-  icon: mdi:weather-sunset
-  entities:
-    - device_tracker.mtn_rpi2
-    - sensor.horizon_account
-    - sensor.horizon_agreement_active_count
-    - sensor.horizon_agreement_active_ids
-    - sensor.horizon_agreement_active_urls
-    - sensor.horizon_agreement_archived_count
-    - sensor.horizon_architecture
-    - sensor.horizon_attribute_count
-    - sensor.horizon_attribute_ids
-    - sensor.horizon_balance
-    - sensor.horizon_blocknumber
-    - sensor.horizon_connectivity
-    - sensor.horizon_exchange
-    - sensor.horizon_microservice_config_count
-    - sensor.horizon_microservice_definition_active_count
-    - sensor.horizon_microservice_definition_archived_count
-    - sensor.horizon_microservice_instance_active_count
-    - sensor.horizon_microservice_instance_archived_count
-    - sensor.horizon_node_id
-    - sensor.horizon_node_name
-    - sensor.horizon_node_organization
-    - sensor.horizon_node_pattern
-    - sensor.horizon_node_state
-    - sensor.horizon_node_update
-    - sensor.horizon_node_valid
-    - sensor.horizon_node_valid_time
-    - sensor.horizon_peer_count
-    - sensor.horizon_syncing
-    - sensor.horizon_workload_container_count
-
-horizon_agreement0:
-  name: 'Horizon Agreement0'
-  icon: mdi:worker
-  entities:
-    - sensor.horizon_agreement0_name
-    - sensor.horizon_agreement0_id
-    - sensor.horizon_agreement0_protocol
-    - sensor.horizon_agreement0_consumer
-    - sensor.horizon_agreement0_create
-    - sensor.horizon_agreement0_accept
-    - sensor.horizon_agreement0_finalize
-    - sensor.horizon_agreement0_receive
-    - sensor.horizon_agreement0_start
-
-horizon_agreement1:
-  name: 'Horizon Agreement1'
-  icon: mdi:worker
-  entities:
-    - sensor.horizon_agreement1_name
-    - sensor.horizon_agreement1_id
-    - sensor.horizon_agreement1_protocol
-    - sensor.horizon_agreement1_consumer
-    - sensor.horizon_agreement1_create
-    - sensor.horizon_agreement1_accept
-    - sensor.horizon_agreement1_finalize
-    - sensor.horizon_agreement1_receive
-    - sensor.horizon_agreement1_start
-
-horizon_agreement2:
-  name: 'Horizon Agreement2'
-  icon: mdi:worker
-  entities:
-    - sensor.horizon_agreement2_name
-    - sensor.horizon_agreement2_id
-    - sensor.horizon_agreement2_protocol
-    - sensor.horizon_agreement2_consumer
-    - sensor.horizon_agreement2_create
-    - sensor.horizon_agreement2_accept
-    - sensor.horizon_agreement2_finalize
-    - sensor.horizon_agreement2_receive
-    - sensor.horizon_agreement2_start
-
-horizon_agreement3:
-  name: 'Horizon Agreement3'
-  icon: mdi:worker
-  entities:
-    - sensor.horizon_agreement3_name
-    - sensor.horizon_agreement3_id
-    - sensor.horizon_agreement3_protocol
-    - sensor.horizon_agreement3_consumer
-    - sensor.horizon_agreement3_create
-    - sensor.horizon_agreement3_accept
-    - sensor.horizon_agreement3_finalize
-    - sensor.horizon_agreement3_receive
-    - sensor.horizon_agreement3_start
-
-horizon_agreement4:
-  name: 'Horizon Agreement4'
-  icon: mdi:worker
-  entities:
-    - sensor.horizon_agreement4_name
-    - sensor.horizon_agreement4_id
-    - sensor.horizon_agreement4_protocol
-    - sensor.horizon_agreement4_consumer
-    - sensor.horizon_agreement4_create
-    - sensor.horizon_agreement4_accept
-    - sensor.horizon_agreement4_finalize
-    - sensor.horizon_agreement4_receive
-    - sensor.horizon_agreement4_start
-
-horizon_agreement5:
-  name: 'Horizon Agreement5'
-  icon: mdi:worker
-  entities:
-    - sensor.horizon_agreement5_name
-    - sensor.horizon_agreement5_id
-    - sensor.horizon_agreement5_protocol
-    - sensor.horizon_agreement5_consumer
-    - sensor.horizon_agreement5_create
-    - sensor.horizon_agreement5_accept
-    - sensor.horizon_agreement5_finalize
-    - sensor.horizon_agreement5_receive
-    - sensor.horizon_agreement5_start
-
-#
-# AGE-AT-HOME
-#
+###
+### AGE-AT-HOME
+###
 
 ageathome_view:
   view: true
@@ -695,10 +562,10 @@ mediaplayers_view:
     - media_player.dcms_iphone
     - media_player.fire_tv
     - media_player.kelimac
-    - media_player.kitchen
+    - media_player.roku_kitchen
     - media_player.plex
     - media_player.plex_web_safari
-    - media_player.poolhouse
+    - media_player.roku_poolhouse
 
 david_plex:
   name: DAVID PLEX

@@ -37,23 +37,6 @@ envoy:
   hide_if_away: false
   vendor: Enphase Energy
 
-# Sonos_0001 192.168.1.111 B8:E9:37:D7:E6:E8
-Sonos_Play3:
-  mac: B8:E9:37:D7:E6:E8
-  name: Sonos_Play3
-  icon: mdi:speaker
-  track: true
-  hide_if_away: false
-  vendor: Sonos
-
-# Sonos_0002 192.168.1.192 94:9F:3E:0C:41:18
-Sonos_Play1:
-  mac: 94:9F:3E:0C:41:18
-  name: Sonos_Play1
-  icon: mdi:speaker
-  track: true
-  hide_if_away: false
-  vendor: Sonos
 
 # microcells
 
@@ -281,6 +264,51 @@ lively-paper:
   vendor: Raspberry Pi Foundation
 
 
+# Sonos_0001 192.168.1.111 B8:E9:37:D7:E6:E8
+Sonos_Play3:
+  mac: B8:E9:37:D7:E6:E8
+  name: Sonos_Play3
+  icon: mdi:speaker
+  track: true
+  hide_if_away: false
+  vendor: Sonos
+
+# Sonos_0002 192.168.1.192 94:9F:3E:0C:41:18
+Sonos_Play1:
+  mac: 94:9F:3E:0C:41:18
+  name: Sonos_Play1
+  icon: mdi:speaker
+  track: true
+  hide_if_away: false
+  vendor: Sonos
+
+# Roku_1GN382166960
+roku_kitchen:
+  mac: B8:3E:59:B2:88:BF
+  name: roku_kitchen
+  icon: mdi:television-box
+  track: true
+  hide_if_away: false
+  vendor: Roku
+
+# Roku_1GJ36K033826
+roku_poolhouse:
+  mac: B8:3E:59:79:BC:3A
+  name: roku_poolhouse
+  icon: mdi:television-box
+  track: true
+  hide_if_away: false
+  vendor: Roku
+
+# Apple_TV
+apple_tv:
+  name: apple_tv
+  mac: C8:69:CD:22:42:46
+  icon: mdi:apple
+  track: true
+  hide_if_away: false
+  vendor: Apple
+
 ## HUE
 
 # 192.168.1.49
@@ -351,8 +379,8 @@ nvidia_tx2_wlan0:
 
 # BLUE HORIZON
 
-mtn_rpi2:
-  name: mtn_rpi2
+horizon:
+  name: horizon
   mac: B8:27:EB:7B:F9:FB
   picture: https://bluehorizon.network/images/brand.svg
   track: true
@@ -433,15 +461,6 @@ shenzhen:
   track: false
   vendor: Shenzhen RF Technology Co., Ltd
 
-kelimac:
-  hide_if_away: false
-  icon:
-  mac: AC:BC:32:9C:8E:1B
-  name: kelimac
-  picture:
-  track: false
-  vendor: Apple, Inc.
-
 playstation_4:
   hide_if_away: true
   mac: B0:5:94:2F:1C:87
@@ -449,44 +468,6 @@ playstation_4:
   picture: https://cdn4.iconfinder.com/data/icons/miu-flat-social/60/playstation-128.png
   track: false
   vendor: Liteon Techfalselogy Corporation
-
-# ipads
-
-ipad_masterbath:
-  hide_if_away: false
-  icon:
-  mac: D8:A2:5E:1D:54:1F
-  name: ipad-masterbath
-  picture:
-  track: false
-  vendor: Apple, Inc.
-
-ipad_mini_david:
-  hide_if_away: false
-  icon:
-  mac: 1C:AB:A7:ED:B9:A8
-  name: ipad_mini_david
-  picture:
-  track: false
-  vendor: Apple, Inc.
-
-ipad_poolhouse:
-  hide_if_away: false
-  icon:
-  mac: 7C:6D:62:BB:CC:C0
-  name: ipad_poolhouse
-  picture:
-  track: false
-  vendor: Apple, Inc.
-
-kitchenipad:
-  hide_if_away: false
-  icon:
-  mac: 1C:AB:A7:EE:FC:52
-  name: kitchenipad
-  picture:
-  track: false
-  vendor: Apple, Inc.
 
 # webcams
 
@@ -701,51 +682,308 @@ wcv80n_backyard:
 
 # iPhones
 
-davids_iphone:
-  mac: D0:C5:F3:82:F1:ED
-  name: davids_iphone
-  icon: mdi:cellphone-iphone
-  hide_if_away: false
-  track: true
-  vendor: Apple, Inc.
-
-kelis_iphone:
-  name: kelis_iphone
-  mac: 20:AB:37:E2:B9:9C
-  icon: mdi:cellphone-iphone
-  hide_if_away: false
-  track: true
-  vendor: Apple, Inc.
-
-kelis_ipad2:
-  name: kelis_ipad2
-  mac: 78:7B:8A:48:C1:40
-  icon: mdi:cellphone-iphone
-  hide_if_away: false
-  track: true
-  vendor: Apple, Inc.
-
-ellens_iphone:
-  name: ellens_iphone
-  mac: D8:CF:9C:1B:54:98
-  icon: mdi:cellphone-iphone
-  hide_if_away: false
-  track: true
-  vendor: Apple, Inc.
-
-ellens_ipad4prez:
-  name: ellens_ipad4prez
-  mac: 6C:19:C0:A0:3F:1D
-  icon: mdi:cellphone-iphone
-  hide_if_away: false
-  track: true
-  vendor: Apple, Inc.
-
-rileys_iphone:
-  name: rileys_iphone
-  mac: 08:E6:89:2E:D1:1B
-  icon: mdi:cellphone-iphone
-  hide_if_away: false
-  track: true
-  vendor: Apple, Inc.
-
+# davids_iphone:
+#   mac: D0:C5:F3:82:F1:ED
+#   name: davids_iphone
+#   icon: mdi:cellphone-iphone
+#   hide_if_away: false
+#   track: true
+#   vendor: Apple, Inc.
+# 
+# kelis_iphone:
+#   name: kelis_iphone
+#   mac: 20:AB:37:E2:B9:9C
+#   icon: mdi:cellphone-iphone
+#   hide_if_away: false
+#   track: true
+#   vendor: Apple, Inc.
+# 
+# kelis_ipad2:
+#   name: kelis_ipad2
+#   mac: 78:7B:8A:48:C1:40
+#   icon: mdi:cellphone-iphone
+#   hide_if_away: false
+#   track: true
+#   vendor: Apple, Inc.
+# 
+# ellens_iphone:
+#   name: ellens_iphone
+#   mac: D8:CF:9C:1B:54:98
+#   icon: mdi:cellphone-iphone
+#   hide_if_away: false
+#   track: true
+#   vendor: Apple, Inc.
+# 
+# ellens_ipad4prez:
+#   name: ellens_ipad4prez
+#   mac: 6C:19:C0:A0:3F:1D
+#   icon: mdi:cellphone-iphone
+#   hide_if_away: false
+#   track: true
+#   vendor: Apple, Inc.
+# 
+# rileys_iphone:
+#   name: rileys_iphone
+#   mac: 08:E6:89:2E:D1:1B
+#   icon: mdi:cellphone-iphone
+#   hide_if_away: false
+#   track: true
+#   vendor: Apple, Inc.
+# 
+# # ipads
+# 
+# ipad_masterbath:
+#   hide_if_away: false
+#   icon:
+#   mac: D8:A2:5E:1D:54:1F
+#   name: ipad-masterbath
+#   picture:
+#   track: false
+#   vendor: Apple, Inc.
+# 
+# ipad_mini_david:
+#   hide_if_away: false
+#   icon:
+#   mac: 1C:AB:A7:ED:B9:A8
+#   name: ipad_mini_david
+#   picture:
+#   track: false
+#   vendor: Apple, Inc.
+# 
+# ipad_poolhouse:
+#   hide_if_away: false
+#   icon:
+#   mac: 7C:6D:62:BB:CC:C0
+#   name: ipad_poolhouse
+#   picture:
+#   track: false
+#   vendor: Apple, Inc.
+# 
+# kitchenipad:
+#   hide_if_away: false
+#   icon:
+#   mac: 1C:AB:A7:EE:FC:52
+#   name: kitchenipad
+#   picture:
+#   track: false
+#   vendor: Apple, Inc.
+# 
+# kelimac:
+#   hide_if_away: false
+#   icon:
+#   mac: AC:BC:32:9C:8E:1B
+#   name: kelimac
+#   picture:
+#   track: false
+#   vendor: Apple, Inc.
+# 
+# 
+# dslgateway:
+#   hide_if_away: false
+#   icon:
+#   mac: 00:AE:D3:FE:55:33
+#   name: dslgateway
+#   picture:
+#   track: true
+# 
+# davidsimac-lan:
+#   hide_if_away: false
+#   icon:
+#   mac: 98:10:E8:F3:DA:0E
+#   name: davidsimac-lan 
+#   picture:
+#   track: true
+# 
+# davidpro-wifi:
+#   hide_if_away: false
+#   icon:
+#   mac: AC:BC:32:B9:74:15
+#   name: davidpro-wifi
+#   picture:
+#   track: true
+# 
+# roku:
+#   hide_if_away: false
+#   icon:
+#   mac: B8:3E:59:79:BC:3B
+#   name: roku-kitchen
+#   picture:
+#   track: true
+# 
+# d8cf9c1b5498:
+#   hide_if_away: false
+#   icon:
+#   mac: D8:CF:9C:1B:54:98
+#   name: d8cf9c1b5498
+#   picture:
+#   track: true
+# 
+# 100d7fbc79c7:
+#   hide_if_away: false
+#   icon:
+#   mac: 10:0D:7F:BC:79:C7
+#   name: 100d7fbc79c7
+#   picture:
+#   track: true
+# 
+# 9801a75f5530:
+#   hide_if_away: false
+#   icon:
+#   mac: 98:01:A7:5F:55:30
+#   name: 9801a75f5530
+#   picture:
+#   track: true
+# 
+# 00226bff2a14:
+#   hide_if_away: false
+#   icon:
+#   mac: 00:22:6B:FF:2A:14
+#   name: 00226bff2a14
+#   picture:
+#   track: true
+# 
+# b005942f1c87:
+#   hide_if_away: false
+#   icon:
+#   mac: B0:05:94:2F:1C:87
+#   name: b005942f1c87
+#   picture:
+#   track: true
+# 
+# d8a25e1d541f:
+#   hide_if_away: false
+#   icon:
+#   mac: D8:A2:5E:1D:54:1F
+#   name: d8a25e1d541f
+#   picture:
+#   track: true
+# 
+# 989e632fce02:
+#   hide_if_away: false
+#   icon:
+#   mac: 98:9E:63:2F:CE:02
+#   name: 989e632fce02
+#   picture:
+#   track: true
+# 
+# 0000aad1eef2:
+#   hide_if_away: false
+#   icon:
+#   mac: 00:00:AA:D1:EE:F2
+#   name: 0000aad1eef2
+#   picture:
+#   track: true
+# 
+# 7c6d62bbccc0:
+#   hide_if_away: false
+#   icon:
+#   mac: 7C:6D:62:BB:CC:C0
+#   name: 7c6d62bbccc0
+#   picture:
+#   track: true
+# 
+# masterbath-ipad-wifi:
+#   hide_if_away: false
+#   icon:
+#   mac: 1C:AB:A7:EE:FC:52
+#   name: masterbath-ipad-wifi 
+#   picture:
+#   track: true
+# 
+# netgear:
+#   hide_if_away: false
+#   icon:
+#   mac: A0:40:A0:65:AC:67
+#   name: netgear 
+#   picture:
+#   track: true
+# 
+# echo-3-wifi:
+#   hide_if_away: false
+#   icon:
+#   mac: 50:DC:E7:DE:D1:26
+#   name: echo-3-wifi
+#   picture:
+#   track: true
+# 
+# echo-2-wifi:
+#   hide_if_away: false
+#   icon:
+#   mac: 50:DC:E7:CF:3E:93
+#   name: echo-2-wifi
+#   picture:
+#   track: true
+# 
+# echo-1-wifi:
+#   hide_if_away: false
+#   icon:
+#   mac: 00:FC:8B:52:0B:B2
+#   name: echo-1-wifi
+#   picture:
+#   track: true
+# 
+# davidmac-usb3-wifi:
+#   hide_if_away: false
+#   icon:
+#   mac: 70:11:24:8D:45:B1
+#   name: davidmac-usb3-wifi
+#   picture:
+#   track: true
+# 
+# airport-garage-lan:
+#   hide_if_away: false
+#   icon:
+#   mac: 7C:D1:C3:C8:40:5F
+#   name: airport-garage-lan
+#   picture:
+#   track: true
+# 
+# davids-ipadmini-wifi:
+#   hide_if_away: false
+#   icon:
+#   mac: 70:E7:2C:4C:84:CD
+#   name: davids-ipadmini-wifi
+#   picture:
+#   track: true
+# 
+# kitchen-ipad-wifi:
+#   hide_if_away: false
+#   icon:
+#   mac: 1C:AB:A7:ED:B9:A8
+#   name: kitchen-ipad-wifi
+#   picture:
+#   track: true
+# 
+# ellens-school-ipad-wifi:
+#   hide_if_away: false
+#   icon:
+#   mac: 6C:19:C0:A0:3F:1D
+#   name: ellens-school-ipad-wifi
+#   picture:
+#   track: true
+# 
+# kelis-ipad-wifi:
+#   hide_if_away: false
+#   icon:
+#   mac: 5C:F5:DA:22:51:8A
+#   name: kelis-ipad-wifi
+#   picture:
+#   track: true
+# 
+# ios-device-wifi:
+#   hide_if_away: false
+#   icon:
+#   mac: 08:E6:89:2E:D1:1B
+#   name: ios-device-wifi
+#   picture:
+#   track: true
+# 
+# dcms-iphone7-wifi:
+#   hide_if_away: false
+#   icon:
+#   mac: D0:C5:F3:82:F1:ED
+#   name: dcms-iphone7-wifi
+#   picture:
+#   track: true
+# 
+# 
