@@ -190,7 +190,8 @@ foreach image ( $images )
   if ($?DEBUG) echo `date` "$0 $$ -- PROCESSING IMAGE ($k/$limit) ($image)" >>&! $LOGTO
 
   # get image details
-  set imginfo = ( `curl -s -q "$HTTP_HOST/CGI/aah-images.cgi?db=$db&id=$image" | jq '.'` )
+  set imginfo = ( `curl -s -q -f -L "$HTTP_HOST/CGI/aah-images.cgi?db=$db&id=$image" | jq '.'` )
+
   # {
   #   "id": "20170802094803-7134-00",
   #   "path": "<device>/<year>/<month>/<day>",
@@ -201,6 +202,8 @@ foreach image ( $images )
   set date = ( `echo "$imginfo" | jq -r '.date'` )
   set jpm = `echo "$image" | sed "s/\(.*\)-.*-.*/\1/"` # get the image date for matching
   set time = `echo "$image" | sed "s/\(....\)\(..\)\(..\)\(..\)\(..\).*-.*/\1\/\2\/\3 \4:\5/"` # breakdown image identifier into time components for image label
+
+  set dir = ( `curl -s -q -f -L "$CU/$db/$id" | jq -r '.alchemy.text'` )
 
   # how to access the image (and sample)
   set img = "$HTTP_HOST/CGI/$APP-images.cgi?db=$db&id=$image&ext=full"
