@@ -9,4 +9,3 @@ manifest.yml
 package.json
 public/images/*.mp4
 cgi/OLD/
-cgi/mtn-*

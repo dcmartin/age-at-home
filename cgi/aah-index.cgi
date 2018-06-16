@@ -6,8 +6,6 @@ setenv API "index"
 # setenv VERBOSE true
 
 # environment
-if ($?LAN == 0) setenv LAN "192.168.1"
-if ($?DIGITS == 0) setenv DIGITS "$LAN".40
 if ($?TMP == 0) setenv TMP "/tmp"
 if ($?AAHDIR == 0) setenv AAHDIR "/var/lib/age-at-home"
 if ($?CREDENTIALS == 0) setenv CREDENTIALS /usr/local/etc
@@ -256,16 +254,16 @@ end
 # build HTML
 #
 if ($?display) then
-  set OUTPUT = "$base/.index.$ext.icon.html"
+  set OUTPUT = "$TMP/$0:t.$db.$class.$ext.icon.$DATE.html"
 else
-  set OUTPUT = "$base/.index.$ext.html"
+  set OUTPUT = "$TMP/$0:t.$db.$class.$ext.$DATE.html"
 endif
 
 if (-s "$OUTPUT" && ((-M "$base") <= (-M "$OUTPUT"))) then
   if ($?DEBUG) echo `date` "$0:t $$ -- CACHED ($OUTPUT)" >>! $LOGTO
   goto output
 else
-  rm -f "$OUTPUT"
+  rm -f "$OUTPUT:r:r.*"
 endif
 
 set MIXPANELJS = "http://$HTTP_HOST/script/mixpanel-aah.js"

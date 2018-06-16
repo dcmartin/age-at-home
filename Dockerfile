@@ -20,7 +20,6 @@ RUN apt-get update && apt-get install -q -y --no-install-recommends \
     python-pip \
     python-setuptools \
     build-essential \
-#    jq
     gcc \
     make \
     automake \
@@ -41,9 +40,6 @@ RUN pip install --upgrade pip
 RUN pip install --upgrade setuptools
 RUN pip install --upgrade csvkit --ignore-installed six
 
-# install CSVKIT
-# RUN git clone https://github.com/wireservice/csvkit && cd csvkit && pip install .
-
 # install JQ
 RUN git clone https://github.com/stedolan/jq.git && cd jq && autoreconf -i && ./configure --disable-maintainer-mode && make && make install
 
@@ -56,10 +52,7 @@ ARG AAHDIR=/var/lib/age-at-home
 ARG CREDIR=/usr/local/etc
 
 # environment
-ENV LAN 192.168.1
-ENV WWW 192.168.1.27:8999
-ENV DIGITS 192.168.1.40:32769
-ENV WAN www.dcmartin.com
+ENV DIGITS_HOST 192.168.1.40:32769
 ENV CAMERA_IMAGE_WIDTH 640
 ENV CAMERA_IMAGE_HEIGHT 480
 ENV MODEL_IMAGE_WIDTH 224

@@ -4,11 +4,9 @@ setenv API "images"
 
 # debug on/off
 setenv DEBUG true
-# setenv VERBOSE true
+setenv VERBOSE true
 
 # environment
-if ($?LAN == 0) setenv LAN "192.168.1"
-if ($?DIGITS == 0) setenv DIGITS "$LAN".30
 if ($?TMP == 0) setenv TMP "/tmp"
 if ($?AAHDIR == 0) setenv AAHDIR "/var/lib/age-at-home"
 if ($?CREDENTIALS == 0) setenv CREDENTIALS /usr/local/etc
@@ -207,7 +205,6 @@ foreach u ( $updates )
   # get relevant update 
   set url = "$CU/$device/$u"
   set out = "$TMP/$0:t.$device.$u.$$.json"
-  /bin/rm -f "$out"
   curl -s -q -f -L "$url" -o "$out"
   if (! -s "$out") then
     rm -f "$out"
@@ -216,17 +213,22 @@ foreach u ( $updates )
   endif
 
   # get update attributes
-  set id = ( `jq -r '._id' "$out"` )
-  set imagebox = ( `jq -r '.imagebox' "$out"` )
-  set year = ( `jq -r '.year' "$out"` )
-  set month = ( `jq -r '.month' "$out"` )
-  set day = ( `jq -r '.day' "$out"` )
-  set hour = ( `jq -r '.hour' "$out"` )
-  set minute = ( `jq -r '.minute' "$out"` )
-  set second = ( `jq -r '.second' "$out"` )
-
-  # done w/ output
-  rm -f "$out"
+  set attrs = ( `jq -r '._id,.imagebox,.year,.month,.day,.hour,.minute,.second' "$out"` )
+  if ($status == 0 && $#attrs == 8) then
+    set id = "$attrs[1]"
+    set imagebox = "$attrs[2]"
+    set year = "$attrs[3]"
+    set month = "$attrs[4]"
+    set day = "$attrs[5]"
+    set hour = "$attrs[6]"
+    set minute = "$attrs[7]"
+    set second = "$attrs[8]"
+    rm -f "$out"
+  else
+    rm -f "$out"
+    if ($?DEBUG) echo `date` "$0:t $$ -- $device -- cannot process update attributes ($attrs); continuing..." >>&! $LOGTO
+    continue
+  endif
 
   # calculate date in seconds since epoch
   set date = `echo "$year/$month/$day $hour"':'"$month"':'"$second" | $dateconv -i "%Y/%M/%D %H:%M:%S" -f "%s"`
@@ -235,7 +237,7 @@ foreach u ( $updates )
   if ($#imagebox == 0) set imagebox = "null"
   # test if all good
   if ($#id == 0 || $#imagebox == 0 || $#date == 0 || "$id" == "null" || "$date" == "null") then
-    if ($?DEBUG) echo `date` "$0:t $$ -- $device -- WARNING: invalid or missing update $u from $url response;continuing..." >>&! $LOGTO
+    if ($?DEBUG) echo `date` "$0:t $$ -- $device -- WARNING: invalid or missing update $u from $url response; continuing..." >>&! $LOGTO
     continue
   else
     if ($?VERBOSE) echo `date` "$0:t $$ -- $device -- $id ($imagebox)" >>&! $LOGTO
@@ -312,19 +314,19 @@ foreach u ( $updates )
   # start record
   echo '{"id":"'"$id"'","date":'$date',"imagebox":"'"$imagebox"'","path":"'"$device/$year/$month/$day"'","formats":'"$fmts"'}' | jq -c '.' >! "$out"
   if ($status == 0 && -s "$out") then
-    if ($?VERBOSE) echo `date` "$0:t $$ -- $device -- record for image $id" `jq -c '.' "$out"` >>&! $LOGTO
+    if ($?VERBOSE) echo `date` "$0:t $$ -- $device -- created JSON for image $id" >>&! $LOGTO
   else
-    if ($?DEBUG) echo `date` "$0:t $$ -- $device -- FAILURE: creating JSON for $id" `cat "$out"` >>&! $LOGTO
+    if ($?DEBUG) echo `date` "$0:t $$ -- $device -- FAILURE: creating JSON for $id" >>&! $LOGTO
     rm -f "$out"
     break
   endif
   # store record
   curl -s -q -f -L -H "Content-type: application/json" -X PUT "$url" -d "@$out" >&! /dev/null
   if ($status != 0) then
-    if ($?DEBUG) echo `date` "$0:t $$ -- FAILURE ($id) $nimage of $#updates" `cat "$out"` >>&! $LOGTO
+    if ($?DEBUG) echo `date` "$0:t $$ -- FAILURE ($id) $nimage of $#updates" >>&! $LOGTO
   else
     @ nimage++
-    if ($?VERBOSE) echo `date` "$0:t $$ -- SUCCESS ($id) $nimage of $#updates" `jq -c '.' "$out"` >>&! $LOGTO
+    if ($?VERBOSE) echo `date` "$0:t $$ -- SUCCESS ($id) $nimage of $#updates" >>&! $LOGTO
   endif
   rm -f "$out"
 

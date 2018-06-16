@@ -1,0 +1,24 @@
+#!/bin/csh 
+set old = ( `docker ps | egrep ageathome | awk '{ print $1 }'` )
+if ($?old) then
+  if ($#old) then
+    docker stop $old
+  endif
+endif
+docker rm ageathome
+if (-d "/home/AAH/lib/age-at-home") then
+  set vol = "/home/AAH/lib/age-at-home"
+else if (-d "/Volumes/AAH/age-athome") then
+  set vol = "/Volumes/AAH/age-at-home"
+else
+  echo "No AAHDIR"
+  exit
+endif 
+docker run \
+  -d \
+  -i \
+  -t \
+  -v "$vol":/var/lib/age-at-home:rw \
+  -p 8999:80 \
+  --name='ageathome' \
+  ageathome

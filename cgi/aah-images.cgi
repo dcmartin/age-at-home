@@ -3,11 +3,9 @@ setenv APP "aah"
 setenv API "images"
 
 # setenv DEBUG true
-# setenv VERBOSE true
+setenv VERBOSE true
 
 # environment
-if ($?LAN == 0) setenv LAN "192.168.1"
-if ($?DIGITS == 0) setenv DIGITS "$LAN".30
 if ($?TMP == 0) setenv TMP "/tmp"
 if ($?AAHDIR == 0) setenv AAHDIR "/var/lib/age-at-home"
 if ($?CREDENTIALS == 0) setenv CREDENTIALS /usr/local/etc

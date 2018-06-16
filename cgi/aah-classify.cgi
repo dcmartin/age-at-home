@@ -6,8 +6,7 @@ setenv DEBUG true
 setenv VERBOSE true
 
 # environment
-if ($?LAN == 0) setenv LAN "192.168.1"
-if ($?DIGITS == 0) setenv DIGITS "$LAN".30
+if ($?DIGITS_HOST == 0) setenv DIGITS_HOST "192.168.1.40:32769"
 if ($?TMP == 0) setenv TMP "/tmp"
 if ($?AAHDIR == 0) setenv AAHDIR "/var/lib/age-at-home"
 if ($?CREDENTIALS == 0) setenv CREDENTIALS /usr/local/etc
@@ -104,7 +103,7 @@ set date = "DATE"
 set seqid = "SEQID"
 
 # get all LABEL classes for this device
-set url = "http://$HTTP_HOST/CGI/aah-labels.cgi?db=$db" 
+set url = "$HTTP_HOST/CGI/aah-labels.cgi?db=$db" 
 set out = "$TMP/$APP-$API-labels-$db.$$.json"
 if ($?DEBUG) echo `date` "$0 $$ -- CALL $url" >>&! $LOGTO
 curl -m 2 -s -q -f -L "$url" -o "$out"
@@ -112,7 +111,6 @@ if ($status == 22 || $status == 28 || ! -s "$out") then
   if ($?DEBUG) echo `date` "$0 $$ -- FAIL ($url)" >>&! $LOGTO
   set label_classes = ( )
 else
-  if ($?VERBOSE) echo `date` "$0 $$ -- GOT $out" >>&! $LOGTO
   set label_classes = ( `jq -r '.classes|sort_by(.name)[].name' "$out"` )
   set label_date = ( `jq -r '.date' "$out"` )
 endif
@@ -121,9 +119,10 @@ rm -f "$out"
 # choices by end-user on which images to curate
 set image_classes = ( "recent" "confusing" "unknown" $label_classes )
 
-set MIXPANELJS = "http://$HTTP_HOST/script/mixpanel-aah.js"
+set MIXPANELJS = "$HTTP_HOST/script/mixpanel-aah.js"
 
 set HTML = "$TMP/$APP-$API.$$.html"
+
 
 # header
 echo "<HTML><HEAD><TITLE>$APP-$API" >! "$HTML"
@@ -134,7 +133,7 @@ echo '<BODY>' >> "$HTML"
 
 if ($?slave == 0) echo '<p>'"$db"' : match date by <i>regexp</i>; slide image count (max = '$IMAGE_LIMIT'); select all or <i>class</i>; then press <b>CHANGE</b>' >> "$HTML"
 
-echo '<form action="http://'"$HTTP_HOST/CGI/$APP-$API"'.cgi">' >> "$HTML"
+echo '<form action="'"$HTTP_HOST/CGI/$APP-$API"'.cgi">' >> "$HTML"
 echo '<input type="hidden" name="db" value="'"$db"'">' >> "$HTML"
 echo '<input type="text" name="match" value="'"$match"'">' >> "$HTML"
 if ($?slave) echo '<input type="hidden" name="slave" value="true">' >> "$HTML"
@@ -148,12 +147,16 @@ end
 echo '</select>' >> "$HTML"
 echo '<input type="submit" style="background-color:#ff9933" value="CHANGE"></form>' >> "$HTML"
 
+if ($?VERBOSE) echo `date` "$0 $$ -- CHECKPOINT #1" >>&! $LOGTO
+
 # get location
 set location = ( `curl -s -q "$HTTP_HOST/CGI/aah-devices.cgi?db=$db" | jq -r '.location'` )
 
+if ($?VERBOSE) echo `date` "$0 $$ -- CHECKPOINT #2" >>&! $LOGTO
+
 # get images
 set images = ( `curl -s -q "$HTTP_HOST/CGI/aah-images.cgi?db=$db&limit=$limit" | jq -r '.ids[]?'` )
-if ($#images == 0 || $images == "null") then
+if ($#images == 0 || "$images" == "null") then
   if ($?DEBUG) echo "$0:t $$ -- $db -- failed to find images" >>&! $LOGTO
   goto done
 else
@@ -161,16 +164,20 @@ else
   set nimage = $#images
 endif
 
+if ($?VERBOSE) echo `date` "$0 $$ -- CHECKPOINT #3" >>&! $LOGTO
+
 @ ncolumns = 4
 if ($nimage < $ncolumns) @ ncolumns = $nimage
 @ width = 100
 
 # action to label image
-set act = "http://$HTTP_HOST/CGI/$APP-label.cgi"
+set act = "$HTTP_HOST/CGI/$APP-label.cgi"
 # do magic
 echo "<script> function hover(e,i) { e.setAttribute('src', i); } function unhover(e) { e.setAttribute('src', i); }</script>" >> "$HTML"
 # start table
 echo '<table border="1"><tr>' >> "$HTML"
+
+if ($?VERBOSE) echo `date` "$0 $$ -- CHECKPOINT #4" >>&! $LOGTO
 
 #
 # ITERATE OVER IMAGES (based on limit count)
@@ -196,14 +203,14 @@ foreach image ( $images )
   set time = `echo "$image" | sed "s/\(....\)\(..\)\(..\)\(..\)\(..\).*-.*/\1\/\2\/\3 \4:\5/"` # breakdown image identifier into time components for image label
 
   # how to access the image (and sample)
-  set img = "http://$HTTP_HOST/CGI/$APP-images.cgi?db=$db&id=$image&ext=full"
-  set jpeg = "http://$HTTP_HOST/CGI/$APP-images.cgi?db=$db&id=$image&ext=crop"
+  set img = "$HTTP_HOST/CGI/$APP-images.cgi?db=$db&id=$image&ext=full"
+  set jpeg = "$HTTP_HOST/CGI/$APP-images.cgi?db=$db&id=$image&ext=crop"
 
   # note change in limit to one (1) as we are inspecting single image (see width specification below)
   if ($?slave) then
-    set cgi = "http://$HTTP_HOST/CGI/$APP-$API.cgi?db=$db&class=$class&match=$jpm&limit=1&slave=true"
+    set cgi = "$HTTP_HOST/CGI/$APP-$API.cgi?db=$db&class=$class&match=$jpm&limit=1&slave=true"
   else
-    set cgi = "http://$HTTP_HOST/CGI/$APP-$API.cgi?db=$db&class=$class&match=$jpm&limit=1"
+    set cgi = "$HTTP_HOST/CGI/$APP-$API.cgi?db=$db&class=$class&match=$jpm&limit=1"
   endif
 
   # start a new row every $ncolumns
@@ -289,7 +296,7 @@ foreach image ( $images )
   # # get the scores
   echo "$scores" | jq -c '.[]' >! /tmp/$0:t.$$
   # count them
-  set nscore = ( `cat /tmp/$0:t.$$ | /usr/bin/wc -l` )
+  set nscore = ( `cat /tmp/$0:t.$$ | wc -l` )
   if ($nscore == 0) goto bottom
   #
   # report on scores
@@ -299,49 +306,47 @@ foreach image ( $images )
   while ($z < $nscore)
     echo '<tr>' >> "$HTML"
     @ y = $nscore - $z
-    set class_id = `cat /tmp/$0:t.$$ | /usr/bin/head -$y | /usr/bin/tail -1 | jq -r '.classifier_id'`
-    set name = `cat /tmp/$0:t.$$ | /usr/bin/head -$y | /usr/bin/tail -1 | jq -r '.name'`
-    set score = `cat /tmp/$0:t.$$ | /usr/bin/head -$y | /usr/bin/tail -1 | jq -r '.score'`
+    set class_id = `cat /tmp/$0:t.$$ | head -$y | tail -1 | jq -r '.classifier_id'`
+    set name = `cat /tmp/$0:t.$$ | head -$y | tail -1 | jq -r '.name'`
+    set score = `cat /tmp/$0:t.$$ | head -$y | tail -1 | jq -r '.score'`
     # if a model was specified (name)
     if ($?name) then
       if ($?DEBUG) echo `date` "$0 $$ -- CHECKING MODEL $name" >>&! $LOGTO
 
       # find out type
       unset type
-      # test if model name matches DIGITS convention of date
-      set tf = ( `echo "$name" | sed 's/[0-9]*-[0-9]*-.*/DIGITS/'` )
-      if ("$tf" == "DIGITS") then
-        set type = "DIGITS"
+      # test if model name matches DIGITS_HOST convention of date
+      set tf = ( `echo "$name" | sed 's/[0-9]*-[0-9]*-.*/DIGITS_HOST/'` )
+      if ("$tf" == "DIGITS_HOST") then
+        set type = "DIGITS_HOST"
       else 
 	# Watson VR removes hyphens from db name (rough-fog becomes roughfog) 
 	set device = ( `echo "$db" | sed "s/-//g"` )
 	set tf = ( `echo "$name" | sed 's/'"$device"'_.*/CUSTOM/'` )
 	if ("$tf" == "CUSTOM") set type = "CUSTOM"
       endif
-      # default type if not DIGITS and not CUSTOM
+      # default type if not DIGITS_HOST and not CUSTOM
       if ($?type == 0) set type = "default"
       switch ($type)
 	case "CUSTOM":
 	      echo '<td>' >> "$HTML"
-	      echo '<a target="'"$name"-"$class_id"'" href="http://www.dcmartin.com/CGI/aah-index.cgi?db='"$db"'&class='"$class_id"'&display=icon">'"$class_id"'</a>' >> "$HTML"
+	      echo '<a target="'"$name"-"$class_id"'" href="'"$HTTP_HOST"'/CGI/aah-index.cgi?db='"$db"'&class='"$class_id"'&display=icon">'"$class_id"'</a>' >> "$HTML"
 	      echo '</td><td>'"$score"'</td><td>' >> "$HTML"
-	      # http://www.dcmartin.com/AAH/cfmatrix.html?model=roughfog_292216250
-	      echo '<a target="cfmatrix" href="http://age-at-home.mybluemix.net/cfmatrix.html?model='"$name"'">'"$name"'</a>' >> "$HTML"
+	      echo '<a target="cfmatrix" href="'"$HTTP_HOST"'/cfmatrix.html?model='"$name"'">'"$name"'</a>' >> "$HTML"
 	      echo '</td>' >> "$HTML"
 	      breaksw
-	case "DIGITS":
-	      set ds_id = ( `curl -s -q "http://age-at-home.dcmartin.com:5001/models/$name.json" | jq -r '.dataset_id'` )
+	case "DIGITS_HOST":
+	      set ds_id = ( `curl -s -q "$DIGITS_HOST/models/$name.json" | jq -r '.dataset_id'` )
 	      echo '<td>' >> "$HTML"
 	      if ($#ds_id) then
 		echo -n '<a target="'"$name"-"$class_id"'" href="' >> "$HTML"
-		echo -n 'http://age-at-home.dcmartin.com:5001/datasets/'"$ds_id" >> "$HTML"
+		echo -n "$DIGITS_HOST"'/datasets/'"$ds_id" >> "$HTML"
 		echo '">'"$class_id"'</a>' >> "$HTML"
 	      else
 		echo "$class_id" >> "$HTML"
 	      endif
 	      echo '</td><td>'"$score"'</td><td>' >> "$HTML"
-	      # http://192.168.1.30:5001/models/20170506-235510-f689
-	      echo '<a target="digits" href="http://age-at-home.dcmartin.com:5001/models/'"$name"'">'"$name"'</a>' >> "$HTML"
+	      echo '<a target="digits" href="'"$DIGITS_HOST"'/models/'"$name"'">'"$name"'</a>' >> "$HTML"
 	      echo '</td>' >> "$HTML"
 	      breaksw
 	default:
