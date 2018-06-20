@@ -150,11 +150,8 @@ if ($?id) then
 	if ($?DEBUG) echo `date` "$0:t $$ -- COMPOSITE IMAGES ($#images) " >>! $LOGTO
 	set blend = "$base/$COMPOSITE.$type"
 	if (-s "$blend") then
-	  set last = ( `stat -r "$blend" | awk '{ print $10 }'` )
-
 	  foreach i ( $images )
-	    set ilast = ( `stat -r "$i" | awk '{ print $10 }'` )
-	    if ($ilast > $last) then
+	    if (-M "$i" > -M "$blend") then
 	    rm -f "$blend"
 	    break
 	  endif
@@ -254,16 +251,24 @@ end
 # build HTML
 #
 if ($?display) then
-  set OUTPUT = "$TMP/$0:t.$db.$class.$ext.icon.$DATE.html"
+  if ($?class) then
+    set OUTPUT = "$TMP/$0:t.$db.$class.$ext.icon.html"
+  else
+    set OUTPUT = "$TMP/$0:t.$db.$ext.icon.html"
+  endif
 else
-  set OUTPUT = "$TMP/$0:t.$db.$class.$ext.$DATE.html"
+  if ($?class) then
+    set OUTPUT = "$TMP/$0:t.$db.$class.$ext.html"
+  else
+    set OUTPUT = "$TMP/$0:t.$db.$ext.html"
+  endif
 endif
 
 if (-s "$OUTPUT" && ((-M "$base") <= (-M "$OUTPUT"))) then
   if ($?DEBUG) echo `date` "$0:t $$ -- CACHED ($OUTPUT)" >>! $LOGTO
   goto output
 else
-  rm -f "$OUTPUT:r:r.*"
+  rm -f "$OUTPUT"
 endif
 
 set MIXPANELJS = "http://$HTTP_HOST/script/mixpanel-aah.js"

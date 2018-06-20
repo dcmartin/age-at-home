@@ -37,7 +37,7 @@ if ($?QUERY_STRING) then
 endif
 
 if ($?db == 0) then
-  /bin/echo `/bin/date` "$0 $$ -- no db" >>! $LOGTOk
+  /bin/echo `/bin/date` "$0:t $$ -- no db" >>! $LOGTOk
   goto done
 endif
 if ($?ext == 0) then
@@ -46,7 +46,7 @@ else if ($ext != "full" && $ext != "crop") then
   set ext = "full"
 endif
 
-if ($?VERBOSE) /bin/echo `/bin/date` "$0 $$ -- START ($db $ext)" >>! $LOGTO
+if ($?VERBOSE) /bin/echo `/bin/date` "$0:t $$ -- START ($db $ext)" >>! $LOGTO
 
 # find image
 set out = "/tmp/$0:t.$db-$ext.$DATE.jpg"
@@ -54,7 +54,7 @@ set out = "/tmp/$0:t.$db-$ext.$DATE.jpg"
 if (! -s "$out") then
   set old = ( `/bin/echo "$out:r:r".*.jpg` )
 
-  if ($?DEBUG) /bin/echo `/bin/date` "$0 $$ -- ASYNC REQUEST ($db $ext)" >>! $LOGTO
+  if ($?DEBUG) /bin/echo `/bin/date` "$0:t $$ -- ASYNC REQUEST ($db $ext)" >>! $LOGTO
 
   ./aah-fetch-imageLast.bash "$db" "$ext" "$out"
 
@@ -71,7 +71,7 @@ if (! -s "$out") then
 endif
 
 if (-s "$out") then
-  if ($?DEBUG) /bin/echo `/bin/date` "$0 $$ -- CACHE HIT ($out)" >>! $LOGTO
+  if ($?DEBUG) /bin/echo `/bin/date` "$0:t $$ -- CACHE HIT ($out)" >>! $LOGTO
   /bin/echo "Last-Modified:" `$dateconv -i '%s' -f '%a, %d %b %Y %H:%M:%S %Z' $DATE`
   /bin/echo "Access-Control-Allow-Origin: *"
   /bin/echo "Content-Type: image/jpeg"
@@ -79,7 +79,7 @@ if (-s "$out") then
   /bin/dd if="$out"
   goto done
 endif
-  if ($?DEBUG) /bin/echo `/bin/date` "$0 $$ -- FAIL ($db $ext)" >>! $LOGTO
+  if ($?DEBUG) /bin/echo `/bin/date` "$0:t $$ -- FAIL ($db $ext)" >>! $LOGTO
   set output = '{"error":"not found","db":"'"$db"'","ext":"'"$ext"'"}'
   goto output
 endif
@@ -90,7 +90,7 @@ endif
 
 output:
 
-if ($?DEBUG) /bin/echo `/bin/date` "$0 $$ -- FAIL ($output)" >>! $LOGTO
+if ($?DEBUG) /bin/echo `/bin/date` "$0:t $$ -- FAIL ($output)" >>! $LOGTO
 
 /bin/echo "Content-Type: application/json; charset=utf-8"
 /bin/echo "Access-Control-Allow-Origin: *"
@@ -106,4 +106,4 @@ endif
 
 done:
 
-if ($?VERBOSE) /bin/echo `/bin/date` "$0 $$ -- FINISH ($DATE)" >>! $LOGTO
+if ($?VERBOSE) /bin/echo `/bin/date` "$0:t $$ -- FINISH ($DATE)" >>! $LOGTO

@@ -32,7 +32,7 @@ if ($?class == 0) set class = person
 # standardize QUERY_STRING
 setenv QUERY_STRING "db=$db&class=$class"
 
-/bin/echo `date` "$0 $$ - START ($QUERY_STRING)" # # >>&! $LOGTO
+/bin/echo `date` "$0:t $$ - START ($QUERY_STRING)" # # >>&! $LOGTO
 
 #
 # output set
@@ -55,7 +55,7 @@ if ($#INPROGRESS) then
     set pid = $INPROGRESS[$#INPROGRESS]:e
     set pid = `ps axw | egrep "$pid" | egrep "$API" | awk '{ print $1 }'`
     if ($#pid) then
-      if ($?DEBUG) /bin/echo `/bin/date` "$0 $$ -- in-progress $INPROGRESS:e ($pid)" # >>&! $LOGTO
+      if ($?DEBUG) /bin/echo `/bin/date` "$0:t $$ -- in-progress $INPROGRESS:e ($pid)" # >>&! $LOGTO
       goto done
     endif
     rm -f $INPROGRESS
@@ -87,19 +87,19 @@ endif
 # CREATE DATABASE 
 #
 if ($?CU && $?db) then
-  if ($?DEBUG) /bin/echo `/bin/date` "$0 $$ -- test if db exists ($CU/$db-$API)" # >>&! $LOGTO
+  if ($?DEBUG) /bin/echo `/bin/date` "$0:t $$ -- test if db exists ($CU/$db-$API)" # >>&! $LOGTO
   set DEVICE_db = `curl -s -q -L -X GET "$CU/$db-$API" | jq '.db_name'`
   if ( $DEVICE_db == "" || "$DEVICE_db" == "null" ) then
-    if ($?DEBUG) /bin/echo `/bin/date` "$0 $$ -- creating db $CU/$db-$API" # >>&! $LOGTO
+    if ($?DEBUG) /bin/echo `/bin/date` "$0:t $$ -- creating db $CU/$db-$API" # >>&! $LOGTO
     # create db
     set DEVICE_db = `curl -s -q -L -X PUT "$CU/$db-$API" | jq '.ok'`
     # test for success
     if ( "$DEVICE_db" != "true" ) then
       # failure
-      if ($?DEBUG) /bin/echo `/bin/date` "$0 $$ -- failure creating Cloudant database ($db-$API)" # >>&! $LOGTO
+      if ($?DEBUG) /bin/echo `/bin/date` "$0:t $$ -- failure creating Cloudant database ($db-$API)" # >>&! $LOGTO
       goto done
     else
-      if ($?DEBUG) /bin/echo `/bin/date` "$0 $$ -- success creating db $CU/$db-$API" # >>&! $LOGTO
+      if ($?DEBUG) /bin/echo `/bin/date` "$0:t $$ -- success creating db $CU/$db-$API" # >>&! $LOGTO
     endif
   endif
 endif
@@ -114,10 +114,10 @@ curl -s -q -f -L "$CU/$db-$API/all" -o "$ALL"
 if ($status != 22 && -s "$ALL") then
   set last = ( `jq -r '.date' "$ALL"` )
   if ($#last == 0 || $last == "null") then
-    if ($?DEBUG) /bin/echo `/bin/date` "$0 $$ -- NO MODIFIED DATE ($i)" # >>&! $LOGTO
+    if ($?DEBUG) /bin/echo `/bin/date` "$0:t $$ -- NO MODIFIED DATE ($i)" # >>&! $LOGTO
     set last = 0
   else
-    if ($?DEBUG) /bin/echo `/bin/date` "$0 $$ -- ALL MODIFIED LAST ($last)" # >>&! $LOGTO
+    if ($?DEBUG) /bin/echo `/bin/date` "$0:t $$ -- ALL MODIFIED LAST ($last)" # >>&! $LOGTO
   endif
 endif
 if ($last && -s "$ALL") then
@@ -129,11 +129,11 @@ if ($#known == 0) then
   set known = ( `curl -s -q -f -L "$CU/$db-$API/_all_docs" | jq -r '.rows[]?.id'` )
 endif
 if ($#known == 0 || "$known" == '[]' || "$known" == "null") then
-    if ($?DEBUG) /bin/echo `/bin/date` "$0 $$ -- NO EXISTING CLASSES (all)" # >>&! $LOGTO
+    if ($?DEBUG) /bin/echo `/bin/date` "$0:t $$ -- NO EXISTING CLASSES (all)" # >>&! $LOGTO
     set known = ()
   endif
 else
-  if ($?DEBUG) /bin/echo `/bin/date` "$0 $$ -- CANNOT RETRIEVE $db-$API/all ($ALL)" # >>&! $LOGTO
+  if ($?DEBUG) /bin/echo `/bin/date` "$0:t $$ -- CANNOT RETRIEVE $db-$API/all ($ALL)" # >>&! $LOGTO
   set last = 0
 endif
 
@@ -142,12 +142,12 @@ endif
 #
 set OLD_STATS = "$OUTPUT:r"-old.json
 set prev_seqid = 0
-/bin/echo `date` "$0 $$ -- getting OLD_STATS ($db-$API/$class)" # # >>&! $LOGTO
+/bin/echo `date` "$0:t $$ -- getting OLD_STATS ($db-$API/$class)" # # >>&! $LOGTO
 curl -s -q -o "$OLD_STATS" -X GET "$CU/$db-$API/$class"
 # check iff successful
 set CLASS_db = `jq -r '._id' "$OLD_STATS"`
 if ($CLASS_db != $class) then
-  /bin/echo `date` "$0 $$ -- no old statistics ($db-$API/$class)" # # >>&! $LOGTO
+  /bin/echo `date` "$0:t $$ -- no old statistics ($db-$API/$class)" # # >>&! $LOGTO
 else
   # get last sequence # for class specified
   set prev_seqid = `jq -r '.seqid' "$OLD_STATS"`
@@ -161,29 +161,29 @@ set ALLCHANGES = "$TMP/$APP-$API-$db-changes.$DATE.json"
 set seqid = 0
 if ( ! -s "$ALLCHANGES" ) then
     rm -f "$ALLCHANGES:r:r".*
-    /bin/echo `date` "$0 $$ -- creating $ALLCHANGES" # # >>&! $LOGTO
+    /bin/echo `date` "$0:t $$ -- creating $ALLCHANGES" # # >>&! $LOGTO
     set url = "$db/_changes?include_docs=true&since=$prev_seqid"
     curl -s -q -f -L "$CU/$url" -o "$ALLCHANGES.$$" >>&! "$LOGTO"
     if ($status != 22 && -s "$ALLCHANGES.$$") then
-      if ($?DEBUG) /bin/echo `/bin/date` "$0 $$ -- SUCCESS ALLCHANGES ($ALLCHANGES)" # >>&! $LOGTO
+      if ($?DEBUG) /bin/echo `/bin/date` "$0:t $$ -- SUCCESS ALLCHANGES ($ALLCHANGES)" # >>&! $LOGTO
       mv "$ALLCHANGES.$$" "$ALLCHANGES"
     else
-      if ($?DEBUG) /bin/echo `/bin/date` "$0 $$ -- CANNOT RETRIEVE ALLCHANGES ($url)" # >>&! $LOGTO
+      if ($?DEBUG) /bin/echo `/bin/date` "$0:t $$ -- CANNOT RETRIEVE ALLCHANGES ($url)" # >>&! $LOGTO
     endif    
     rm -f "$ALLCHANGES.$$"
     set seqid = ( `jq .last_seq "$ALLCHANGES"` )
     if ($seqid == "null") then
-         /bin/echo `date` "$0 $$ -- FATAL ERROR :: BAD ALLCHANGES ($ALLCHANGES)" # # >>&! $LOGTO
+         /bin/echo `date` "$0:t $$ -- FATAL ERROR :: BAD ALLCHANGES ($ALLCHANGES)" # # >>&! $LOGTO
 	 exit
     endif
 else
     set seqid = ( `jq .last_seq "$ALLCHANGES"` )
     if ($seqid == "null") then
-         /bin/echo `date` "$0 $$ -- FATAL ERROR :: BAD ALLCHANGES ($ALLCHANGES)" # # >>&! $LOGTO
+         /bin/echo `date` "$0:t $$ -- FATAL ERROR :: BAD ALLCHANGES ($ALLCHANGES)" # # >>&! $LOGTO
 	 exit
     endif
     set ttyl = `/bin/echo "$SECONDS - $DATE" | bc`
-    /bin/echo `date` "$0 $$ -- OUTPUT ($ALLCHANGES) is current with TTL of $TTL; next update in $ttyl seconds" # # >>&! $LOGTO
+    /bin/echo `date` "$0:t $$ -- OUTPUT ($ALLCHANGES) is current with TTL of $TTL; next update in $ttyl seconds" # # >>&! $LOGTO
 endif
 
 #
@@ -191,10 +191,10 @@ endif
 #
 set ALLRECORDS = "$ALLCHANGES:r".csv
 if ((! -s "$ALLRECORDS") || ((-M "$ALLCHANGES") > (-M "$ALLRECORDS"))) then
-    /bin/echo `date` "$0 $$ -- creating $ALLRECORDS" # # >>&! $LOGTO
+    /bin/echo `date` "$0:t $$ -- creating $ALLRECORDS" # # >>&! $LOGTO
     in2csv --no-inference -k "results" "$ALLCHANGES" >! "$ALLRECORDS"
 else
-    /bin/echo `date` "$0 $$ -- $ALLRECORDS is current with $ALLCHANGES" # # >>&! $LOGTO
+    /bin/echo `date` "$0:t $$ -- $ALLRECORDS is current with $ALLCHANGES" # # >>&! $LOGTO
 endif
 
 #
@@ -204,12 +204,12 @@ endif
 set RECORDS = "$ALLCHANGES:r"-"$class".csv
 if ((! -s "$RECORDS") || ((-M "$ALLRECORDS") > (-M "$RECORDS"))) then
   # extract only rows with specified classifier
-  /bin/echo `date` "$0 $$ -- extracting all $class records" # # >>&! $LOGTO
+  /bin/echo `date` "$0:t $$ -- extracting all $class records" # # >>&! $LOGTO
   head -1 "$ALLRECORDS" >! "$RECORDS.$$"
   tail +2 "$ALLRECORDS" | egrep ",$class," >> "$RECORDS.$$"
   mv -f "$RECORDS.$$" "$RECORDS"
 else
-    /bin/echo `date` "$0 $$ -- $RECORDS is current with $ALLRECORDS" # # >>&! $LOGTO
+    /bin/echo `date` "$0:t $$ -- $RECORDS is current with $ALLRECORDS" # # >>&! $LOGTO
 endif
 
 #
@@ -224,7 +224,7 @@ if ((! -e "$CLASS_INTERVALS") || ((-M "$RECORDS") > (-M "$CLASS_INTERVALS"))) th
     # get all columns as set and convert to CSV header
     set colnam = `/bin/echo $colset | sed "s/ /,/g"`
 
-    /bin/echo `date` "$0 $$ -- creating $CLASS_INTERVALS" # # >>&! $LOGTO
+    /bin/echo `date` "$0:t $$ -- creating $CLASS_INTERVALS" # # >>&! $LOGTO
     /bin/echo "interval,ampm,week,day,id" >! "$TMP/$APP-$API-$db-$class-intervals.$$.csv"
 
     # cut out data/time columns and produce interval calculations using GAWK
@@ -234,7 +234,7 @@ if ((! -e "$CLASS_INTERVALS") || ((-M "$RECORDS") > (-M "$CLASS_INTERVALS"))) th
 	tail +2 | \
 	gawk -F, '{ m=$5*60+$6; m = m / 15; t=mktime(sprintf("%4d %2d %2d %2d %2d %2d", $2, $3, $4, $5, $6, $7)); printf "%d,%s,%s,%s,%s\n", m, strftime("%p",t),strftime("%U",t),strftime("%A",t), $1 }' >> "$CLASS_INTERVALS"
 else
-    /bin/echo `date` "$0 $$ -- $CLASS_INTERVALS is current with $RECORDS" # # >>&! $LOGTO
+    /bin/echo `date` "$0:t $$ -- $CLASS_INTERVALS is current with $RECORDS" # # >>&! $LOGTO
 endif
 
 #
@@ -242,7 +242,7 @@ endif
 #
 set CLASS_VALUES = "$TMP/$APP-$API-$db-$class-values.$$.csv"
 if ((! -e "$CLASS_VALUES") || ((-M "$RECORDS") > (-M "$CLASS_VALUES"))) then
-    /bin/echo `date` "$0 $$ -- creating $CLASS_VALUES " # # >>&! $LOGTO
+    /bin/echo `date` "$0:t $$ -- creating $CLASS_VALUES " # # >>&! $LOGTO
     /bin/echo "classifier,score,$dtcolumns,id" >! "$CLASS_VALUES"
 
     csvstat -n "$RECORDS" | gawk '{ print $2 }'
@@ -265,14 +265,14 @@ if ((! -e "$CLASS_VALUES") || ((-M "$RECORDS") > (-M "$CLASS_VALUES"))) then
 	end
     endif
 else
-    /bin/echo `date` "$0 $$ -- $CLASS_VALUES is current with $RECORDS" # # >>&! $LOGTO
+    /bin/echo `date` "$0:t $$ -- $CLASS_VALUES is current with $RECORDS" # # >>&! $LOGTO
 endif
 
 #
 # extract only events by classifier specified
 #
 set CLASS_INTERVAL_VALUES = "$TMP/$APP-$API-$db-$class-interval-values.$$.csv" 
-/bin/echo `date` "$0 $$ -- creating $CLASS_INTERVAL_VALUES " # # >>&! $LOGTO
+/bin/echo `date` "$0:t $$ -- creating $CLASS_INTERVAL_VALUES " # # >>&! $LOGTO
 cat "$CLASS_VALUES" | csvjoin -c "id,id" - "$CLASS_INTERVALS" | csvcut -c "interval,day,week,classifier,score" >! "$CLASS_INTERVAL_VALUES"
 
 #
@@ -296,7 +296,7 @@ set intnames = `/bin/echo $intvalues | sed "s/ /,/g"`
 #
 set NEW_STATS = "$OLD_STATS.$$"
 # get current day-of-week
-/bin/echo `date` "$0 $$ -- creating NEW_STATS ($NEW_STATS)" # # >>&! $LOGTO
+/bin/echo `date` "$0:t $$ -- creating NEW_STATS ($NEW_STATS)" # # >>&! $LOGTO
 /bin/echo -n '{ "seqid":'$seqid',"days":[' >! "$NEW_STATS"
 set days = ( Sunday Monday Tuesday Wednesday Thursday Friday Saturday )
 @ k = 0
@@ -360,11 +360,11 @@ if ($#rev && $rev != "null") then
   curl -s -q -L -X DELETE "$CU/$db-$API/$class?rev=$rev"
 endif
 curl -s -q -L -H "Content-type: application/json" -X PUT "$CU/$db-$API/$class" -d "@$OUTPUT" # >>&! $LOGTO
-if ($?DEBUG) /bin/echo `/bin/date` "$0 $$ -- $db-$API/$class returned $status" # >>&! $LOGTO
+if ($?DEBUG) /bin/echo `/bin/date` "$0:t $$ -- $db-$API/$class returned $status" # >>&! $LOGTO
 
 cleanup:
   rm -f "$OUTPUT".*
 
 done:
 
-/bin/echo `date` "$0 $$ - FINISH ($QUERY_STRING)" # # >>&! $LOGTO
+/bin/echo `date` "$0:t $$ - FINISH ($QUERY_STRING)" # # >>&! $LOGTO

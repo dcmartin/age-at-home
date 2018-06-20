@@ -41,7 +41,7 @@ if ($?QUERY_STRING) then
     set model = `/bin/echo "$QUERY_STRING" | sed 's/.*model=\([^&]*\).*/\1/'`
     if ($model == "$QUERY_STRING") unset model
 else
-    /bin/echo `date` "$0 $$ -- NO QUERY_STRING" >>&! $LOGTO
+    /bin/echo `date` "$0:t $$ -- NO QUERY_STRING" >>&! $LOGTO
     goto done
 endif
 
@@ -49,7 +49,7 @@ endif
 # Test parameters by rebuilding QUERY_STRING
 #
 if ($?db == 0) then
-    /bin/echo `date` "$0 $$ -- NO DB/DEVICE SPECIFIED ($QUERY_STRING)" >>&! $LOGTO
+    /bin/echo `date` "$0:t $$ -- NO DB/DEVICE SPECIFIED ($QUERY_STRING)" >>&! $LOGTO
     goto done
 else if ($?model) then
     setenv QUERY_STRING "db=$db&model=$model"
@@ -57,7 +57,7 @@ else
     setenv QUERY_STRING "db=$db"
 endif
 
-/bin/echo `date` "$0 $$ -- START" >>&! $LOGTO
+/bin/echo `date` "$0:t $$ -- START" >>&! $LOGTO
 
 #
 # look for model
@@ -96,7 +96,7 @@ if (! -s "$OUTPUT") then
     set pid = "$INPROGRESS[$#INPROGRESS]:e"
     set pid = `ps axw | egrep "$pid" | egrep "$API" | awk '{ print $1 }'` )
     if ($#pid) then
-      /bin/echo `date` "$0 $$ -- IN PROGRESS ($pid) $#INPROGRESS $INPROGRESS[$#INPROGRESS]" >>&! $LOGTO
+      /bin/echo `date` "$0:t $$ -- IN PROGRESS ($pid) $#INPROGRESS $INPROGRESS[$#INPROGRESS]" >>&! $LOGTO
       set output = '{ "error": "in-progress", "query":"'"$QUERY_STRING"'" }'
       goto output
     endif
@@ -105,24 +105,24 @@ if (! -s "$OUTPUT") then
 
   set MODELS = "$OUTPUT:r.$$.json"
   if ($?model) then
-    curl -s -q -f -L "$HTTP_HOST/CGI/aah-models.cgi?db=$db&model=$model"-o "$MODELS"
+    curl -s -q -f -L "localhost/CGI/aah-models.cgi?db=$db&model=$model"-o "$MODELS"
   else 
-    curl -s -q -f -L "$HTTP_HOST/CGI/aah-models.cgi?db=$db"-o "$MODELS"
+    curl -s -q -f -L "localhost/CGI/aah-models.cgi?db=$db"-o "$MODELS"
   endif
   if ($status == 22 || ! -s "$MODELS") then
-    /bin/echo `date` "$0 $$ -- NO MODELS ($q)" >>&! $LOGTO
+    /bin/echo `date` "$0:t $$ -- NO MODELS ($q)" >>&! $LOGTO
     rm -f "$MODELS"
     rm -f "$OUTPUT".$$
     set output = '{ "error":"no models", "query":"'"$q"'" }'
     goto output
   endif
   if ($?model) then
-    /bin/echo `date` "$0 $$ -- NEED TO BUILD THE MODEL" >>&! $LOGTO
+    /bin/echo `date` "$0:t $$ -- NEED TO BUILD THE MODEL" >>&! $LOGTO
   else
     # get ready classifiers
     set classifiers = ( `jq -r '.detail.classifier_id' "$MODELS"` )
     if ($#classifiers == 0) then
-      /bin/echo `date` "$0 $$ -- NO (ready) CLASSIFIERS FOUND" >>&! $LOGTO
+      /bin/echo `date` "$0:t $$ -- NO (ready) CLASSIFIERS FOUND" >>&! $LOGTO
       rm -f "$OUTPUT"
       set output = '{ "error": "none ready", "query": "'"$q"'" }'
       goto output
@@ -167,4 +167,4 @@ endif
 
 done:
 
-/bin/echo `date` "$0 $$ -- FINISH" >>&! $LOGTO
+/bin/echo `date` "$0:t $$ -- FINISH" >>&! $LOGTO

@@ -20,5 +20,6 @@ docker run \
   -t \
   -v "$vol":/var/lib/age-at-home:rw \
   -p 8999:80 \
+  --network bridge \
   --name='ageathome' \
   ageathome

@@ -73,7 +73,7 @@ if ($?limit == 0) set limit = $IMAGE_LIMIT
 setenv QUERY_STRING "db=$db&class=$class&match=$match&limit=$limit"
 
 # annouce START
-echo `date` "$0 $$ -- START ($QUERY_STRING)" >>&! $LOGTO
+echo `date` "$0:t $$ -- START ($QUERY_STRING)" >>&! $LOGTO
 
 ##
 ## ACCESS CLOUDANT
@@ -103,12 +103,12 @@ set date = "DATE"
 set seqid = "SEQID"
 
 # get all LABEL classes for this device
-set url = "$HTTP_HOST/CGI/aah-labels.cgi?db=$db" 
+set url = "localhost/CGI/aah-labels.cgi?db=$db" 
 set out = "$TMP/$APP-$API-labels-$db.$$.json"
-if ($?DEBUG) echo `date` "$0 $$ -- CALL $url" >>&! $LOGTO
+if ($?DEBUG) echo `date` "$0:t $$ -- CALL $url" >>&! $LOGTO
 curl -m 2 -s -q -f -L "$url" -o "$out"
 if ($status == 22 || $status == 28 || ! -s "$out") then
-  if ($?DEBUG) echo `date` "$0 $$ -- FAIL ($url)" >>&! $LOGTO
+  if ($?DEBUG) echo `date` "$0:t $$ -- FAIL ($url)" >>&! $LOGTO
   set label_classes = ( )
 else
   set label_classes = ( `jq -r '.classes|sort_by(.name)[].name' "$out"` )
@@ -119,7 +119,7 @@ rm -f "$out"
 # choices by end-user on which images to curate
 set image_classes = ( "recent" "confusing" "unknown" $label_classes )
 
-set MIXPANELJS = "$HTTP_HOST/script/mixpanel-aah.js"
+set MIXPANELJS = "http://$HTTP_HOST/script/mixpanel-aah.js"
 
 set HTML = "$TMP/$APP-$API.$$.html"
 
@@ -133,7 +133,7 @@ echo '<BODY>' >> "$HTML"
 
 if ($?slave == 0) echo '<p>'"$db"' : match date by <i>regexp</i>; slide image count (max = '$IMAGE_LIMIT'); select all or <i>class</i>; then press <b>CHANGE</b>' >> "$HTML"
 
-echo '<form action="'"$HTTP_HOST/CGI/$APP-$API"'.cgi">' >> "$HTML"
+echo '<form action="'"http://$HTTP_HOST/CGI/$APP-$API"'.cgi">' >> "$HTML"
 echo '<input type="hidden" name="db" value="'"$db"'">' >> "$HTML"
 echo '<input type="text" name="match" value="'"$match"'">' >> "$HTML"
 if ($?slave) echo '<input type="hidden" name="slave" value="true">' >> "$HTML"
@@ -147,37 +147,48 @@ end
 echo '</select>' >> "$HTML"
 echo '<input type="submit" style="background-color:#ff9933" value="CHANGE"></form>' >> "$HTML"
 
-if ($?VERBOSE) echo `date` "$0 $$ -- CHECKPOINT #1" >>&! $LOGTO
+if ($?VERBOSE) echo `date` "$0:t $$ -- CHECKPOINT #1" >>&! $LOGTO
 
 # get location
-set location = ( `curl -s -q "$HTTP_HOST/CGI/aah-devices.cgi?db=$db" | jq -r '.location'` )
+set location = ( `curl -s -q "localhost/CGI/aah-devices.cgi?db=$db" | jq -r '.location'` )
 
-if ($?VERBOSE) echo `date` "$0 $$ -- CHECKPOINT #2" >>&! $LOGTO
 
+if ($?VERBOSE) echo `date` "$0:t $$ -- CHECKPOINT #2" >>&! $LOGTO
 # get images
-set images = ( `curl -s -q "$HTTP_HOST/CGI/aah-images.cgi?db=$db&limit=$limit" | jq -r '.ids[]?'` )
+set url = "localhost/CGI/aah-images.cgi?db=$db"
+set out = /tmp/$0:t.$$.json
+curl -s -q -f -L "$url" -o "$out"
+if (! -s "$out") then
+  if ($?DEBUG) echo "$0:t $$ -- $db -- failed $url" >>&! $LOGTO
+  rm -f "$out"
+  goto done 
+endif
+
+if ($?VERBOSE) echo "$0:t $$ -- $db -- found" `jq '.ids?|length' "$out"` "images" >>&! $LOGTO
+
+set images = ( `jq -r 'limit('$limit';.ids[]|match("'$match'.*")|.string)' "$out"` )
 if ($#images == 0 || "$images" == "null") then
-  if ($?DEBUG) echo "$0:t $$ -- $db -- failed to find images" >>&! $LOGTO
+  if ($?DEBUG) echo "$0:t $$ -- $db -- failed to find matching ($match) images" >>&! $LOGTO
   goto done
 else
-  if ($?VERBOSE) echo "$0:t $$ -- $db -- found $#images images" >>&! $LOGTO
+  if ($?VERBOSE) echo "$0:t $$ -- $db -- found $#images matching ($match) images" >>&! $LOGTO
   set nimage = $#images
 endif
 
-if ($?VERBOSE) echo `date` "$0 $$ -- CHECKPOINT #3" >>&! $LOGTO
+if ($?VERBOSE) echo `date` "$0:t $$ -- CHECKPOINT #3" >>&! $LOGTO
 
 @ ncolumns = 4
 if ($nimage < $ncolumns) @ ncolumns = $nimage
 @ width = 100
 
 # action to label image
-set act = "$HTTP_HOST/CGI/$APP-label.cgi"
+set act = "http://$HTTP_HOST/CGI/$APP-label.cgi"
 # do magic
 echo "<script> function hover(e,i) { e.setAttribute('src', i); } function unhover(e) { e.setAttribute('src', i); }</script>" >> "$HTML"
 # start table
 echo '<table border="1"><tr>' >> "$HTML"
 
-if ($?VERBOSE) echo `date` "$0 $$ -- CHECKPOINT #4" >>&! $LOGTO
+if ($?VERBOSE) echo `date` "$0:t $$ -- CHECKPOINT #4" >>&! $LOGTO
 
 #
 # ITERATE OVER IMAGES (based on limit count)
@@ -187,10 +198,10 @@ foreach image ( $images )
   # test if done
   if ($k >= $limit) break
 
-  if ($?DEBUG) echo `date` "$0 $$ -- PROCESSING IMAGE ($k/$limit) ($image)" >>&! $LOGTO
+  if ($?DEBUG) echo `date` "$0:t $$ -- PROCESSING IMAGE ($k/$limit) ($image)" >>&! $LOGTO
 
   # get image details
-  set imginfo = ( `curl -s -q -f -L "$HTTP_HOST/CGI/aah-images.cgi?db=$db&id=$image" | jq '.'` )
+  set imginfo = ( `curl -s -q -f -L "localhost/CGI/aah-images.cgi?db=$db&id=$image" | jq '.'` )
 
   # {
   #   "id": "20170802094803-7134-00",
@@ -206,14 +217,14 @@ foreach image ( $images )
   set dir = ( `curl -s -q -f -L "$CU/$db/$id" | jq -r '.alchemy.text'` )
 
   # how to access the image (and sample)
-  set img = "$HTTP_HOST/CGI/$APP-images.cgi?db=$db&id=$image&ext=full"
-  set jpeg = "$HTTP_HOST/CGI/$APP-images.cgi?db=$db&id=$image&ext=crop"
+  set img = "http://$HTTP_HOST/CGI/$APP-images.cgi?db=$db&id=$image&ext=full"
+  set jpeg = "http://$HTTP_HOST/CGI/$APP-images.cgi?db=$db&id=$image&ext=crop"
 
   # note change in limit to one (1) as we are inspecting single image (see width specification below)
   if ($?slave) then
-    set cgi = "$HTTP_HOST/CGI/$APP-$API.cgi?db=$db&class=$class&match=$jpm&limit=1&slave=true"
+    set cgi = "http://$HTTP_HOST/CGI/$APP-$API.cgi?db=$db&class=$class&match=$image&limit=1&slave=true"
   else
-    set cgi = "$HTTP_HOST/CGI/$APP-$API.cgi?db=$db&class=$class&match=$jpm&limit=1"
+    set cgi = "http://$HTTP_HOST/CGI/$APP-$API.cgi?db=$db&class=$class&match=$image&limit=1"
   endif
 
   # start a new row every $ncolumns
@@ -276,7 +287,7 @@ foreach image ( $images )
   echo '</table>' >> "$HTML"
 
   # this conditional is based on inspection in single image mode
-  if ($limit > 1) then
+  if ($#images > 1) then
     echo '<a href="'"$cgi"'"><img width="'$MODEL_IMAGE_WIDTH'" height="'$MODEL_IMAGE_HEIGHT'" alt="'"$image:t:r"'" src="'"$img"'" onmouseover="this.src='"'""$jpeg""'"'" onmouseout="this.src='"'""$img""'"'"></a>' >> "$HTML"
   else
     echo '<a href="'"$cgi"'"><img width="'$CAMERA_IMAGE_WIDTH'" height="'$CAMERA_IMAGE_HEIGHT'" alt="'"$image:t:r"'" src="'"$img"'" onmouseover="this.src='"'""$jpeg""'"'" onmouseout="this.src='"'""$img""'"'"></a>' >> "$HTML"
@@ -286,7 +297,7 @@ foreach image ( $images )
   echo '</td>' >> "$HTML"
 
   # jump over single image stuff
-  if ($limit > 1) goto bottom
+  if ($#images >  1) goto bottom
 
   #
   # ENTIRE SECTION IS FOR SINGLE IMAGE DETAIL
@@ -314,7 +325,7 @@ foreach image ( $images )
     set score = `cat /tmp/$0:t.$$ | head -$y | tail -1 | jq -r '.score'`
     # if a model was specified (name)
     if ($?name) then
-      if ($?DEBUG) echo `date` "$0 $$ -- CHECKING MODEL $name" >>&! $LOGTO
+      if ($?DEBUG) echo `date` "$0:t $$ -- CHECKING MODEL $name" >>&! $LOGTO
 
       # find out type
       unset type
@@ -333,9 +344,9 @@ foreach image ( $images )
       switch ($type)
 	case "CUSTOM":
 	      echo '<td>' >> "$HTML"
-	      echo '<a target="'"$name"-"$class_id"'" href="'"$HTTP_HOST"'/CGI/aah-index.cgi?db='"$db"'&class='"$class_id"'&display=icon">'"$class_id"'</a>' >> "$HTML"
+	      echo '<a target="'"$name"-"$class_id"'" href="http://'"$HTTP_HOST"'/CGI/aah-index.cgi?db='"$db"'&class='"$class_id"'&display=icon">'"$class_id"'</a>' >> "$HTML"
 	      echo '</td><td>'"$score"'</td><td>' >> "$HTML"
-	      echo '<a target="cfmatrix" href="'"$HTTP_HOST"'/cfmatrix.html?model='"$name"'">'"$name"'</a>' >> "$HTML"
+	      echo '<a target="cfmatrix" href="http://'"$HTTP_HOST"'/cfmatrix.html?model='"$name"'">'"$name"'</a>' >> "$HTML"
 	      echo '</td>' >> "$HTML"
 	      breaksw
 	case "DIGITS_HOST":
@@ -400,7 +411,7 @@ else
   echo "</TITLE></HEAD>"
   echo '<script type="text/javascript" src="'$MIXPANELJS'"></script><script>mixpanel.track('"'"$APP-$API"');</script>"
   echo '<BODY>'
-  echo '<P><A HREF="HTTP://'"$HTTP_HOST/CGI/$APP-$API.cgi?$QUERY_STRING"'">RETRY '"$QUERY_STRING"'</A></P>'
+  echo '<P><A HREF="http://'"$HTTP_HOST/CGI/$APP-$API.cgi?$QUERY_STRING"'">RETRY '"$QUERY_STRING"'</A></P>'
   echo '</BODY>'
   echo '</HTML>'
 endif
@@ -417,5 +428,5 @@ if ($?IMAGES) then
   rm -f "$IMAGES" "$IMAGES".$$
 endif
 
-echo `date` "$0 $$ -- FINISH ($QUERY_STRING)" >>&! $LOGTO
+echo `date` "$0:t $$ -- FINISH ($QUERY_STRING)" >>&! $LOGTO
 

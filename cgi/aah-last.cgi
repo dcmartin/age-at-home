@@ -37,7 +37,7 @@ else
 endif
 setenv QUERY_STRING "db=$DB"
 
-/bin/echo `date` "$0 $$ -- START ($QUERY_STRING)" >>! $LOGTO
+/bin/echo `date` "$0:t $$ -- START ($QUERY_STRING)" >>! $LOGTO
 
 set OUTPUT = "$TMP/$APP-$API-$QUERY_STRING.$DATE.json"
 if (! -e "$OUTPUT") then
@@ -67,4 +67,4 @@ set AGE = `/bin/echo "$SECONDS - $DATE" | bc`
 
 done:
 
-/bin/echo `date` "$0 $$ -- FINISH ($QUERY_STRING)" >>! $LOGTO
+/bin/echo `date` "$0:t $$ -- FINISH ($QUERY_STRING)" >>! $LOGTO

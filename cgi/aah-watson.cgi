@@ -36,7 +36,7 @@ setenv COMPOSITE "__COMPOSITE__"
 
 
 if ($?QUERY_STRING) then
-    /bin/echo `date` "$0 $$ -- START ($QUERY_STRING)" >>&! $LOGTO
+    /bin/echo `date` "$0:t $$ -- START ($QUERY_STRING)" >>&! $LOGTO
     set noglob
     set DB = `/bin/echo "$QUERY_STRING" | sed 's/.*db=\([^&]*\).*/\1/'`
     if ("$DB" == "$QUERY_STRING") set DB = rough-fog
@@ -52,7 +52,7 @@ if ($?QUERY_STRING) then
     if ("$level" == "$QUERY_STRING") unset level
     unset noglob
 else
-    /bin/echo `date` "$0 $$ -- EXIT !! NO QUERY_STRING !!" >>&! $LOGTO
+    /bin/echo `date` "$0:t $$ -- EXIT !! NO QUERY_STRING !!" >>&! $LOGTO
     exit
 endif
 
@@ -97,7 +97,7 @@ if ($?id) then
     setenv QUERY_STRING "$QUERY_STRING&id=$id"
 endif
 
-if ($?DEBUG) /bin/echo `date` "$0 $$ -- query string ($QUERY_STRING)" >>&! $LOGTO
+if ($?DEBUG) /bin/echo `date` "$0:t $$ -- query string ($QUERY_STRING)" >>&! $LOGTO
 
 # check which image (ext = { full, crop } -> type = { jpg, jpeg } )
 if ($?ext) then
@@ -114,7 +114,7 @@ endif
 #
 if ($?id) then
   if (-d "$AAHDIR/$db/.models/$class/$id") then
-    if ($?VERBOSE) /bin/echo `date` "$0 $$ -- got directory $id ($class)" >>&! $LOGTO
+    if ($?VERBOSE) /bin/echo `date` "$0:t $$ -- got directory $id ($class)" >>&! $LOGTO
     set ext = "dir"
   endif
 
@@ -127,7 +127,7 @@ if ($?id) then
       set images = ( `find "$base" -type l -print | egrep -v "$COMPOSITE"` )
     endif
 
-    if ($?VERBOSE) /bin/echo `date` "$0 $$ -- BASE ($base) ID ($id) images ($#images)" >>&! $LOGTO
+    if ($?VERBOSE) /bin/echo `date` "$0:t $$ -- BASE ($base) ID ($id) images ($#images)" >>&! $LOGTO
 
     if ($#images == 0) then
       /bin/echo "Status: 404 Not Found"
@@ -145,10 +145,10 @@ if ($?id) then
     if ($#images == 1 && $ext != "dir") then
 	/bin/echo "Content-Type: image/jpeg"
 	/bin/echo ""
-	if ($?VERBOSE) /bin/echo `date` "$0 $$ -- SINGLETON ($id)" >>&! $LOGTO
+	if ($?VERBOSE) /bin/echo `date` "$0:t $$ -- SINGLETON ($id)" >>&! $LOGTO
 	dd if="$images"
     else if ($#images && $ext == "dir") then
-	if ($?VERBOSE) /bin/echo `date` "$0 $$ -- COMPOSITE IMAGES ($#images) " >>&! $LOGTO
+	if ($?VERBOSE) /bin/echo `date` "$0:t $$ -- COMPOSITE IMAGES ($#images) " >>&! $LOGTO
 	set blend = "$base/$COMPOSITE.$type"
 	if (-s "$blend") then
 	  set last = ( `stat -r "$blend" | awk '{ print $10 }'` )
@@ -188,20 +188,20 @@ if ($?id) then
 	  "$blend"
 	/bin/rm -f "$blend:r.$$.$blend:e"
 	if (! -s "$blend") then
-	  if ($?VERBOSE) /bin/echo `date` "$0 $$ -- creation of composite image failed ($images)" >>&! $LOGTO
+	  if ($?VERBOSE) /bin/echo `date` "$0:t $$ -- creation of composite image failed ($images)" >>&! $LOGTO
 	  set failure = "composite failure"
           goto done
 	endif
       endif
       /bin/echo "Content-Type: image/jpeg"
       /bin/echo ""
-      if ($?VERBOSE) /bin/echo `date` "$0 $$ -- SINGLETON ($id)" >>&! $LOGTO
+      if ($?VERBOSE) /bin/echo `date` "$0:t $$ -- SINGLETON ($id)" >>&! $LOGTO
       dd if="$blend"
     else
 	#  trick is to use id to pass regexp base
 	/bin/echo "Content-Type: application/zip"
 	/bin/echo ""
-	if ($?VERBOSE) /bin/echo `date` "$0 $$ -- MULTIPLE IMAGES ZIP ($#images)" >>&! $LOGTO
+	if ($?VERBOSE) /bin/echo `date` "$0:t $$ -- MULTIPLE IMAGES ZIP ($#images)" >>&! $LOGTO
 	zip - $images | dd of=/dev/stdout
     endif
 
@@ -250,10 +250,10 @@ endif
 set MIXPANELJS = "http://$HTTP_HOST/script/mixpanel-aah.js"
 
 if ($?class) then
-    if ($?VERBOSE) /bin/echo `date` "$0 $$ -- CLASS ($class)" >>&! $LOGTO
+    if ($?VERBOSE) /bin/echo `date` "$0:t $$ -- CLASS ($class)" >>&! $LOGTO
     # should make a path name
     set dir = "$db/$class"
-    if ($?VERBOSE) /bin/echo `date` "$0 $$ -- DIR ($dir)" >>&! $LOGTO
+    if ($?VERBOSE) /bin/echo `date` "$0:t $$ -- DIR ($dir)" >>&! $LOGTO
     /bin/echo '<html><head><title>Index of '"$dir"'</title></head>' >! "$OUTPUT"
     /bin/echo '<script type="text/javascript" src="'$MIXPANELJS'"></script><script>mixpanel.track('"'"$APP-$API"'"',{"db":"'$db'","dir":"'$dir'"});</script>' >> "$OUTPUT"
     /bin/echo '<body bgcolor="white"><h1>Index of '"$dir"'</h1><hr>' >>! "$OUTPUT"
@@ -276,7 +276,7 @@ if ($?class) then
       /bin/echo '</pre>' >>! "$OUTPUT"
     endif
     if ($?classes) then
-      if ($?VERBOSE) /bin/echo `date` "$0 $$ -- SUBCLASSES ($classes)" >>&! $LOGTO
+      if ($?VERBOSE) /bin/echo `date` "$0:t $$ -- SUBCLASSES ($classes)" >>&! $LOGTO
       foreach i ( $classes )
 	if ($?display) then
 	  /bin/echo '<a href="http://'"$HTTP_HOST/CGI/$APP-$API"'.cgi?db='"$db"'&ext='"$ext"'&display=icon&class='"$class/$i"'">' >>! "$OUTPUT"
@@ -293,7 +293,7 @@ if ($?class) then
 
     if ($?display) /bin/echo '<br>' >>! "$OUTPUT"
 
-    if ($?VERBOSE) /bin/echo `date` "$0 $$ -- HANDLING IMAGES ($images)" >>&! $LOGTO
+    if ($?VERBOSE) /bin/echo `date` "$0:t $$ -- HANDLING IMAGES ($images)" >>&! $LOGTO
     foreach i ( $images )
       if ($?display) then
         if (! $?classes) then
@@ -312,9 +312,9 @@ if ($?class) then
       /bin/echo '</pre>' >>! "$OUTPUT"
     endif
     /bin/echo '<hr></body></html>' >>! "$OUTPUT"
-    if ($?VERBOSE) /bin/echo `date` "$0 $$ -- DONE" >>&! $LOGTO
+    if ($?VERBOSE) /bin/echo `date` "$0:t $$ -- DONE" >>&! $LOGTO
 else if ($?classes) then
-  if ($?VERBOSE) /bin/echo `date` "$0 $$ -- TOP-LEVEL ($classes)" >>&! $LOGTO
+  if ($?VERBOSE) /bin/echo `date` "$0:t $$ -- TOP-LEVEL ($classes)" >>&! $LOGTO
     # should be a directory listing of directories
     set dir = "$db"
     /bin/echo '<html><head><title>Index of '"$dir"'/</title></head>' >! "$OUTPUT"
@@ -361,4 +361,4 @@ done:
 
 rm -f "$OUTPUT"
 
-/bin/echo `date` "$0 $$ -- FINISH" >>&! $LOGTO
+/bin/echo `date` "$0:t $$ -- FINISH" >>&! $LOGTO

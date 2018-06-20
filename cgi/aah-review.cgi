@@ -54,10 +54,10 @@ if ($?limit) then
   setenv QUERY_STRING "$QUERY_STRING&limit=$limit"
 endif
 
-/bin/echo `date` "$0 $$ -- START ($QUERY_STRING)" >>&! $LOGTO
+/bin/echo `date` "$0:t $$ -- START ($QUERY_STRING)" >>&! $LOGTO
 
 # initiate new output
-if ($?DEBUG) /bin/echo `date` "$0 $$ ++ REQUESTING ./$APP-make-$API.bash" >>&! $LOGTO
+if ($?DEBUG) /bin/echo `date` "$0:t $$ ++ REQUESTING ./$APP-make-$API.bash" >>&! $LOGTO
 ./$APP-make-$API.bash
 
 ##
@@ -88,9 +88,9 @@ set OUTPUT = "$TMP/$APP-$API-$QUERY_STRING.$DATE.json"
 if (! -s "$OUTPUT") then
   /bin/rm -f "$OUTPUT:r:r".*
 
-  curl -s -q -f -L "$HTTP_HOST/CGI/aah-images.cgi?db=$db&limit=$limit" \
+  curl -s -q -f -L "localhost/CGI/aah-images.cgi?db=$db&limit=$limit" \
         | jq -r '.ids[]?' \
-        | /usr/bin/xargs -I % curl -s -q -f -L "$HTTP_HOST/CGI/aah-updates.cgi?db=$db&id=%" \
+        | /usr/bin/xargs -I % curl -s -q -f -L "localhost/CGI/aah-updates.cgi?db=$db&id=%" \
         | jq -j '.class,"/",.id,".jpg\n"' >! "$OUTPUT"
 endif
 
@@ -106,9 +106,9 @@ if (-s "$OUTPUT") then
 	set stat = "$i"
         set output = "$output"'"'"$i"'"'
       else if (-l "$AAHDIR/$db/$i") then
-        if ($?DEBUG) /bin/echo `date` "$0 $$ -- $AAHDIR/$db/$i linked" >>&! $LOGTO
+        if ($?DEBUG) /bin/echo `date` "$0:t $$ -- $AAHDIR/$db/$i linked" >>&! $LOGTO
       else
-        if ($?DEBUG) /bin/echo `date` "$0 $$ -- $AAHDIR/$db/$i missing" >>&! $LOGTO
+        if ($?DEBUG) /bin/echo `date` "$0:t $$ -- $AAHDIR/$db/$i missing" >>&! $LOGTO
       endif
     end
     if ($?stat) then
@@ -119,7 +119,7 @@ if (-s "$OUTPUT") then
     set output = "$output"'}'
     goto output
 else
-  if ($?DEBUG) /bin/echo `date` "$0 $$ -- no $OUTPUT exists" >>&! $LOGTO
+  if ($?DEBUG) /bin/echo `date` "$0:t $$ -- no $OUTPUT exists" >>&! $LOGTO
   goto done
 endif
 
@@ -131,10 +131,10 @@ endif
     curl -m 5 -s -q -f -L "$CU/$url" -o "$out"
     if ($status != 22 && $status != 28 && -s "$out") then
       set classes = ( `jq -r '.rows[]?.id' "$out"` )
-      if ($?DEBUG) /bin/echo `date` "$0 $$ ++ SUCCESS ($classes)" >>&! $LOGTO
+      if ($?DEBUG) /bin/echo `date` "$0:t $$ ++ SUCCESS ($classes)" >>&! $LOGTO
       rm -f "$out"
     else 
-      if ($?DEBUG) /bin/echo `date` "$0 $$ ++ FAILURE ($url)" >>&! $LOGTO
+      if ($?DEBUG) /bin/echo `date` "$0:t $$ ++ FAILURE ($url)" >>&! $LOGTO
       rm -f "$out"
       goto done
     endif
@@ -150,7 +150,7 @@ endif
       set out = "/tmp/$0:t.$$.json"
       curl -s -q -f -L "$CU/$url" -o "$out"
       if ($status == 22 || ! -s "$out") then
-	if ($?DEBUG) /bin/echo `date` "$0 $$ ++ FAIL ($url)" >>&! $LOGTO
+	if ($?DEBUG) /bin/echo `date` "$0:t $$ ++ FAIL ($url)" >>&! $LOGTO
 	rm -f "$out"
 	continue
       endif
@@ -206,7 +206,7 @@ if (-s "$OUTPUT") then
     /bin/echo "Last-Modified:" `$dateconv -i '%s' -f '%a, %d %b %Y %H:%M:%S %Z' $DATE`
     /bin/echo ""
     jq -c '.' "$OUTPUT"
-    if ($?DEBUG) /bin/echo `date` "$0 $$ -- output ($OUTPUT) Age: $age Refresh: $refresh" >>&! $LOGTO
+    if ($?DEBUG) /bin/echo `date` "$0:t $$ -- output ($OUTPUT) Age: $age Refresh: $refresh" >>&! $LOGTO
 else
     /bin/echo "Cache-Control: no-cache"
     /bin/echo "Last-Modified:" `$dateconv -i '%s' -f '%a, %d %b %Y %H:%M:%S %Z' $DATE`
@@ -218,5 +218,5 @@ cleanup:
   rm -f "$OUTPUT".$$
 
 done:
-  /bin/echo `date` "$0 $$ -- FINISH ($QUERY_STRING)" >>&! $LOGTO
+  /bin/echo `date` "$0:t $$ -- FINISH ($QUERY_STRING)" >>&! $LOGTO
 

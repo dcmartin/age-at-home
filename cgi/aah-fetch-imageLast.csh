@@ -26,7 +26,7 @@ if ($?inprogress) then
   if ($#inprogress) then
     set pid = ( `/bin/ps auxc | /usr/bin/awk '{ print $2,$11 }' | /usr/bin/grep " $0:t" | /usr/bin/awk '{ print $1 }'`  )
     if ($#pid) then
-      # /bin/echo `/bin/date` "$0 $$ -- INPROGRESS ($pid)" >>! $LOGTO
+      # /bin/echo `/bin/date` "$0:t $$ -- INPROGRESS ($pid)" >>! $LOGTO
       exit
     endif
   endif
@@ -43,4 +43,4 @@ else
   /bin/rm -f "$jpg.$$"
   exit $code
 endif
-# /bin/echo `/bin/date` "$0 $$ -- COMPLETE $url ($code)" >>! $LOGTO
+# /bin/echo `/bin/date` "$0:t $$ -- COMPLETE $url ($code)" >>! $LOGTO

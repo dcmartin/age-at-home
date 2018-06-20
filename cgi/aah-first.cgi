@@ -29,7 +29,7 @@ set TTL = `/bin/echo "30 * 60" | bc`
 set SECONDS = `date "+%s"`
 set DATE = `/bin/echo $SECONDS \/ $TTL \* $TTL | bc`
 
-/bin/echo `date` "$0 $$ -- START" >>! $LOGTO
+/bin/echo `date` "$0:t $$ -- START" >>! $LOGTO
 
 if ($?QUERY_STRING) then
     set DB = `/bin/echo "$QUERY_STRING" | sed "s/.*db=\([^&]*\).*/\1/"`
@@ -69,4 +69,4 @@ set AGE = `/bin/echo "$SECONDS - $DATE" | bc`
 
 done:
 
-/bin/echo `date` "$0 $$ -- FINISH" >>! $LOGTO
+/bin/echo `date` "$0:t $$ -- FINISH" >>! $LOGTO

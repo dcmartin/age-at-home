@@ -38,7 +38,7 @@ endif
 if ($?DB == 0) set DB = rough-fog
 setenv QUERY_STRING "db=$DB"
 
-/bin/echo `date` "$0 $$ -- START ($QUERY_STRING)" >>&! $LOGTO
+/bin/echo `date` "$0:t $$ -- START ($QUERY_STRING)" >>&! $LOGTO
 
 #
 # get OUTPUT
@@ -105,4 +105,4 @@ endif
 
 done:
 
-/bin/echo `date` "$0 $$ -- FINISH" >>&! $LOGTO
+/bin/echo `date` "$0:t $$ -- FINISH" >>&! $LOGTO

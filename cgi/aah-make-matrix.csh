@@ -46,12 +46,12 @@ set CSV = "$TMP/$APP-$API-$QUERY_STRING-test.$DATE.csv"
 set CSV = "$AAHDIR/matrix/$model.csv"
 
 if ((-s "$JSON") && (-s "$CSV") && (-M "$JSON") <= (-M "$CSV")) then
-    /bin/echo `date` "$0 $$ -- EXISTING && UP-TO-DATE $JSON" >& /dev/stderr
+    /bin/echo `date` "$0:t $$ -- EXISTING && UP-TO-DATE $JSON" >& /dev/stderr
     goto output
 endif
 
 if ((-M "$TEST") > (-M "$JSON") || (-M "$JSON") > (-M "$CSV")) then
-    /bin/echo `date` "$0 $$ -- rebuilding matrix" >& /dev/stderr
+    /bin/echo `date` "$0:t $$ -- rebuilding matrix" >& /dev/stderr
     # remove all residuals
     rm -f "$JSON:r".*
 endif
@@ -62,13 +62,13 @@ endif
 
 set sets = ( `jq -r '.sets[].set' "$TEST"` )
 if ($#sets) then
-  /bin/echo `date` "$0 $$ -- building $JSON on $#sets ($sets)" >>&! $LOGTO
+  /bin/echo `date` "$0:t $$ -- building $JSON on $#sets ($sets)" >>&! $LOGTO
 
   unset matrix
   set total = 0
 
   foreach this ( $sets )
-    /bin/echo -n `date` "$0 $$ -- $this [ " >& /dev/stderr
+    /bin/echo -n `date` "$0:t $$ -- $this [ " >& /dev/stderr
     if (! -s "$AAHDIR/matrix/$model.$this.json") then
 	jq -c '.sets[]|select(.set=="'"$this"'").results[]?' "$TEST" >! "$AAHDIR/matrix/$model.$this.json"
     endif
@@ -134,15 +134,15 @@ if ($#sets) then
   set matrix = "$matrix"'],"count":'$total'}'
 
   /bin/echo "$matrix" | jq . >! "$AAHDIR/matrix/$model.json"
-  /bin/echo `date` "$0 $$ -- MADE $AAHDIR/matrix/$model.json" >& /dev/stderr
+  /bin/echo `date` "$0:t $$ -- MADE $AAHDIR/matrix/$model.json" >& /dev/stderr
 
   set out = ( "$AAHDIR/matrix/$model".*.csv )
   if ($#out) then
     head -1 $out[1] >! "$AAHDIR/matrix/$model.csv"
     tail +2 -q $out >> "$AAHDIR/matrix/$model.csv"
-    /bin/echo `date` "$0 $$ -- MADE $AAHDIR/matrix/$model.csv" >& /dev/stderr
+    /bin/echo `date` "$0:t $$ -- MADE $AAHDIR/matrix/$model.csv" >& /dev/stderr
   else
-    /bin/echo `date` "$0 $$ -- FAILURE $AAHDIR/matrix/$model.csv" >& /dev/stderr
+    /bin/echo `date` "$0:t $$ -- FAILURE $AAHDIR/matrix/$model.csv" >& /dev/stderr
   endif
 endif
 

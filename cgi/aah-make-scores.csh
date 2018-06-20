@@ -17,7 +17,7 @@ set TTL = `/bin/echo "12 * 60 * 60" | bc`
 set SECONDS = `date "+%s"`
 set DATE = `/bin/echo $SECONDS \/ $TTL \* $TTL | bc`
 
-/bin/echo `date` "$0 $$ -- START" >>&! $LOGTO
+/bin/echo `date` "$0:t $$ -- START" >>&! $LOGTO
 
 ##
 ## ACCESS CLOUDANT
@@ -54,7 +54,7 @@ set INPROGRESS = ( `/bin/echo "$JSON".*` )
 
 # check JSON in-progress for current interval
 if ($#INPROGRESS) then
-    /bin/echo `date` "$0 $$ -- in-progress" >>&! $LOGTO
+    /bin/echo `date` "$0:t $$ -- in-progress" >>&! $LOGTO
     goto done    
 else
     if ($DB == "damp-cloud") then
@@ -89,13 +89,13 @@ endif
 if ($?CLOUDANT_OFF == 0 && $?CU && $?DB && (-s $JSON)) then
     set DEVICE_DB = `curl -s -q -X GET "$CU/$DB-$API" | jq '.db_name'`
     if ( "$DEVICE_DB" == "null" ) then
-	/bin/echo `date` "$0 $$ -- create Cloudant ($DB-$API)" >>&! $LOGTO
+	/bin/echo `date` "$0:t $$ -- create Cloudant ($DB-$API)" >>&! $LOGTO
 	# create DB
 	set DEVICE_DB = `curl -s -q -X PUT "$CU/$DB-$API" | jq '.ok'`
 	# test for success
 	if ( "$DEVICE_DB" != "true" ) then
 	    # failure
-	    /bin/echo `date` "$0 $$ -- FAILED: create Cloudant ($DB-$API)" >>&! $LOGTO
+	    /bin/echo `date` "$0:t $$ -- FAILED: create Cloudant ($DB-$API)" >>&! $LOGTO
 	    setenv CLOUDANT_OFF TRUE
 	endif
     endif
@@ -103,15 +103,15 @@ if ($?CLOUDANT_OFF == 0 && $?CU && $?DB && (-s $JSON)) then
 	set doc = ( `curl -s -q "$CU/$DB-$API/$class" | jq ._id,._rev | sed 's/"//g'` )
 	if ($#doc == 2 && $doc[1] == $class && $doc[2] != "") then
 	    set rev = $doc[2]
-	    /bin/echo `date` "$0 $$ -- DELETE $CU/$DB-$API/$class $rev" >>&! $LOGTO
+	    /bin/echo `date` "$0:t $$ -- DELETE $CU/$DB-$API/$class $rev" >>&! $LOGTO
 	    curl -s -q -X DELETE "$CU/$DB-$API/$class?rev=$rev"
 	endif
-	/bin/echo `date` "$0 $$ -- STORE $CU/$DB-$API/$class" >>&! $LOGTO
+	/bin/echo `date` "$0:t $$ -- STORE $CU/$DB-$API/$class" >>&! $LOGTO
 	curl -s -q -H "Content-type: application/json" -X PUT "$CU/$DB-$API/$class" -d "@$JSON" >>&! $LOGTO
     endif
 else
-    /bin/echo `date` "$0 $$ -- no Cloudant update" >>&! $LOGTO
+    /bin/echo `date` "$0:t $$ -- no Cloudant update" >>&! $LOGTO
 endif
 
 done:
-    /bin/echo `date` "$0 $$ -- FINISH" >>&! $LOGTO
+    /bin/echo `date` "$0:t $$ -- FINISH" >>&! $LOGTO

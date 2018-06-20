@@ -230,7 +230,7 @@ panel_iframe:
   ageathome:
     title: 'Age-At-Home'
     icon: mdi:home-account
-    url: 'http://192.168.1.27:8999/devices.html'
+    url: 'http://192.168.1.40:8999/devices.html'
   docsis:
     title: 'Mikrotik'
     icon: mdi:router-wireless
@@ -238,7 +238,7 @@ panel_iframe:
   classify:
     title: 'CLASSIFY'
     icon: mdi:image-filter
-    url: 'http://192.168.1.27:8999/classify.html'
+    url: 'http://192.168.1.40:8999/classify.html'
   digits_p40:
     title: 'DIGITS-P40'
     icon: mdi:format-list-numbers

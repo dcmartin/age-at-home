@@ -164,7 +164,7 @@ endif
 
 # find devices
 if ($db == "all") then
-  set url = "$HTTP_HOST/CGI/aah-devices.cgi"
+  set url = "localhost/CGI/aah-devices.cgi"
   set devices = ( `curl -s -q -L "$url" | jq -r '.devices[].name'` )
   if ($#devices == 0) then
     if ($?VERBOSE) echo `date` "$0:t $$ ++ FAILURE ($url)" >>&! $LOGTO

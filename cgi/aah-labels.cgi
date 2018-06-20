@@ -43,10 +43,10 @@ if ($?class == 0) set class = all
 setenv QUERY_STRING "db=$db"
 if ($?class) setenv QUERY_STRING "$QUERY_STRING&class=$class"
 
-/bin/echo `date` "$0 $$ -- START ($QUERY_STRING)" >>&! $LOGTO
+/bin/echo `date` "$0:t $$ -- START ($QUERY_STRING)" >>&! $LOGTO
 
 # initiate new output
-if ($?DEBUG) /bin/echo `date` "$0 $$ ++ REQUESTING ./$APP-make-$API.bash" >>&! $LOGTO
+if ($?DEBUG) /bin/echo `date` "$0:t $$ ++ REQUESTING ./$APP-make-$API.bash" >>&! $LOGTO
 ./$APP-make-$API.bash
 
 ##
@@ -85,15 +85,15 @@ if (! -s "$OUTPUT") then
     if ($status != 22 && $status != 28 && -s "$out") then
       set classes = ( `jq -r '.classes[]?.name' "$out"` )
       if ($#classes) then
-        if ($?DEBUG) /bin/echo `date` "$0 $$ ++ SUCCESS ($url) -- classes ($classes)" >>&! $LOGTO
+        if ($?DEBUG) /bin/echo `date` "$0:t $$ ++ SUCCESS ($url) -- classes ($classes)" >>&! $LOGTO
 	mv "$out" "$OUTPUT"
         goto output
       else
-        if ($?DEBUG) /bin/echo `date` "$0 $$ ++ FAILURE ($url)" >>&! $LOGTO
+        if ($?DEBUG) /bin/echo `date` "$0:t $$ ++ FAILURE ($url)" >>&! $LOGTO
         unset classes
       endif
     else
-      if ($?DEBUG) /bin/echo `date` "$0 $$ ++ FAILURE ($url)" >>&! $LOGTO
+      if ($?DEBUG) /bin/echo `date` "$0:t $$ ++ FAILURE ($url)" >>&! $LOGTO
       rm -f "$out"
     endif
     # FAILURE -- above should suffice
@@ -102,10 +102,10 @@ if (! -s "$OUTPUT") then
       curl -m 5 -s -q -f -L "$CU/$url" -o "$out"
       if ($status != 22 && $status != 28 && -s "$out") then
 	set classes = ( `jq -r '.rows[].id' "$out" | egrep -v "all"` )
-	if ($?DEBUG) /bin/echo `date` "$0 $$ ++ SUCCESS ($classes)" >>&! $LOGTO
+	if ($?DEBUG) /bin/echo `date` "$0:t $$ ++ SUCCESS ($classes)" >>&! $LOGTO
         rm -f "$out"
       else
-	if ($?DEBUG) /bin/echo `date` "$0 $$ ++ FAILURE ($url)" >>&! $LOGTO
+	if ($?DEBUG) /bin/echo `date` "$0:t $$ ++ FAILURE ($url)" >>&! $LOGTO
 	rm -f "$out"
 	goto output
       endif
@@ -120,7 +120,7 @@ if (! -s "$OUTPUT") then
 	set all = "$all""$json"
 	@ k++
       else
-	if ($?DEBUG) /bin/echo `date` "$0 $$ ++ FAILED on class $c" >>&! $LOGTO
+	if ($?DEBUG) /bin/echo `date` "$0:t $$ ++ FAILED on class $c" >>&! $LOGTO
       endif
     end
     set all = "$all"']}'
@@ -151,7 +151,7 @@ if (-s "$OUTPUT") then
     /bin/echo "Last-Modified:" `$dateconv -i '%s' -f '%a, %d %b %Y %H:%M:%S %Z' $DATE`
     /bin/echo ""
     jq -c '.' "$OUTPUT"
-    if ($?DEBUG) /bin/echo `date` "$0 $$ -- output ($OUTPUT) Age: $age Refresh: $refresh" >>&! $LOGTO
+    if ($?DEBUG) /bin/echo `date` "$0:t $$ -- output ($OUTPUT) Age: $age Refresh: $refresh" >>&! $LOGTO
 else
     /bin/echo "Cache-Control: no-cache"
     /bin/echo "Last-Modified:" `$dateconv -i '%s' -f '%a, %d %b %Y %H:%M:%S %Z' $SECONDS`
@@ -163,4 +163,4 @@ endif
 
 done:
 
-/bin/echo `date` "$0 $$ -- FINISH ($QUERY_STRING)" >>&! $LOGTO
+/bin/echo `date` "$0:t $$ -- FINISH ($QUERY_STRING)" >>&! $LOGTO

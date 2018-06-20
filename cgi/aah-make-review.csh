@@ -30,7 +30,7 @@ if ($?db == 0) set db = rough-fog
 # standardize QUERY_STRING
 setenv QUERY_STRING "db=$db"
 
-/bin/echo `/bin/date` "$0 $$ -- START ($QUERY_STRING)"  >>&! $LOGTO
+/bin/echo `/bin/date` "$0:t $$ -- START ($QUERY_STRING)"  >>&! $LOGTO
 
 #
 # OUTPUT target
@@ -48,7 +48,7 @@ if ($#INPROGRESS) then
     set pid = $ip:e
     set eid = `ps axw | awk '{ print $1 }' | egrep "$pid"`
     if ($pid == $eid) then
-      if ($?DEBUG) /bin/echo `/bin/date` "$0 $$ -- in-progress ($pid)" >>&! $LOGTO
+      if ($?DEBUG) /bin/echo `/bin/date` "$0:t $$ -- in-progress ($pid)" >>&! $LOGTO
       goto done
     endif
     rm -f $ip
@@ -83,19 +83,19 @@ endif
 #
 # CREATE <device>-review DATABASE 
 #
-if ($?DEBUG) /bin/echo `/bin/date` "$0 $$ -- test if exists ($db-$API)" >>&! $LOGTO
+if ($?DEBUG) /bin/echo `/bin/date` "$0:t $$ -- test if exists ($db-$API)" >>&! $LOGTO
 set devdb = `curl -f -s -q -L -X GET "$CU/$db-$API" | jq '.db_name'`
 if ( $devdb == "" || "$devdb" == "null" ) then
-  if ($?DEBUG) /bin/echo `/bin/date` "$0 $$ -- creating $db-$API" >>&! $LOGTO
+  if ($?DEBUG) /bin/echo `/bin/date` "$0:t $$ -- creating $db-$API" >>&! $LOGTO
   # create device
   set devdb = `curl -f -s -q -L -X PUT "$CU/$db-$API" | jq '.ok'`
   # test for success
   if ( "$devdb" != "true" ) then
     # failure
-    if ($?DEBUG) /bin/echo `/bin/date` "$0 $$ -- failure creating Cloudant database ($db-$API)" >>&! $LOGTO
+    if ($?DEBUG) /bin/echo `/bin/date` "$0:t $$ -- failure creating Cloudant database ($db-$API)" >>&! $LOGTO
     goto done
   else
-    if ($?DEBUG) /bin/echo `/bin/date` "$0 $$ -- success creating database ($db-$API)" >>&! $LOGTO
+    if ($?DEBUG) /bin/echo `/bin/date` "$0:t $$ -- success creating database ($db-$API)" >>&! $LOGTO
   endif
 endif
 
@@ -115,14 +115,14 @@ if ($status != 22 && $status != 28 && -s "$out") then
     if ($seqid == "null" || $seqid == "") then
       set seqid = 0
     else
-      if ($?DEBUG) /bin/echo `/bin/date` "$0 $$ -- SUCCESS retrieving seqid ($seqid)" >>&! $LOGTO
+      if ($?DEBUG) /bin/echo `/bin/date` "$0:t $$ -- SUCCESS retrieving seqid ($seqid)" >>&! $LOGTO
     endif
   else
-    if ($?DEBUG) /bin/echo `/bin/date` "$0 $$ -- FAILED retrieving seqid" >>&! $LOGTO
+    if ($?DEBUG) /bin/echo `/bin/date` "$0:t $$ -- FAILED retrieving seqid" >>&! $LOGTO
     set seqid = 0
   endif
 else
-  if ($?DEBUG) /bin/echo `/bin/date` "$0 $$ -- fail ($url)" >>&! $LOGTO
+  if ($?DEBUG) /bin/echo `/bin/date` "$0:t $$ -- fail ($url)" >>&! $LOGTO
   goto done
 endif
 rm -f "$out"
@@ -138,10 +138,10 @@ set transfer = 30
 
 again: # try again
 
-if ($?DEBUG) /bin/echo `/bin/date` "$0 $$ -- download _changes ($url)" >>&! $LOGTO
+if ($?DEBUG) /bin/echo `/bin/date` "$0:t $$ -- download _changes ($url)" >>&! $LOGTO
 curl -s -q --connect-time $connect -m $transfer -f -L "$CU/$url" -o "$out" >>&! $LOGTO
 if ($status != 22 && $status != 28 && -s "$out") then
-  if ($?DEBUG) /bin/echo `/bin/date` "$0 $$ -- download SUCCESS ($UPDATES)" >>&! $LOGTO
+  if ($?DEBUG) /bin/echo `/bin/date` "$0:t $$ -- download SUCCESS ($UPDATES)" >>&! $LOGTO
   # test JSON
   jq '.' "$out" >&! /dev/null
   if ($status != 0) then
@@ -151,7 +151,7 @@ if ($status != 22 && $status != 28 && -s "$out") then
       @ try++
       goto again
     endif
-    if ($?DEBUG) /bin/echo `/bin/date` "$0 $$ -- INVALID ($result) TRY ($try) TRANSFER ($transfer) UPDATES ($out)" >>&! $LOGTO
+    if ($?DEBUG) /bin/echo `/bin/date` "$0:t $$ -- INVALID ($result) TRY ($try) TRANSFER ($transfer) UPDATES ($out)" >>&! $LOGTO
     goto done
   endif
   mv -f "$out" "$UPDATES"
@@ -159,17 +159,17 @@ if ($status != 22 && $status != 28 && -s "$out") then
   # count updates (w/o all record)
   set count = ( `jq -r '.results[]?|select(.id != "all").id' "$UPDATES" | wc -l | awk '{ print $1 }'` )
   if ($last_seq == $seqid) then
-    if ($?DEBUG) /bin/echo `/bin/date` "$0 $$ -- up-to-date ($seqid) records ($count)" >>&! $LOGTO
+    if ($?DEBUG) /bin/echo `/bin/date` "$0:t $$ -- up-to-date ($seqid) records ($count)" >>&! $LOGTO
   endif
 else
   rm -f "$out"
   if ($try < 3) then
     @ transfer = $transfer + $transfer
     @ try++
-    if ($?DEBUG) /bin/echo `/bin/date` "$0 $$ -- RETRY ($url)" >>&! $LOGTO
+    if ($?DEBUG) /bin/echo `/bin/date` "$0:t $$ -- RETRY ($url)" >>&! $LOGTO
     goto again
   endif
-  if ($?DEBUG) /bin/echo `/bin/date` "$0 $$ -- download FAILED ($url)" >>&! $LOGTO
+  if ($?DEBUG) /bin/echo `/bin/date` "$0:t $$ -- download FAILED ($url)" >>&! $LOGTO
   goto done
 endif
 
@@ -177,7 +177,7 @@ endif
 if ($count == 0) then
   goto update
 else
-  if ($?DEBUG) /bin/echo `/bin/date` "$0 $$ -- $count updates FOR $device since $seqid ($UPDATES)" >>&! $LOGTO
+  if ($?DEBUG) /bin/echo `/bin/date` "$0:t $$ -- $count updates FOR $device since $seqid ($UPDATES)" >>&! $LOGTO
 endif
 
 # start output
@@ -186,11 +186,11 @@ endif
 # get all top1 from UPDATES
 set classes = ( `jq -r '.results[]?.doc.top1.classifier_id' "$out"` )
 if ($#classes == 0 || $classes == "null") then
-  /bin/echo `/bin/date` "$0 $$ !! EXIT --  FOUND NO CLASSES ($UPDATES)" >>&! $LOGTO
+  /bin/echo `/bin/date` "$0:t $$ !! EXIT --  FOUND NO CLASSES ($UPDATES)" >>&! $LOGTO
   exit
 endif
 
-if ($?DEBUG) /bin/echo `/bin/date` "$0 $$ -- got $#classes ($classes)" >>&! $LOGTO
+if ($?DEBUG) /bin/echo `/bin/date` "$0:t $$ -- got $#classes ($classes)" >>&! $LOGTO
 
 #
 # PROCESS ALL UPDATES
@@ -260,12 +260,12 @@ endif
 set out = "/tmp/$0:t.$$.json"
 curl -s -q -f -L -H "Content-type: application/json" -X PUT "$CU/$url" -d "@$OUTPUT" -o "$out" >>&! $LOGTO
 if ($status != 22 && -s "$out") then
-  if ($?DEBUG) /bin/echo `/bin/date` "$0 $$ -- PUT $url returned {" `cat "$out"` "}" >>&! $LOGTO
+  if ($?DEBUG) /bin/echo `/bin/date` "$0:t $$ -- PUT $url returned {" `cat "$out"` "}" >>&! $LOGTO
 endif
 rm -f "$out"
 
 done:
-/bin/echo `/bin/date` "$0 $$ -- FINISH ($QUERY_STRING)" >>&! $LOGTO
+/bin/echo `/bin/date` "$0:t $$ -- FINISH ($QUERY_STRING)" >>&! $LOGTO
 
 cleanup:
 rm -f "$OUTPUT.$$"

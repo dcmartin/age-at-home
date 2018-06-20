@@ -30,10 +30,10 @@ if ($?CLOUDANT_URL) then
 else if ($?CN && $?CP) then
     set CU = "$CN":"$CP"@"$CN.cloudant.com"
 else
-    echo `date` "$0 $$ -- no Cloudant URL ($creds)" >>&! $LOGTO
+    echo `date` "$0:t $$ -- no Cloudant URL ($creds)" >>&! $LOGTO
     exit
 endif
-if ($?DEBUG) echo `date` "$0 $$ -- Cloudant noSQL ($CU)" >>&! $LOGTO
+if ($?DEBUG) echo `date` "$0:t $$ -- Cloudant noSQL ($CU)" >>&! $LOGTO
 
 #
 # VISUAL_RECOGNITION SETUP
@@ -47,15 +47,15 @@ if (-e $creds) then
     set urls = ( `jq '.[]|.credentials.url' $creds` )
     if ($#urls > 0) set TU = `echo "$urls[1]" | sed 's/"//g'`
 else 
-    echo `date` "$0 $$ -- no VisualRecognition ($creds)" >>&! $LOGTO
+    echo `date` "$0:t $$ -- no VisualRecognition ($creds)" >>&! $LOGTO
     exit
 endif
 if ($?TU && $?api_key) then
     if ($?verid == 0) set verid = "v3"
     if ($?vdate == 0) set vdate = "2016-05-20"
-    if ($?DEBUG) echo `date` "$0 $$ -- VisualRecognition $verid/$vdate ($TU)" >>&! $LOGTO
+    if ($?DEBUG) echo `date` "$0:t $$ -- VisualRecognition $verid/$vdate ($TU)" >>&! $LOGTO
 else
-    echo `date` "$0 $$ -- invalid VisualRecognition ($creds)" >>&! $LOGTO
+    echo `date` "$0:t $$ -- invalid VisualRecognition ($creds)" >>&! $LOGTO
     exit
 endif
 
@@ -75,7 +75,7 @@ endif
 #
 # PROCESS COMMAND LINE ARGUMENTS
 #
-echo "$0 [ -n <maxfiles> -D(elete old) -m <model_id> -j <job_id> -N <negative_class> -d <label_dir> -e {frame|sample}] <device-id>"
+echo "$0:t [ -n <maxfiles> -D(elete old) -m <model_id> -j <job_id> -N <negative_class> -d <label_dir> -e {frame|sample}] <device-id>"
 
 @ i = 1
 while ($i <= $#argv)
@@ -133,24 +133,24 @@ if ($?ext == 0) set ext = jpg
 # check arguments
 #
 if ($?device && $?model && $?notags) then
-    if ($?DEBUG) /bin/echo `/bin/date` "$0 $$ -- $device $model $notags" 
+    if ($?DEBUG) /bin/echo `/bin/date` "$0:t $$ -- $device $model $notags" 
     setenv QUERY_STRING "db=$device"
 else if ($?notags == 0) then
     set location = `/usr/bin/curl -s -q -f -L "http://$WWW/CGI/aah-devices.cgi" | jq -r '.|select(.name=="'"$device"'")|.location'`
     if ($#location) then
-	if ($?DEBUG) /bin/echo `/bin/date` "$0 $$ -- found AAH_LOCATION ($location)" 
+	if ($?DEBUG) /bin/echo `/bin/date` "$0:t $$ -- found AAH_LOCATION ($location)" 
     else
-	if ($?DEBUG) /bin/echo `/bin/date` "$0 $$ -- not found AAH_LOCATION" 
+	if ($?DEBUG) /bin/echo `/bin/date` "$0:t $$ -- not found AAH_LOCATION" 
 	unset location
 	exit
     endif
-    if ($?DEBUG) /bin/echo `/bin/date` "$0 $$ -- using default ($location) for negative (notags)" 
+    if ($?DEBUG) /bin/echo `/bin/date` "$0:t $$ -- using default ($location) for negative (notags)" 
     set notags = "$location"
 endif
 
 setenv QUERY_STRING "db=$device&ext=$ext"
 
-echo `date` "$0 $$ -- START ($QUERY_STRING)" >>&! $LOGTO
+echo `date` "$0:t $$ -- START ($QUERY_STRING)" >>&! $LOGTO
 
 #
 # FIND OLD MODEL
@@ -161,7 +161,7 @@ if ($?CLOUDANT_OFF == 0) then
     if ($#db) then
       set error = ( `echo "$db" | jq '.error,.reason' | sed 's/"//g'` )
       if ($#error > 0 && $error[1] == "not_found") then
-        if ($?DEBUG) echo `date` "$0 $$ -- $error[2-] ($device-$API)" >>&! $LOGTO
+        if ($?DEBUG) echo `date` "$0:t $$ -- $error[2-] ($device-$API)" >>&! $LOGTO
 	unset db
       endif
     endif
@@ -171,16 +171,16 @@ if ($?CLOUDANT_OFF == 0) then
       set device_models = ( `curl -s -q -L "$CU/$device-$API/_all_docs?include_docs=true" | jq '.rows[]|select(.doc.name=="'"$device"'")'` )
     endif
     if ($?model) then
-      if ($?DEBUG) echo `date` "$0 $$ -- FOUND MODEL ($#model)" >>&! $LOGTO
+      if ($?DEBUG) echo `date` "$0:t $$ -- FOUND MODEL ($#model)" >>&! $LOGTO
       # CHECK INVENTORY AGAINST TRAINED SET
       set w = ( `echo "$model" | jq '.date' | sed 's/"//g'` )
       set s = ( `echo "$model" | jq '.images[].class' | sed 's/"//g'` )
       set p = ( `echo "$model" | jq '.detail.classes[].class' | sed 's/"//g'` )
       set n = ( `echo "$model" | jq '.negative' | sed 's/"//g'` )
-      if ($?DEBUG) echo `date` "$0 $$ -- EXISTING MODEL ($model) date ($w) sets ($s) negative ($n) positive ($p)" >>&! $LOGTO
+      if ($?DEBUG) echo `date` "$0:t $$ -- EXISTING MODEL ($model) date ($w) sets ($s) negative ($n) positive ($p)" >>&! $LOGTO
       exit
     else if ($?device_models) then
-      if ($?DEBUG) echo `date` "$0 $$ -- DEVICE MODELS ($#device_models)" >>&! $LOGTO
+      if ($?DEBUG) echo `date` "$0:t $$ -- DEVICE MODELS ($#device_models)" >>&! $LOGTO
       set classifier_ids = ( `echo "$device_models" | jq '.doc.detail.classifier_id' | sed 's/"//g'` )
       set models = ( `echo "$device_models" | jq '.doc.model' | sed 's/"//g'` )
       set dates = ( `echo "$device_models" | jq '.doc.date' | sed 's/"//g'` )
@@ -188,18 +188,18 @@ if ($?CLOUDANT_OFF == 0) then
       set date_model = ( `echo "$device_models" | jq '.|select(.doc.date=="'$DATE'")' ` )
       if ($#date_model) then
         set model = `echo "$date_model" | jq '.doc.model' | sed 's/"//g'`
-	if ($?DEBUG) echo `date` "$0 $$ -- model ($model) by date ($DATE) in Cloudant" >>&! $LOGTO
+	if ($?DEBUG) echo `date` "$0:t $$ -- model ($model) by date ($DATE) in Cloudant" >>&! $LOGTO
       endif
-      if ($?DEBUG) echo `date` "$0 $$ -- classifiers ($classifier_ids) models ($models)" >>&! $LOGTO
+      if ($?DEBUG) echo `date` "$0:t $$ -- classifiers ($classifier_ids) models ($models)" >>&! $LOGTO
     endif
 else
-    if ($?DEBUG) echo `date` "$0 $$ -- Cloudant OFF" >>&! $LOGTO
+    if ($?DEBUG) echo `date` "$0:t $$ -- Cloudant OFF" >>&! $LOGTO
 endif
 
 if ($?model) then
-    if ($?DEBUG) echo `date` "$0 $$ -- model ($model) in Cloudant" >>&! $LOGTO
+    if ($?DEBUG) echo `date` "$0:t $$ -- model ($model) in Cloudant" >>&! $LOGTO
 else
-    if ($?DEBUG) echo `date` "$0 $$ -- NO MODEL ($device)" >>&! $LOGTO
+    if ($?DEBUG) echo `date` "$0:t $$ -- NO MODEL ($device)" >>&! $LOGTO
 endif
 
 ##
@@ -209,30 +209,30 @@ endif
 inventory:
 
 if ($?previous && $?model) then
-  if ($?DEBUG) echo `date` "$0 $$ -- PREVIOUS MODEL ($model)" `jq '.' "$previous"` >>&! $LOGTO
+  if ($?DEBUG) echo `date` "$0:t $$ -- PREVIOUS MODEL ($model)" `jq '.' "$previous"` >>&! $LOGTO
 endif
 
 set INVENTORY = "$TMP/$APP-$API-$QUERY_STRING.$DATE.json"
 set INPROGRESS = ( `echo "$INVENTORY".*` )
 if ($#INPROGRESS) then
-    if ($?DEBUG) echo `date` "$0 $$ -- inventory in-progress ($INPROGRESS)" >>&! $LOGTO
+    if ($?DEBUG) echo `date` "$0:t $$ -- inventory in-progress ($INPROGRESS)" >>&! $LOGTO
     goto done
 else if (-s "$INVENTORY") then
-    if ($?DEBUG) echo `date` "$0 $$ -- found $INVENTORY" >>&! $LOGTO
+    if ($?DEBUG) echo `date` "$0:t $$ -- found $INVENTORY" >>&! $LOGTO
     goto batch
 endif
-if ($?DEBUG) echo `date` "$0 $$ -- finding old ($APP-$API-$QUERY_STRING.*.json)" >>&! $LOGTO
+if ($?DEBUG) echo `date` "$0:t $$ -- finding old ($APP-$API-$QUERY_STRING.*.json)" >>&! $LOGTO
 set old = ( `echo "$TMP/$APP-$API-$QUERY_STRING".*.json` )
 if ($#old > 0) then
-    if ($?DEBUG) echo `date` "$0 $$ -- removing old ($old)" >>&! $LOGTO
+    if ($?DEBUG) echo `date` "$0:t $$ -- removing old ($old)" >>&! $LOGTO
     rm -f $old
 endif
 # indicate in-progress
-if ($?DEBUG) echo `date` "$0 $$ -- creating inventory $INVENTORY" >>&! $LOGTO
+if ($?DEBUG) echo `date` "$0:t $$ -- creating inventory $INVENTORY" >>&! $LOGTO
 
 # note specification of "label" subdirectory
 if (! -d "$AAHDIR/label") then
-    echo `date` "$0 $$ -- no directory ($AAHDIR/label)" >>&! $LOGTO
+    echo `date` "$0:t $$ -- no directory ($AAHDIR/label)" >>&! $LOGTO
     exit
 endif
 
@@ -242,7 +242,7 @@ unset classes
 echo '"images":[' >> "$INVENTORY.$$"
 # iterate
 foreach xdir ( "$AAHDIR/label/$device/"* )
-    if ($?DEBUG) echo `date` "$0 $$ -- processing $xdir" >>&! $LOGTO
+    if ($?DEBUG) echo `date` "$0:t $$ -- processing $xdir" >>&! $LOGTO
     if ($?set) echo ',' >> "$INVENTORY.$$"
     set set = "$xdir:t"
     if ($?classes) then
@@ -276,19 +276,19 @@ batch:
 set JOB = "$TMP/$APP-$API-$QUERY_STRING.$DATE.job"
 set INPROGRESS = ( `echo "$JOB".*` )
 if ($#INPROGRESS) then
-    if ($?DEBUG) echo `date` "$0 $$ -- batching in-progress ($INPROGRESS)" >>&! $LOGTO
+    if ($?DEBUG) echo `date` "$0:t $$ -- batching in-progress ($INPROGRESS)" >>&! $LOGTO
     goto done
 else if (-s "$JOB/job.json") then
-    if ($?DEBUG) echo `date` "$0 $$ -- existing batches ($JOB/job.json)" >>&! $LOGTO
+    if ($?DEBUG) echo `date` "$0:t $$ -- existing batches ($JOB/job.json)" >>&! $LOGTO
     goto training
 endif
 set old = ( `echo "$TMP/$APP-$API-$QUERY_STRING".*.job` )
 if ($#old > 0) then
-    if ($?DEBUG) echo `date` "$0 $$ -- removing old ($old); entries remain in DB and VR" >>&! $LOGTO
+    if ($?DEBUG) echo `date` "$0:t $$ -- removing old ($old); entries remain in DB and VR" >>&! $LOGTO
     rm -fr $old
 endif
 # indicate JOB in-progress
-if ($?DEBUG) echo `date` "$0 $$ -- batching jobs $JOB" >>&! $LOGTO
+if ($?DEBUG) echo `date` "$0:t $$ -- batching jobs $JOB" >>&! $LOGTO
 touch "$JOB.$$"
 mkdir -p "$JOB"
 
@@ -328,12 +328,12 @@ mkdir -p "$JOB"
 
 # get all classes as pairs of class name and count (including negative)
 set allclass = ( `jq '[.images|sort_by(.count)[]|{"class":.class,"count":.count,"bytes":.bytes}]' "$INVENTORY"`)
-if ($?DEBUG) echo `date` "$0 $$ -- batching images by counts ($allclass)" >>&! $LOGTO
+if ($?DEBUG) echo `date` "$0:t $$ -- batching images by counts ($allclass)" >>&! $LOGTO
 
 # process all samples into training, validation and test sets
 set pairs = ( `echo "$allclass" | jq '.[]|.class,.count' | sed 's/"//g'` )
 if ($#pairs == 0) then
-    if ($?DEBUG) echo `date` "$0 $$ -- NO PAIRS" >>&! $LOGTO
+    if ($?DEBUG) echo `date` "$0:t $$ -- NO PAIRS" >>&! $LOGTO
     exit
 endif
 
@@ -345,17 +345,17 @@ while ($p < $#pairs)
     @ p++
     set count = $pairs[$p]
     @ p++
-    if ($?DEBUG) echo `date` "$0 $$ -- CLASS ($class) COUNT ($count)" >>&! $LOGTO
+    if ($?DEBUG) echo `date` "$0:t $$ -- CLASS ($class) COUNT ($count)" >>&! $LOGTO
     # calculate split size to create only SPLITSETS number of sets
     @ split = ( $count / $SPLITSETS ) + ( $count % $SPLITSETS )
     # test is split size is sufficient
     if ($split > $MINIMAGES) then
 	# test if too many samples
 	if ($split > $MAXSETSIZE) then
-	    if ($?DEBUG) echo `date` "$0 $$ -- split size ($MAXSETSIZE); actual ($split)" >>&! $LOGTO
+	    if ($?DEBUG) echo `date` "$0:t $$ -- split size ($MAXSETSIZE); actual ($split)" >>&! $LOGTO
 	    set split = MAXSETSIZE
 	else
-	    if ($?DEBUG) echo `date` "$0 $$ -- split size ($split)" >>&! $LOGTO
+	    if ($?DEBUG) echo `date` "$0:t $$ -- split size ($split)" >>&! $LOGTO
 	endif
 	set base = "$JOB/$class." 
 	jq '.images[]|select(.class=="'$class'").ids[]' "$INVENTORY" | sed 's/"//g' | split -l $split - $base 
@@ -366,11 +366,11 @@ while ($p < $#pairs)
 	    set sets = '{"class":"'"$class"'","sets":'
 	endif
     else
-	if ($?DEBUG) echo `date` "$0 $$ -- insufficient samples ($split)" >>&! $LOGTO
+	if ($?DEBUG) echo `date` "$0:t $$ -- insufficient samples ($split)" >>&! $LOGTO
 	unset split
     endif
     if ($?split) then
-	if ($?DEBUG) echo `date` "$0 $$ -- processing ($split)" >>&! $LOGTO
+	if ($?DEBUG) echo `date` "$0:t $$ -- processing ($split)" >>&! $LOGTO
 	foreach s ( $split )
 	    if ($?splits) then
 		set splits = "$splits"','
@@ -380,7 +380,7 @@ while ($p < $#pairs)
 	    set sext = $s:e
 	    # create ZIP file name 
 	    set zip = "$JOB/$class.zip"
-	    if ($?DEBUG) echo `date` "$0 $$ -- creating ($zip) from split ($s)" >>&! $LOGTO
+	    if ($?DEBUG) echo `date` "$0:t $$ -- creating ($zip) from split ($s)" >>&! $LOGTO
 	    foreach id ( `cat "$s"` )
 		if ($?ids) then
 		    set ids = "$ids"',"'"$id"'"'
@@ -391,24 +391,24 @@ while ($p < $#pairs)
 		find $AAHDIR/label/$device -name "$id"."$ext" -print | xargs -I % zip -q -j -r -u "$zip" % >>&! $LOGTO
 	    end
 	    set ids = "$ids"']'
-	    # if ($?DEBUG) echo `date` "$0 $$ -- IDS: $ids" >>&! $LOGTO
+	    # if ($?DEBUG) echo `date` "$0:t $$ -- IDS: $ids" >>&! $LOGTO
 	    rm -f "$s"
 	    if (-s "$zip") then
 		# put all results into temporary directory
 		set base = "$JOB/$class"
 		mkdir -p "$base"
-		if ($?DEBUG) echo `date` "$0 $$ -- splitting ($zip) into ($base)" >>&! $LOGTO
+		if ($?DEBUG) echo `date` "$0:t $$ -- splitting ($zip) into ($base)" >>&! $LOGTO
 		zipsplit -b "$base/" -n $MAXZIPBYTES "$zip" >& /dev/null
 		# success?
 		if ($status == 0) then
 		    # get all the zips created
 		    set zips = ( `echo "$base/"*.zip` )
 		    if ($#zips > 0) then
-			if ($?DEBUG) echo `date` "$0 $$ -- split into $#zips ZIP files ($zips)" >>&! $LOGTO
+			if ($?DEBUG) echo `date` "$0:t $$ -- split into $#zips ZIP files ($zips)" >>&! $LOGTO
 			@ i = 1
 			foreach z ( $zips )
 			    set b = "$JOB/$class.$sext.$i.zip"
-			    if ($?DEBUG) echo `date` "$0 $$ -- creating batch entry ($b)" >>&! $LOGTO
+			    if ($?DEBUG) echo `date` "$0:t $$ -- creating batch entry ($b)" >>&! $LOGTO
 			    mv "$z" "$b"
 			    if ($?batch) then
 				set batch = "$batch"',"'"$b"'"'
@@ -418,18 +418,18 @@ while ($p < $#pairs)
 			    @ i++
 			end
 			set batch = "$batch"']'
-			# if ($?DEBUG) echo `date` "$0 $$ -- BATCH: $batch" >>&! $LOGTO
+			# if ($?DEBUG) echo `date` "$0:t $$ -- BATCH: $batch" >>&! $LOGTO
 		    else
-			echo `date` "$0 $$ -- NO ZIPS" >>&! $LOGTO
+			echo `date` "$0:t $$ -- NO ZIPS" >>&! $LOGTO
 			exit
 		    endif
 		else
-		    echo `date` "$0 $$ -- ZIPSPLIT failure" >>&! $LOGTO
+		    echo `date` "$0:t $$ -- ZIPSPLIT failure" >>&! $LOGTO
 		    exit
 		endif
 		rm -fr "$base"
 	    else
-		echo `date` "$0 $$ -- ZIP failure" >>&! $LOGTO
+		echo `date` "$0:t $$ -- ZIP failure" >>&! $LOGTO
 		exit
 	    endif
 	    if ($?zips) then
@@ -437,18 +437,18 @@ while ($p < $#pairs)
 	    endif
 	    rm -f "$zip"
 	    set splits = "$splits""$batch","$ids"
-	    # if ($?DEBUG) echo `date` "$0 $$ -- SPLITS: $splits" >>&! $LOGTO
+	    # if ($?DEBUG) echo `date` "$0:t $$ -- SPLITS: $splits" >>&! $LOGTO
 	    unset batch
 	    unset ids
 	end
 	set splits = "$splits"']'
     else
-	echo `date` "$0 $$ -- NO SPLIT" >>&! $LOGTO
+	echo `date` "$0:t $$ -- NO SPLIT" >>&! $LOGTO
         unset splits
     endif
     if ($?splits) then
 	set sets = "$sets""$splits"
-	# if ($?DEBUG) echo `date` "$0 $$ -- SETS: $sets" >>&! $LOGTO
+	# if ($?DEBUG) echo `date` "$0:t $$ -- SETS: $sets" >>&! $LOGTO
     endif
     unset splits
 end
@@ -459,13 +459,13 @@ else
     set job = "$job"'}]}'
 else
     # NO SETS?
-    if ($?DEBUG) echo `date` "$0 $$ !! NO SETS" >>&! $LOGTO
+    if ($?DEBUG) echo `date` "$0:t $$ !! NO SETS" >>&! $LOGTO
 endif
 if ($?job) then
     # store result
     echo "$job" >! "$JOB/job.json"
 else
-    if ($?DEBUG) echo `date` "$0 $$ !! NO JOB" >>&! $LOGTO
+    if ($?DEBUG) echo `date` "$0:t $$ !! NO JOB" >>&! $LOGTO
     exit
 endif
 
@@ -478,20 +478,20 @@ rm -f "$JOB.$$"
 
 training:
 
-if ($?DEBUG) echo `date` "$0 $$ -- TRAIN" >>&! $LOGTO
+if ($?DEBUG) echo `date` "$0:t $$ -- TRAIN" >>&! $LOGTO
 
 set TRAIN = "$TMP/$APP-$API-$QUERY_STRING.$DATE.job/train"
 set INPROGRESS = ( `echo "$TRAIN".*` )
 if ($#INPROGRESS) then
-    if ($?DEBUG) echo `date` "$0 $$ -- training in-progress ($INPROGRESS)" >>&! $LOGTO
+    if ($?DEBUG) echo `date` "$0:t $$ -- training in-progress ($INPROGRESS)" >>&! $LOGTO
     goto done
 else if (-d "$TRAIN") then
-    if ($?DEBUG) echo `date` "$0 $$ -- existing training ($TRAIN)" >>&! $LOGTO
+    if ($?DEBUG) echo `date` "$0:t $$ -- existing training ($TRAIN)" >>&! $LOGTO
     goto training
 endif
 set old = ( `echo "$TMP/$APP-$API-$QUERY_STRING.$DATE.job/train".*.json` )
 if ($#old > 0) then
-    if ($?DEBUG) echo `date` "$0 $$ -- NOT removing old ($old)" >>&! $LOGTO
+    if ($?DEBUG) echo `date` "$0:t $$ -- NOT removing old ($old)" >>&! $LOGTO
     # rm -fr $old
 endif
 
@@ -499,31 +499,31 @@ endif
 set INVENTORY = "$TMP/$APP-$API-$QUERY_STRING.$DATE.json"
 set JOB = "$TMP/$APP-$API-$QUERY_STRING.$DATE.job"
 if ((-s "$INVENTORY") && (-d "$JOB")) then
-    if ($?DEBUG) echo `date` "$0 $$ -- found inventory ($INVENTORY) and job ($JOB)" >>&! $LOGTO
+    if ($?DEBUG) echo `date` "$0:t $$ -- found inventory ($INVENTORY) and job ($JOB)" >>&! $LOGTO
 else 
-    if ($?DEBUG) echo `date` "$0 $$ -- no inventory ($INVENTORY) or job ($JOB)" >>&! $LOGTO
+    if ($?DEBUG) echo `date` "$0:t $$ -- no inventory ($INVENTORY) or job ($JOB)" >>&! $LOGTO
     goto cleanup
 endif
 
 # get parameters
 set device = ( `jq '.name' "$INVENTORY" | sed 's/"//g'` )
 
-if ($?DEBUG) echo `date` "$0 $$ -- device ($device)" >>&! $LOGTO
+if ($?DEBUG) echo `date` "$0:t $$ -- device ($device)" >>&! $LOGTO
 
 #
 # GET EXISTING CLASSIFIERS FROM WATSON_VR
 #
 
 if ($?model) then
-    if ($?DEBUG) echo `date` "$0 $$ -- searching for classifier by ID" >>&! $LOGTO
+    if ($?DEBUG) echo `date` "$0:t $$ -- searching for classifier by ID" >>&! $LOGTO
     set classifiers = ( `curl -q -s -L "$TU/$verid/classifiers?api_key=$api_key&version=$vdate" | jq '[.classifiers[]|select(.classifier_id=="'"$model"'")]'` )
-    if ($?DEBUG) echo `date` "$0 $$ -- got ($classifiers) for $model on $device" >>&! $LOGTO
+    if ($?DEBUG) echo `date` "$0:t $$ -- got ($classifiers) for $model on $device" >>&! $LOGTO
 else if ($?device) then
-    if ($?DEBUG) echo `date` "$0 $$ -- searching for classifier by device" >>&! $LOGTO
+    if ($?DEBUG) echo `date` "$0:t $$ -- searching for classifier by device" >>&! $LOGTO
     set classifiers = ( `curl -q -s -L "$TU/$verid/classifiers?api_key=$api_key&version=$vdate" | jq '[.classifiers[]|select(.name=="'"$device"'")]'` )
     set model = ( `echo "$classifiers" | jq '.[].classifier_id' | sed 's/"//g'` )
     if ($#model > 0) then
-      if ($?DEBUG) echo `date` "$0 $$ -- using $model[1] from $device for classifier by device" >>&! $LOGTO
+      if ($?DEBUG) echo `date` "$0:t $$ -- using $model[1] from $device for classifier by device" >>&! $LOGTO
       set model = $model[1]
     else
       unset model
@@ -531,9 +531,9 @@ else if ($?device) then
 endif
 
 if ($?classifiers) then
-    if ($?DEBUG) echo `date` "$0 $$ -- CLASSIFIERS ($classifiers)" >>&! $LOGTO
+    if ($?DEBUG) echo `date` "$0:t $$ -- CLASSIFIERS ($classifiers)" >>&! $LOGTO
 else
-    if ($?DEBUG) echo `date` "$0 $$ -- NO EXISTING CLASSIFIERS" >>&! $LOGTO
+    if ($?DEBUG) echo `date` "$0:t $$ -- NO EXISTING CLASSIFIERS" >>&! $LOGTO
     set classifiers = ()
 endif
 
@@ -549,13 +549,13 @@ if ($#classifiers > 0 && $?model) then
     if ($#cids > 0) then
       foreach cid ( $cids )
 	if ($cid == "$model") then
-	    if ($?DEBUG) echo `date` "$0 $$ -- matched specified classifier ($model)" >>&! $LOGTO
+	    if ($?DEBUG) echo `date` "$0:t $$ -- matched specified classifier ($model)" >>&! $LOGTO
 	    if ($?delete) then
-		if ($?DEBUG) echo `date` "$0 $$ -- deleting classifier id ($cid)" >>&! $LOGTO
+		if ($?DEBUG) echo `date` "$0:t $$ -- deleting classifier id ($cid)" >>&! $LOGTO
 		curl -s -q -X DELETE "$TU/$verid/classifiers/$cid?api_key=$api_key&version=$vdate"
 		unset model
 	    else
-		if ($?DEBUG) echo `date` "$0 $$ -- getting details for classifier id ($cid)" >>&! $LOGTO
+		if ($?DEBUG) echo `date` "$0:t $$ -- getting details for classifier id ($cid)" >>&! $LOGTO
 		set detail = ( `curl -s -q "$TU/$verid/classifiers/$cid?api_key=$api_key&version=$vdate" | jq '.'` )
 	    endif
 	    break
@@ -564,13 +564,13 @@ if ($#classifiers > 0 && $?model) then
       # test if model matched (and not deleted)
       if ($?model) then
         if ($cid != "$model") then
-	  if ($?DEBUG) echo `date` "$0 $$ -- no classifier ($model) for device ($device) is ready" >>&! $LOGTO
+	  if ($?DEBUG) echo `date` "$0:t $$ -- no classifier ($model) for device ($device) is ready" >>&! $LOGTO
 	  set training = ( `echo "$classifiers" | jq '[.[]|select(.status=="training")]'` )
 	  set cids = ( `echo $training | jq '.[]|select(.name=="'"$model"'").classifier_id' | sed 's/"//g'` )
-	  if ($?DEBUG) echo `date` "$0 $$ -- classifiers ($cids) are in training" >>&! $LOGTO
+	  if ($?DEBUG) echo `date` "$0:t $$ -- classifiers ($cids) are in training" >>&! $LOGTO
 	  foreach cid ( $cids )
 	      if ($cid == "$model") then
-		  if ($?DEBUG) echo `date` "$0 $$ -- classifier id ($cid) in training" >>&! $LOGTO
+		  if ($?DEBUG) echo `date` "$0:t $$ -- classifier id ($cid) in training" >>&! $LOGTO
 		  goto cleanup
 	      endif
 	  end
@@ -586,7 +586,7 @@ endif
 #
 
 if ($?detail) then
-    if ($?DEBUG) echo `date` "$0 $$ -- model details ($detail)" >>&! $LOGTO
+    if ($?DEBUG) echo `date` "$0:t $$ -- model details ($detail)" >>&! $LOGTO
     set oldclasses = ( `echo "$detail" | jq '.classes[].class' | sed 's/"//g'` )
 else
     unset oldclasses
@@ -609,7 +609,7 @@ foreach nc ( $newclasses )
     endif
 end 
 
-if ($?DEBUG) echo `date` "$0 $$ -- OLD ($?oldclasses) NEW ($net) NEGATIVE ($notags) +++" >>&! $LOGTO
+if ($?DEBUG) echo `date` "$0:t $$ -- OLD ($?oldclasses) NEW ($net) NEGATIVE ($notags) +++" >>&! $LOGTO
 
 #
 # RUN TRAINING JOBS
@@ -618,7 +618,7 @@ if ($?DEBUG) echo `date` "$0 $$ -- OLD ($?oldclasses) NEW ($net) NEGATIVE ($nota
 set positive = ( `jq '.images|sort_by(.count)[]|select(.class!="'$notags'")|.class' "$INVENTORY" | sed 's/"//g'` )
 set negative = ( `jq '.images|sort_by(.count)[]|select(.class=="'$notags'")|.class' "$INVENTORY" | sed 's/"//g'` )
 
-if ($?DEBUG) echo `date` "$0 $$ -- POSITIVE ($positive) NEGATIVE ($negative) +++" >>&! $LOGTO
+if ($?DEBUG) echo `date` "$0:t $$ -- POSITIVE ($positive) NEGATIVE ($negative) +++" >>&! $LOGTO
 
 # the zero'th set is the training example ZIPs; corresponding +1 set are the IDs used in those ZIPs
 set negatives = ( `jq '.jobs[]|select(.class=="'"$notags"'").sets[0][]' "$JOB/job.json" | sed 's/"//g'` )
@@ -638,7 +638,7 @@ while ($h <= $#positive)
     else if ($?model) then
       set examples = ( -F "$p""_positive_examples=@$positives[$i]" )
     else
-      echo `date` "$0 $$ ** INSUFFICIENT EXAMPLE SETS **"
+      echo `date` "$0:t $$ ** INSUFFICIENT EXAMPLE SETS **"
       exit
     endif
 again:
@@ -646,50 +646,50 @@ again:
     @ start = `date +%s`
     # run training 
     if ($?model) then
-      if ($?DEBUG) echo `date` "$0 $$ -- RETRAIN $model ($examples)" >>&! $LOGTO
+      if ($?DEBUG) echo `date` "$0:t $$ -- RETRAIN $model ($examples)" >>&! $LOGTO
       curl -f -s -q -S -L "$TU/$verid/classifiers/$model?api_key=$api_key&version=$vdate" -o $job $examples >>&! $LOGTO
     else
-      if ($?DEBUG) echo `date` "$0 $$ -- CREATE $device ($examples)" >>&! $LOGTO
+      if ($?DEBUG) echo `date` "$0:t $$ -- CREATE $device ($examples)" >>&! $LOGTO
       curl -f -s -q -S -L "$TU/$verid/classifiers?api_key=$api_key&version=$vdate" -F "name=$device" -o $job $examples >>&! $LOGTO
     endif
     set cstatus = $status
     # check status
     if ($cstatus != 0) then
-      echo `date` "$0 $$ ** FAILURE ($cstatus)" >>&! $LOGTO
+      echo `date` "$0:t $$ ** FAILURE ($cstatus)" >>&! $LOGTO
       if (-s "$job") then
-	  echo `date` "$0 $$ ** " `cat "$job"` >>&! $LOGTO
+	  echo `date` "$0:t $$ ** " `cat "$job"` >>&! $LOGTO
 	  # check result code
 	  set code = `jq '.code' "$job" | sed 's/"//g'` 
 	  set message = `jq '.error' "$job" | sed 's/"//g'`
-	  if ($?DEBUG) echo `date` "$0 $$ -- FAILURE ($message)" >>&! $LOGTO
+	  if ($?DEBUG) echo `date` "$0:t $$ -- FAILURE ($message)" >>&! $LOGTO
       endif
       rm -f "$job"
       goto next
     else if (! -s "$job") then
-      echo `date` "$0 $$ ** no output ($job)" >>&! $LOGTO
+      echo `date` "$0:t $$ ** no output ($job)" >>&! $LOGTO
       goto again
     else 
       # check result code
       set code = `jq '.code' "$job" | sed 's/"//g'` 
       if ($code == 400) then
 	set message = `jq '.error' "$job" | sed 's/"//g'`
-	if ($?DEBUG) echo `date` "$0 $$ -- FAILURE ($message)" >>&! $LOGTO
+	if ($?DEBUG) echo `date` "$0:t $$ -- FAILURE ($message)" >>&! $LOGTO
 	goto next
       endif
       # get classifier id to check on progress
       set cid = `jq '.classifier_id' "$job" | sed 's/"//g'`
       set sts = `jq '.status' "$job" | sed 's/"//g'`
       if ($#cid > 0 && $cid != "null" && $sts != "error") then
-	if ($?DEBUG) echo `date` "$0 $$ -- LEARNING ($cid) status ($sts)" >>&! $LOGTO
+	if ($?DEBUG) echo `date` "$0:t $$ -- LEARNING ($cid) status ($sts)" >>&! $LOGTO
 	set model = "$cid"
       else
-	echo -n `date` "$0 $$ ** FAILURE ($cid) ($sts) ($job)" >>&! $LOGTO
+	echo -n `date` "$0:t $$ ** FAILURE ($cid) ($sts) ($job)" >>&! $LOGTO
 	goto next
       endif
     endif
     rm -f "$job"
     @ elapsed = `date +%s` - $start
-    if ($?DEBUG) echo -n `date` "$0 $$ -- LOAD COMPLETE ($elapsed) WAITING "
+    if ($?DEBUG) echo -n `date` "$0:t $$ -- LOAD COMPLETE ($elapsed) WAITING "
     while ($sts != "ready") 
 	set detail = ( `curl -s -q -L "$TU/$verid/classifiers/$model?api_key=$api_key&version=$vdate" | jq '.'` )
 	set sts = ( `echo "$detail" | jq '.status' | sed 's/"//g'` )
@@ -719,7 +719,7 @@ next:
   @ h++
 end
 
-if ($?DEBUG) echo `date` "$0 $$ -- COMPLETE $DATE ($model) time ($ttime) ($detail)" >>&! $LOGTO
+if ($?DEBUG) echo `date` "$0:t $$ -- COMPLETE $DATE ($model) time ($ttime) ($detail)" >>&! $LOGTO
 
 #
 # UPDATE INVENTORY INDICATING SUCCESS
@@ -747,7 +747,7 @@ cat "$INVENTORY" \
 if (-s "$INVENTORY.$$") then
   mv -f "$INVENTORY.$$" "$INVENTORY"
 else
-  echo `date` "$0 $$ -- FAILURE UPDATING INVENTORY WITH MODEL AND DETAILS" >>&! $LOGTO
+  echo `date` "$0:t $$ -- FAILURE UPDATING INVENTORY WITH MODEL AND DETAILS" >>&! $LOGTO
   exit
 endif
 
@@ -756,19 +756,19 @@ endif
 #
 
 if ($?CLOUDANT_OFF == 0 && $?CU && $?device) then
-    if ($?DEBUG) echo `date` "$0 $$ -- test if device exists ($device-$API)" >>&! $LOGTO
+    if ($?DEBUG) echo `date` "$0:t $$ -- test if device exists ($device-$API)" >>&! $LOGTO
     set devdb = `curl -s -q -X GET "$CU/$device-$API" | jq '.db_name'`
     if ( "$devdb" == "null" ) then
-        if ($?DEBUG) echo `date` "$0 $$ -- creating device $CU/$device-$API" >>&! $LOGTO
+        if ($?DEBUG) echo `date` "$0:t $$ -- creating device $CU/$device-$API" >>&! $LOGTO
         # create device
         set devdb = `curl -s -q -X PUT "$CU/$device-$API" | jq '.ok'`
         # test for success
         if ( "$devdb" != "true" ) then
             # failure
-            if ($?DEBUG) echo `date` "$0 $$ -- failure creating Cloudant database ($device-$API)" >>&! $LOGTO
+            if ($?DEBUG) echo `date` "$0:t $$ -- failure creating Cloudant database ($device-$API)" >>&! $LOGTO
             setenv CLOUDANT_OFF TRUE
         else
-            if ($?DEBUG) echo `date` "$0 $$ -- success creating device $device-$API" >>&! $LOGTO
+            if ($?DEBUG) echo `date` "$0:t $$ -- success creating device $device-$API" >>&! $LOGTO
         endif
     endif
     if ( $?CLOUDANT_OFF == 0 ) then
@@ -777,25 +777,25 @@ if ($?CLOUDANT_OFF == 0 && $?CU && $?device) then
             set doc = ( `cat "$INVENTORY.$$" | jq -r '._id,._rev'` )
             if ($#doc == 2 && $doc[1] == $model && $doc[2] != "") then
                 set rev = $doc[2]
-                if ($?DEBUG) echo `date` "$0 $$ -- deleting old output ($rev)" >>&! $LOGTO
+                if ($?DEBUG) echo `date` "$0:t $$ -- deleting old output ($rev)" >>&! $LOGTO
                 curl -s -q -X DELETE "$CU/$device-$API/$model?rev=$rev" >>&! $LOGTO
             endif
         else
-            if ($?DEBUG) echo `date` "$0 $$ -- no old output to delete" >>&! $LOGTO
+            if ($?DEBUG) echo `date` "$0:t $$ -- no old output to delete" >>&! $LOGTO
         endif
 	rm -f "$INVENTORY.$$"
-        if ($?DEBUG) echo `date` "$0 $$ -- storing new output" >>&! $LOGTO
+        if ($?DEBUG) echo `date` "$0:t $$ -- storing new output" >>&! $LOGTO
         curl -s -q -H "Content-type: application/json" -X PUT "$CU/$device-$API/$model" -d "@$INVENTORY" >>&! $LOGTO
         if ($status == 0) then
-            if ($?DEBUG) echo `date` "$0 $$ -- success storing new output" >>&! $LOGTO
+            if ($?DEBUG) echo `date` "$0:t $$ -- success storing new output" >>&! $LOGTO
         else
-            if ($?DEBUG) echo `date` "$0 $$ -- failure storing new output" >>&! $LOGTO
+            if ($?DEBUG) echo `date` "$0:t $$ -- failure storing new output" >>&! $LOGTO
         endif
     else
-        if ($?DEBUG) echo `date` "$0 $$ -- Cloudant OFF ($device-$API)" >>&! $LOGTO
+        if ($?DEBUG) echo `date` "$0:t $$ -- Cloudant OFF ($device-$API)" >>&! $LOGTO
     endif
 else
-    if ($?DEBUG) echo `date` "$0 $$ -- no Cloudant update" >>&! $LOGTO
+    if ($?DEBUG) echo `date` "$0:t $$ -- no Cloudant update" >>&! $LOGTO
 endif
 
 cleanup:
@@ -803,4 +803,4 @@ cleanup:
 rm -f "$TMP/$APP-$API-$QUERY_STRING.$DATE.json".*
 
 done:
-  echo `date` "$0 $$ -- FINISH ($*)"
+  echo `date` "$0:t $$ -- FINISH ($*)"

@@ -29,7 +29,7 @@ set TTL = 15
 set SECONDS = `date "+%s"`
 set DATE = `/bin/echo $SECONDS \/ $TTL \* $TTL | bc`
 
-/bin/echo `date` "$0 $$ -- START ($DATE)" >>! $LOGTO
+/bin/echo `date` "$0:t $$ -- START ($DATE)" >>! $LOGTO
 
 if ($?QUERY_STRING) then
     set noglob
@@ -80,13 +80,13 @@ else if ($?db) then
     setenv QUERY_STRING "db=$db"
 endif
 
-if ($?DEBUG) /bin/echo `date` "$0 $$ -- query string ($QUERY_STRING)" >>! $LOGTO
+if ($?DEBUG) /bin/echo `date` "$0:t $$ -- query string ($QUERY_STRING)" >>! $LOGTO
 
 # handle image
 if ($?id) then
     set base = "$AAHDIR/$db/$class"
     set images = ( `find "$base" -name "$id.jpg" -type f -print` )
-    if ($?DEBUG) /bin/echo `date` "$0 $$ -- IMAGE ($id) count ($#images) " >>! $LOGTO
+    if ($?DEBUG) /bin/echo `date` "$0:t $$ -- IMAGE ($id) count ($#images) " >>! $LOGTO
     # should be singleton image
     /bin/echo "Access-Control-Allow-Origin: *"
     set AGE = `/bin/echo "$SECONDS - $DATE" | bc`
@@ -97,7 +97,7 @@ if ($?id) then
     if ($#images == 1) then
 	/bin/echo "Content-Type: image/jpeg"
 	/bin/echo ""
-	if ($?DEBUG) /bin/echo `date` "$0 $$ -- DD ($id) count ($images) " >>! $LOGTO
+	if ($?DEBUG) /bin/echo `date` "$0:t $$ -- DD ($id) count ($images) " >>! $LOGTO
 	dd if="$images"
     else if ($#images > 1) then
 	/bin/echo "Content-Type: application/zip"
@@ -112,20 +112,20 @@ endif
 #
 set OUTPUT = "$TMP/$APP-$API-$QUERY_STRING.$DATE.html"
 if (-s "$OUTPUT") then
-    if ($?DEBUG) /bin/echo `date` "$0 $$ -- EXISTING $OUTPUT" >>! $LOGTO
+    if ($?DEBUG) /bin/echo `date` "$0:t $$ -- EXISTING $OUTPUT" >>! $LOGTO
     goto output
 endif
 set INPROGRESS = ( `/bin/echo "$OUTPUT".*` )
 set OLD = ( `/bin/echo "$TMP/$APP-$API-$QUERY_STRING".*.html` )
 if ($#INPROGRESS) then
-    if ($?DEBUG) /bin/echo `date` "$0 $$ -- IN-PROGRESS $INPROGRESS" >>! $LOGTO
+    if ($?DEBUG) /bin/echo `date` "$0:t $$ -- IN-PROGRESS $INPROGRESS" >>! $LOGTO
     if ($#OLD) then
 	if (-s "$OLD[1]") then
 	    set OUTPUT = $OLD[1]
 	    goto output
 	endif
     endif
-    if ($?DEBUG) /bin/echo `date` "$0 $$ -- NO OLD HTML" >>! $LOGTO
+    if ($?DEBUG) /bin/echo `date` "$0:t $$ -- NO OLD HTML" >>! $LOGTO
     goto done
 endif
 
@@ -149,7 +149,7 @@ else
     set classes = ( `find "$base" -name "[^\.]*" -type d -print | sed "s@$base@@" | sed "s@/@@"` )
 endif
 
-if ($?DEBUG) /bin/echo `date` "$0 $$ -- $db $?id ($?images) $?class ($?classes)" >>! $LOGTO
+if ($?DEBUG) /bin/echo `date` "$0:t $$ -- $db $?id ($?images) $?class ($?classes)" >>! $LOGTO
 
 # check if listing requested
 if ($?mime && $?images) then
@@ -211,4 +211,4 @@ cat "$OUTPUT"
 done:
 
 rm -f "$TMP/$APP-$API-"*.$$
-/bin/echo `date` "$0 $$ -- FINISH" >>! $LOGTO
+/bin/echo `date` "$0:t $$ -- FINISH" >>! $LOGTO

@@ -18,12 +18,12 @@ if ($?CAMERA_IMAGE_HEIGHT == 0) setenv CAMERA_IMAGE_HEIGHT 480
 if ($?MODEL_IMAGE_WIDTH == 0) setenv MODEL_IMAGE_WIDTH 224
 if ($?MODEL_IMAGE_HEIGHT == 0) setenv MODEL_IMAGE_HEIGHT 224
 
-if ($?VERBOSE) /bin/echo `/bin/date` "$0 $$ -- START $*"  >>! $LOGTO
+if ($?VERBOSE) /bin/echo `/bin/date` "$0:t $$ -- START $*"  >>! $LOGTO
 
 set image = "$argv[1]"
 set crop = "$argv[2]"
 
-if ($?VERBOSE) echo `/bin/date` "$0 $$ -- GOT $image $image:e $CAMERA_MODEL_TRANSFORM" >>! $LOGTO
+if ($?VERBOSE) echo `/bin/date` "$0:t $$ -- GOT $image $image:e $CAMERA_MODEL_TRANSFORM" >>! $LOGTO
 
 # process crop
 if (-s "$image" && "$image:e" != "jpeg" && $?CAMERA_MODEL_TRANSFORM) then
@@ -33,7 +33,7 @@ if (-s "$image" && "$image:e" != "jpeg" && $?CAMERA_MODEL_TRANSFORM) then
   set x = `/bin/echo "0 $c[3]" | /usr/bin/bc`
   set y = `/bin/echo "0 $c[4]" | /usr/bin/bc`
 
-  if ($?VERBOSE) /bin/echo `/bin/date` "$0 $$ -- IMAGE $image CROP $c $w $h $x $y"  >>! $LOGTO
+  if ($?VERBOSE) /bin/echo `/bin/date` "$0:t $$ -- IMAGE $image CROP $c $w $h $x $y"  >>! $LOGTO
 
   # the original 
   set xform = `identify "$image" | /usr/bin/awk '{ print $4 }'`
@@ -64,15 +64,15 @@ if (-s "$image" && "$image:e" != "jpeg" && $?CAMERA_MODEL_TRANSFORM) then
 	  "$image:r.jpeg"
       breaksw
     default:
-      if ($?VERBOSE) /bin/echo `/bin/date` "$0 $$ -- unknown transformation ($CAMERA_MODEL_TRANSFORM)" >>&! $LOGTO
+      if ($?VERBOSE) /bin/echo `/bin/date` "$0:t $$ -- unknown transformation ($CAMERA_MODEL_TRANSFORM)" >>&! $LOGTO
       breaksw
   endsw
   if (-s "$image:r.jpeg") then
     echo "$CAMERA_MODEL_TRANSFORM" "$xform" "$image:r.jpeg"
   endif
 else	
-  if ($?VERBOSE) /bin/echo `/bin/date` "$0 $$ -- NO TRANSFORM APPLIED ($image, $crop, $CAMERA_MODEL_TRANSFORM)" >>&! $LOGTO
+  if ($?VERBOSE) /bin/echo `/bin/date` "$0:t $$ -- NO TRANSFORM APPLIED ($image, $crop, $CAMERA_MODEL_TRANSFORM)" >>&! $LOGTO
 endif
 
 done:
-  if ($?VERBOSE) echo `/bin/date` "$0 $$ -- FINISH $*"  >>! $LOGTO
+  if ($?VERBOSE) echo `/bin/date` "$0:t $$ -- FINISH $*"  >>! $LOGTO

@@ -4,7 +4,7 @@ setenv API "images"
 
 # debug on/off
 setenv DEBUG true
-setenv VERBOSE true
+unsetenv VERBOSE true
 
 # environment
 if ($?TMP == 0) setenv TMP "/tmp"
@@ -164,7 +164,7 @@ else
 endif
 
 # get IP address of this device
-set url = "$HTTP_HOST/CGI/aah-devices.cgi?db=$device"
+set url = "localhost/CGI/aah-devices.cgi?db=$device"
 set ipaddr = ( `curl -s -q -f -L "$url" | jq -r ".ip_address"` )
 if ($#ipaddr && $ipaddr != "null") then
   if ($?VERBOSE) echo `date` "$0:t $$ -- $device -- found with address $ipaddr; last update $since" >>&! $LOGTO
@@ -282,7 +282,7 @@ foreach u ( $updates )
       endif
       set fmts = "$fmts"'{"ext":"'"$ext"'","type":"'"$attrs[1]"'","size":"'"$attrs[2]"'","depth":"'"$attrs[3]"'","color":"'"$attrs[4]"'"}'
     else
-      if ($?VERBOSE) echo `date` "$0:t $$ -- $device -- unable to identify image for $id ($ext)" >>&! $LOGTO
+      if ($?VERBOSE) echo `date` "$0:t $$ -- $device -- unable to identify ($attrs) image: $image.$ext" `ls -al "$image.$ext">>&! $LOGTO
     endif
   end
 

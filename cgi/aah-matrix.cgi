@@ -29,7 +29,7 @@ set TTL = `/bin/echo "60 * 1 * 1  * 1" | bc`
 set SECONDS = `date "+%s"`
 set DATE = `/bin/echo $SECONDS \/ $TTL \* $TTL | bc`
 
-/bin/echo `date` "$0 $$ -- START" >>&! $LOGTO
+/bin/echo `date` "$0:t $$ -- START" >>&! $LOGTO
 
 if ($?QUERY_STRING) then
     set db = `/bin/echo "$QUERY_STRING" | sed 's/.*db=\([^&]*\).*/\1/'`
@@ -75,31 +75,31 @@ endif
 set TEST = "$TMP/$APP-$API-$db-test.$DATE.json" 
 if (! -s "$TEST") then
   set old = ( `/bin/echo "$TEST:r:r".*` )
-  if ($?DEBUG) /bin/echo `date` "$0 $$ -- DEBUG: variable (old) is defined (0/1)? ($?old)" >>&! $LOGTO
+  if ($?DEBUG) /bin/echo `date` "$0:t $$ -- DEBUG: variable (old) is defined (0/1)? ($?old)" >>&! $LOGTO
 
-  /bin/echo `date` "$0 $$ -- retrieving from Cloudant: $TEST" >>&! $LOGTO
+  /bin/echo `date` "$0:t $$ -- retrieving from Cloudant: $TEST" >>&! $LOGTO
   curl -s -q -f -L "$CU/$db-test/_all_docs?include_docs=true" -o "$TEST.$$"
   if ($status == 22 || ! -s "$TEST.$$") then
-    /bin/echo `date` "$0 $$ -- cannot retrieve $TEST from $CU/$db-test" >>&! $LOGTO
+    /bin/echo `date` "$0:t $$ -- cannot retrieve $TEST from $CU/$db-test" >>&! $LOGTO
     if ($?old) then
       if ($#old) then
 	if (-s "$old[$#old]") then
 	  set TEST = "$old[$#old]"
 	else
-	  /bin/echo `date` "$0 $$ -- no existing $old[$#old] for $TEST" >>&! $LOGTO
+	  /bin/echo `date` "$0:t $$ -- no existing $old[$#old] for $TEST" >>&! $LOGTO
 	endif
       endif
     else
-      /bin/echo `date` "$0 $$ -- no old for $TEST" >>&! $LOGTO
+      /bin/echo `date` "$0:t $$ -- no old for $TEST" >>&! $LOGTO
       unset TEST
     endif
   else
-    /bin/echo `date` "$0 $$ -- success retrieving from Cloudant $TEST.$$" >>&! $LOGTO
+    /bin/echo `date` "$0:t $$ -- success retrieving from Cloudant $TEST.$$" >>&! $LOGTO
     mv -f "$TEST.$$" "$TEST"
     if ($?old) then
       @ i = 1
       while ($i <= $#old) 
-	if ($?DEBUG) /bin/echo `date` "$0 $$ -- DEBUG: removing $i/$#old from $old" >>&! $LOGTO
+	if ($?DEBUG) /bin/echo `date` "$0:t $$ -- DEBUG: removing $i/$#old from $old" >>&! $LOGTO
 	rm -f "$old[$i]"
 	@ i++
       end
@@ -126,7 +126,7 @@ if ($status == 0 && $#results) then
     if ($status == 0 && -s "$OUTPUT.$$.$$") then
       jq -c '.' "$OUTPUT.$$.$$" >>! "$OUTPUT.$$"
     else
-      /bin/echo `date` "$0 $$ -- failure model ($m)" >>&! $LOGTO
+      /bin/echo `date` "$0:t $$ -- failure model ($m)" >>&! $LOGTO
     endif
     rm -f "$OUTPUT.$$.$$"
   end
@@ -134,12 +134,12 @@ if ($status == 0 && $#results) then
     jq -c '.' "$OUTPUT.$$" >! "$OUTPUT"
   endif
   if ($status != 0) then
-    /bin/echo `date` "$0 $$ -- bad JSON ($OUTPUT.$$)" >>&! $LOGTO
+    /bin/echo `date` "$0:t $$ -- bad JSON ($OUTPUT.$$)" >>&! $LOGTO
     rm -f "$OUTPUT"
   endif
   rm -f "$OUTPUT.$$"
 else
-  /bin/echo `date` "$0 $$ -- no results in $TEST" >>&! $LOGTO
+  /bin/echo `date` "$0:t $$ -- no results in $TEST" >>&! $LOGTO
   rm -f "$OUTPUT".*
   goto output
 endif
@@ -147,7 +147,7 @@ endif
 output:
 
 if (! -s "$OUTPUT") then
-  if ($?DEBUG) /bin/echo `date` "$0 $$ -- no matrix found ($db)" >>&! $LOGTO
+  if ($?DEBUG) /bin/echo `date` "$0:t $$ -- no matrix found ($db)" >>&! $LOGTO
   /bin/echo "Content-Type: application/json; charset=utf-8"
   /bin/echo "Access-Control-Allow-Origin: *"
   /bin/echo "Cache-Control: no-cache"
@@ -166,4 +166,4 @@ endif
 
 done:
 
-/bin/echo `date` "$0 $$ -- FINISH" >>&! $LOGTO
+/bin/echo `date` "$0:t $$ -- FINISH" >>&! $LOGTO

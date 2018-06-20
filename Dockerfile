@@ -58,14 +58,13 @@ ENV CAMERA_IMAGE_HEIGHT 480
 ENV MODEL_IMAGE_WIDTH 224
 ENV MODEL_IMAGE_HEIGHT 224
 ENV CAMERA_MODEL_TRANSFORM CROP
-ENV CREDENTIALS ${CREDIR}
 ENV TMP /tmp
+ENV AAHDIR ${AAHDIR}
+ENV CREDENTIALS ${CREDIR}
 
 # temporary files & credentials
-RUN mkdir -p ${AAHDIR} ${CREDIR}
-RUN chmod 777 ${AAHDIR} && chmod 755 ${CREDIR}
-
-VOLUME ["${AAHDIR}"]
+RUN if [ ! -d "${AAHDIR}" ]; then mkdir -p "${AAHDIR}" && chgrp daemon "${AAHDIR}" && chmod 770 "${AAHDIR}"; fi
+RUN if [ ! -d "${CREDIR}" ]; then mkdir -p "${CREDIR}" && chgrp daemon "${CREDIR}" && chmod 550 "${CREDIR}"; fi
 
 # credentials
 COPY ./.cloudant_url ${CREDIR}

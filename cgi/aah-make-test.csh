@@ -23,7 +23,7 @@ while ($i <= $#argv)
 end
 
 if ($?jpegfiles == 0) then
-    if ($?DEBUG) echo `date` "$0 $$ -- USAGE: $0 [-m <model>] JPEG(s)" >& /dev/stderr
+    if ($?DEBUG) echo `date` "$0:t $$ -- USAGE: $0:t [-m <model>] JPEG(s)" >& /dev/stderr
     goto done
 else
 endif
@@ -31,13 +31,13 @@ endif
 set creds = ~$USER/.watson.visual-recognition.json
 if (-e $creds) then
     set api_key = ( `jq '.[0]|.credentials.api_key' $creds | sed 's/"//g'` )
-    if ($?DEBUG) echo `date` "$0 $$ -- USING APIKEY $api_key" >& /dev/stderr
+    if ($?DEBUG) echo `date` "$0:t $$ -- USING APIKEY $api_key" >& /dev/stderr
     set url = ( `jq '.[0]|.credentials.url' $creds | sed 's/"//g'` )
-    if ($?DEBUG) echo `date` "$0 $$ -- USING URL $url" >& /dev/stderr
+    if ($?DEBUG) echo `date` "$0:t $$ -- USING URL $url" >& /dev/stderr
     # set base
     set TU = $url
 else if ($?TU == 0) then
-    echo `date` "$0 $$ -- NO CREDENTIALS ($creds); create file and copy credentials from visual-recognition service on bluemix.net" >& /dev/stderr
+    echo `date` "$0:t $$ -- NO CREDENTIALS ($creds); create file and copy credentials from visual-recognition service on bluemix.net" >& /dev/stderr
     goto done
 endif
 
@@ -57,12 +57,12 @@ endif
 if ($#classifiers > 0) then
     set classifier = `echo "$classifiers" | jq '.classifier_id' | sed 's/"//g'`
     if ($#classifier > 0) then
-	if ($?DEBUG) echo `date` "$0 $$ -- Using classifiers ($classifier) +++" >& /dev/stderr
+	if ($?DEBUG) echo `date` "$0:t $$ -- Using classifiers ($classifier) +++" >& /dev/stderr
     else
 	unset classifier
     endif
 else
-    if ($?DEBUG) echo `date` "$0 $$ -- no custom classifier (using default) +++" >& /dev/stderr
+    if ($?DEBUG) echo `date` "$0:t $$ -- no custom classifier (using default) +++" >& /dev/stderr
 endif
 
 if ($?classifier) then
@@ -90,7 +90,7 @@ again:
     
     # no idea why I did this
     if (-e "$partial") then
-	if ($?DEBUG) echo `date` "$0 $$ -- PARTIAL EXISTS ($partial)" >& /dev/stderr
+	if ($?DEBUG) echo `date` "$0:t $$ -- PARTIAL EXISTS ($partial)" >& /dev/stderr
 	continue
     endif
 
@@ -100,27 +100,27 @@ again:
     if ($nfiles > 1) then
 	zip -q -j -r -u $zip $ifiles >& /dev/stderr
 	if (-s $zip) then
-	    if ($?DEBUG) echo `date` "$0 $$ -- " `ls -al $zip` >& /dev/stderr
+	    if ($?DEBUG) echo `date` "$0:t $$ -- " `ls -al $zip` >& /dev/stderr
 	    set ifiles = $zip
 	else
 	    exit
 	endif
     endif
 
-    if ($?DEBUG) echo -n `date` "$0 $$ -- classify ($i - $t) $nfiles images " >& /dev/stderr
+    if ($?DEBUG) echo -n `date` "$0:t $$ -- classify ($i - $t) $nfiles images " >& /dev/stderr
     set start = `date +%s`
     if ($?classifier) then
     	if ($?USE_DEFAULT) then
-	    if ($?DEBUG) echo `date` "$0 $$ -- CLASSIFY $ifiles using (default,$classifier)" >& /dev/stderr
+	    if ($?DEBUG) echo `date` "$0:t $$ -- CLASSIFY $ifiles using (default,$classifier)" >& /dev/stderr
 	    curl -f -s -q -L -F "images_file=@$ifiles" -o $partial \
 		"$TU/$verid/classify?api_key=$api_key&classifier_ids=default,$classifier&threshold=0.000001&version=$vdate" >& /dev/stderr
 	else
-	    if ($?DEBUG) echo `date` "$0 $$ -- CLASSIFY $ifiles using ($classifier)" >& /dev/stderr
+	    if ($?DEBUG) echo `date` "$0:t $$ -- CLASSIFY $ifiles using ($classifier)" >& /dev/stderr
 	    curl -f -s -q -L -F "images_file=@$ifiles" -o $partial \
 		"$TU/$verid/classify?api_key=$api_key&classifier_ids=$classifier&threshold=0.000001&version=$vdate" >& /dev/stderr
 	endif
     else
-	if ($?DEBUG) echo `date` "$0 $$ -- CLASSIFY $ifiles using default" >& /dev/stderr
+	if ($?DEBUG) echo `date` "$0:t $$ -- CLASSIFY $ifiles using default" >& /dev/stderr
 	curl -f -s -q -L -F "images_file=@$ifiles" -o $partial \
 	    "$TU/$verid/classify?api_key=$api_key&classifier_ids=default&threshold=0.000001&version=$vdate" >& /dev/stderr
     endif
@@ -138,14 +138,14 @@ again:
     endif
     set error = `jq '.status' "$partial"`
     if ($status == 0 && $error == "ERROR") then
-	if ($?DEBUG) echo `date` "$0 $$ -- $error - " `jq '.' $partial` >& /dev/stderr
+	if ($?DEBUG) echo `date` "$0:t $$ -- $error - " `jq '.' $partial` >& /dev/stderr
         rm -f $zip $partial
 	goto done
     endif
     # SUCCESS !
     set end = `date +%s`
     @ elapsed = $end - $start
-    if ($?DEBUG) echo `/bin/date` "$0 $$ - SUCCESS ($elapsed seconds)" >& /dev/stderr
+    if ($?DEBUG) echo `/bin/date` "$0:t $$ - SUCCESS ($elapsed seconds)" >& /dev/stderr
     if (-s "$json") then
 	echo ',' >> "$json"
     else

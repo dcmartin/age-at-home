@@ -29,7 +29,7 @@ if ($?db == 0) set db = rough-fog
 # standardize QUERY_STRING
 setenv QUERY_STRING "db=$db"
 
-/bin/echo `/bin/date` "$0 $$ -- START ($QUERY_STRING)"  >>&! $LOGTO
+/bin/echo `/bin/date` "$0:t $$ -- START ($QUERY_STRING)"  >>&! $LOGTO
 
 #
 # OUTPUT target
@@ -41,7 +41,7 @@ set OUTPUT = "$TMP/$APP-$API-$QUERY_STRING.$DATE.json"
 #
 
 if (-s "$OUTPUT") then
-  if ($?DEBUG) /bin/echo `/bin/date` "$0 $$ -- $OUTPUT exists" >>&! $LOGTO
+  if ($?DEBUG) /bin/echo `/bin/date` "$0:t $$ -- $OUTPUT exists" >>&! $LOGTO
   goto done
 endif
 
@@ -54,7 +54,7 @@ if ($#INPROGRESS) then
     set pid = $ip:e
     set eid = `ps axw | awk '{ print $1 }' | egrep "$pid"`
     if ($pid == $eid) then
-      if ($?DEBUG) /bin/echo `/bin/date` "$0 $$ -- in-progress ($pid)" >>&! $LOGTO
+      if ($?DEBUG) /bin/echo `/bin/date` "$0:t $$ -- in-progress ($pid)" >>&! $LOGTO
       goto done
     endif
     rm -f $ip
@@ -89,18 +89,18 @@ endif
 # CREATE DATABASE 
 #
 if ($?CU && $?db) then
-  if ($?DEBUG) /bin/echo `/bin/date` "$0 $$ -- test if db exists ($CU/$db-$API)" >>&! $LOGTO
+  if ($?DEBUG) /bin/echo `/bin/date` "$0:t $$ -- test if db exists ($CU/$db-$API)" >>&! $LOGTO
   set DEVICE_db = `curl -s -q -f -L -X GET "$CU/$db-$API" | jq '.db_name'`
   if ( $DEVICE_db == "" || "$DEVICE_db" == "null" ) then
-    if ($?DEBUG) /bin/echo `/bin/date` "$0 $$ -- creating db $CU/$db-$API" >>&! $LOGTO
+    if ($?DEBUG) /bin/echo `/bin/date` "$0:t $$ -- creating db $CU/$db-$API" >>&! $LOGTO
     # create db
     set DEVICE_db = `curl -s -q -f -L -X PUT "$CU/$db-$API" | jq '.ok'`
     # test for success
     if ( "$DEVICE_db" != "true" ) then
       # failure
-      if ($?DEBUG) /bin/echo `/bin/date` "$0 $$ -- failure creating Cloudant database ($db-$API)" >>&! $LOGTO
+      if ($?DEBUG) /bin/echo `/bin/date` "$0:t $$ -- failure creating Cloudant database ($db-$API)" >>&! $LOGTO
     else
-      if ($?DEBUG) /bin/echo `/bin/date` "$0 $$ -- success creating db $CU/$db-$API" >>&! $LOGTO
+      if ($?DEBUG) /bin/echo `/bin/date` "$0:t $$ -- success creating db $CU/$db-$API" >>&! $LOGTO
     endif
   endif
 endif
@@ -115,10 +115,10 @@ curl -s -q -f -L "$CU/$db-$API/all" -o "$ALL"
 if ($status != 22 && -s "$ALL") then
   set last = ( `jq -r '.date' "$ALL"` )
   if ($#last == 0 || $last == "null") then
-    if ($?DEBUG) /bin/echo `/bin/date` "$0 $$ -- NO MODIFIED DATE ($i)" >>&! $LOGTO
+    if ($?DEBUG) /bin/echo `/bin/date` "$0:t $$ -- NO MODIFIED DATE ($i)" >>&! $LOGTO
     set last = 0
   else
-    if ($?DEBUG) /bin/echo `/bin/date` "$0 $$ -- ALL MODIFIED LAST ($last)" >>&! $LOGTO
+    if ($?DEBUG) /bin/echo `/bin/date` "$0:t $$ -- ALL MODIFIED LAST ($last)" >>&! $LOGTO
   endif
 endif
 if ($last && -s "$ALL") then
@@ -126,16 +126,16 @@ if ($last && -s "$ALL") then
   set known = ( `jq -r '.classes[]?.name' "$ALL"` )
 endif
 if ($#known == 0) then
-  if ($?DEBUG) /bin/echo `/bin/date` "$0 $$ -- NO EXISTING CLASSES (all)" >>&! $LOGTO
+  if ($?DEBUG) /bin/echo `/bin/date` "$0:t $$ -- NO EXISTING CLASSES (all)" >>&! $LOGTO
   # get known through inspection of all rows
   set known = ( `curl -s -q -f -L "$CU/$db-$API/_all_docs" | jq -r '.rows[]?|select(.id!="all").id'` )
 endif
 if ($#known == 0 || "$known" == '[]' || "$known" == "null") then
-    if ($?DEBUG) /bin/echo `/bin/date` "$0 $$ -- DB: $db -- CANNOT FIND ANY KNOWN CLASSES OF $API" >>&! $LOGTO
+    if ($?DEBUG) /bin/echo `/bin/date` "$0:t $$ -- DB: $db -- CANNOT FIND ANY KNOWN CLASSES OF $API" >>&! $LOGTO
     set known = ()
   endif
 else
-  if ($?DEBUG) /bin/echo `/bin/date` "$0 $$ -- CANNOT RETRIEVE $db-$API/all ($ALL)" >>&! $LOGTO
+  if ($?DEBUG) /bin/echo `/bin/date` "$0:t $$ -- CANNOT RETRIEVE $db-$API/all ($ALL)" >>&! $LOGTO
   set last = 0
 endif
 
@@ -144,10 +144,10 @@ endif
 #
 set dir = "$AAHDIR/$db" 
 if (! -d "$dir") then
-  if ($?DEBUG) /bin/echo `date` "$0 $$ -- create directory ($dir)" >>&! $LOGTO
+  if ($?DEBUG) /bin/echo `date` "$0:t $$ -- create directory ($dir)" >>&! $LOGTO
   mkdir -p "$dir"
   if (! -d "$dir") then
-    if ($?DEBUG) /bin/echo `date` "$0 $$ -- FAILURE -- no directory ($dir)" >>&! $LOGTO
+    if ($?DEBUG) /bin/echo `date` "$0:t $$ -- FAILURE -- no directory ($dir)" >>&! $LOGTO
     goto done
   endif
 endif
@@ -158,7 +158,7 @@ if ($?NOFORCE == 0 || $stat > $last) then
   # search for any changes
   set classes = ( `find "$dir" -type d -print | egrep -v "/\." | sed "s@$dir@@g" | sed "s@^/@@" | sed "s@ /@ @g"` )
   if ($#classes == 0) then
-    if ($?DEBUG) /bin/echo `/bin/date` "$0 $$ -- found NO classes in $dir" >>&! $LOGTO
+    if ($?DEBUG) /bin/echo `/bin/date` "$0:t $$ -- found NO classes in $dir" >>&! $LOGTO
     goto done
   endif
 else if ($?known) then
@@ -167,7 +167,7 @@ else
   set classes = ( )
 endif
 
-if ($?DEBUG) /bin/echo `/bin/date` "$0 $$ -- PROCESSING ($DATE, $db, $#classes ( $classes ))" >>&! $LOGTO
+if ($?DEBUG) /bin/echo `/bin/date` "$0:t $$ -- PROCESSING ($DATE, $db, $#classes ( $classes ))" >>&! $LOGTO
 
 /bin/echo '{"date":'"$DATE"',"device":"'"$db"'","classes":[' >! "$ALL.$$"
 
@@ -179,11 +179,11 @@ foreach i ( $classes )
 
   # SANITY
   if (! -d "$CDIR") then
-    if ($?DEBUG) /bin/echo `/bin/date` "$0 $$ -- NO DIRECTORY ($CDIR)" >>&! $LOGTO
+    if ($?DEBUG) /bin/echo `/bin/date` "$0:t $$ -- NO DIRECTORY ($CDIR)" >>&! $LOGTO
     continue
   endif
 
-  if ($?DEBUG) /bin/echo `/bin/date` "$0 $$ -- PROCESSING DIR: $CDIR CID: $CID ($k of $#classes)" >>&! $LOGTO
+  if ($?DEBUG) /bin/echo `/bin/date` "$0:t $$ -- PROCESSING DIR: $CDIR CID: $CID ($k of $#classes)" >>&! $LOGTO
 
   set last = 0
   unset json
@@ -195,7 +195,7 @@ foreach i ( $classes )
       set last = ( `/bin/echo "$json" | jq -r '.date'` )
       if ($#last == 0 || "$last" == "null") set last = 0
     else
-      if ($?DEBUG) /bin/echo `/bin/date` "$0 $$ -- UNKNOWN CLASS $i ($CID)" >>&! $LOGTO
+      if ($?DEBUG) /bin/echo `/bin/date` "$0:t $$ -- UNKNOWN CLASS $i ($CID)" >>&! $LOGTO
       set unknown = ( $unknown "$i" )
     endif
   endif
@@ -203,7 +203,7 @@ foreach i ( $classes )
   # get last modified time (10th field) in seconds since epoch
   set stat = ( `/usr/bin/stat -r "$CDIR" | /usr/bin/awk '{ print $10 }'` )
   if ($#stat == 0) then
-    if ($?DEBUG) /bin/echo `/bin/date` "$0 $$ -- NO STATS ($CDIR)" >>&! $LOGTO
+    if ($?DEBUG) /bin/echo `/bin/date` "$0:t $$ -- NO STATS ($CDIR)" >>&! $LOGTO
     continue
   endif
 
@@ -213,16 +213,16 @@ foreach i ( $classes )
 
   # check if directory is updated
   if ($stat <= $last) then
-    if ($?DEBUG) /bin/echo `/bin/date` "$0 $$ -- $CDIR UNCHANGED ($stat <= $last)" >>&! $LOGTO
+    if ($?DEBUG) /bin/echo `/bin/date` "$0:t $$ -- $CDIR UNCHANGED ($stat <= $last)" >>&! $LOGTO
     if ($?json && $?NOFORCE) then
-      if ($?DEBUG) /bin/echo `/bin/date` "$0 $$ -- using prior record: $db/$i == $json" >>&! $LOGTO
+      if ($?DEBUG) /bin/echo `/bin/date` "$0:t $$ -- using prior record: $db/$i == $json" >>&! $LOGTO
       /bin/echo "$json" >>! "$ALL.$$"
       continue
     else
-      if ($?DEBUG) /bin/echo `/bin/date` "$0 $$ -- making new record :: prior JSON ($?json) :: no-force ($?NOFORCE)" >>&! $LOGTO
+      if ($?DEBUG) /bin/echo `/bin/date` "$0:t $$ -- making new record :: prior JSON ($?json) :: no-force ($?NOFORCE)" >>&! $LOGTO
     endif
   else
-    if ($?DEBUG) /bin/echo `/bin/date` "$0 $$ -- $CDIR CHANGED ($stat > $last)" >>&! $LOGTO
+    if ($?DEBUG) /bin/echo `/bin/date` "$0:t $$ -- $CDIR CHANGED ($stat > $last)" >>&! $LOGTO
   endif
 
   #
@@ -260,7 +260,7 @@ foreach i ( $classes )
       set date = $file[1]
       set imgid = $file[2]
 
-      if ($?DEBUG) /bin/echo `/bin/date` "$0 $$ -- IMAGE $j of $nfiles in CLASS $i; ID: $imgid DATE: ($date)" >>&! $LOGTO
+      if ($?DEBUG) /bin/echo `/bin/date` "$0:t $$ -- IMAGE $j of $nfiles in CLASS $i; ID: $imgid DATE: ($date)" >>&! $LOGTO
       
       if ($j) /bin/echo -n ',' >>! "$CLASS"
       set file = '{ "id":"'"$file[2]"'","date":'"$file[1]"' }'
@@ -284,12 +284,12 @@ foreach i ( $classes )
   if ($#rev && "$rev" != "null") then
     set url = "$url?rev=$rev"
   endif
-  if ($?DEBUG) /bin/echo `/bin/date` "$0 $$ -- PUT NEW RECORD CLASS $i $nfiles ($CID)" >>&! $LOGTO
+  if ($?DEBUG) /bin/echo `/bin/date` "$0:t $$ -- PUT NEW RECORD CLASS $i $nfiles ($CID)" >>&! $LOGTO
   set put = ( `curl -s -q -L -H "Content-type: application/json" -X PUT "$url" -d "@$CLASS" | jq '.ok'`)
   if ("$put" != "true") then
-    if ($?DEBUG) /bin/echo `/bin/date` "$0 $$ -- $url FAILED" >>&! $LOGTO
+    if ($?DEBUG) /bin/echo `/bin/date` "$0:t $$ -- $url FAILED" >>&! $LOGTO
   else
-    if ($?DEBUG) /bin/echo `/bin/date` "$0 $$ -- PUT NEW RECORD $url" >>&! $LOGTO
+    if ($?DEBUG) /bin/echo `/bin/date` "$0:t $$ -- PUT NEW RECORD $url" >>&! $LOGTO
   endif
   /bin/rm -f "$CLASS"
 
@@ -313,13 +313,13 @@ if ($#rev && $rev != "null") then
 endif
 set put = ( `curl -s -q -L -H "Content-type: application/json" -X PUT "$url" -d "@$OUTPUT" | jq '.ok'` )
 if ("$put" != "true") then
-  if ($?DEBUG) /bin/echo `/bin/date` "$0 $$ -- $url FAILED" >>&! $LOGTO
+  if ($?DEBUG) /bin/echo `/bin/date` "$0:t $$ -- $url FAILED" >>&! $LOGTO
 else
-  if ($?DEBUG) /bin/echo `/bin/date` "$0 $$ -- PUT NEW RECORD $url" >>&! $LOGTO
+  if ($?DEBUG) /bin/echo `/bin/date` "$0:t $$ -- PUT NEW RECORD $url" >>&! $LOGTO
 endif
 
 done:
-/bin/echo `/bin/date` "$0 $$ -- FINISH ($QUERY_STRING)" >>&! $LOGTO
+/bin/echo `/bin/date` "$0:t $$ -- FINISH ($QUERY_STRING)" >>&! $LOGTO
 
 cleanup:
 rm -f "$OUTPUT.$$"
