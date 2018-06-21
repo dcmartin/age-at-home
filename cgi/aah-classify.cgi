@@ -103,16 +103,17 @@ set date = "DATE"
 set seqid = "SEQID"
 
 # get all LABEL classes for this device
-set url = "localhost/CGI/aah-labels.cgi?db=$db" 
+set url = "http://localhost/CGI/aah-labels.cgi?db=$db" 
 set out = "$TMP/$APP-$API-labels-$db.$$.json"
 if ($?DEBUG) echo `date` "$0:t $$ -- CALL $url" >>&! $LOGTO
-curl -m 2 -s -q -f -L "$url" -o "$out"
-if ($status == 22 || $status == 28 || ! -s "$out") then
+curl -s -q -f -L "$url" -o "$out"
+if (! -s "$out") then
   if ($?DEBUG) echo `date` "$0:t $$ -- FAIL ($url)" >>&! $LOGTO
   set label_classes = ( )
 else
   set label_classes = ( `jq -r '.classes|sort_by(.name)[].name' "$out"` )
   set label_date = ( `jq -r '.date' "$out"` )
+  if ($?VERBOSE) echo `date` "$0:t $$ -- found $#label_classes labels" >>&! $LOGTO
 endif
 rm -f "$out"
 
@@ -151,6 +152,10 @@ if ($?VERBOSE) echo `date` "$0:t $$ -- CHECKPOINT #1" >>&! $LOGTO
 
 # get location
 set location = ( `curl -s -q "localhost/CGI/aah-devices.cgi?db=$db" | jq -r '.location'` )
+if ($#location == 0 || "$location" == "null") then
+  if ($?DEBUG) echo "$0:t $$ -- $db -- no such device" >>&! $LOGTO
+  goto output
+endif
 
 
 if ($?VERBOSE) echo `date` "$0:t $$ -- CHECKPOINT #2" >>&! $LOGTO
@@ -161,7 +166,7 @@ curl -s -q -f -L "$url" -o "$out"
 if (! -s "$out") then
   if ($?DEBUG) echo "$0:t $$ -- $db -- failed $url" >>&! $LOGTO
   rm -f "$out"
-  goto done 
+  goto output 
 endif
 
 if ($?VERBOSE) echo "$0:t $$ -- $db -- found" `jq '.ids?|length' "$out"` "images" >>&! $LOGTO
@@ -169,7 +174,7 @@ if ($?VERBOSE) echo "$0:t $$ -- $db -- found" `jq '.ids?|length' "$out"` "images
 set images = ( `jq -r 'limit('$limit';.ids[]|match("'$match'.*")|.string)' "$out"` )
 if ($#images == 0 || "$images" == "null") then
   if ($?DEBUG) echo "$0:t $$ -- $db -- failed to find matching ($match) images" >>&! $LOGTO
-  goto done
+  goto output
 else
   if ($?VERBOSE) echo "$0:t $$ -- $db -- found $#images matching ($match) images" >>&! $LOGTO
   set nimage = $#images
@@ -326,20 +331,16 @@ foreach image ( $images )
     # if a model was specified (name)
     if ($?name) then
       if ($?DEBUG) echo `date` "$0:t $$ -- CHECKING MODEL $name" >>&! $LOGTO
-
       # find out type
       unset type
-      # test if model name matches DIGITS_HOST convention of date
-      set tf = ( `echo "$name" | sed 's/[0-9]*-[0-9]*-.*/DIGITS_HOST/'` )
-      if ("$tf" == "DIGITS_HOST") then
-        set type = "DIGITS_HOST"
-      else 
-	# Watson VR removes hyphens from db name (rough-fog becomes roughfog) 
-	set device = ( `echo "$db" | sed "s/-//g"` )
-	set tf = ( `echo "$name" | sed 's/'"$device"'_.*/CUSTOM/'` )
-	if ("$tf" == "CUSTOM") set type = "CUSTOM"
+      # test if model name matches DIGITS convention of date
+      set tf = ( `echo "$name" | sed 's/[0-9]*-[0-9]*-.*/DIGITS/'` )
+      if ("$tf" == "DIGITS") then
+        set type = "DIGITS"
+      else if ("$name" != "default" && "$name:h" == "$name:t") then 
+	set type = "CUSTOM"
       endif
-      # default type if not DIGITS_HOST and not CUSTOM
+      # default type if not DIGITS and not CUSTOM
       if ($?type == 0) set type = "default"
       switch ($type)
 	case "CUSTOM":
@@ -349,18 +350,18 @@ foreach image ( $images )
 	      echo '<a target="cfmatrix" href="http://'"$HTTP_HOST"'/cfmatrix.html?model='"$name"'">'"$name"'</a>' >> "$HTML"
 	      echo '</td>' >> "$HTML"
 	      breaksw
-	case "DIGITS_HOST":
-	      set ds_id = ( `curl -s -q "$DIGITS_HOST/models/$name.json" | jq -r '.dataset_id'` )
+	case "DIGITS":
+	      set ds_id = ( `curl -s -q "http://$DIGITS_HOST/models/$name.json" | jq -r '.dataset_id'` )
 	      echo '<td>' >> "$HTML"
 	      if ($#ds_id) then
 		echo -n '<a target="'"$name"-"$class_id"'" href="' >> "$HTML"
-		echo -n "$DIGITS_HOST"'/datasets/'"$ds_id" >> "$HTML"
+		echo -n 'http://'"$DIGITS_HOST"'/datasets/'"$ds_id" >> "$HTML"
 		echo '">'"$class_id"'</a>' >> "$HTML"
 	      else
 		echo "$class_id" >> "$HTML"
 	      endif
 	      echo '</td><td>'"$score"'</td><td>' >> "$HTML"
-	      echo '<a target="digits" href="'"$DIGITS_HOST"'/models/'"$name"'">'"$name"'</a>' >> "$HTML"
+	      echo '<a target="digits" href="http://'"$DIGITS_HOST"'/models/'"$name"'">'"$name"'</a>' >> "$HTML"
 	      echo '</td>' >> "$HTML"
 	      breaksw
 	default:

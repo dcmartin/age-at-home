@@ -71,6 +71,8 @@ if ($#DBt && $#dbt && $?id == 0) then
   set ide = ( $id:e )
   if ($#ide == 0) unset id
 endif
+
+## fix class to not include extraneous '/' and replace w/ urlencoded value '%2F'
 if ($?class) then
   set class = ( `echo "$class" | sed 's@//@/@g' | sed 's@/$@@'` )
 endif
@@ -252,13 +254,15 @@ end
 #
 if ($?display) then
   if ($?class) then
-    set OUTPUT = "$TMP/$0:t.$db.$class.$ext.icon.html"
+    set classid = ( `echo "$class" | sed "s@/@:@g"` )
+    set OUTPUT = "$TMP/$0:t.$db.$classid.$ext.icon.html"
   else
     set OUTPUT = "$TMP/$0:t.$db.$ext.icon.html"
   endif
 else
   if ($?class) then
-    set OUTPUT = "$TMP/$0:t.$db.$class.$ext.html"
+    set classid = ( `echo "$class" | sed "s@/@:@g"` )
+    set OUTPUT = "$TMP/$0:t.$db.$classid.$ext.html"
   else
     set OUTPUT = "$TMP/$0:t.$db.$ext.html"
   endif

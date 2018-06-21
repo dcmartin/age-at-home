@@ -2,8 +2,8 @@
 setenv APP "aah"
 setenv API "images"
 
-setenv DEBUG true
-setenv VERBOSE true
+unsetenv DEBUG true
+unsetenv VERBOSE true
 
 # environment
 if ($?TMP == 0) setenv TMP "/tmp"

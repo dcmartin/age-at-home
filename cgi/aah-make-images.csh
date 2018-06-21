@@ -3,7 +3,7 @@ setenv APP "aah"
 setenv API "images"
 
 # debug on/off
-setenv DEBUG true
+unsetenv DEBUG true
 unsetenv VERBOSE true
 
 # environment
