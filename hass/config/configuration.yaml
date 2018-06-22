@@ -1323,7 +1323,7 @@ sensor kitchen_size:
 camera kitchen_image:
   - platform: mqtt
     name: kitchen_image
-    topic: 'image/kitchen/#'
+    topic: 'image/kitchen'
 
 camera kitchen_image_classified:
   - platform: mqtt
@@ -1396,7 +1396,7 @@ sensor bathroom_size:
 camera bathroom_image:
   - platform: mqtt
     name: bathroom_image
-    topic: 'image/bathroom/#'
+    topic: 'image/bathroom'
 
 camera bathroom_image_classified:
   - platform: mqtt
@@ -1469,7 +1469,7 @@ sensor road_size:
 camera road_image:
   - platform: mqtt
     name: road_image
-    topic: 'image/road/#'
+    topic: 'image/road'
 
 camera road_image_classified:
   - platform: mqtt
@@ -1542,7 +1542,7 @@ sensor gate_size:
 camera gate_image:
   - platform: mqtt
     name: gate_image
-    topic: 'image/gate/#'
+    topic: 'image/gate'
 
 camera gate_image_classified:
   - platform: mqtt
@@ -1615,7 +1615,7 @@ sensor poolhouse_size:
 camera poolhouse_image:
   - platform: mqtt
     name: poolhouse_image
-    topic: 'image/poolhouse/#'
+    topic: 'image/poolhouse'
 
 camera poolhouse_image_classified:
   - platform: mqtt
@@ -1742,7 +1742,7 @@ sensor frontdoor_size:
 camera frontdoor_image:
   - platform: mqtt
     name: frontdoor_image
-    topic: 'image/frontdoor/#'
+    topic: 'image/frontdoor'
 
 camera frontdoor_image_classified:
   - platform: mqtt
