@@ -1252,11 +1252,6 @@ camera last_image:
     name: last_image
     topic: 'image/#'
 
-camera last_image_classified:
-  - platform: mqtt
-    name: last_image_classified
-    topic: 'image-classified/+'
-
 camera last_image_annotated:
   - platform: mqtt
     name: last_image_annotated

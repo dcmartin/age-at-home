@@ -46,14 +46,6 @@ endif
 # copy ADDONS
 if (-d "$dir/addons") then
   echo "Copying ADDONS"
-  # check for repository definition
-  set r = "$dir/addons/repository.json"
-  if (-e "$r") then
-    echo "Copying $r"
-    cp "$r" "$addons"/"$r:t"
-  else
-    echo "No repository defined; please create $r"
-  endif
   foreach i ( "$dir"/addons/* )
     if (! -d "$i") then
       echo "skipping $i"

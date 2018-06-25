@@ -3,7 +3,7 @@ setenv APP "aah"
 setenv API "classify"
 
 setenv DEBUG true
-setenv VERBOSE true
+unsetenv VERBOSE true
 
 # environment
 if ($?DIGITS_HOST == 0) setenv DIGITS_HOST "192.168.1.40:32769"
@@ -95,49 +95,75 @@ else
   goto done
 endif
 
+# get list of image identifiers
+set url = "localhost/CGI/aah-images.cgi?db=$db"
+set out = /tmp/$0:t.$$.json
+curl -s -q -f -L "$url" -o "$out"
+if (! -s "$out") then
+  if ($?DEBUG) echo "$0:t $$ -- $db -- failed $url" >>&! $LOGTO
+  rm -f "$out"
+  goto output 
+else
+  set nimage = ( `jq '.ids?|length' "$out"` )
+  if ($?VERBOSE) echo "$0:t $$ -- $db -- found total of $nimage images" >>&! $LOGTO
+  # select a limited numbers of images matching the search expression
+  set images = ( `jq -r 'limit('$limit';.ids[]|match("'$match'.*")|.string)' "$out"` )
+  if ($#images == 0 || "$images" == "null") then
+    if ($?DEBUG) echo "$0:t $$ -- $db -- failed to find images ($images) matching: $match" >>&! $LOGTO
+    set images = ()
+  endif
+  rm -f "$out"
+endif
+
+if ($?images) then
+  if ($?VERBOSE) echo "$0:t $$ -- $db -- found $#images images" >>&! $LOGTO
+else
+  if ($?DEBUG) echo "$0:t $$ -- $db -- no images defined" >>&! $LOGTO
+  set images = ()
+endif
+
 ###
+### get labels and location 
 ###
-###
+
+# get location
+set location = ( `curl -s -q -f -L "localhost/CGI/$APP-devices.cgi?db=$db" | jq -r '.location'` )
+if ($#location == 0 || "$location" == "null") then
+  if ($?DEBUG) echo "$0:t $$ -- $db -- no such device ($location)" >>&! $LOGTO
+  goto output
+endif
+
+# get labels
+set labels = ( `curl -s -q "localhost/CGI/$APP-labels.cgi?db=$db" | jq -r '.classes|sort_by(.name)[].name'` )
+if ($#labels == 0 || "$labels" == "null") then
+  if ($?DEBUG) echo "$0:t $$ -- $db -- no labels for db $db" >>&! $LOGTO
+  set labels = ()
+endif
+
+# choices by end-user on which images to curate
+set image_classes = ( "recent" "confusing" "unknown" $labels )
 
 set date = "DATE"
 set seqid = "SEQID"
 
-# get all LABEL classes for this device
-set url = "http://localhost/CGI/aah-labels.cgi?db=$db" 
-set out = "$TMP/$APP-$API-labels-$db.$$.json"
-if ($?DEBUG) echo `date` "$0:t $$ -- CALL $url" >>&! $LOGTO
-curl -s -q -f -L "$url" -o "$out"
-if (! -s "$out") then
-  if ($?DEBUG) echo `date` "$0:t $$ -- FAIL ($url)" >>&! $LOGTO
-  set label_classes = ( )
-else
-  set label_classes = ( `jq -r '.classes|sort_by(.name)[].name' "$out"` )
-  set label_date = ( `jq -r '.date' "$out"` )
-  if ($?VERBOSE) echo `date` "$0:t $$ -- found $#label_classes labels" >>&! $LOGTO
-endif
-rm -f "$out"
-
-# choices by end-user on which images to curate
-set image_classes = ( "recent" "confusing" "unknown" $label_classes )
-
-set MIXPANELJS = "http://$HTTP_HOST/script/mixpanel-aah.js"
-
-set HTML = "$TMP/$APP-$API.$$.html"
-
-
 # header
+set MIXPANELJS = "http://$HTTP_HOST/script/mixpanel-aah.js"
+set HTML = "$TMP/$APP-$API.$$.html"
 echo "<HTML><HEAD><TITLE>$APP-$API" >! "$HTML"
 echo '{ "device":"'$db'","class":"'$class'","match":"'$match'","limit":"'$limit'" }' >> "$HTML"
 echo "</TITLE></HEAD>" >> "$HTML"
 echo '<script type="text/javascript" src="'$MIXPANELJS'"></script><script>mixpanel.track('"'"$APP-$API"');</script>" >> "$HTML"
+
+# body
 echo '<BODY>' >> "$HTML"
 
 if ($?slave == 0) echo '<p>'"$db"' : match date by <i>regexp</i>; slide image count (max = '$IMAGE_LIMIT'); select all or <i>class</i>; then press <b>CHANGE</b>' >> "$HTML"
 
+## change selection criteria
 echo '<form action="'"http://$HTTP_HOST/CGI/$APP-$API"'.cgi">' >> "$HTML"
+if ($?slave) echo '<input type="hidden" name="slave" value="true">' >> "$HTML"
 echo '<input type="hidden" name="db" value="'"$db"'">' >> "$HTML"
 echo '<input type="text" name="match" value="'"$match"'">' >> "$HTML"
-if ($?slave) echo '<input type="hidden" name="slave" value="true">' >> "$HTML"
 echo '<input type="range" name="limit" value="'"$limit"'" max="'$IMAGE_LIMIT'" min="1">' >> "$HTML"
 echo '<select name="class">' >> "$HTML"
 echo '<option value="'"$class"'">'"$class"'</option>' >> "$HTML" # current class (dir) is first option
@@ -148,52 +174,19 @@ end
 echo '</select>' >> "$HTML"
 echo '<input type="submit" style="background-color:#ff9933" value="CHANGE"></form>' >> "$HTML"
 
-if ($?VERBOSE) echo `date` "$0:t $$ -- CHECKPOINT #1" >>&! $LOGTO
-
-# get location
-set location = ( `curl -s -q "localhost/CGI/aah-devices.cgi?db=$db" | jq -r '.location'` )
-if ($#location == 0 || "$location" == "null") then
-  if ($?DEBUG) echo "$0:t $$ -- $db -- no such device" >>&! $LOGTO
-  goto output
-endif
-
-
-if ($?VERBOSE) echo `date` "$0:t $$ -- CHECKPOINT #2" >>&! $LOGTO
-# get images
-set url = "localhost/CGI/aah-images.cgi?db=$db"
-set out = /tmp/$0:t.$$.json
-curl -s -q -f -L "$url" -o "$out"
-if (! -s "$out") then
-  if ($?DEBUG) echo "$0:t $$ -- $db -- failed $url" >>&! $LOGTO
-  rm -f "$out"
-  goto output 
-endif
-
-if ($?VERBOSE) echo "$0:t $$ -- $db -- found" `jq '.ids?|length' "$out"` "images" >>&! $LOGTO
-
-set images = ( `jq -r 'limit('$limit';.ids[]|match("'$match'.*")|.string)' "$out"` )
-if ($#images == 0 || "$images" == "null") then
-  if ($?DEBUG) echo "$0:t $$ -- $db -- failed to find matching ($match) images" >>&! $LOGTO
-  goto output
-else
-  if ($?VERBOSE) echo "$0:t $$ -- $db -- found $#images matching ($match) images" >>&! $LOGTO
-  set nimage = $#images
-endif
-
-if ($?VERBOSE) echo `date` "$0:t $$ -- CHECKPOINT #3" >>&! $LOGTO
-
 @ ncolumns = 4
-if ($nimage < $ncolumns) @ ncolumns = $nimage
+if ($#images < $ncolumns) @ ncolumns = $#images
 @ width = 100
 
 # action to label image
 set act = "http://$HTTP_HOST/CGI/$APP-label.cgi"
+
 # do magic
 echo "<script> function hover(e,i) { e.setAttribute('src', i); } function unhover(e) { e.setAttribute('src', i); }</script>" >> "$HTML"
+
 # start table
 echo '<table border="1"><tr>' >> "$HTML"
 
-if ($?VERBOSE) echo `date` "$0:t $$ -- CHECKPOINT #4" >>&! $LOGTO
 
 #
 # ITERATE OVER IMAGES (based on limit count)
@@ -206,20 +199,8 @@ foreach image ( $images )
   if ($?DEBUG) echo `date` "$0:t $$ -- PROCESSING IMAGE ($k/$limit) ($image)" >>&! $LOGTO
 
   # get image details
-  set imginfo = ( `curl -s -q -f -L "localhost/CGI/aah-images.cgi?db=$db&id=$image" | jq '.'` )
-
-  # {
-  #   "id": "20170802094803-7134-00",
-  #   "path": "<device>/<year>/<month>/<day>",
-  #   "date": 1501692483,
-  #   "imagebox": "494x160+68+150",
-  #   "formats": [ { "ext": "jpg|jpeg", "size": "", "depth"
-  # }
-  set date = ( `echo "$imginfo" | jq -r '.date'` )
   set jpm = `echo "$image" | sed "s/\(.*\)-.*-.*/\1/"` # get the image date for matching
   set time = `echo "$image" | sed "s/\(....\)\(..\)\(..\)\(..\)\(..\).*-.*/\1\/\2\/\3 \4:\5/"` # breakdown image identifier into time components for image label
-
-  set dir = ( `curl -s -q -f -L "$CU/$db/$id" | jq -r '.alchemy.text'` )
 
   # how to access the image (and sample)
   set img = "http://$HTTP_HOST/CGI/$APP-images.cgi?db=$db&id=$image&ext=full"
@@ -243,7 +224,6 @@ foreach image ( $images )
   echo '<input type="hidden" name="db" value="'"$db"'">' >> "$HTML"
   echo '<input type="hidden" name="class" value="'"$class"'">' >> "$HTML"
   echo '<input type="hidden" name="image" value="'"$image"'">' >> "$HTML"
-  echo '<input type="hidden" name="old" value="'"$dir"'">' >> "$HTML"
   echo '<input type="hidden" name="match" value="'"$match"'">' >> "$HTML"
   echo '<input type="hidden" name="limit" value="'"$limit"'">' >> "$HTML"
   if ($?slave) echo '<input type="hidden" name="slave" value="true">' >> "$HTML"
@@ -255,17 +235,16 @@ foreach image ( $images )
   echo '<input type="hidden" name="db" value="'"$db"'">' >> "$HTML"
   echo '<input type="hidden" name="class" value="'"$class"'">' >> "$HTML"
   echo '<input type="hidden" name="image" value="'"$image"'">' >> "$HTML"
-  echo '<input type="hidden" name="old" value="'"$dir"'">' >> "$HTML"
   echo '<input type="hidden" name="match" value="'"$match"'">' >> "$HTML"
   echo '<input type="hidden" name="limit" value="'"$limit"'">' >> "$HTML"
   if ($?slave) echo '<input type="hidden" name="slave" value="true">' >> "$HTML"
   echo '<select name="new" onchange="this.form.submit()">' >> "$HTML"
-  echo '<option selected value="'"$dir"'">'"$dir"'</option>' >> "$HTML"
+  echo '<option selected value="'"$class"'">'"$class"'</option>' >> "$HTML"
   echo '<option value="'"$location"'">'"$location"'</option>' >> "$HTML"
-  if ($?label_classes) then
-    foreach i ( $label_classes )
+  if ($?labels) then
+    foreach i ( $labels)
       set j = "$i:t"
-      if (($j != $dir) && ($j != $location)) echo '<option value="'"$i"'">'"$i"'</option>' >> "$HTML"
+      if (($j != $class) && ($j != $location)) echo '<option value="'"$i"'">'"$i"'</option>' >> "$HTML"
     end
   endif
   echo '</select>' >> "$HTML"
@@ -278,11 +257,9 @@ foreach image ( $images )
   echo '<input type="hidden" name="db" value="'"$db"'">' >> "$HTML"
   echo '<input type="hidden" name="class" value="'"$class"'">' >> "$HTML"
   echo '<input type="hidden" name="image" value="'"$image"'">' >> "$HTML"
-  echo '<input type="hidden" name="old" value="'"$dir"'">' >> "$HTML"
   echo '<input type="hidden" name="match" value="'"$match"'">' >> "$HTML"
   echo '<input type="hidden" name="limit" value="'"$limit"'">' >> "$HTML"
   if ($?slave) echo '<input type="hidden" name="slave" value="true">' >> "$HTML"
-  echo '<input type="hidden" name="new" value="'"$dir"'">' >> "$HTML"
   echo '<input type="text" size="5" name="add" value="'"$add"'">' >> "$HTML"
   echo '<input type="submit" style="background-color:#ff9933" value="OK">' >> "$HTML"
   echo '</form>' >> "$HTML"

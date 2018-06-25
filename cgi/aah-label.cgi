@@ -2,8 +2,8 @@
 setenv APP "aah"
 setenv API "label"
 
-# setenv DEBUG true
-# setenv VERBOSE true
+setenv DEBUG true
+setenv VERBOSE true
 
 # environment
 if ($?TMP == 0) setenv TMP "/tmp"
@@ -28,10 +28,28 @@ endif
 set TTL = 15
 set SECONDS = `date "+%s"`
 set DATE = `/bin/echo $SECONDS \/ $TTL \* $TTL | bc`
- 
-setenv DEBUG true
 
 /bin/echo `date` "$0:t $$ -- START ($QUERY_STRING) from $HTTP_REFERER" >>&! $LOGTO
+
+##
+## ACCESS CLOUDANT
+##
+if ($?CLOUDANT_URL) then
+  set CU = $CLOUDANT_URL
+else if (-s $CREDENTIALS/.cloudant_url) then
+  set cc = ( `cat $CREDENTIALS/.cloudant_url` )
+  if ($#cc > 0) set CU = $cc[1]
+  if ($#cc > 1) set CN = $cc[2]
+  if ($#cc > 2) set CP = $cc[3]
+  if ($?CP && $?CN && $?CU) then
+    set CU = 'https://'"$CN"':'"$CP"'@'"$CU"
+  else if ($?CU) then
+    set CU = "https://$CU"
+  endif
+else
+  echo `date` "$0:t $$ -- FAILURE: no Cloudant credentials" >>&! $LOGTO
+  goto done
+endif
 
 if ($?QUERY_STRING) then
     set db = `/bin/echo "$QUERY_STRING" | sed 's/.*db=\([^&]*\).*/\1/'`
@@ -66,19 +84,42 @@ if ($?QUERY_STRING) then
     if ($match == "$QUERY_STRING") unset match
     set slave = `/bin/echo "$QUERY_STRING" | sed 's/.*slave=\([^&]*\).*/\1/'`
     if ($slave == "$QUERY_STRING") unset slave
+
+    if ($?VERBOSE) /bin/echo `date` "$0:t $$ -- processed QUERY_STRING $QUERY_STRING" >>&! $LOGTO
 else
     /bin/echo `date` "$0:t $$ -- no QUERY_STRING" >>&! $LOGTO
     goto done
 endif
 
-if ($?DEBUG) /bin/echo `date` "$0:t $$ -- $QUERY_STRING" >>&! $LOGTO
 
-#
-# handle skipping an image
-#
-if ($?db && $?class && $?old && $?skip) then
-    set image = "$skip"
-    set jpg = "$AAHDIR/$db/$old/$image"
+## test requisites
+if ($?db == 0 || $?image == 0) then
+  if ($?DEBUG) echo "$0:t $$ -- no database ($?db) or no image ($?image) defined" >>&! $LOGTO
+  goto output
+endif
+
+## find the image
+set imagepath = ( `curl -s -q -f -L "$CU/$db""-images/$image" | jq '.path'` ) 
+if ($#imagepath == 0 || "$imagepath" == "null") then
+  set class = ( `curl -s -q -f -L "$CU/$db/$image" | jq '.class'` ) 
+  if ($#class != 0 && "$class" != "null") then
+    set imagefile = "$AAHDIR/$db/$class/$image"
+  else
+    if ($?DEBUG) echo "$0:t $$ -- cannot locate image $image in database $db" >>&! $LOGTO
+    goto output
+  endif
+else
+  set imagefile = "$AAHDIR/$imagepath/$image"
+endif
+
+if (! -e "$imagefile.jpg") then
+  if ($?DEBUG) echo "$0:t $$ -- cannot locate image $imagefile" >>&! $LOGTO
+  unset imagefile
+endif
+
+## handle skipping an image
+if ($?skip) then
+    set jpg = "$AAHDIR/$imagepath/$image.jpg"
     set dest = "$AAHDIR/$API/$db/.skipped"
 
     mkdir -p "$dest"
@@ -121,7 +162,7 @@ if ($?db && $?class && $?image && $?old && ($?new || $?add)) then
 	set new = "$add"
     endif
 
-    set jpg = "$AAHDIR/$db/$old/$image"
+    set jpg = "$AAHDIR/$db/$imagepath/$image"
     set link = "$AAHDIR/$API/$db/$new/$image"
 
     if (! -d "$AAHDIR/$API/$db/$new") then
@@ -133,7 +174,7 @@ if ($?db && $?class && $?image && $?old && ($?new || $?add)) then
 	if ($?DEBUG) /bin/echo `date` "$0:t $$ -- old image exists ($jpg)" `ls -l "$jpg"` >>&! $LOGTO
 	if (-e "$link") then
 	    if ($?DEBUG) /bin/echo `date` "$0:t $$ -- labeled image exists ($link)" `ls -l "$link"` >>&! $LOGTO
-	    set OUTPUT = '{"result":"fail-exists","image":"'"$old/$image"'","link":"'"$new/$image"'"}'
+	    set OUTPUT = '{"result":"fail-exists","image":"'"$imagepath/$image"'","link":"'"$new/$image"'"}'
 	else 
 	    if ($?DEBUG) /bin/echo `date` "$0:t $$ -- moving and linking $jpg -> $link" >>&! $LOGTO
 	    mv -n "$jpg" "$link" >>&! $LOGTO
@@ -145,15 +186,15 @@ if ($?db && $?class && $?image && $?old && ($?new || $?add)) then
 	    endif
 	    if (-e "$jpg") then
 		if ($?DEBUG) /bin/echo `date` "$0:t $$ -- link succeeded" `ls -al "$jpg"` >>&! $LOGTO
-		set OUTPUT = '{"result":"success","image":"'"$old/$image"'","link":"'"$new/$image"'"}'
+		set OUTPUT = '{"result":"success","image":"'"$imagepath/$image"'","link":"'"$new/$image"'"}'
 	    else
 		if ($?DEBUG) /bin/echo `date` "$0:t $$ -- link failed ($link)" >>&! $LOGTO
-		set OUTPUT = '{"result":"fail-link","image":"'"$old/$image"'","link":"'"$new/$image"'"}'
+		set OUTPUT = '{"result":"fail-link","image":"'"$imagepath/$image"'","link":"'"$new/$image"'"}'
 	    endif
 	endif
     else
 	if ($?DEBUG) /bin/echo `date` "$0:t $$ -- DNE or zero ($jpg)" >>&! $LOGTO
-	set OUTPUT = '{"result":"fail-invalid","image":"'"$old/$image"'","link":"'"$new/$image"'"}'
+	set OUTPUT = '{"result":"fail-invalid","image":"'"$imagepath/$image"'","link":"'"$new/$image"'"}'
     endif
 else
     if ($?DEBUG) /bin/echo `date` "$0:t $$ -- insufficient arguments" >>&! $LOGTO
@@ -196,7 +237,6 @@ endif
 
 /bin/echo ""
 /bin/echo "$OUTPUT"
-
 
 done:
 
