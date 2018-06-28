@@ -526,8 +526,8 @@ sensor aah_entity_picture_template:
 ### APPLE TV
 ###
 
-#media_player apple_tv:
-#  - platform: apple_tv
+media_player apple_tv:
+  - platform: apple_tv
 
 ###
 ### ROKU
@@ -770,7 +770,18 @@ sensor kcasanjo411:
 ### WEBCAMS
 ###
 
+## panasomic
+
+camera poolcamera:
+  - platform: mjpeg
+    mjpeg_url: http://192.168.1.162/nphMotionJpeg?Resolution=640x480&Quality=Clarity
+    still_image_url: http://192.168.1.162/SnapshotJPEG?Resolution=640x480&Quality=Clarity&View=Normal
+    name: poolcamera
+    username: !secret wcv80n_username
+    password: !secret wcv80n_password
+
 ## all Linksys/Cisco WCV80N cameras
+
 camera wcv80n_woodshed:
   - platform: mjpeg
     mjpeg_url: http://192.168.1.163/img/video.mjpeg
@@ -787,27 +798,21 @@ camera wcv80n_livingroom:
     username: !secret wcv80n_username
     password: !secret wcv80n_password
 
-camera wcv80n_poolhouse_fridge:
-  - platform: mjpeg
-    mjpeg_url: http://192.168.1.165/img/video.mjpeg
-    still_image_url: http://192.168.1.165/img/snapshot.cgi
-    name: wcv80n_poolhouse_fridge
-    username: !secret wcv80n_username
-    password: !secret wcv80n_password
+# NO 165
 
-camera wcv80n_interior_gate:
+camera wcv80n_fireplace:
   - platform: mjpeg
     mjpeg_url: http://192.168.1.166/img/video.mjpeg
     still_image_url: http://192.168.1.166/img/snapshot.cgi
-    name: wcv80n_interior_gate
+    name: wcv80n_fireplace
     username: !secret wcv80n_username
     password: !secret wcv80n_password
 
-camera wcv80kitchen_n:
+camera wcv80n_driveway:
   - platform: mjpeg
     mjpeg_url: http://192.168.1.167/img/video.mjpeg
     still_image_url: http://192.168.1.167/img/snapshot.cgi
-    name: wcv80kitchen_n
+    name: wcv80n_driveway
     username: !secret wcv80n_username
     password: !secret wcv80n_password
 
@@ -832,6 +837,14 @@ camera wcv80n_dogshedmiddle:
     mjpeg_url: http://192.168.1.170/img/video.mjpeg
     still_image_url: http://192.168.1.170/img/snapshot.cgi
     name: wcv80n_dogshedmiddle
+    username: !secret wcv80n_username
+    password: !secret wcv80n_password
+
+camera wcv80n_sideyard:
+  - platform: mjpeg
+    mjpeg_url: http://192.168.1.171/img/video.mjpeg
+    still_image_url: http://192.168.1.171/img/snapshot.cgi
+    name: wcv80n_sideyard
     username: !secret wcv80n_username
     password: !secret wcv80n_password
 
@@ -899,21 +912,15 @@ camera wcv80n_frontwalk:
     username: !secret wcv80n_username
     password: !secret wcv80n_password
 
-camera wcv80n_dogpond:
+camera wcv80n_garage:
   - platform: mjpeg
     mjpeg_url: http://192.168.1.180/img/video.mjpeg
     still_image_url: http://192.168.1.180/img/snapshot.cgi
-    name: wcv80n_dogpond
+    name: wcv80n_garage
     username: !secret wcv80n_username
     password: !secret wcv80n_password
 
-#camera wcv80n_poolhousestereo:
-#  - platform: mjpeg
-#    mjpeg_url: http://192.168.1.181/img/video.mjpeg
-#    still_image_url: http://192.168.1.181/img/snapshot.cgi
-#    name: wcv80n_poolhousestereo
-#    username: !secret wcv80n_username
-#    password: !secret wcv80n_password
+# NO 181
 
 camera wcv80n_diningroom:
   - platform: mjpeg
@@ -931,22 +938,7 @@ camera wcv80n_backyard:
     username: !secret wcv80n_username
     password: !secret wcv80n_password
 
-###
-### HORIZON
-###
-# !include horizon.yaml
-
-###
-### AGE-AT-HOME
-###
-
-##
-## CAMERAS (motion package)
-##
-## PLAYSTATION 3 EYE CAMERA
-## - 640x480 CCD @ 60 FPS
-## - Either 56° field of view (red dot) for close-up framing or a 75° field of view (blue dot) for long-shot framing 
-##
+## AGE-AT-HOME
 
 camera roughfog:
   - platform: mjpeg
@@ -1250,7 +1242,7 @@ camera aah_wrong_kitchen:
 camera last_image:
   - platform: mqtt
     name: last_image
-    topic: 'image/#'
+    topic: 'image/+'
 
 camera last_image_annotated:
   - platform: mqtt
@@ -1261,6 +1253,11 @@ camera last_image_cropped:
   - platform: mqtt
     name: last_image_cropped
     topic: 'image-cropped/+'
+
+camera last_image_composed:
+  - platform: mqtt
+    name: last_image_composed
+    topic: 'image-composed/+'
 
 camera last_image_composite:
   - platform: mqtt

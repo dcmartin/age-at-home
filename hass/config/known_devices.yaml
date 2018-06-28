@@ -469,8 +469,11 @@ playstation_4:
   track: false
   vendor: Liteon Techfalselogy Corporation
 
-# webcams
+###
+### WEBCAMS
+###
 
+# 192.168.1.162 00:80:F0:C1:FF:50 (PANASONIC)
 poolcamera:
   name: poolcamera
   mac: 00:80:F0:C1:FF:50
@@ -500,20 +503,12 @@ wcv80n_livingroom:
   hide_if_away: false
   vendor: Cisco-Linksys, LLC
 
-# 192.168.1.165 00:22:6B:FF:2B:DF (Cisco-Linksys)
-wcv80n_poolhouse_fridge:
-  mac: 00:22:6B:FF:2B:DF
-  name: wcv80n_poolhouse_fridge
-  icon: mdi:webcam
-  picture: http://www.linksys.com/images/productmt/834045/372.jpg
-  track: true
-  hide_if_away: false
-  vendor: Cisco-Linksys, LLC
+# NO 165
 
 # 192.168.1.166 00:22:6B:F2:5F:AF (Cisco-Linksys)
 wcv80n_fireplace:
   mac: 00:22:6B:F2:5F:AF
-  name: wcv80n_firelace
+  name: wcv80n_fireplace
   icon: mdi:webcam
   picture: http://www.linksys.com/images/productmt/834045/372.jpg
   track: true
@@ -521,9 +516,9 @@ wcv80n_fireplace:
   vendor: Cisco-Linksys, LLC
 
 # 192.168.1.167 00:22:6B:F2:5A:6D (Cisco-Linksys)
-wcv80n_kitchen:
+wcv80n_driveway:
   mac: 00:22:6B:F2:5A:6D
-  name: wcv80n_kitchen
+  name: wcv80n_driveway
   icon: mdi:webcam
   picture: http://www.linksys.com/images/productmt/834045/372.jpg
   track: true
@@ -554,6 +549,16 @@ wcv80n_dogyard:
 wcv80n_dogshedmiddle:
   mac: 00:22:6B:F2:57:9B
   name: wcv80n_dogshedmiddle
+  icon: mdi:webcam
+  picture: http://www.linksys.com/images/productmt/834045/372.jpg
+  track: true
+  hide_if_away: false
+  vendor: Cisco-Linksys, LLC
+
+# 192.168.1.171 00:22:6B:F2:57:9B (Cisco-Linksys)
+wcv80n_sideyard:
+  mac: 00:22:6B:FF:2A:14
+  name: wcv80n_sideyard
   icon: mdi:webcam
   picture: http://www.linksys.com/images/productmt/834045/372.jpg
   track: true
@@ -641,24 +646,16 @@ wcv80n_frontwalk:
   vendor: Cisco-Linksys, LLC
 
 # 192.168.1.180 C8:D7:19:BD:37:93 (Cisco-Linksys)
-wcv80n_dogpond:
+wcv80n_garage:
   mac: C8:D7:19:BD:37:93
-  name: wcv80n_dogpond
+  name: wcv80n_garage
   icon: mdi:webcam
   picture: http://www.linksys.com/images/productmt/834045/372.jpg
   track: true
   hide_if_away: false
   vendor: Cisco-Linksys, LLC
 
-# 192.168.1.181 00:22:6B:F2:5C:A5 (Cisco-Linksys)
-wcv80n_poolhousestereo:
-  mac: 00:22:6B:F2:5C:A5
-  name: wcv80n_poolhousestereo
-  icon: mdi:webcam
-  picture: http://www.linksys.com/images/productmt/834045/372.jpg
-  track: true
-  hide_if_away: false
-  vendor: Cisco-Linksys, LLC
+# NO 181
 
 # 192.168.1.182 C8:D7:19:BD:31:FE (Cisco-Linksys)
 wcv80n_diningroom:
