@@ -1,6 +1,6 @@
 #!/bin/csh -fb
 
-if ($?GIT == 0) setenv GIT .
+if ($?GIT == 0) setenv GIT $0:h
 echo "[ENV] using ($GIT) for GIT" >& /dev/stderr
 
 ## HOMEBREW (http://brew.sh)
