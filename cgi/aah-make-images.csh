@@ -260,7 +260,7 @@ foreach u ( $updates )
     if (! -s "$image.$ext" && ! -l "$image.$ext") then
       set url = "ftp://$ipaddr/$id.$ext"
       set out = "$TMP/$0:t.$device.$id.$$.$ext"
-      if ($?VERBOSE) echo `date` "$0:t $$ -- retrieving ($id) with $ipaddr" >>&! $LOGTO
+      if ($?VERBOSE) echo `date` "$0:t $$ -- FTP retrieving ($id) with $ipaddr" >>&! $LOGTO
       curl -s -q -L -u "ftp:ftp" "$url" -o "$out"
       if (! -s "$out") then
 	rm -f "$out"
@@ -269,6 +269,10 @@ foreach u ( $updates )
       else
 	if ($?VERBOSE) echo `date` "$0:t $$ -- $device -- successful retrieve image $image format $ext" >>&! $LOGTO
 	mv -f "$out" "$image.$ext"
+	if ($?FTP_IMAGES_DELETE) then
+	  if ($?VERBOSE) echo `date` "$0:t $$ -- $device -- FTP deleting retrieved image $id.$ext" >>&! $LOGTO
+	  curl -v -u ftp:ftp "$url" -Q "DELE $id.$ext"
+	endif
       endif
     else
       if ($?VERBOSE) echo `date` "$0:t $$ -- $device -- existing image ($id) format $ext" >>&! $LOGTO
