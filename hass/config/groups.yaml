@@ -206,6 +206,10 @@ ageathome_learning:
     - input_boolean.ageathome_notify_email
     - input_boolean.ageathome_notify_gate
     - input_boolean.ageathome_notify_poolhouse
+    - input_boolean.ageathome_notify_kitchen
+    - input_boolean.ageathome_notify_bathroom
+    - input_boolean.ageathome_notify_frontdoor
+    - input_boolean.ageathome_notify_road
     - input_boolean.ageathome_learning
     - input_select.ageathome_learning
 

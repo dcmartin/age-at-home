@@ -18,3 +18,23 @@ ageathome_notify_poolhouse:
   initial: true
   icon: mdi:pool
 
+ageathome_notify_kitchen:
+  name: ageathome_notify_kitchen
+  initial: false
+  icon: mdi:stove
+
+ageathome_notify_bathroom:
+  name: ageathome_notify_bathroom
+  initial: false
+  icon: mdi:anchor
+
+ageathome_notify_frontdoor:
+  name: ageathome_notify_frontdoor
+  initial: false
+  icon: mdi:door
+
+ageathome_notify_road:
+  name: ageathome_notify_road
+  initial: false
+  icon: mdi:road
+

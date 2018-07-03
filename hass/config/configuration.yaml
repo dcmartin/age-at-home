@@ -209,6 +209,26 @@ binary_sensor ageathome_learning_template:
           - input_boolean.ageathome_notify_poolhouse
         value_template: >
           {{ is_state('input_boolean.ageathome_notify_poolhouse','on') }}
+      ageathome_notify_kitchen:
+        entity_id: 
+          - input_boolean.ageathome_notify_kitchen
+        value_template: >
+          {{ is_state('input_boolean.ageathome_notify_kitchen','on') }}
+      ageathome_notify_bathroom:
+        entity_id: 
+          - input_boolean.ageathome_notify_bathroom
+        value_template: >
+          {{ is_state('input_boolean.ageathome_notify_bathroom','on') }}
+      ageathome_notify_frontdoor:
+        entity_id: 
+          - input_boolean.ageathome_notify_frontdoor
+        value_template: >
+          {{ is_state('input_boolean.ageathome_notify_frontdoor','on') }}
+      ageathome_notify_road:
+        entity_id: 
+          - input_boolean.ageathome_notify_road
+        value_template: >
+          {{ is_state('input_boolean.ageathome_notify_road','on') }}
 
 ###
 ### PANEL_IFRAME (tabs in HTTP web interface; see "frontend")
@@ -505,22 +525,22 @@ sensor aah_entity_picture_template:
     sensors:
       kitchen_entity_picture:
         # entity_id: camera.kitchen_image
-        value_template: '{{ states.camera.kitchen_image.attributes.entity_picture }}'
+        value_template: '{{ states.camera.kitchen_image_annotated.attributes.entity_picture }}'
       bathroom_entity_picture:
-        # entity_id: camera.bathroom_image
-        value_template: '{{ states.camera.bathroom_image.attributes.entity_picture }}'
+        # entity_id: camera.bathroom_image_annotated
+        value_template: '{{ states.camera.bathroom_image_annotated.attributes.entity_picture }}'
       frontdoor_entity_picture:
-        # entity_id: camera.frontdoor_image
-        value_template: '{{ states.camera.frontdoor_image.attributes.entity_picture }}'
+        # entity_id: camera.frontdoor_image_annotated
+        value_template: '{{ states.camera.frontdoor_image_annotated.attributes.entity_picture }}'
       road_entity_picture:
-        # entity_id: camera.road_image
-        value_template: '{{ states.camera.road_image.attributes.entity_picture }}'
+        # entity_id: camera.road_image_annotated
+        value_template: '{{ states.camera.road_image_annotated.attributes.entity_picture }}'
       gate_entity_picture:
-        # entity_id: camera.gate_image
-        value_template: '{{ states.camera.gate_image.attributes.entity_picture }}'
+        # entity_id: camera.gate_image_annotated
+        value_template: '{{ states.camera.gate_image_annotated.attributes.entity_picture }}'
       poolhouse_entity_picture:
-        # entity_id: camera.poolhouse_image
-        value_template: '{{ states.camera.poolhouse_image.attributes.entity_picture }}'
+        # entity_id: camera.poolhouse_image_annotated
+        value_template: '{{ states.camera.poolhouse_image_annotated.attributes.entity_picture }}'
 
 ###
 ### APPLE TV
