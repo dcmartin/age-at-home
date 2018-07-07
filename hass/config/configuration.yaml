@@ -1176,12 +1176,6 @@ sensor aah_wrong_when:
 ## LAST ACTIVITY
 ##
 
-sensor last_presence:
-  - platform: mqtt
-    name: last_presence
-    state_topic: 'presence/#'
-    value_template: '{{ value_json }}'
-
 sensor last_device:
   - platform: mqtt
     name: last_device
@@ -1298,12 +1292,6 @@ camera last_image_animated:
 ##
 ## KITCHEN
 ##
-
-sensor kitchen_presence:
-  - platform: mqtt
-    name: kitchen_presence
-    state_topic: 'presence/kitchen'
-    value_template: '{{ value_json }}'
 
 sensor kitchen_last:
   - platform: mqtt
@@ -1523,12 +1511,6 @@ camera road_image_animated:
 ##
 ## gate
 ##
-
-sensor gate_presence:
-  - platform: mqtt
-    name: gate_presence
-    state_topic: 'presence/gate'
-    value_template: '{{ value_json }}'
 
 sensor gate_last:
   - platform: mqtt

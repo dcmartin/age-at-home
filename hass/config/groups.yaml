@@ -10,8 +10,7 @@ default_view:
   entities:
     - camera.ageathome_gate
     - camera.ageathome_poolhouse
-    - camera.last_image
-    - group.switches
+    - camera.last_image_annotated
     - group.people
 
 motion:
@@ -44,6 +43,7 @@ over_view:
   name: Over View
   icon: mdi:looks
   entities:
+    - group.switches
     - group.lights
     - group.iphones
     - group.sensor_counts

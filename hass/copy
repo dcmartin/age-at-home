@@ -1,6 +1,6 @@
-#!/bin/csh -fb
+#!/bin/tcsh
 
-set dir = "$cwd/$0:h"
+set dir = "$cwd"
 
 if ($?share == 0) set share = "/usr/share/hassio"
 if (! -d "$share") then
@@ -46,32 +46,39 @@ endif
 # copy ADDONS
 if (-d "$dir/addons") then
   echo "Copying ADDONS"
-  foreach i ( "$dir"/addons/* )
-    if (! -d "$i") then
-      echo "skipping $i"
+  foreach ao ( "$dir"/addons/* )
+    if (! -d "$ao") then
+      echo "skipping $ao"
       continue
     endif
-    echo -n "$i:t ["
-    if (-d "$i") then
-      mkdir -p "$addons/$i:t"
-      foreach j ( "$i"/* )
-	echo -n "$j:t "
-	if (-d "$j") then
-	  mkdir -p "$addons/$i:t/$j:t"
-	  foreach k ( "$j"/* )
-	    echo -n "$k:t "
-	    cp "$k" "$addons"/"$i:t"/"$j:t"/"$k:t"
-	  end
-	else
-	  cp "$j" "$addons"/"$i:t"/"$j:t"
-	endif
+    echo -n "$ao:t ["
+    if (-d "$ao") then
+      if ( -e "$dir/$ao:t.json" ) set json = "$dir/$ao:t.json"
+      mkdir -p "$addons/$ao:t"
+      foreach aoe ( "$ao"/* )
+        if ( "$aoe:t" == "config.json" && $?json ) then
+          echo -n "$json "
+          cp "$json" "$addons"/"$ao:t"/"$aoe:t"
+        else if (-d "$aoe") then
+          echo -n "$aoe:t "
+          mkdir -p "$addons/$ao:t/$aoe:t"
+          foreach k ( "$aoe"/* )
+            echo -n "$k:t "
+            cp "$k" "$addons"/"$ao:t"/"$aoe:t"/"$k:t"
+          end
+        else
+          echo -n "$aoe:t "
+          cp "$aoe" "$addons"/"$ao:t"/"$aoe:t"
+        endif
       end
     else
-      cp "$j" "$addons"/"$i:t"/"$j:t"
+      cp "$aoe" "$addons"/"$ao:t"/"$aoe:t"
     endif
     echo "]"
+    unset json
   end
 else if (-d "$addons") then
   echo "[Info] Removing $addons"
   rm -rf "$addons"
 endif
+
