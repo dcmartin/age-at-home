@@ -818,7 +818,13 @@ camera wcv80n_livingroom:
     username: !secret wcv80n_username
     password: !secret wcv80n_password
 
-# NO 165
+camera wcv80n_driveway:
+  - platform: mjpeg
+    mjpeg_url: http://192.168.1.165/img/video.mjpeg
+    still_image_url: http://192.168.1.167/img/snapshot.cgi
+    name: wcv80n_driveway
+    username: !secret wcv80n_username
+    password: !secret wcv80n_password
 
 camera wcv80n_fireplace:
   - platform: mjpeg
@@ -828,13 +834,7 @@ camera wcv80n_fireplace:
     username: !secret wcv80n_username
     password: !secret wcv80n_password
 
-camera wcv80n_driveway:
-  - platform: mjpeg
-    mjpeg_url: http://192.168.1.167/img/video.mjpeg
-    still_image_url: http://192.168.1.167/img/snapshot.cgi
-    name: wcv80n_driveway
-    username: !secret wcv80n_username
-    password: !secret wcv80n_password
+# NO 167
 
 camera wcv80n_poolhouse_exterior:
   - platform: mjpeg
