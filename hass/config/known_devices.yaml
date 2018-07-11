@@ -504,6 +504,14 @@ wcv80n_livingroom:
   vendor: Cisco-Linksys, LLC
 
 # NO 165
+wcv80n_driveway:
+  mac: 00:22:6B:FF:2B:DF
+  name: wcv80n_driveway
+  icon: mdi:webcam
+  picture: http://www.linksys.com/images/productmt/834045/372.jpg
+  track: true
+  hide_if_away: false
+  vendor: Cisco-Linksys, LLC
 
 # 192.168.1.166 00:22:6B:F2:5F:AF (Cisco-Linksys)
 wcv80n_fireplace:
@@ -515,15 +523,7 @@ wcv80n_fireplace:
   hide_if_away: false
   vendor: Cisco-Linksys, LLC
 
-# 192.168.1.167 00:22:6B:F2:5A:6D (Cisco-Linksys)
-wcv80n_driveway:
-  mac: 00:22:6B:F2:5A:6D
-  name: wcv80n_driveway
-  icon: mdi:webcam
-  picture: http://www.linksys.com/images/productmt/834045/372.jpg
-  track: true
-  hide_if_away: false
-  vendor: Cisco-Linksys, LLC
+# non-operataion; 192.168.1.167 00:22:6B:F2:5A:6D (Cisco-Linksys)
 
 # 192.168.1.168 00:25:9C:82:59:54 (Cisco-Linksys)
 wcv80n_poolhouse_exterior:

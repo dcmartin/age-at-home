@@ -235,6 +235,18 @@ binary_sensor ageathome_learning_template:
 ###
 
 panel_iframe:
+  cameras:
+    title: 'Cameras'
+    icon: mdi:webcam
+    url: 'http://www.dcmartin.com/CABIN.html'
+  motion:
+    title: 'Motion'
+    icon: mdi:movie
+    url: 'http://192.168.1.40:8080'
+  images:
+    title: 'Images'
+    icon: mdi:image-plus
+    url: 'http://192.168.1.40:8000'
   netdata:
     title: 'NetData'
     icon: mdi:database-search
@@ -525,22 +537,22 @@ sensor aah_entity_picture_template:
     sensors:
       kitchen_entity_picture:
         # entity_id: camera.kitchen_image
-        value_template: '{{ states.camera.kitchen_image_annotated.attributes.entity_picture }}'
+        value_template: '{{ states.camera.kitchen_image_animated.attributes.entity_picture }}'
       bathroom_entity_picture:
-        # entity_id: camera.bathroom_image_annotated
-        value_template: '{{ states.camera.bathroom_image_annotated.attributes.entity_picture }}'
+        # entity_id: camera.bathroom_image_animated
+        value_template: '{{ states.camera.bathroom_image_animated.attributes.entity_picture }}'
       frontdoor_entity_picture:
-        # entity_id: camera.frontdoor_image_annotated
-        value_template: '{{ states.camera.frontdoor_image_annotated.attributes.entity_picture }}'
+        # entity_id: camera.frontdoor_image_animated
+        value_template: '{{ states.camera.frontdoor_image_animated.attributes.entity_picture }}'
       road_entity_picture:
-        # entity_id: camera.road_image_annotated
-        value_template: '{{ states.camera.road_image_annotated.attributes.entity_picture }}'
+        # entity_id: camera.road_image_animated
+        value_template: '{{ states.camera.road_image_animated.attributes.entity_picture }}'
       gate_entity_picture:
-        # entity_id: camera.gate_image_annotated
-        value_template: '{{ states.camera.gate_image_annotated.attributes.entity_picture }}'
+        # entity_id: camera.gate_image_animated
+        value_template: '{{ states.camera.gate_image_animated.attributes.entity_picture }}'
       poolhouse_entity_picture:
-        # entity_id: camera.poolhouse_image_annotated
-        value_template: '{{ states.camera.poolhouse_image_annotated.attributes.entity_picture }}'
+        # entity_id: camera.poolhouse_image_animated
+        value_template: '{{ states.camera.poolhouse_image_animated.attributes.entity_picture }}'
 
 ###
 ### APPLE TV
@@ -821,7 +833,7 @@ camera wcv80n_livingroom:
 camera wcv80n_driveway:
   - platform: mjpeg
     mjpeg_url: http://192.168.1.165/img/video.mjpeg
-    still_image_url: http://192.168.1.167/img/snapshot.cgi
+    still_image_url: http://192.168.1.165/img/snapshot.cgi
     name: wcv80n_driveway
     username: !secret wcv80n_username
     password: !secret wcv80n_password
@@ -1245,6 +1257,39 @@ sensor image_size_history:
     start: '{{ now().replace(hour=0).replace(minute=0).replace(second=0) }}'
     end: '{{ now() }}'
 
+###
+### MOTION CAMERAS
+###
+
+camera motion_camera_image:
+  - platform: mqtt
+    name: motion_camera_image
+    topic: 'motion/+/+/image'
+
+camera motion_camera_image_average:
+  - platform: mqtt
+    name: motion_camera_image_average
+    topic: 'motion/+/+/image-average'
+
+camera motion_camera_image_blend:
+  - platform: mqtt
+    name: motion_camera_image_blend
+    topic: 'motion/+/+/image-blend'
+
+camera motion_camera_image_animated:
+  - platform: mqtt
+    name: motion_camera_image_animated
+    topic: 'motion/+/+/image-animated'
+
+camera motion_camera_image_animated_mask:
+  - platform: mqtt
+    name: motion_camera_image_animated_mask
+    topic: 'motion/+/+/image-animated-mask'
+
+camera motion_camera_image_composite:
+  - platform: mqtt
+    name: motion_camera_image_composite
+    topic: 'motion/+/+/image-composite'
 
 ###
 ### GET A PICTURE

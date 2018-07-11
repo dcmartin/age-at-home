@@ -13,6 +13,24 @@ default_view:
     - camera.last_image_annotated
     - group.people
 
+#
+# MOTION VIEW
+#
+
+motion_view:
+  view: true
+  name: Motion View
+  icon: mdi:animation
+  entities:
+    - camera.motion_camera_image
+    - camera.motion_camera_image_animated
+    - camera.motion_camera_image_average
+    - camera.motion_camera_image_blend
+    - camera.motion_camera_image_composite
+    - camera.motion_camera_image_animated_mask
+
+## HIDDEN GROUPS
+
 motion:
   name: Motion
   icon: mdi:people
@@ -37,6 +55,10 @@ lights:
   control: hidden
   entities:
     - light.living_room
+
+#
+# OVER VIEW
+#
 
 over_view:
   view: true
@@ -375,8 +397,8 @@ ageathome_bathroom_details:
 
 ageathome_frontdoor_view:
   view: true
-  name: AgeAtHome Bathroom View
-  icon: mdi:home-outline
+  name: AgeAtHome Frontdoor View
+  icon: mdi:door
   entities:
     - camera.frontdoor_image
     - camera.frontdoor_image_annotated
@@ -390,7 +412,7 @@ ageathome_frontdoor_view:
 
 ageathome_frontdoor_details:
   name: AgeAtHome Frontdoor Details
-  icon: mdi:home-outline
+  icon: mdi:door
   entities:
     - sensor.frontdoor_who
     - sensor.frontdoor_what
