@@ -1264,32 +1264,32 @@ sensor image_size_history:
 camera motion_camera_image:
   - platform: mqtt
     name: motion_camera_image
-    topic: 'motion/+/+/image'
+    topic: 'motion/testing/+/image'
 
 camera motion_camera_image_average:
   - platform: mqtt
     name: motion_camera_image_average
-    topic: 'motion/+/+/image-average'
+    topic: 'motion/testing/+/image-average'
 
 camera motion_camera_image_blend:
   - platform: mqtt
     name: motion_camera_image_blend
-    topic: 'motion/+/+/image-blend'
+    topic: 'motion/testing/+/image-blend'
 
 camera motion_camera_image_animated:
   - platform: mqtt
     name: motion_camera_image_animated
-    topic: 'motion/+/+/image-animated'
+    topic: 'motion/testing/+/image-animated'
 
 camera motion_camera_image_animated_mask:
   - platform: mqtt
     name: motion_camera_image_animated_mask
-    topic: 'motion/+/+/image-animated-mask'
+    topic: 'motion/testing/+/image-animated-mask'
 
 camera motion_camera_image_composite:
   - platform: mqtt
     name: motion_camera_image_composite
-    topic: 'motion/+/+/image-composite'
+    topic: 'motion/testing/+/image-composite'
 
 ###
 ### GET A PICTURE
