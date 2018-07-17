@@ -21,85 +21,28 @@ ageathome_notify_poolhouse:
 name: My Awesome Home
 
 views:
-  - name: CAMERAS
+  - icon: mdi:people
+    title: CAMERAS
     cards:
-    - type: camera-preview
+    - type: picture-entity
       entity: camera.ageathome_road
-    - type: camera-preview
-      entity: camera.wcv80n_driveway
-    - type: camera-preview
+    - type: picture-entity
       entity: camera.ageathome_gate
-    - type: camera-preview
-      entity: camera.wcv80n_woodshed
-    - type: camera-preview
-      entity: camera.wcv80n_dogshedfront
-    - type: camera-preview
-      entity: camera.wcv80n_dogshedmiddle
-      #
-    - type: camera-preview
-      entity: camera.wcv80n_dogyard
-    - type: camera-preview
-      entity: camera.wcv80n_frontwalk
-    - type: camera-preview
-      entity: camera.wcv80n_garage
-    - type: camera-preview
-      entity: camera.wcv80n_upperpath
-    - type: camera-preview
-      entity: camera.wcv80n_gravelpad
-    - type: camera-preview
+    - type: picture-entity
       entity: camera.ageathome_frontdoor
-      #
-    - type: camera-preview
-      entity: camera.wcv80n_foyer
-    - type: camera-preview
-      entity: camera.wcv80n_fireplace
-    - type: camera-preview
-      entity: camera.wcv80n_livingroom
-    - type: camera-preview
-      entity: camera.wcv80n_diningroom
-    - type: camera-preview
-      entity: camera.wcv80n_laundry
-    - type: camera-preview
+    - type: picture-entity
       entity: camera.ageathome_kitchen
-      #
-    - type: camera-preview
-      entity: camera.wcv80n_sideyard
-    - type: camera-preview
-      entity: camera.wcv80n_dogshed_interior
-    - type: camera-preview
-      entity: camera.wcv80n_backyard
-    - type: camera-preview
-      entity: camera.poolcamera
-    - type: camera-preview
+    - type: picture-entity
       entity: camera.ageathome_poolhouse
-    - type: camera-preview
-      entity: camera.wcv80n_poolhouse_exterior
-      #
-    - type: camera-preview
+    - type: picture-entity
       entity: camera.ageathome_bathroom
-  - name: Test 
+  - icon: mdi:toggle-switch
+    title: Switches
     cards:
-      - type: entities
-        title: Controls
-        entities:
-          - input_boolean.ageathome_learning
-          - input_boolean.ageathome_notify_email
-          - input_boolean.ageathome_notify_gate
-          - input_boolean.ageathome_notify_poolhouse
-      - type: entity-filter
-        filter:
-          - domain: input_boolean
-            state: 'on'
-        card_config:
-          title: Notifications
-  - tab_icon: mdi:home-assistant
-    name: State
-    cards:
-      - type: entities
-        title: System Controls
-        entities:
-          - input_boolean.ageathome_learning
-          - input_boolean.ageathome_notify_email
-          - input_boolean.ageathome_notify_gate
-          - input_boolean.ageathome_notify_poolhouse
-
+    - type: entities
+      title: Controls
+      entities:
+        - input_boolean.ageathome_learning
+        - input_boolean.ageathome_notify_email
+        - input_boolean.ageathome_notify_gate
+        - input_boolean.ageathome_notify_poolhouse
