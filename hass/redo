@@ -1,3 +1,5 @@
 #!/bin/csh -fb
-$0:h/copy # >& /dev/null
-$0:h/restart # >& /dev/null
+set d = $0:h
+if ($d == "$0") set d = $cwd
+$d/copy # >& /dev/null
+$d/restart # >& /dev/null

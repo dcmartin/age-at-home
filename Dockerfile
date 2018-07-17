@@ -68,11 +68,11 @@ RUN if [ ! -d "${CREDIR}" ]; then mkdir -p "${CREDIR}" && chgrp daemon "${CREDIR
 
 # credentials
 COPY ./.cloudant_url ${CREDIR}
-RUN chmod 440 ${CREDIR}/.cloudant_url
+RUN chmod 444 ${CREDIR}/.cloudant_url
 COPY ./.watson.visual-recognition.json ${CREDIR}
-RUN chmod 440 ${CREDIR}/.watson.visual-recognition.json
+RUN chmod 444 ${CREDIR}/.watson.visual-recognition.json
 COPY ./.ftp_url ${CREDIR}
-RUN chmod 440 ${CREDIR}/.ftp_url
+RUN chmod 444 ${CREDIR}/.ftp_url
 
 # html
 COPY ./public/ /usr/local/apache2/htdocs/

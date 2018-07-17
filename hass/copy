@@ -26,8 +26,13 @@ set yamls = ( ui-lovelace scripts known_devices configuration groups history aut
 echo -n "Copying YAML ["
 foreach yaml ( $yamls )
   if (-e "$dir/config/$yaml.yaml") then
-    echo -n "$yaml "
-    cp "$dir/config/$yaml.yaml" "$config/$yaml.yaml"
+    if (-e "$dir/$yaml.yaml") then
+      echo -n "$yaml ($dir/$yaml) "
+      cat "$dir/config/$yaml.yaml" "$dir/$yaml.yaml" >! "$config/$yaml.yaml"
+    else
+      echo -n "$yaml "
+      cp "$dir/config/$yaml.yaml" "$config/$yaml.yaml"
+    endif
   else
     echo "NO SUCH FILE $dir/config/$yaml.yaml"
     exit 1
@@ -56,9 +61,11 @@ if (-d "$dir/addons") then
       if ( -e "$dir/$ao:t.json" ) set json = "$dir/$ao:t.json"
       mkdir -p "$addons/$ao:t"
       foreach aoe ( "$ao"/* )
+	# if <addon.json> found ($?json) get ".options" only and replace in primary
         if ( "$aoe:t" == "config.json" && $?json ) then
           echo -n "$json "
-          cp "$json" "$addons"/"$ao:t"/"$aoe:t"
+	  set options = `jq -r '.' "$json"`
+	  jq '.|.options='"$options" "$aoe" >! "$addons"/"$ao:t"/"$aoe:t"
         else if (-d "$aoe") then
           echo -n "$aoe:t "
           mkdir -p "$addons/$ao:t/$aoe:t"

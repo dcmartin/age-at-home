@@ -13,21 +13,6 @@ default_view:
     - camera.last_image_annotated
     - group.people
 
-#
-# MOTION VIEW
-#
-
-motion_view:
-  view: true
-  name: Motion View
-  icon: mdi:animation
-  entities:
-    - camera.motion_camera_image
-    - camera.motion_camera_image_animated
-    - camera.motion_camera_image_average
-    - camera.motion_camera_image_blend
-    - camera.motion_camera_image_composite
-    - camera.motion_camera_image_animated_mask
 
 ## HIDDEN GROUPS
 
@@ -736,3 +721,4 @@ webcam_status:
     - device_tracker.wcv80n_poolhouse_exterior
     - device_tracker.wcv80n_upperpath
     - device_tracker.wcv80n_woodshed
+

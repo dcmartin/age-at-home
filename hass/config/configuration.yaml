@@ -240,11 +240,11 @@ panel_iframe:
     icon: mdi:webcam
     url: 'http://www.dcmartin.com/CABIN.html'
   motion:
-    title: 'Motion'
+    title: 'Motion Cams'
     icon: mdi:movie
     url: 'http://192.168.1.40:8080'
-  images:
-    title: 'Images'
+  motion_files:
+    title: 'Motion Images'
     icon: mdi:image-plus
     url: 'http://192.168.1.40:8000'
   netdata:
@@ -271,18 +271,14 @@ panel_iframe:
     title: 'CLASSIFY'
     icon: mdi:image-filter
     url: 'http://192.168.1.40:8999/classify.html'
-  digits_p40:
-    title: 'DIGITS-P40'
+  digits:
+    title: 'DIGITS'
     icon: mdi:format-list-numbers
     url: 'http://192.168.1.40:32769/'
   controls:
     title: Control Panel
     icon: mdi:windows
     url: 'http://192.168.1.40:7080'
-#  mtn:
-#    title: 'Horizon'
-#    icon: mdi:image-filter-hdr
-#    url: 'http://192.168.1.40/dashboard'
   terminal:
     title: Terminal
     icon: mdi:console
@@ -291,10 +287,6 @@ panel_iframe:
     title: DAVID-PLEX
     icon: mdi:television
     url: 'http://192.168.1.27:8181'
-#  cameras:
-#    title: Cameras
-#    icon: mdi:webcam
-#    url: 'http://www.dcmartin.com/REMOTE.html'
 
 ###
 ### SENSORS
@@ -331,140 +323,6 @@ sensor state_template webcam_trackers:
               "{{state.name.replace('wcv80n_','')}}",
             {%- endif -%}
           {%- endfor -%}null]
-
-###
-### FFMPEG motion detection (this is a test)
-###
-
-## initiate FFMPEG
-ffmpeg:
-
-## binary indicator of motion
-binary_sensor backyardmotion:
-  - platform: ffmpeg_motion
-    input: !secret backyardvideo
-    name: backyardmotion
-    extra_arguments: -pred 1 -q:v 2
-    # device_class: motion
-    # initial_state: false
-    # changes: 5
-    # reset: 20
-    # repeats: 0
-    # repeat_time: 0
-    # ffmpeg_bin: /usr/bin/ffmpeg
-    # ffmpeg_bin: /usr/bin/avconv
-
-###
-### HORIZON
-###
-
-#horizon:
-#  username: dcmartin
-#  password: !secret horizon_password
-#  wallet: !secret horizon_wallet
-#  publicid: !secret horizon_public_id
-#   pattern: sdr-gps-netspeed
-#  workload:
-#    - sdr
-#            type: realtek
-#    - gps
-#            accuracy: 1000 # meters (fuzzed)
-#    - netspeed
-#            location: automatic
-#        - purpleair
-#            username: !secret purpleair_username
-#            password: !secret purpleair_password
-#    - motion
-#            event_gap: 5         
-#        locate_mode: on
-#        output_pictures: center
-#            threshold: 1500
-#                threshold_tune: on
-#                mqtt_host: 192.168.1.40
-#                mqtt_picture: on
-#                stream_port: 8081
-
-###
-### WATSON IOT PLATFORM (TBD)
-###
-
-#watson_iotp:
-#  org_id: hk31l6
-#  auth_method: token
-#  device_type: ageathome
-#  device_id: rough-fog
-#  auth_token: !secret wiotp_auth_token
-# NEW w/ HORIZON
-#  wiotp_org_id: hk3116
-#  wiotp_api_key: !secret wiotp_api_key
-#  wiotp_api_auth_token: !secret wiotp_auth_token
-#  wiotp_device_type: ageathome
-#  wiotp_device_auth_token: !secret wiotp_device_auth_token
-#  hzn_device_id: {{ states.horizon.attributes.device_id }} 
-
-###
-### MOTION PACKAGE AS "ADD-ON"
-###
-
-#motion rough-fog:
-#  name: kitchen
-#  server: 192.168.1.40
-#  webcontrol_port: 8080
-#  stream_port: 8081
-#  username: !secret motion_username
-#  password: !secret motion_password
-#  broker: 192.168.1.40
-
-#binary_sensor motion_rpi2_onoff:
-#  platform: motion
-#  locate_motion_mode: off
-#  locate_motion_style: box
-#  threshold: 1500
-#  threshold_tune: on
-
-#
-# MOTION PACKAGE w/ EXPOSED OPTIONS
-#
-
-#camera motion_rpi2:
-#  platform: motion
-#  text_right: %Y-%m-%d\n%T-%q
-#  text_left: (not defined)
-#  text_changes: off
-#  text_event: %Y%m%d%H%M%S
-#  text_double: off
-#  noise_level: 32
-#  noise_tune: on
-#  despeckle_filter: EedDl
-#  area_detect: (not defined)
-#  mask_file: (not defined)
-#  smart_mask_speed: 0
-#  lightswitch: 0
-#  minimum_motion_frames: 1
-#  pre_capture: 0
-#  post_capture: 0
-#  event_gap: 5
-#  max_movie_time: 0
-#  emulate_motion: off
-#  output_pictures: center
-#  output_debug_pictures: off
-#  quality: 100
-#  picture_type: jpeg
-#  ffmpeg_output_movies: off
-#  ffmpeg_output_debug_movies: off
-#  ffmpeg_timelapse: 0
-#  ffmpeg_timelapse_mode: daily
-#  ffmpeg_bps: 500000
-#  ffmpeg_variable_bitrate: 0
-#  ffmpeg_video_codec: mpeg4
-#  ffmpeg_deinterlace: off
-#  stream_port: 8081
-#  stream_quality: 50
-#  stream_motion: off
-#  stream_maxrate: 1
-#  stream_localhost: off
-#  stream_limit: 0
-
 
 ###
 ### AGEATHOME - ENTITY LISTS 
@@ -537,46 +395,26 @@ sensor aah_entity_picture_template:
     sensors:
       kitchen_entity_picture:
         # entity_id: camera.kitchen_image
-        value_template: '{{ states.camera.kitchen_image_animated.attributes.entity_picture }}'
+        value_template: '{{ states.camera.kitchen_image_annotated.attributes.entity_picture }}'
       bathroom_entity_picture:
-        # entity_id: camera.bathroom_image_animated
-        value_template: '{{ states.camera.bathroom_image_animated.attributes.entity_picture }}'
+        # entity_id: camera.bathroom_image_annotated
+        value_template: '{{ states.camera.bathroom_image_annotated.attributes.entity_picture }}'
       frontdoor_entity_picture:
-        # entity_id: camera.frontdoor_image_animated
-        value_template: '{{ states.camera.frontdoor_image_animated.attributes.entity_picture }}'
+        # entity_id: camera.frontdoor_image_annotated
+        value_template: '{{ states.camera.frontdoor_image_annotated.attributes.entity_picture }}'
       road_entity_picture:
-        # entity_id: camera.road_image_animated
-        value_template: '{{ states.camera.road_image_animated.attributes.entity_picture }}'
+        # entity_id: camera.road_image_annotated
+        value_template: '{{ states.camera.road_image_annotated.attributes.entity_picture }}'
       gate_entity_picture:
-        # entity_id: camera.gate_image_animated
-        value_template: '{{ states.camera.gate_image_animated.attributes.entity_picture }}'
+        # entity_id: camera.gate_image_annotated
+        value_template: '{{ states.camera.gate_image_annotated.attributes.entity_picture }}'
       poolhouse_entity_picture:
-        # entity_id: camera.poolhouse_image_animated
-        value_template: '{{ states.camera.poolhouse_image_animated.attributes.entity_picture }}'
-
-###
-### APPLE TV
-###
-
-media_player apple_tv:
-  - platform: apple_tv
-
-###
-### ROKU
-###
-
-media_player roku_kitchen:
-  - platform: roku
-
-media_player roku_poolhouse:
-  - platform: roku
+        # entity_id: camera.poolhouse_image_annotated
+        value_template: '{{ states.camera.poolhouse_image_annotated.attributes.entity_picture }}'
 
 ###
 ### SONOS
 ###
-
-media_player sonos:
-  - platform: sonos
 
 ## short-cut sensors for sonos in kitchen
 sensor sonos_play1:
@@ -709,13 +547,13 @@ notify ageathome_smtp:
     sender: ageathome@dcmartin.com
     recipient:
       - ageathome@dcmartin.com
-    server: 192.168.1.33
-    # encryption: none
-    # port: 25
+    server: smtp.dcmartin.com
     encryption: starttls
     port: 587
     timeout: 15
     debug: true
+    # encryption: none
+    # port: 25
 
 ios:
   push:
@@ -1113,7 +951,7 @@ sensor error_device:
 camera error_image:
   - platform: generic
     name: error_image
-    still_image_url: 'http://192.168.1.33/CGI/aah-images.cgi?db={{states.sensor.error_device.state}}&id={{states.sensor.error_id.state}}&ext=full'
+    still_image_url: 'http://p40.local:8999/CGI/aah-images.cgi?db={{states.sensor.error_device.state}}&id={{states.sensor.error_id.state}}&ext=full'
 
 ##
 ## WRONG
@@ -1256,40 +1094,6 @@ sensor image_size_history:
     type: count
     start: '{{ now().replace(hour=0).replace(minute=0).replace(second=0) }}'
     end: '{{ now() }}'
-
-###
-### MOTION CAMERAS
-###
-
-camera motion_camera_image:
-  - platform: mqtt
-    name: motion_camera_image
-    topic: 'motion/testing/+/image'
-
-camera motion_camera_image_average:
-  - platform: mqtt
-    name: motion_camera_image_average
-    topic: 'motion/testing/+/image-average'
-
-camera motion_camera_image_blend:
-  - platform: mqtt
-    name: motion_camera_image_blend
-    topic: 'motion/testing/+/image-blend'
-
-camera motion_camera_image_animated:
-  - platform: mqtt
-    name: motion_camera_image_animated
-    topic: 'motion/testing/+/image-animated'
-
-camera motion_camera_image_animated_mask:
-  - platform: mqtt
-    name: motion_camera_image_animated_mask
-    topic: 'motion/testing/+/image-animated-mask'
-
-camera motion_camera_image_composite:
-  - platform: mqtt
-    name: motion_camera_image_composite
-    topic: 'motion/testing/+/image-composite'
 
 ###
 ### GET A PICTURE
@@ -1826,9 +1630,9 @@ camera frontdoor_image_animated:
     name: frontdoor_image_animated
     topic: 'image-animated/frontdoor'
 
-## MOTION SENSORS 
+## locations
 
-sensor motion_sensors:
+sensor aah_location_ago_template:
   platform: template
   sensors:
     last_ago:
@@ -2942,7 +2746,7 @@ sensor interior_entity:
 
 
 ##
-## MOTION (YES/NO, LOCATIONs count, LOCATIONs time,
+## location motion (YES/NO, LOCATIONs count, LOCATIONs time,
 ##
 
 binary_sensor aah_motion_template:
@@ -3464,7 +3268,7 @@ group: !include groups.yaml
 
 sensor aah_device_count:
   - platform: rest
-    resource: 'http://192.168.1.33/CGI/aah-devices.cgi'
+    resource: 'http://192.168.1.40:8999/CGI/aah-devices.cgi'
     name: aah_device_count
     value_template: >
       {%- if value_json is defined -%}
@@ -3477,7 +3281,7 @@ sensor aah_device_count:
 
 sensor aah_device_names:
   - platform: rest
-    resource: 'http://192.168.1.33/CGI/aah-devices.cgi'
+    resource: 'http://192.168.1.40:8999/CGI/aah-devices.cgi'
     name: aah_device_names
     value_template: >
       {%- if value_json is defined -%}
@@ -3493,7 +3297,7 @@ sensor aah_device_names:
 
 sensor aah_device_dates:
   - platform: rest
-    resource: 'http://192.168.1.33/CGI/aah-devices.cgi'
+    resource: 'http://192.168.1.40:8999/CGI/aah-devices.cgi'
     name: aah_device_dates
     value_template: >
       {%- if value_json is defined -%}

@@ -3,7 +3,7 @@ set -e
 
 ARCH=$(uname -m)
 DOCKER_REPO=homeassistant
-DATA_SHARE=/usr/share/hassio
+DATA_SHARE=/opt/hassio
 URL_VERSION="https://s3.amazonaws.com/hassio-version/stable.json"
 URL_BIN_HASSIO="https://raw.githubusercontent.com/home-assistant/hassio-build/master/install/files/hassio-supervisor"
 URL_BIN_APPARMOR="https://raw.githubusercontent.com/home-assistant/hassio-build/master/install/files/hassio-apparmor"
@@ -86,6 +86,7 @@ fi
 if [ ! -d "$DATA_SHARE" ]; then
     mkdir -p "$DATA_SHARE"
 fi
+chmod -R g+w "$DATA_SHARE"
 
 # Read infos from web
 HASSIO_VERSION=$(curl -s $URL_VERSION | jq -e -r '.supervisor')
