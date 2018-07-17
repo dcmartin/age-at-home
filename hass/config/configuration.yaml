@@ -532,7 +532,7 @@ device_tracker:
 ### ZONES
 ###
 
-zone: !include zones.yaml
+zone: !include zone.yaml
 
 ###
 ### NOTIFY
@@ -3260,7 +3260,7 @@ sensor status_people_template:
        {% endif %}
 
 logger: !include logger.yaml
-group: !include groups.yaml
+group: !include group.yaml
 
 ###
 ### CONFIGURATION AND DISCOVERY
@@ -3593,27 +3593,27 @@ history_graph:
 ##
 
 # nothing (yet)
-script: !include scripts.yaml
+script: !include script.yaml
 
 ##
 ## AUTOMATIONS
 ##
 
-automation: !include automations.yaml
+automation: !include automation.yaml
 
 ##
 ## SCENES
 ##
 
-scene: !include scenes.yaml
+scene: !include scene.yaml
 
 ##
 ## INPUTS
 ##
 
-input_boolean: !include input_booleans.yaml
+input_boolean: !include input_boolean.yaml
 
-input_select: !include input_selects.yaml
+input_select: !include input_select.yaml
 
-# input_text: !include input_texts.yaml
+# input_text: !include input_text.yaml
 

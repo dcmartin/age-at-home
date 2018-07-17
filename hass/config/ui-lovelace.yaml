@@ -21,7 +21,7 @@ ageathome_notify_poolhouse:
 name: My Awesome Home
 
 views:
-  - icon: mdi:people
+  - icon: mdi:worker
     title: CAMERAS
     cards:
     - type: picture-entity
