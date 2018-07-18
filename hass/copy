@@ -22,7 +22,9 @@ if (! -d "$addons") then
 endif
 
 # copy CONFIGURATION
-set yamls = ( ui-lovelace scripts known_devices configuration groups history automations templates logger customize secrets zones scenes input_booleans input_selects input_texts )
+# set yamls = ( ui-lovelace script known_devices configuration group history automation logger customize secrets zone scene input_boolean input_select input_text )
+set yamls = ( `find config -name "*.yaml" -printf "%f\n" | sed "s/\.yaml//"` )
+
 echo -n "Copying YAML ["
 foreach yaml ( $yamls )
   if (-e "$dir/config/$yaml.yaml") then
