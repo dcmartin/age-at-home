@@ -1,0 +1,10 @@
+
+{
+"entities":"'person', 'animal', 'cat', 'dog', 'ellen', 'family', 'keli', 'mammal', 'people', 'david', 'ian', 'riley', 'hali', 'miriam'"
+"database":"quiet-water",
+"template": "SELECT TO_CHAR(to_timestamp(${db}.YEAR || '-'|| ${db}.MONTH || '-' || ${db}.DAY || ' ' || ${db}.HOUR || ':' || ${db}.MINUTE || ':' || ${db}.SECOND, 'YYYY-MM-DD HH24:MI:SS') , 'YYYY-MM-DD HH24:MI:SS') AS \"${db}.alchemy_time\", ${db}_visual_scores.NAME  AS \"${db}_visual_scores.name\", ${db}_visual_scores.CLASSIFIER_ID  AS \"${db}_visual_scores.classifier_id\" FROM DASH100451.\"ROUGH-FOG\"  AS ${db} LEFT JOIN DASH100451.\"ROUGH-FOG_VISUAL_SCORES\"  AS ${db}_visual_scores ON (${db}.\"_ID\") = (${db}_visual_scores.\"_ID\") WHERE (${db}_visual_scores.CLASSIFIER_ID  IN (${entities})) GROUP BY TO_CHAR(to_timestamp(${db}.YEAR || '-'|| ${db}.MONTH || '-' || ${db}.DAY || ' ' || ${db}.HOUR || ':' || ${db}.MINUTE || ':' || ${db}.SECOND, 'YYYY-MM-DD HH24:MI:SS') , 'YYYY-MM-DD HH24:MI:SS'),${db}_visual_scores.NAME ,${db}_visual_scores.CLASSIFIER_ID ORDER BY 1 DESC FETCH FIRST 1 ROWS ONLY",
+"command":""
+"limit":0,
+"separator": ";",
+"stop_on_error": "no"
+}

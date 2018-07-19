@@ -1,0 +1,2773 @@
+  swagger: '2.0'
+  info:
+    version: 2.0.0
+    title: IBM Db2 Warehouse on Cloud and IBM Db2 on Cloud REST API
+    description: |
+      Use the REST API to access data, view and create database objects, administer and monitor your system. 
+  
+      ### Security   
+      Every request must include the `Authorization` HTTP header with the value `Bearer [access_token]`.
+      An access token can be obtained with the `/auth` endpoint, and it is used by 
+      the system to identify who you are. 
+  
+      Db2 on Cloud negotiates SSL connections using the TLS v1.2 protocol. 
+      If you are using the latest version of cURL, protocol negotiation will happen automatically using TLS v1.2. 
+      If you are using an older version of cURL, you will need to specify the `--tlsv1.2` option in your cURL commands.
+  
+      ### Try the REST API using this page
+      - Obtain an access token using your credentials.
+        - Find the `POST /auth` operation below and click to expand it.
+        - Click the **Try it out** button and update the `userid` and `password` fields with your credentials. 
+        - Scroll down and click the **Execute** button.
+        - Scroll down to the **Server response** section, and opy the value of `token` field from **Response body**. Make sure you do NOT copy the quotes around the value.
+      - At the top of this page, click the **Authorize** button.
+      - In the dialog window that opens, enter `Bearer [token]` in the **Value** field. `[token]` is the access token you copied.
+      - Click **Authorize** to confirm. Now every request in this page will include the `Authorization` header with your access token. 
+      - Click **X** at the top right to close the dialog window.
+      - Try it out. For instance, to see the list of schemas, scroll down to the `GET /schemas` operation and click on **Try it out**, then **Execute**.
+    termsOfService: http://www.ibm.com/software/sla/sladb.nsf
+  basePath: /dashdb-api/v2
+  schemes:
+    - https
+  consumes:
+    - application/json
+  produces:
+    - application/json
+  securityDefinitions:
+    authToken:
+      type: apiKey
+      in: header
+      name: Authorization
+      description: Authorize using **Bearer [access_token]**. The access token can be obtained by authenticating with the **/auth** endpoint.
+  security:
+    - authToken: []
+  paths:
+  ##############################################
+  ##              AUTHENTICATION              ##
+  ############################################## 
+    /auth:
+      post:
+        operationId: Authenticate
+        summary: Request a new access token
+        description: Authenticates the user credentials and returns an access token that can be used when invoking the operations.
+        parameters:
+          - name: credentials
+            in: body
+            description: User credentials
+            required: true
+            schema:
+              $ref: '#/definitions/UserCredentials'
+        security: []
+        tags: 
+          - Authentication
+        produces:
+          - application/json
+        responses:
+          "200":
+            description: Authentication token
+            schema:
+              $ref: '#/definitions/AuthenticationToken'
+          "401":
+            description: Invalid credentials
+            schema:
+              $ref: '#/definitions/ErrorContainer'
+          default:
+            description: Error payload
+            schema:
+              $ref: '#/definitions/ErrorContainer'
+  ##############################################
+  ##                 ASPERA                   ##
+  ##############################################
+    /aspera:
+      post:
+        operationId: GenerateAsperaToken
+        summary: Generates a new Aspera token
+        description: Aspera is a high-speed file transfer technology that can be used to speed up file uploads. This endpoint generates a new token that must be used when uploading files with Aspera.
+        tags: 
+        - Utilities
+        produces:
+          - application/json
+        responses:
+          "201":
+            description: Aspera token
+            schema:
+              $ref: '#/definitions/AsperaToken'
+          default:
+            description: Error payload
+            schema:
+              $ref: '#/definitions/ErrorContainer'
+    /aspera/{token}:
+      delete:
+        operationId: DeleteAsperaToken
+        summary: Deletes an Aspera token
+        description: Deletes an Aspera token. You should delete a token after the upload is complete. Optionally provide the name of a file that was uploaded using Aspera to prepare it for loading.
+        tags: 
+        - Utilities
+        parameters:
+          - name: token
+            in: path
+            description: Aspera token
+            required: true
+            type: string
+          - name: filename
+            in: query
+            description: Name of file that was uploaded
+            required: false
+            type: string
+            
+        produces:
+          - application/json
+        responses:
+          "200":
+            description: Success
+            schema:
+              $ref: '#/definitions/EmptyObject'
+          "404":
+            description: Token or file not found
+            schema:
+              $ref: '#/definitions/ErrorContainer'
+          default:
+            description: Error payload
+            schema:
+              $ref: '#/definitions/ErrorContainer'
+  ##############################################
+  ##               DATABASE/SCHEMA            ##
+  ##############################################
+    /schemas:
+      get:
+        operationId: ListDatabaseSchemas
+        summary: Lists all schemas in the database
+        description: Returns a list of schemas.
+        tags: 
+        - Database Objects
+        produces:
+          - application/json
+        responses:
+          "200":
+            description: List of schemas
+            schema:
+              type: array
+              items:
+                $ref: '#/definitions/Schemas'
+          default:
+            description: Error payload
+            schema:
+              $ref: '#/definitions/ErrorContainer'
+      post:
+        operationId: CreateDatabaseSchema
+        summary: Creates a new schema **ADMIN ONLY**
+        description: Creates a new schema. Only administrators can create schemas directly. Regular users can create new schemas indirectly by creating a new table or other database object and specifying the name of the new schema where the object will be placed.
+        tags: 
+        - Database Objects
+        produces:
+          - application/json
+        parameters:
+          - name: schema
+            in: body
+            description: schema information
+            required: true
+            schema:
+              $ref: '#/definitions/Schema'
+        responses:
+          "201":
+            description: Schema created
+            schema:
+              $ref: '#/definitions/Schema'
+          "400":
+            description: Invalid parameters or schema already exists
+            schema:
+              $ref: '#/definitions/ErrorContainer'
+          "403":
+            description: Only administrators can create schemas directly
+            schema:
+              $ref: '#/definitions/ErrorContainer'
+          default:
+            description: Error payload
+            schema:
+              $ref: '#/definitions/ErrorContainer'
+    /schemas/{schema_name}:
+      get:
+        operationId: GetDatabaseSchema
+        summary: Returns schema information
+        description: Returns schema information.
+        tags: 
+        - Database Objects
+        parameters:
+          - name: schema_name
+            in: path
+            description: schema name
+            required: true
+            type: string
+        produces:
+          - application/json
+        responses:
+          "200":
+            description: Schema information
+            schema:
+              $ref: '#/definitions/Schema'
+          "404":
+            description: Schema not found
+            schema:
+              $ref: '#/definitions/ErrorContainer'
+          default:
+            description: Error payload
+            schema:
+              $ref: '#/definitions/ErrorContainer'
+      delete:
+        operationId: DeleteDatabaseSchema
+        summary: Drops an empty schema
+        description: Drops an empty schema. An error is returned if the schema contains any objects.
+        tags: 
+        - Database Objects
+        parameters:
+          - name: schema_name
+            in: path
+            description: schema name
+            required: true
+            type: string
+        produces:
+          - application/json
+        responses:
+          "200":
+            description: Success
+            schema:
+              $ref: '#/definitions/EmptyObject'
+          "400":
+            description: Invalid parameters or schema is not empty
+            schema:
+              $ref: '#/definitions/ErrorContainer'
+          "403":
+            description: Not authorized to drop the schema
+            schema:
+              $ref: '#/definitions/ErrorContainer'
+          "404":
+            description: Schema not found
+            schema:
+              $ref: '#/definitions/ErrorContainer'
+          default:
+            description: Error payload
+            schema:
+              $ref: '#/definitions/ErrorContainer'
+  ##############################################
+  ##        DATABASE/SCHEMA/TABLE             ##
+  ##############################################
+    /schemas/{schema_name}/tables:
+      get:
+        operationId: ListDatabaseSchemaTables
+        summary: Lists tables in a schema
+        description: Returns the list of tables in a schema.
+        tags: 
+        - Database Objects
+        parameters:
+          - name: schema_name
+            in: path
+            description: schema name
+            required: true
+            type: string
+        produces:
+          - application/json
+        responses:
+          "200":
+            description: List of tables
+            schema:
+              $ref: '#/definitions/Tables'
+          "404":
+            description: Database or schema not found
+            schema:
+              $ref: '#/definitions/ErrorContainer'
+          default:
+            description: Error payload
+            schema:
+              $ref: '#/definitions/ErrorContainer'
+      post:
+        operationId: CreateDatabaseSchemaTable
+        summary: Creates a new table
+        description: Creates a new table.
+        tags: 
+        - Database Objects
+        parameters:
+          - name: schema_name
+            in: path
+            description: schema name
+            required: true
+            type: string
+          - name: table
+            in: body
+            description: table definition
+            required: true
+            schema:
+              $ref: '#/definitions/TableCreate'
+        produces:
+          - application/json
+        responses:
+          "201":
+            description: table info
+            schema:
+              $ref: '#/definitions/TableInfo'
+          default:
+            description: Error payload
+            schema:
+              $ref: '#/definitions/ErrorContainer'
+    /schemas/{schema_name}/tables/{table_name}:
+      get:
+        operationId: GetDatabaseSchemaTable
+        summary: Returns information about a table
+        description: Return information about a table.
+        tags: 
+        - Database Objects
+        parameters:
+          - name: schema_name
+            in: path
+            description: schema name
+            required: true
+            type: string
+          - name: table_name
+            in: path
+            description: table name
+            required: true
+            type: string
+        produces:
+          - application/json
+        responses:
+          "200":
+            description: Table information
+            schema:
+              $ref: '#/definitions/TableInfo'
+          "404":
+            description: Table not found
+            schema:
+              $ref: '#/definitions/ErrorContainer'
+          default:
+            description: Error payload
+            schema:
+              $ref: '#/definitions/ErrorContainer'
+      delete:
+        operationId: DropDatabaseSchemaTable
+        summary: Drops a table
+        description: Drops a table.
+        tags: 
+        - Database Objects
+        parameters:
+          - name: schema_name
+            in: path
+            description: schema name
+            required: true
+            type: string
+          - name: table_name
+            in: path
+            description: table name
+            required: true
+            type: string
+        produces:
+          - application/json
+        responses:
+          "200":
+            description: success
+            schema:
+              $ref: '#/definitions/EmptyObject'
+          "404":
+            description: Table not found
+            schema:
+              $ref: '#/definitions/ErrorContainer'
+          default:
+            description: Error payload
+            schema:
+              $ref: '#/definitions/ErrorContainer'
+    /schemas/{schema_name}/tables/{table_name}/data:
+      get:
+        operationId: GetDatabaseSchemaTableData
+        summary: Returns table data
+        description: Fetches the table data up to a maximum of 100,000 rows. Currently it's not possible to retrieve data from tables that contain CLOB, BLOB or DBCLOB values.
+        tags: 
+        - Database Objects
+        parameters:
+          - name: schema_name
+            in: path
+            description: schema name
+            required: true
+            type: string
+          - name: table_name
+            in: path
+            description: table name
+            required: true
+            type: string
+          - name: _limit
+            in: query
+            description: Maximum number of rows to fetch. If ommited, it assumes the value 1000. Valid range is between 1 and 100,000.
+            required: false
+            type: integer
+            default: 1000
+        produces:
+          - application/json
+        responses:
+          "200":
+            description: table data
+            schema:
+              $ref: '#/definitions/TableData'
+          "400":
+            description: Invalid parameters or unsupported column data type
+            schema:
+              $ref: '#/definitions/ErrorContainer'
+          "403":
+            description: Not authorized to access table data
+            schema:
+              $ref: '#/definitions/ErrorContainer'
+          "404":
+            description: Table not found
+            schema:
+              $ref: '#/definitions/ErrorContainer'
+          default:
+            description: Error payload
+            schema:
+              $ref: '#/definitions/ErrorContainer'
+      delete:
+        operationId: DeleteDatabaseSchemaTableData
+        summary: Deletes all table data
+        description: Deletes all table data using a TRUNCATE operation.
+        tags: 
+        - Database Objects
+        parameters:
+          - name: schema_name
+            in: path
+            description: schema name
+            required: true
+            type: string
+          - name: table_name
+            in: path
+            description: table name
+            required: true
+            type: string
+        produces:
+          - application/json
+        responses:
+          "200":
+            description: success
+            schema:
+              $ref: '#/definitions/EmptyObject'
+          "403":
+            description: Not authorized to access table data
+            schema:
+              $ref: '#/definitions/ErrorContainer'
+          "404":
+            description: Table not found
+            schema:
+              $ref: '#/definitions/ErrorContainer'
+          default:
+            description: Error payload
+            schema:
+              $ref: '#/definitions/ErrorContainer'
+  ##############################################
+  ##              HOME DIRECTORY              ##
+  ##############################################
+    /home/{path}:
+      get:
+        operationId: BrowseHomeStorage
+        summary: Returns metadata of an item in the user's home storage
+        description: Returns metadata of an item files and folders stored in the user's home storage.
+        tags: 
+        - File Storage
+        produces:
+          - application/json
+        parameters:
+          - name: path
+            in: path
+            description: Path of a file or folder
+            required: true
+            type: string
+        responses:
+          "200":
+            description: Metadata about a file or folder
+            schema:
+              $ref: '#/definitions/FileFolderMetadata'
+          "404":
+            description: File or folder not found
+            schema:
+              $ref: '#/definitions/ErrorContainer'
+          default:
+            description: Error payload
+            schema:
+              $ref: '#/definitions/ErrorContainer'
+      delete:
+        operationId: DeleteHomeStorageFile
+        summary: Deletes a file in the user's home storage
+        description: Deletes a file in the user's home storage
+        tags: 
+        - File Storage
+        produces:
+          - application/json
+        parameters:
+          - name: path
+            in: path
+            description: File path
+            required: true
+            type: string
+        responses:
+          "200":
+            description: File deleted
+            schema:
+              $ref: '#/definitions/EmptyObject'
+          default:
+            description: Error payload
+            schema:
+              $ref: '#/definitions/ErrorContainer'
+    /home_content/{path}:
+      get:
+        operationId: DownloadHomeStorageFile
+        summary: Download file from user's home storage
+        description: Download file from user's home storage.
+        tags: 
+        - File Storage
+        produces:
+          - application/json
+          - application/octet-stream
+        parameters:
+          - name: path
+            in: path
+            description: File path
+            required: true
+            type: string
+        responses:
+          "200":
+            description: Metadata about a file or folder
+            schema:
+              $ref: '#/definitions/FileFolderMetadata'
+          "404":
+            description: File not found
+            schema:
+              $ref: '#/definitions/ErrorContainer'
+          default:
+            description: Error payload
+            schema:
+              $ref: '#/definitions/ErrorContainer'
+      post:
+        operationId: UploadHomeStorageFile
+        summary: Uploads a file to the user's home storage
+        description: Uploads a file to a folder under the user's home storage. The target folder is automatically created if it does not exit.
+        tags: 
+        - File Storage
+        produces:
+          - application/json
+        parameters:
+          - name: path
+            in: path
+            description: Target folder
+            required: true
+            type: string
+        responses:
+          "201":
+            description: Files successfully uploaded
+            schema:
+              type: array
+              items:
+                $ref: '#/definitions/FileFolderMetadata'
+          default:
+            description: Error payload
+            schema:
+              $ref: '#/definitions/ErrorContainer'
+  ##############################################
+  ##                   LOAD                   ##
+  ##############################################
+    /load_jobs:
+      get:
+        operationId: ListLoadJobs
+        summary: Lists all data load jobs
+        description: Lists all data load jobs for the user.
+        tags: 
+        - Data Load
+        produces:
+          - application/json
+        responses:
+          "200":
+            description: Data load jobs 
+            schema:
+              type: array
+              items:
+                $ref: '#/definitions/DataLoadJobInfo'
+          default:
+            description: Error payload
+            schema:
+              $ref: '#/definitions/ErrorContainer'
+      post:
+        operationId: CreateLoadJob
+        summary: Creates a data load job
+        description: Creates a data load job
+        tags: 
+        - Data Load
+        produces:
+          - application/json
+        parameters:
+          - name: Request body
+            in: body
+            description: Data load job details
+            required: true
+            schema:
+              $ref: '#/definitions/DataLoadJobRequest'
+        responses:
+          "201":
+            description: load jobs.
+            schema:
+              type: array
+              items:
+                $ref: '#/definitions/DataLoadJobCreated'
+          default:
+            description: Error payload
+            schema:
+              $ref: '#/definitions/ErrorContainer'
+    /load_jobs/{id}:
+      get:
+        operationId: GetLoadJobById
+        summary: Returns details about a load job including its progress
+        description: Returns details about a load job including its progress.
+        tags: 
+        - Data Load
+        produces:
+          - application/json
+        parameters:
+          - name: id
+            in: path
+            description: Load job ID
+            required: true
+            type: string
+        responses:
+          "200":
+            description: Data load job
+            schema:
+              $ref: '#/definitions/DataLoadJobInfo'
+          "403":
+            description: Not authorized to access load job
+            schema:
+              $ref: '#/definitions/ErrorContainer'
+          "404":
+            description: Job not found
+            schema:
+              $ref: '#/definitions/ErrorContainer'
+          default:
+            description: Error payload
+            schema:
+              $ref: '#/definitions/ErrorContainer'
+      delete:
+        operationId: DeleteLoadJobById
+        summary: Removes load job from history
+        description: Removes a data load job from history. This operation has no effect on the data already loaded. In-progress jobs cannot be deleted.
+        tags: 
+        - Data Load
+        produces:
+          - application/json
+        parameters:
+          - name: id
+            in: path
+            description: Load job ID
+            required: true
+            type: string
+        responses:
+          "200":
+            description: Load job deleted
+            schema:
+              $ref: '#/definitions/EmptyObject'
+          "403":
+            description: Not authorized to delete load job
+            schema:
+              $ref: '#/definitions/ErrorContainer'
+          "404":
+            description: Job not found
+            schema:
+              $ref: '#/definitions/ErrorContainer'
+          default:
+            description: Error payload
+            schema:
+              $ref: '#/definitions/ErrorContainer'
+    /load_jobs/{id}/log:
+      get:
+        operationId: GetLoadLogs
+        summary: Dowloads log file for a data load job
+        description: Downloads log file for a data load job
+        tags: 
+        - Data Load
+        produces:
+          - file
+        parameters:
+          - name: id
+            in: path
+            description: Load job ID
+            required: true
+            type: string
+        responses:
+          "200":
+            description: Log file
+            schema:
+              type: file
+          "403":
+            description: Not authorized to access load log
+            schema:
+              $ref: '#/definitions/ErrorContainer'
+          "404":
+            description: Log not found
+            schema:
+              $ref: '#/definitions/ErrorContainer'
+          default:
+            description: Error payload
+            schema:
+              $ref: '#/definitions/ErrorContainer'
+  ##############################################
+  ##                MONITORING                ##
+  ##############################################
+    /monitor:
+      get:
+        operationId: GetOverallServiceStatus
+        summary: Returns overall status of system components **ADMIN ONLY**
+        description: Returns overall status of system components.
+        tags:
+        - Monitoring
+        produces:
+          - application/json
+        responses:
+          "200":
+            description: System status
+            schema:
+              type: array
+              items:
+                $ref: '#/definitions/ServiceStatus'
+          "403":
+            description: Operation is only available to administrators
+            schema:
+              $ref: '#/definitions/ErrorContainer'
+          default:
+            description: Error payload
+            schema:
+              $ref: '#/definitions/ErrorContainer'
+    /monitor/connections:
+      get:
+        operationId: GetActiveConnections
+        summary: Lists active database connections **ADMIN ONLY**
+        description: Returns a list of active database connections.
+        tags:
+        - Monitoring
+        produces:
+          - application/json
+        responses:
+          "200":
+            description: Active connections
+            schema:
+              $ref: '#/definitions/DatabaseConnections'
+          "403":
+            description: Operation is only available to administrators
+            schema:
+              $ref: '#/definitions/ErrorContainer'
+          default:
+            description: Error payload
+            schema:
+              $ref: '#/definitions/ErrorContainer'
+    /monitor/connections/{application_handle}:
+      delete:
+        operationId: TerminateActiveConnection
+        summary: Terminates a database connection **ADMIN ONLY**
+        description: Terminates an active database connection.
+        tags:
+        - Monitoring
+        produces:
+          - application/json
+        parameters:
+          - name: application_handle
+            in: path
+            description: Application handle name
+            required: true
+            type: string
+        responses:
+          "200":
+            description: Connection terminated
+            schema:
+              $ref: '#/definitions/EmptyObject'
+          "403":
+            description: Operation is only available to administrators
+            schema:
+              $ref: '#/definitions/ErrorContainer'
+          default:
+            description: Error payload
+            schema:
+              $ref: '#/definitions/ErrorContainer'
+    /monitor/storage:
+      get:
+        operationId: GetStorageUsage
+        summary: Returns current storage usage
+        description: Returns current storage usage.
+        tags: 
+        - Monitoring
+        produces:
+          - application/json
+        responses:
+          "200":
+            description: Storage usage
+            schema:
+              $ref: '#/definitions/SystemStorage'
+          default:
+            description: Error payload
+            schema:
+              $ref: '#/definitions/ErrorContainer'
+    /monitor/storage/history:
+      get:
+        operationId: GetStorageUsageHistory
+        summary: Returns storage usage history
+        description: Returns a list of storage usage daily stats. Currenlty the history of the last seven days is returned.
+        tags:
+        - Monitoring
+        produces:
+          - application/json
+        responses:
+          "200":
+            description: Storage usage history
+            schema:
+              $ref: '#/definitions/SystemStorageList'
+          default:
+            description: Error payload
+            schema:
+              $ref: '#/definitions/ErrorContainer'
+    /monitor/storage/by_schema:
+      get:
+        operationId: GetSchemaStorageUsage
+        summary: Storage utilization by schema **ADMIN ONLY**
+        description: Returns a list where each element represents a schema and its corresponding logical and physical sizes. Physical size is the amount of storage in disk allocated to objects in the schema. Logical size is the actual object size, which might be less than the physical size (e.g. in the case of a logical table truncation).
+        tags:
+        - Monitoring
+        produces:
+          - application/json
+        responses:
+          "200":
+            description: Storage usage by schema
+            schema:
+              $ref: '#/definitions/DatabaseStorageSchemas'
+          "403":
+            description: Operation is only available to administrators
+            schema:
+              $ref: '#/definitions/ErrorContainer'
+          default:
+            description: Error payload
+            schema:
+              $ref: '#/definitions/ErrorContainer'
+    /monitor/storage/by_schema/{schema_name}:
+      get:
+        operationId: GetSingleSchemaStorageUsage
+        summary: Storage utilization of a schema **ADMIN ONLY**
+        description: Returns logical and physical sizes for one schema. Physical size is the amount of storage in disk allocated to objects in the schema. Logical size is the actual object size, which might be less than the physical size (e.g. in the case of a logical table truncation).
+        tags:
+        - Monitoring
+        produces:
+          - application/json
+        parameters:
+          - name: schema_name
+            in: path
+            description: schema name
+            required: true
+            type: string
+        responses:
+          "200":
+            description: Storage usage for a schema
+            schema:
+              type: array
+              items:
+                $ref: '#/definitions/DatabaseStorageSchema'
+          "403":
+            description: Operation is only available to administrators
+            schema:
+              $ref: '#/definitions/ErrorContainer'
+          "404":
+            description: Schema does not exist
+            schema:
+              $ref: '#/definitions/ErrorContainer'
+          default:
+            description: Error payload
+            schema:
+              $ref: '#/definitions/ErrorContainer'
+  ##############################################
+  ##          SCHEMA DISCOVERY                ##
+  ##############################################
+    /schema_discovery:
+      post:
+        operationId: SchemaDiscoveryFromCSV
+        summary: Analyzes CSV data to return a list of data types of its values
+        description: Schema discovery analyzes data in CSV format and returns a list of suggested data types that can be used when creating a table to store the CSV data. 
+        tags: 
+        - Utilities
+        produces:
+          - application/json
+        parameters:
+          - name: Request body
+            in: body
+            description: Data to analyze
+            required: true
+            schema:
+              $ref: '#/definitions/SchemaDiscoveryCSVRequest'
+        responses:
+          "200":
+            description: Suggested table schema
+            schema:
+              $ref: '#/definitions/SchemaDiscoveryResponse'
+          default:
+            description: Error payload
+            schema:
+              $ref: '#/definitions/ErrorContainer'
+  ##############################################
+  ##              SQL EXECUTION               ##
+  ##############################################
+    /sql_jobs:
+      post:
+        operationId: RunSQL
+        summary: Executes SQL statements
+        description: Executes one or more SQL statements as a background job. This endpoint returns a job ID that can be used to retrieve the results. 
+        tags: 
+        - SQL
+        produces:
+          - application/json
+        parameters:
+          - name: SQL execution job
+            in: body
+            description: SQL script and execution options
+            required: true
+            schema:
+              $ref: '#/definitions/SQLJobCreate'
+        responses:
+          "201":
+            description: SQL execution job
+            schema:
+              $ref: '#/definitions/SQLJobSummary'
+          default:
+            description: Error payload
+            schema:
+              $ref: '#/definitions/ErrorContainer'
+    /sql_jobs/{id}:
+      get:
+        operationId: FetchSQLResults
+        summary: Fetches partial results of a SQL job execution
+        description: Returns the current status of a SQL job execution along with any results of SQL statements that have already been executed. Clients are supposed to poll this endpoint until the status returned is either 'completed', which indicates all SQL statements have completed executing, or 'failed', which indicates the job failed to execute and therefore is considered terminated. The returned list of results is not cumulative. That means, results that were fetched in a previous call will not be returned again, only new results (i.e. that were not fetched yet) will be included. For example, assuming a job with 10 SQL statements, the first call returns status "running" and 6 results, the second call returns status "running" and an empty list of results, a third call status "completed" and 4 results. Any subsequent calls would return status "completed" and an empty list of results.
+        tags: 
+        - SQL
+        produces:
+          - application/json
+        parameters:
+          - name: id
+            in: path
+            description: ID of the SQL execution job
+            required: true
+            type: string
+        responses:
+          "200":
+            description: Result of a SQL job
+            schema:
+              $ref: '#/definitions/SQLJobResults'
+          default:
+            description: Error payload
+            schema:
+              $ref: '#/definitions/ErrorContainer'
+    /sql_query_export:
+      post:
+        operationId: FetchSQLStatementResults
+        summary: Returns the results of a SQL query to CSV
+        description: Executes the specified SQL query and returns the data as a CSV file. The amount of data returned is limited to 100,000 rows. 
+        tags: 
+        - SQL
+        produces:
+          - text/csv
+        parameters:
+          - name: SQL query 
+            in: body
+            description: The SQL query to be executed
+            required: true
+            schema:
+              $ref: '#/definitions/SQLStatement'
+        responses:
+          "200":
+            description: CSV file containing query results
+            schema:
+              type: file
+          default:
+            description: Error payload
+            schema:
+              $ref: '#/definitions/ErrorContainer'
+  ##############################################
+  ##            SYSTEM SETTINGS               ##
+  ##############################################
+    /settings:
+      get:
+        operationId: GetSystemSettings
+        summary: Returns the system's current settings
+        description: Returns the system's current settings.
+        tags: 
+        - Settings
+        produces:
+          - application/json
+        responses:
+          "200":
+            description: system settings
+            schema:
+              $ref: '#/definitions/SystemSettings'
+          default:
+            description: Error payload
+            schema:
+              $ref: '#/definitions/ErrorContainer'
+      put:
+        operationId: UpdateSystemSettings
+        summary: Updates the system settings **ADMIN ONLY**
+        description: |
+          The only setting that can be modified is `database_ssl_connections_enforced`. 
+          By setting `database_ssl_connections_enforced` to `true` database connection requests must be secured. 
+          If set to `false` both secured and unsecured database connections are accepted.
+          
+          This operation is only available to system administrators.
+        tags: 
+        - Settings
+        produces:
+          - application/json
+        parameters:
+          - name: settings
+            in: body
+            description: System settings
+            required: true
+            schema:
+              $ref: '#/definitions/SystemSettingsUpdate'
+        responses:
+          "200":
+            description: system settings
+            schema:
+              $ref: '#/definitions/SystemSettings'
+          default:
+            description: Error payload
+            schema:
+              $ref: '#/definitions/ErrorContainer'
+  ##############################################
+  ##                  USERS                   ##
+  ##############################################
+    /users:
+      get:
+        operationId: GetUsers
+        summary: Returns the list of users
+        description: Administrators can retrieve the list of all users in the system. Regular users will receive a list containing only their own user profile.
+        tags: 
+        - Users
+        produces:
+          - application/json
+        responses:
+          "200":
+            description: List of users
+            schema:
+              $ref: '#/definitions/Users'
+          default:
+            description: Error payload
+            schema:
+              $ref: '#/definitions/ErrorContainer'
+      post:
+        operationId: CreateUser
+        summary: Creates a new user. **ADMIN ONLY**
+        description: |
+          Creates a new user. 
+          
+          This operation is only available to system administrators.
+        tags: 
+        - Users
+        produces:
+          - application/json
+        parameters:
+          - name: user
+            in: body
+            description: User information
+            required: true
+            schema:
+              $ref: '#/definitions/User'
+        responses:
+          "201":
+            description: User response
+            schema:
+              $ref: '#/definitions/User'
+          "400":
+            description: Invalid parameters or user already exists
+            schema:
+              $ref: '#/definitions/ErrorContainer'
+          "403":
+            description: Operation is only available to administrators
+            schema:
+              $ref: '#/definitions/ErrorContainer'
+          default:
+            description: Error payload
+            schema:
+              $ref: '#/definitions/ErrorContainer'
+    /users/{id}:
+      get:
+        operationId: GetUser
+        summary: Get a specific user by ID
+        description: |
+          Get a specific user by ID. 
+          
+          System administrators may retrieve user information for any user. Regular users may only retrieve themselves.
+        tags: 
+        - Users
+        produces:
+          - application/json
+        parameters:
+          - name: id
+            in: path
+            description: ID of the user to be fetched
+            required: true
+            type: string
+        responses:
+          "200":
+            description: User response
+            schema:
+              $ref: '#/definitions/User'
+          "403":
+            description: Access to this user is not allowed
+            schema:
+              $ref: '#/definitions/ErrorContainer'
+          "404":
+            description: The user does not exist
+            schema:
+              $ref: '#/definitions/ErrorContainer'
+          default:
+            description: Error payload
+            schema:
+              $ref: '#/definitions/ErrorContainer'
+      put:
+        operationId: UpdateUser
+        summary: Updates an existing user
+        description: |
+          Updates an existing user. 
+          
+          System administrators may update user information for any user. Regular users may only update themselves.
+        tags: 
+        - Users
+        produces:
+          - application/json
+        parameters:
+          - name: id
+            in: path
+            description: ID of the user to be updated
+            required: true
+            type: string
+          - name: user
+            in: body
+            description: User information
+            required: true
+            schema:
+              $ref: '#/definitions/UserUpdate'
+        responses:
+          "200":
+            description: User response
+            schema:
+              $ref: '#/definitions/User'
+          "403":
+            description: Access to this user is not allowed
+            schema:
+              $ref: '#/definitions/ErrorContainer'
+          "404":
+            description: The user does not exist
+            schema:
+              $ref: '#/definitions/ErrorContainer'
+          default:
+            description: Error payload
+            schema:
+              $ref: '#/definitions/ErrorContainer'
+      delete:
+        operationId: DeleteUser
+        summary: Deletes an existing user **ADMIN ONLY**
+        description: |
+          Deletes an existing user. 
+          
+          Only administratos can delete users. 
+        tags: 
+        - Users
+        produces:
+          - application/json
+        parameters:
+          - name: id
+            in: path
+            description: ID of the user to be deleted.
+            required: true
+            type: string
+        responses:
+          "200":
+            description: User deleted
+            schema:
+              $ref: '#/definitions/EmptyObject'
+          "403":
+            description: Removal of this user is not allowed
+            schema:
+              $ref: '#/definitions/ErrorContainer'
+          "404":
+            description: The user does not exist
+            schema:
+              $ref: '#/definitions/ErrorContainer'
+          default:
+            description: Error payload
+            schema:
+              $ref: '#/definitions/ErrorContainer'
+    /users/{id}/unlock:
+      put:
+        operationId: UnlockUser
+        summary: Unlocks a user account  **ADMIN ONLY**
+        description: Admin users can unlock users' accounts which have been locked out following repeated failed authentication attempts.
+        tags: 
+        - Users
+        produces:
+          - application/json
+        parameters:
+          - name: id
+            in: path
+            description: ID of the user who will be unlocked
+            required: true
+            type: string
+        responses:
+          "200":
+            description: User response
+            schema:
+              $ref: '#/definitions/User'
+          "403":
+            description: Cannot edit this user
+            schema:
+              $ref: '#/definitions/ErrorContainer'
+          "404":
+            description: The user does not exist
+            schema:
+              $ref: '#/definitions/ErrorContainer'
+          default:
+            description: Error payload
+            schema:
+              $ref: '#/definitions/ErrorContainer'
+    /users/{id}/connection_privileges:
+      get:
+        operationId: GetUserConnectionPrivileges
+        summary: Get a specific user's connection privileges
+        description: |
+          Get a specific user's connection privileges.
+          
+          If restricted is set to 'yes', the user will only be allowed to make database connections from IP addresses or hostnames in the authorized_hosts list.
+          
+          System administrators may retrieve connection privilege information for any user. Regular users may only retrieve their own connection privileges.
+        tags: 
+        - Users
+        produces:
+          - application/json
+        parameters:
+          - name: id
+            in: path
+            description: ID of the user who's information is to be fetched
+            required: true
+            type: string
+        responses:
+          "200":
+            description: User's connection privileges
+            schema:
+              $ref: '#/definitions/UserConnectionPrivileges'
+          "403":
+            description: Access to this user's connection privileges is not allowed
+            schema:
+              $ref: '#/definitions/ErrorContainer'
+          "404":
+            description: The user does not exist
+            schema:
+              $ref: '#/definitions/ErrorContainer'
+          default:
+            description: Error payload
+            schema:
+              $ref: '#/definitions/ErrorContainer'
+      put:
+        operationId: UpdateUserConnectionPrivileges
+        summary: Updates an existing user's connection privileges  **ADMIN ONLY**
+        description: |
+          Updates an existing user's connection privileges.
+          
+          If restricted is set to 'yes', the user will only be allowed to make database connections from IP addresses or hostnames in the authorized_hosts list.
+          
+          This operation is only available to system administrators. An administrator may set the privileges of all users other than themself.
+        tags: 
+        - Users
+        produces:
+          - application/json
+        parameters:
+          - name: id
+            in: path
+            description: ID of the user  who's information is to be updated
+            required: true
+            type: string
+          - name: privileges
+            in: body
+            description: Connection privilege information
+            required: true
+            schema:
+              $ref: '#/definitions/UserConnectionPrivileges'
+        responses:
+          "200":
+            description: Updated user connection privileges
+            schema:
+              $ref: '#/definitions/UserConnectionPrivileges'
+          "403":
+            description: Access to this user's connection privileges is not allowed
+            schema:
+              $ref: '#/definitions/ErrorContainer'
+          "404":
+            description: The user does not exist
+            schema:
+              $ref: '#/definitions/ErrorContainer'
+          default:
+            description: Error payload
+            schema:
+              $ref: '#/definitions/ErrorContainer'
+  tags:
+    - name: Authentication
+    - name: Database Objects
+    - name: Data Load
+    - name: SQL
+    - name: File Storage
+    - name: Monitoring
+    - name: Storage
+    - name: Settings
+    - name: Utilities
+  
+  ##############################################
+  ##            MODEL DEFINITIONS             ##
+  ##############################################
+  definitions:
+    AsperaToken:
+      type: object
+      description: Token generated for Aspera
+      required:
+        - aspera_token
+        - userid
+      properties:
+        aspera_token:
+          description: Token string that should be used when uploading files with Aspera.
+          type: string
+        userid:
+          description: User ID associated with the Aspera token.
+          type: string
+    AuthenticationToken:
+      type: object
+      description: Token generated after successful authentication.
+      required:
+        - userid
+        - token
+      properties:
+        userid:
+          description: User ID associated with the generated token.
+          type: string
+        token:
+          description: Token string that can be used in subsequent requests that require authentication.
+          type: string
+    ColumnDefinitionDDL:
+      type: object
+      required:
+        - name
+        - datatype_ddl
+        - nullable
+      properties:
+        name:
+          description: Name of the column
+          type: string
+        datatype_ddl:
+          description: The raw DDL describing the column's data type. For instance "VARCHAR (100) FOR BIT DATA".
+          type: string
+        nullable:
+          description: If set to "yes" indicates the column accepts NULL values. If set to "no" indicates the column doesnot accept NULL values.
+          type: string
+    ColumnDefinition:
+      type: object
+      required:
+        - name
+        - type_name
+        - type_precision
+        - type_scale
+        - type_string_codeunit
+        - type_modifier
+        - nullable
+        - comments
+      properties:
+        name:
+          description: Name of the column
+          type: string
+        type_name:
+          description: Data type of the column
+          type: string
+        type_precision:
+          description: Data type precision or length. Only valid for certain data types. 
+          type: integer
+          format: int32
+        type_scale:
+          description: Data type scale. Only valid for certain data types.
+          type: integer
+          format: int32
+        type_string_codeunit:
+          description: Only valid for string types. It specifies the units of the length attribute which can be OCTETS, CODEUNITS16 or CODEUNITS32.
+          type: string
+        type_modifier:
+          description: Certain types accept a modifier for further customization. For example, VARCHAR data type accepts the FOR BIT DATA modifier to indicate data should be treated as binary.
+          type: string
+        nullable:
+          description: If set to "yes" indicates the column accepts NULL values. If set to "no" indicates the column doesnot accept NULL values.
+          type: string
+        comments:
+          type: string
+          description: User provided comments
+    DatabaseConnections:
+      type: object
+      description: Collection of active database connections
+      required:
+        - resources
+        - count
+      properties:
+        count:
+          type: integer
+          format: int32
+          description: Number of elements
+        resources:
+          type: array
+          description: List of active connections
+          items:
+            $ref: '#/definitions/DatabaseConnection'
+    DatabaseConnection:
+      type: object
+      required:
+        - application_handle
+        - application_name
+        - application_id
+        - user_session_id
+        - connection_start_time
+        - statements_executed
+        - rows_modified
+        - rows_read
+        - rows_returned
+        - client_wrkst_name
+        - client_hostname
+        - client_pid
+        - client_idle_wait_time
+        - total_client_idle_wait_time
+        - total_cpu_time_sec
+        - total_wait_time
+        - total_compile_time
+        - deadlocks
+        - num_locks_held
+        - lock_timeouts
+        - lock_escals
+        - sort_overflows
+        - thresh_violations
+      properties:
+        application_handle:
+          type: string
+          description: Application handle
+        application_name:
+          type: string
+          description: Application name
+        application_id:
+          type: string
+          description: Application ID
+        user_session_id:
+          type: string
+          description: User session ID
+        connection_start_time:
+          type: string
+          format: YYYY-MM-DDTHH:mm:ss.sssZ
+          description: Connection start time
+        statements_executed:
+          type: string
+          description: Number of statements executed
+        rows_modified:
+          type: integer
+          format: int64
+          description: Number of rows modified
+        rows_read:
+          type: integer
+          format: int64
+          description: Number of rows read
+        rows_returned:
+          type: integer
+          format: int64
+          description: Number of rows returned
+        client_wrkst_name:
+          type: string
+          description: Client workstation name
+        client_hostname:
+          type: string
+          description: Client host name
+        client_pid:
+          type: string
+          description: Client process ID
+        client_idle_wait_time:
+          type: integer
+          format: int64
+          description: Client idle wait time since last activity in milliseconds
+        total_client_idle_wait_time:
+          type: integer
+          format: int64
+          description: Total client idle wait time in milliseconds
+        total_cpu_time_sec:
+          type: integer
+          format: int64
+          description: Total CPU time in seconds
+        total_wait_time:
+          type: integer
+          format: int64
+          description: Total wait time in milliseconds
+        total_compile_time:
+          type: integer
+          format: int64
+          description: Total time spent in explicit compiles given in milliseconds
+        deadlocks:
+          type: integer
+          format: int32
+          description: Number of deadlocks detected
+        num_locks_held:
+          type: integer
+          format: int32
+          description: Number of locks currently held
+        lock_timeouts:
+          type: integer
+          format: int32
+          description: Number of lock timeouts
+        lock_escals:
+          type: integer
+          format: int32
+          description: Number of lock escalations
+        sort_overflows:
+          type: integer
+          format: int32
+          description: Number of sorts that ran out of sort heap and may have required disk space for temporary storage
+        thresh_violations:
+          type: integer
+          format: int32
+          description: Number of times a threshold was violated
+    DatabaseStorageSchemas:
+      type: object
+      description: Collection of schema's storage usage data
+      required:
+        - resources
+        - count
+      properties:
+        count:
+          type: integer
+          format: int32
+          description: Number of elements
+        resources:
+          type: array
+          description: List of schema's storage usage data
+          items:
+            $ref: '#/definitions/DatabaseStorageSchema'
+      # type: object
+      # required:
+      #   - schema
+      #   - data_logical_size_kb
+      #   - index_logical_size_kb
+      #   - long_logical_size_kb
+      #   - lob_logical_size_kb
+      #   - xml_logical_size_kb
+      #   - column_organized_data_logical_size_kb
+      #   - total_logical_size_kb
+      #   - total_logical_percent
+      #   - data_physical_size_kb
+      #   - index_physical_size_kb
+      #   - long_physical_size_kb
+      #   - lob_physical_size_kb
+      #   - xml_physical_size_kb
+      #   - column_organized_data_physical_size_kb
+      #   - total_physical_size_kb
+      #   - total_physical_percent
+      # properties:
+      #   schema:
+      #     type: string
+      #     description: Schema name
+      #   data_logical_size_kb:
+      #     type: integer
+      #     format: int64
+      #     description: Amount of disk space logically allocated for row-organized data in all tables in the schema, reported in kilobytes.
+      #   index_logical_size_kb:
+      #     type: integer
+      #     format: int64
+      #     description: Amount of disk space logically allocated for the indexes defined in all tables in the schema, reported in kilobytes.
+      #   long_logical_size_kb:
+      #     type: integer
+      #     format: int64
+      #     description: Amount of disk space logically allocated for long field data in all tables in the schema, reported in kilobytes.
+      #   lob_logical_size_kb:
+      #     type: integer
+      #     format: int64
+      #     description: Amount of disk space logically allocated for LOB data in all tables in the schema, reported in kilobytes. 
+      #   xml_logical_size_kb:
+      #     type: integer
+      #     format: int64
+      #     description: Amount of disk space logically allocated for XML data in all tables in the schema, reported in kilobytes. 
+      #   column_organized_data_logical_size_kb:
+      #     type: integer
+      #     format: int64
+      #     description: Amount of disk space logically allocated for column-organized data in all tables in the schema, reported in kilobytes.      
+      #   total_logical_size_kb:
+      #     type: integer
+      #     format: int64
+      #     description: Total amount of logically allocated disk space for all tables in the schema, reported in kilobytes. 
+      #   total_logical_percent:
+      #     type: number
+      #     format: double
+      #     description: Percentage of disk space logically allocated for all tables in the schema among all schemas return in the response.
+      #   data_physical_size_kb:
+      #     type: integer
+      #     format: int64
+      #     description: Amount of disk space physically allocated for row-organized data in all tables in the schema, reported in kilobytes.
+      #   index_physical_size_kb:
+      #     type: integer
+      #     format: int64
+      #     description: Amount of disk space physically allocated for the indexes defined in all tables in the schema, reported in kilobytes.
+      #   long_physical_size_kb:
+      #     type: integer
+      #     format: int64
+      #     description: Amount of disk space physically allocated for long field data in all tables in the schema, reported in kilobytes.
+      #   lob_physical_size_kb:
+      #     type: integer
+      #     format: int64
+      #     description: Amount of disk space logically allocated for LOB data in all tables in the schema, reported in kilobytes.
+      #   xml_physical_size_kb:
+      #     type: integer
+      #     format: int64
+      #     description: Amount of disk space physically allocated for XML data in all tables in the schema, reported in kilobytes.
+      #   column_organized_data_physical_size_kb:
+      #     type: integer
+      #     format: int64
+      #     description: Amount of disk space physically allocated for column-organized data in all tables in the schema, reported in kilobytes.
+      #   total_physical_size_kb:
+      #     type: integer
+      #     format: int64
+      #     description: Total amount of physically allocated disk space for all tables in the schema, reported in kilobytes. 
+      #   total_physical_percent:
+      #     type: number
+      #     format: double
+      #     description: Percentage of disk space physically allocated for all tables in the schema among all schemas return in the response.
+    DatabaseStorageSchema:
+      type: object
+      required:
+        - schema
+        - data_logical_size_kb
+        - index_logical_size_kb
+        - long_logical_size_kb
+        - lob_logical_size_kb
+        - xml_logical_size_kb
+        - column_organized_data_logical_size_kb
+        - total_logical_size_kb
+        - data_physical_size_kb
+        - index_physical_size_kb
+        - long_physical_size_kb
+        - lob_physical_size_kb
+        - xml_physical_size_kb
+        - column_organized_data_physical_size_kb
+        - total_physical_size_kb
+      properties:
+        schema:
+          type: string
+          description: Schema name
+        data_logical_size_kb:
+          type: integer
+          format: int64
+          description: Amount of disk space logically allocated for row-organized data in all tables in the schema, reported in kilobytes.
+        index_logical_size_kb:
+          type: integer
+          format: int64
+          description: Amount of disk space logically allocated for the indexes defined in all tables in the schema, reported in kilobytes.
+        long_logical_size_kb:
+          type: integer
+          format: int64
+          description: Amount of disk space logically allocated for long field data in all tables in the schema, reported in kilobytes.
+        lob_logical_size_kb:
+          type: integer
+          format: int64
+          description: Amount of disk space logically allocated for LOB data in all tables in the schema, reported in kilobytes. 
+        xml_logical_size_kb:
+          type: integer
+          format: int64
+          description: Amount of disk space logically allocated for XML data in all tables in the schema, reported in kilobytes. 
+        column_organized_data_logical_size_kb:
+          type: integer
+          format: int64
+          description: Amount of disk space logically allocated for column-organized data in all tables in the schema, reported in kilobytes.   
+        total_logical_size_kb:
+          type: integer
+          format: int64
+          description: Total amount of logically allocated disk space for all tables in the schema, reported in kilobytes.  
+        data_physical_size_kb:
+          type: integer
+          format: int64
+          description: Amount of disk space physically allocated in all tables in the schema, reported in kilobytes.
+        index_physical_size_kb:
+          type: integer
+          format: int64
+          description: Amount of disk space physically allocated for the indexes defined in all tables in the schema, reported in kilobytes.
+        long_physical_size_kb:
+          type: integer
+          format: int64
+          description: Amount of disk space physically allocated for long field data in all tables in the schema, reported in kilobytes.
+        lob_physical_size_kb:
+          type: integer
+          format: int64
+          description: Amount of disk space logically allocated for LOB data in all tables in the schema, reported in kilobytes.
+        xml_physical_size_kb:
+          type: integer
+          format: int64
+          description: Amount of disk space physically allocated for XML data in all tables in the schema, reported in kilobytes.
+        column_organized_data_physical_size_kb:
+          type: integer
+          format: int64
+          description: Amount of disk space physically allocated for column-organized data in all tables in the schema, reported in kilobytes.   
+        total_physical_size_kb:
+          type: integer
+          format: int64
+          description: Total amount of physically allocated disk space for all tables in the schema, reported in kilobytes. 
+    DataLoadJobRequest:
+      type: object
+      description: Data load request
+      required:
+        - load_source
+        - schema
+        - table
+        - file_options
+      properties:
+        load_source:
+          type: string
+          description: Type of data source. It can take the values 'SERVER', 'S3', or 'SOFTLAYER'.
+          enum:
+          - SERVER
+          - S3
+          - SOFTLAYER
+        load_action:
+          type: string
+          description: If set to 'INSERT' data is appended to the existing table data. If set to 'REPLACE' the table data is replaced with the data being loaded.
+          enum:
+          - INSERT
+          - REPLACE
+          default: INSERT
+        schema:
+          type: string
+          description: Schema name where the target table is located
+        table:
+          type: string
+          description: Table name where data should be loaded
+        max_row_count:
+          type: integer
+          format: int64
+          description: Maximum number of rows to be loaded. If set to zero or not specified, all rows from the source data are loaded. Not supported in multi-partitioned (MPP) environments. 
+          default: 0
+        max_warning_count:
+          type: integer
+          format: int64
+          description: Maximum number of warnings that are tolerated before failing the load operation. A warning is generated for each row that is not loaded correctly.
+          default: 1000
+        auto_create_table:
+          $ref: '#/definitions/DataLoadJobAutoCreateTable'
+        cloud_source:
+          $ref: '#/definitions/DataLoadJobCloudSource'
+        server_source:
+          $ref: '#/definitions/DataLoadJobServerSource'
+        stream_source:
+          $ref: '#/definitions/DataLoadJobStreamSource'
+        file_options:
+          $ref: '#/definitions/DataLoadJobFileOptions'
+    DataLoadJobAutoCreateTable:
+      type: object
+      description: When set to execute, the source data is analyzed to discover the data types of each column. Then the target table is created using the columns and data types found. Currently, this option is only allowed when load_source is set to SERVER.
+      required:
+        - execute
+      properties:
+        execute:
+          type: string
+          enum:
+          - yes
+          - no
+        column_names: 
+          type: array
+          description: Optional list of column names for the target table. When not provided, the system will auto-generate the column names.
+          items:
+            type: string
+    DataLoadJobCloudSource:
+      type: object
+      description: Required when load_type is set to "S3" or "SOFTLAYER". It specifies how to located the data to be loaded from a cloud storage service.
+      required:
+        - endpoint
+        - path
+        - auth_id
+        - auth_secret
+      properties:
+        endpoint:
+          type: string
+          description: | 
+            URL of the cloud storage endpoint where data is located. 
+            Amazon S3 valid endpoints are "s3.amazonaws.com", "s3.us-east-2.amazonaws.com", "s3-us-west-1.amazonaws.com, "s3-us-west-2.amazonaws.com", "s3.ca-central-1.amazonaws.com",  "s3.ap-south-1.amazonaws.com", "s3.ap-northeast-2.amazonaws.com", "s3-ap-southeast-1.amazonaws.com", "s3-ap-southeast-2.amazonaws.com", "s3-ap-northeast-1.amazonaws.com", "s3.eu-central-1.amazonaws.com", "s3-eu-west-1.amazonaws.com", "s3.eu-west-2.amazonaws.com", "s3-sa-east-1.amazonaws.com". 
+            SoftLayer object storage valid endpoints are "https://ams01.objectstorage.softlayer.net/auth/v1.0", "https://che01.objectstorage.softlayer.net/auth/v1.0", "https://dal05.objectstorage.softlayer.net/auth/v1.0", "https://fra02.objectstorage.softlayer.net/auth/v1.0", "https://hkg02.objectstorage.softlayer.net/auth/v1.0", "https://lon02.objectstorage.softlayer.net/auth/v1.0", "https://mel01.objectstorage.softlayer.net/auth/v1.0", "https://mex01.objectstorage.softlayer.net/auth/v1.0", "https://mil01.objectstorage.softlayer.net/auth/v1.0", "https://mon01.objectstorage.softlayer.net/auth/v1.0", "https://par01.objectstorage.softlayer.net/auth/v1.0", "https://sao01.objectstorage.softlayer.net/auth/v1.0", "https://seo01.objectstorage.softlayer.net/auth/v1.0", "https://sjc01.objectstorage.softlayer.net/auth/v1.0", "https://sng01.objectstorage.softlayer.net/auth/v1.0", "https://syd01.objectstorage.softlayer.net/auth/v1.0", "https://tok02.objectstorage.softlayer.net/auth/v1.0", "https://tor01.objectstorage.softlayer.net/auth/v1.0", "https://wdc.objectstorage.softlayer.net/auth/v1.0".
+        path:
+          type: string
+          description: Path used to find and retrieve the data in the cloud storage service
+        auth_id:
+          type: string
+          description: Username (SoftLayer) or Access Key (S3).
+        auth_secret:
+          type: string
+          description: API Key (SoftLayer) or Secret Key (S3).
+    DataLoadJobServerSource:
+      type: object
+      description: Required when load_type is set to "SERVER". It specifies how to source filein the server.
+      required:
+        - file_path
+      properties:
+        file_path:
+          type: string
+          description: File path in the server relative to the user's home folder.
+    DataLoadJobStreamSource:
+      type: object
+      description: Required when load_type is set to "STREAM".
+      required:
+        - file_name
+      properties:
+        file_name:
+          type: string
+          description: Source file name to be used as reference when creating the load job.
+    DataLoadJobFileOptions:
+      type: object
+      description: Modifies how the source data should be interpreted
+      properties:
+        code_page:
+          type: string
+          description: The character encoding of the source file. Valid values are listed in <a target="_blank" href="https://www.ibm.com/support/knowledgecenter/SSEPGG_11.1.0/com.ibm.db2.luw.admin.nls.doc/doc/r0004565.html">Supported territory codes and code pages</a>. Default value is "1208" (corresponds to UTF-8).
+        has_header_row:
+          type: string
+          description: Specifies whether or not the source file includes column names in a header row. 
+          enum:
+          - yes
+          - no
+          default: no
+        column_delimiter:
+          type: string
+          description: Single character used as column delimiter. Default value is comma (","). The character can also be specified using the format 0xJJ, where JJ is the hexadecimal representation of the character. Valid delimiters can be hexadecimal values from 0x00 to 0x7F, except for binary zero (0x00), line-feed (0x0A), carriage return (0x0D), space (0x20), and decimal point (0x2E).
+          default: ','
+        string_delimiter:
+          type: string
+          description: A single character used to delimiter string values instead of double quotation marks, which is the default. The character can also be specified using the format 0xJJ, where JJ is the hexadecimal representation of the character. Valid delimiters can be hexadecimal values from 0x00 to 0x7F, except for binary zero (0x00), line-feed (0x0A), carriage return (0x0D), space (0x20), and decimal point (0x2E). The special value 'NONE' is also accepted to specify that all bytes found between the column delimiters are part of the column's data, including any character delimiters such as double quotation marks. If 'NONE' is specified, delimiter_priority cannot be used since they are mutually exclusive.
+          default: '"'
+        delimiter_priority:
+          type: string
+          description: Specifies which delimiter 'RECORD' (i.e. row delimiter) or 'CHARACTER' is processed first. The default is 'RECORD', which means rows are identified first, then character strings. If set to 'CHARACTER', the system processes string delimiters first. This way new line characters enclosed within string delimiters are considered part of the string and not row delimiters.
+          enum:
+          - RECORD
+          - CHARACTER
+          default: RECORD
+        date_format:
+          type: string
+          description: A valid date format, such as "DD-MM-YY", "YYYY-MMM-DD", "DD/MM/YYY", "M/D/YYYY", "M/DD", "YYYY". For a full list of supported formats, see <a target="_blank" href="https://www.ibm.com/support/knowledgecenter/SSEPGG_11.1.0/com.ibm.db2.luw.admin.cmd.doc/doc/r0008305.html">Valid file type modifiers for the load utility - ASCII file formats (ASC/DEL)</a>, in the LOAD command reference. 
+          default: 'YYYY-MM-DD'
+        time_format:
+          type: string
+          description: A valid time format, such as "HH-MM-SS", "H:MM:SS TT", "HH:MM", "H:MM TT", "H:M", "H:M:S". For a full list of supported formats, see <a target="_blank" href="https://www.ibm.com/support/knowledgecenter/SSEPGG_11.1.0/com.ibm.db2.luw.admin.cmd.doc/doc/r0008305.html">Valid file type modifiers for the load utility - ASCII file formats (ASC/DEL)</a>, in the LOAD command reference.
+          default: 'HH:MM:SS'
+        timestamp_format:
+          type: string
+          description: A valid timestamp format, such as "YYYY-MM-DD HH:MM:SS", "DD/MM/YYYY H:MM TT", "MMM DD YYYY HH:MM:SS TT". For a full list of supported formats, see <a target="_blank" href="https://www.ibm.com/support/knowledgecenter/SSEPGG_11.1.0/com.ibm.db2.luw.admin.cmd.doc/doc/r0008305.html">Valid file type modifiers for the load utility - ASCII file formats (ASC/DEL)</a>, in the LOAD command reference.
+          default: 'YYYY-MM-DD HH:MM:SS'
+        implicitly_hidden_columns:
+          type: string
+          description: If set to 'INCLUDED', the system assumes that the source data contains data for the implicitly hidden columns and this data will also be loaded.
+          enum:
+          - MISSING
+          - INCLUDED
+          default: MISSING
+        identity_columns:
+          type: string
+          description: Affects how the system process values for identity columns in the target table. If set to 'IGNORE', values in the source data present but should be ignored so all identity values are generated by the system. If set to 'MISSING', assumes the source contains no data for the identity column (not even NULLs), and will therefore generate a value for each row. If set to 'OVERRIDE' it accepts explicit, non-NULL data for an identity column defined as GENERATED ALWAYS. The default is 'NONE', which follows the normal rules of inserting data into an identity column.
+          enum:
+          - IGNORE
+          - MISSING
+          - OVERRIDE
+        string_blanks:
+          type: string
+          description: By default ('REMOVE') all leading and trailing blanks that are not inside character delimiters are removed, and a NULL is inserted into the table for all blank fields. If set to 'PRESERVE', it preserves the leading and trailing blanks in each field of type CHAR, VARCHAR, LONG VARCHAR, or CLOB.
+          enum:
+          - REMOVE
+          - PRESERVE
+          default: REMOVE
+        cde_analyze_frequency:
+          type: integer
+          format: int32
+          description: An integer between 0 - 99 inclusive. This value controls how much data is sampled in the ANALYZE phase to produce a compression dictionary. In a massively parallel processing (MPP), the sampling size is not aggregated across members. The ANALYZE phase is stopped when the first member reaches max.
+        use_defaults_for_missing_values: 
+          type: string
+          description: If a source column for a target table column has been specified, but it contains no data for one or more row instances, default values are loaded.
+          enum:
+          - yes
+          - no
+          default: no
+    DataLoadJobCreated:
+      type: object
+      description: Confirmation of load job created
+      required:
+        - id
+        - userid
+        - load_source
+        - load_action
+        - database
+        - schema
+        - table
+        - status
+      properties:
+        id:
+          type: string
+          description: Load job ID
+        userid:
+          type: string
+          description: User ID of who created the job
+        load_source:
+          type: string
+          description: Describes the source of the data being loaded
+        load_action:
+          type: string
+          description: If set to 'INSERT' data is appended to the existing table data. If set to 'REPLACE' the table data is replaced with the data being loaded. The default is 'INSERT'.
+        database:
+          type: string
+          description: Target database name
+        schema:
+          type: string
+          description: Schema name where the target table is located
+        table:
+          type: string
+          description: Table name where data will be loaded to
+        status:
+          type: string
+          description: Job overall status
+    DataLoadJobStatus:
+      type: object
+      description: Execution status of a data load job
+      required:
+        - status
+        - start_time
+        - end_time
+        - rows_read
+        - rows_skipped
+        - rows_loaded
+        - rows_rejected
+        - rows_deleted
+        - rows_committed
+        - warning_count
+        - error_count
+        - warnings_summary
+        - errors_summary
+        - log_file
+      properties:
+        status:
+          type: string
+          description: Job overall status
+        start_time:
+          type: string
+          format: YYYY-MM-DDTHH:mm:ssZ
+          description: Data and time when the load started
+        end_time:
+          type: string
+          description: Data and time when the load completed
+        rows_read:
+          type: integer
+          format: int64
+          description: Number of rows read from the source
+        rows_skipped:
+          type: integer
+          format: int64
+          description: Number of rows skipped from the source
+        rows_loaded:
+          type: integer
+          format: int64
+          description: Number of rows loaded.
+        rows_rejected:
+          type: integer
+          format: int64
+          description: Number of rows rejected. A row can be rejected because one or more values are not compatible with the corresponding columns in the target table.
+        rows_deleted:
+          type: integer
+          format: int64
+          description: Number of rows deleted after being loaded. A row can be deleted if one or more values violate a unique constraint in the target table.
+        rows_committed:
+          type: integer
+          format: int64
+          description: Number of rows committed. This is final number of rows inserted and committed into the table.
+        warning_count:
+          type: integer
+          format: int64
+          description: Number of warnings reported during load execution
+        error_count:
+          type: integer
+          format: int64
+          description: Number of errors reported during load execution
+        warnings_summary:
+          type: array
+          description: Aggregated list of warnings. Each element represents a warning type and how many times this same warning was reported.
+          items:
+            $ref: '#/definitions/DataLoadMessageOccurrence'
+        errors_summary:
+          type: array
+          description: Aggregated list of errors. Each element represents an error type and how many times this same error was reported.
+          items:
+            $ref: '#/definitions/DataLoadMessageOccurrence'
+        log_file:
+          type: string
+          description: Location of the load log file relative to the user's home storage.
+    DataLoadJobInfo:
+      type: object
+      description: Information about a data load job
+      required:
+        - id
+        - userid
+        - status
+        - request
+      properties:
+        id:
+          type: string
+          description: Load job ID
+        userid:
+          type: string
+          description: User ID of who requested the load
+        status:
+          $ref: '#/definitions/DataLoadJobStatus'
+        request:
+          $ref: '#/definitions/DataLoadJobRequest'
+        metadata:
+          $ref: '#/definitions/ResourceMetadata'
+    DataLoadJobs:
+      type: object
+      description: Collection of data load jobs
+      required:
+        - resources
+        - count
+      properties:
+        count:
+          type: integer
+          format: int32
+          description: Number of elements
+        resources:
+          type: array
+          description: List of data load jobs
+          items:
+            $ref: '#/definitions/DataLoadJobInfo'
+    DataLoadMessageOccurrence:
+      type: object
+      description: Data load message
+      required:
+        - code
+        - message
+        - occurrences
+      properties:
+        code:
+          type: string
+          description: SQL code of the error/warning message
+        message:
+          type: string
+          description: Error/warning message
+        occurrences:
+          type: integer
+          format: int32
+          description: Number of times the message was reported
+        message_type:
+          type: string
+          description: Either 'error' or 'warning'.
+          enum:
+          - error
+          - warning
+    EmptyObject:
+      type: object
+    ErrorContainer:
+      type: object
+      description: Error response containing one or more error messages
+      required:
+        - trace
+        - errors
+      properties:
+        trace:
+          type: string
+          description: Unique ID assigned by the server that identifies the request that generated the error
+        errors:
+          type: array
+          description: List of errors
+          items:
+            $ref: '#/definitions/ErrorModel'
+    ErrorModel:
+      type: object
+      description: Error information
+      required:
+        - code
+        - message
+      properties:
+        code:
+          type: string
+          description: Error code succinctly identifying the problem
+          enum:
+          - authentication_failure
+          - database_error
+          - forbidden
+          - internal_server_error
+          - invalid_authentication_token
+          - invalid_content_type
+          - invalid_api_endpoint
+          - invalid_parameters
+          - invalid_request_payload
+          - not_found
+          - resource_already_exists
+          - session_expired
+          - unavailable
+        message:
+          type: string
+          description: Explanation of the problem and possible solutions
+        target:
+          $ref: '#/definitions/ErrorTargetModel'
+        more_info:
+          type: string
+          description: URL where more information about the error can be found (if available)
+    ErrorTargetModel:
+      type: object
+      description: Field or parameter related to an error
+      required:
+        - type
+        - name
+      properties:
+        type: 
+          type: string
+          description: Field type
+          enum:
+          - field
+          - parameter
+          - header
+        name: 
+          type: string
+          description: Name of the problematic field (with dot-syntax if necessary), query parameter, or header
+    FileFolderMetadata:
+      type: object
+      description: Describes a file or folder.
+      required:
+        - name
+        - is_folder
+        - location
+        - size
+        - contents
+      properties:
+        name:
+          type: string
+          description: File or folder name
+        is_folder:
+          type: string
+          description: Set to 'yes' if it is a folder', otherwise it is set to 'no'.
+        location: 
+          type: string
+          description: Relative URL path for this file or folder.
+        size:
+          type: integer
+          format: int64
+          description: Size in bytes. The size of a folder is the sum of the files directly under it, excluding subfolders.
+        contents:
+          type: array
+          description: List of files and folders
+          items:
+            type: object
+            required:
+              - name
+              - is_folder
+              - location
+              - size
+            properties:
+              name:
+                type: string
+                description: File or folder name
+              is_folder:
+                type: string
+                description: Set to 'yes' if it is a folder', otherwise it is set to 'no'.
+              location: 
+                type: string
+                description: Relative URL path for this file or folder.
+              size:
+                type: integer
+                format: int64
+                description: Size in bytes. The size of a folder will be -1.
+    FileFolderMetadataList:
+      type: object
+      description: Collection of files or folders metadata
+      required:
+        - resources
+        - count
+      properties:
+        count:
+          type: integer
+          format: int32
+          description: Number of elements
+        resources:
+          type: array
+          description: List of files or folders metaddata
+          items:
+            $ref: '#/definitions/FileFolderMetadata'
+    ResourceMetadata:
+      type: object
+      description: Meta information of an resource. Metadata is ready-only and values are auto-generated by the system.
+      required:
+        - guid
+        - url
+        - created_at
+        - updated_at
+      properties:
+        guid:
+          type: string
+          description: The resource's ID
+        url:
+          type: string
+          description: Path to the resource
+        created_at:
+          type: string
+          description: Date and time when the resource was created
+        updated_at:
+          type: string
+          description: Date and time when the resource was updated
+    Schema:
+      type: object
+      required:
+        - name
+      properties:
+        name:
+          type: string
+          description: The schema name
+    Schemas:
+      type: object
+      description: Collection of schemas
+      required:
+        - resources
+        - count
+      properties:
+        count:
+          type: integer
+          format: int32
+          description: Number of elements
+        resources:
+          type: array
+          description: List of schemas
+          items:
+            $ref: '#/definitions/Schema'
+    SchemaDiscoveryCSVRequest:
+      type: object
+      description: Request to run schema discovery on CSV data.
+      required:
+        - column_separator
+        - includes_header
+        - data
+      properties:
+        column_separator:
+          type: string
+          description: The table name
+        includes_header:
+          type: string
+          description: Accepts values 'yes' and 'no'. The value 'yes' indicates the first row is a header with the column names and should be ignored whe analyzing the data. The value 'no' indicates all rows will be considered for analysis. 
+        data:
+          type: string
+          description: The CSV data to analyze
+    SchemaDiscoveryResponse:
+      type: object
+      description: List of proposed columns as result of running schema discovery.
+      required:
+       - columns
+      properties:
+        columns:
+          type: array
+          items:
+            $ref: '#/definitions/SchemaDiscoveryColumn'
+    SchemaDiscoveryColumn:
+      type: object
+      description: Column description from schema discovery.
+      required:
+        - name
+        - type
+        - length
+        - scale
+        - format
+      properties:
+        name:
+          type: string
+          description: Column name.
+        type:
+          type: string
+          description: Data type name.
+        length:
+          type: integer
+          format: int64
+          description: Suggested length for the data type.
+        scale:
+          type: string
+          description: Suggested scale for the data type.
+        format:
+          type: string
+          description: A pattern that describes the values of a column.
+    ServiceStatus:
+      type: object
+      description: Services status
+      required:
+        - database_service
+        - authentication_service
+      properties:
+        database_service:
+          type: string
+          description: Status of the database service.
+          enum:
+          - online
+          - offline
+        authentication_service:
+          type: string
+          description: Status of the authentication service.
+          enum:
+          - online
+          - offline
+        messages:
+          type: array
+          description: Warnings or errors reported while checking status of services.
+          items:
+            type: string
+    SystemSettings:
+      type: object
+      description: A collection of system settings.
+      required:
+        - product_name
+        - database_host
+        - database_port
+        - database_port_ssl
+        - database_ssl_connections_enforced
+        - console_url
+        - nodes_count
+        - subscription_plan
+        - environment
+      properties:
+        product_name:
+          type: string
+          description: Product name
+        database_host:
+          type: string
+          description: Host name or IP address of the database server
+        database_port:
+          type: integer
+          description: Port number for non-secured database connections
+        database_port_ssl:
+          type: integer
+          description: Port number for secured database connections
+        database_ssl_connections_enforced:
+          type: string
+          description: Accepts values 'yes' and 'no'. When set to 'yes' clients can only connect to the database server using secured connections
+        console_url:
+          type: string
+          description: URL to access the web console
+        nodes_count:
+          type: integer
+          description: Number of physical nodes in the database cluster
+        subscription_plan:
+          type: string
+          description: Subscription plan
+        environment:
+          type: object
+          description: The environment where the service is running
+          required:
+            - name
+            - details
+          properties:
+            name:
+              type: string
+              description: Name of the environment. For instance, cloud provider such as SoftLayer
+            details:
+              type: object
+              description: Environment which can vary based on type of environment.
+              required:
+                - service_name
+                - region
+              properties:
+                service_name: 
+                  type: string
+                  description: Name of the service
+                region:
+                  type: string
+                  description: For cloud environment, it describes the Geo location where the service is running
+    SystemSettingsUpdate:
+      type: object
+      description: Request to update the system settings.
+      required:
+        - database_ssl_connections_enforced
+      properties:
+        database_ssl_connections_enforced:
+          type: string
+          description: Accepts values 'yes' and 'no'. When set to 'yes' clients can only connect to the database server using secured connections
+    SystemStorage:
+      type: object
+      required:
+        - name
+        - capacity_kb
+        - used_kb
+        - available_kb
+        - collected_at
+      properties:
+        name:
+          type: string
+          description: Describes the storage unit.
+        capacity_kb:
+          type: integer
+          format: int64
+          description: Total capacity, reported in kilobytes.
+        used_kb:
+          type: integer
+          format: int64
+          description: Storage space in use, reported in kilobytes.
+        available_kb:
+          type: integer
+          format: int64
+          description: Storage space available, reported in kilobytes.
+        collected_at:
+          type: string
+          description: When the metrics were collected.
+    SystemStorageList:
+      type: object
+      description: Collection of system storage stats
+      required:
+        - resources
+        - count
+      properties:
+        count:
+          type: integer
+          format: int32
+          description: Number of elements
+        resources:
+          type: array
+          description: List of elements
+          items:
+            $ref: '#/definitions/SystemStorage'
+    SQLJobCreate:
+      type: object
+      required:
+        - commands
+        - limit
+        - separator
+        - stop_on_error
+        # - auto_commit
+      properties:
+        commands:
+          type: string
+          description: The SQL script to be executed
+        limit:
+          type: integer
+          format: int32
+          description: Maximum number of rows that will be fetched for each result set.
+          default: 1000
+        separator:
+          type: string
+          description: SQL statement terminator. A character that is used to mark the end of a SQL statement when the provided SQL script contains multiple statements.
+        stop_on_error:
+          type: string
+          description: If 'yes', the job stops executing at the first statement that returns an error. If 'no', the job continues executing if one or more statements returns an error.
+          # description: If 'yes', the job stops executing at the first statement that returns an error, if auto_commit is set to 'no' the entire transaction is rolled back. If 'no', the job continues executing if one or more statements returns an error.
+        # auto_commit:
+        #   type: string
+        #   description: If 'no', the job is executed as a single transaction and only committed after the last statement. If 'yes' each statement is automatically committed.
+        #   default: yes
+    SQLJobSummary:   
+      type: object
+      required:
+        - id
+        - commands_count
+      properties:
+        id:
+          type: string
+          description: The SQL execution job ID
+        commands_count:
+          type: integer
+          format: int32
+          description: Number of SQL statements to be executed
+          default: 1000
+        limit:
+          type: integer
+          format: int32
+          description: Maximum number of rows that will be fetched for each result set
+    SQLJobResults:   
+      type: object
+      description: Contains the results of executing the SQL statements associated with a SQL execution job
+      required:
+        - id
+        - status
+      properties:
+        id:
+          type: string
+          description: The SQL execution job ID
+        status:
+          type: string
+          description: Job status
+          enum:
+          - running
+          - failed
+          - completed
+        results:
+          type: array
+          items:
+            $ref: '#/definitions/SQLStatementResult'
+    SQLStatement:
+      type: object
+      required:
+        - command
+      properties:
+        command:
+          type: string
+          description: The SQL statement to execute
+    SQLStatementResult:
+      type: object
+      required:
+        - command
+        - runtime_seconds
+      properties:
+        command:
+          type: string
+          description: The SQL statement
+        columns:
+          type: array
+          items: 
+            type: string
+          description: List of column names in the result set
+        rows:
+          type: array
+          description: Rows of data returned in the result set
+          items: 
+            type: array
+            items:
+              type: string
+        rows_count:
+          type: integer
+          format: int32
+          description: Number of rows returned
+        limit:
+          type: integer
+          format: int32
+          description: Maximum number of rows that will be fetched when the command returns a result set.
+        last_inserted:
+          type: integer
+          description: The index of the last inserted row if available
+        rows_affected:
+          type: integer
+          description: Number of rows updated or inserted by the command
+        runtime_seconds:
+          type: number
+          format: double
+          description: Execution time in seconds
+        error:
+          type: string
+          description: Error message generated when executing the command if any
+    TableCreate:
+      type: object
+      description: TEMPORARY - it should be replaced with Table. Currently used by the Create Table endpoint only.
+      required:
+        - name
+        - schema
+        - columns
+      properties:
+        name:
+          type: string
+          description: The table name
+        schema:
+          type: string
+          description: The schema name
+        columns:
+          type: array
+          items:
+            $ref: '#/definitions/ColumnDefinitionDDL'
+    TableData:
+      type: object
+      required:
+        - columns
+        - rows
+      properties:
+        columns:
+          type: array
+          description: Column definitions
+          items:
+            $ref: '#/definitions/ColumnDefinition'
+        rows:
+          type: array
+          description: Table rows
+          items:
+            type: array
+            items:
+              type: string
+    TableInfo:
+      type: object
+      description: Includes table definition and statistics. Note that statistics such as row count and size are not updated real time. Check the stats_timestamp value to know how current that information is. 
+      required:
+        - name
+        - schema
+        - columns
+        - comments
+        - stats
+      properties:
+        name:
+          type: string
+          description: The table name
+        schema:
+          type: string
+          description: The schema name
+        comments:
+          type: string
+          description: User provided comments
+        columns:
+          type: array
+          items:
+            $ref: '#/definitions/ColumnDefinition'
+        status:
+          type: string
+          description: It can assume values 
+        stats:
+          type: object
+          required:
+            - last_collected
+            - rows
+            - storage_in_use_kb
+            - storage_allocated_kb
+            - last_used
+          properties:
+            last_collected:
+              type: string
+              format: YYYY-MM-DDTHH:mm:ss.sssZ
+              description: Timestamp when statistics were last collected for the table. It can be empty for newly created tables.
+            rows:
+              type: integer
+              format: int64
+              description: Number of rows in the table
+            storage_in_use_kb:
+              type: integer
+              format: int64
+              description: Storage size in kilobytes used by table data
+            storage_allocated_kb:
+              type: integer
+              format: int64
+              description: Storage size in kilobytes allocated for the table. It is greater or equal to the storage in use. For instance, when rows are deleted storage might remain allocated for the table until a REORG operation reclaims the unused space.
+            last_used:
+              type: string
+              format: YYYY-MM-DD
+              description: Date when the table data was last read, inserted or updated
+    Tables:
+      type: object
+      description: Collection of tables
+      required:
+        - resources
+        - count
+      properties:
+        count:
+          type: integer
+          format: int32
+          description: Number of elements
+        resources:
+          type: array
+          description: List of tables
+          items:
+            $ref: '#/definitions/TableSummary'
+    TableSummary:
+      type: object
+      required:
+        - name
+        - schema
+      properties:
+        name:
+          type: string
+          description: The table name
+        schema:
+          type: string
+          description: The schema name
+    User:
+      type: object
+      required:
+        - name
+        - role
+        - email
+      properties:
+        id:
+          type: string
+          description: The user's ID. It must be between 6 and 12 characters and may only contain letters a-z (lower-case), numbers 0-9, and the special characters '#', '@', or '$'. It may not be "guests", "admins", "users", "local", "idax", "public", "ibm", "dsweb", "sqlj", "root" or "gopher". It cannot begin with "bluadmin", "db2inst1", "nullid", "ibm", "sql" or "sys".
+        name:
+          type: string
+          description: The user's full name
+        password:
+          type: string
+          description: The user's password. It must have a minimum of twelve characters. It must contain at least one each of upper-case letters, lower-case letters, numbers, and special characters.
+        role:
+          type: string
+          description: The user's role. Administrators have the `bluadmin` role. Regular users have the `bluuser` role.
+          enum:
+          - bluuser
+          - bluadmin
+        email:
+          type: string
+          description: The user's email address
+        locked:
+          type: string
+          description: If set to 'yes', it indicates the user account is locked, which disallows the user from logging into the system
+          enum:
+          - yes
+          - no
+    UserConnectionPrivileges:
+      type: object
+      required:
+        - userid
+        - restricted
+      properties:
+        userid:
+          type: string
+          description: The user's ID
+        restricted:
+          type: string
+          description: If 'yes', database connections will only be allowed from the list of authorized hosts. If 'no', database connections will be allowed from anywhere.
+        authorized_hosts:
+          type: array
+          description: A list of IP addresses or hostnames in which the user can connect from.
+          items:
+                type: string
+    UserCredentials:
+      type: object
+      required:
+        - userid
+        - password
+      properties:
+        userid:
+          type: string
+          description: The user's ID
+        password:
+          type: string
+          description: The user's password
+    Users:
+      type: object
+      description: Collection of users
+      required:
+        - resources
+        - count
+      properties:
+        count:
+          type: integer
+          format: int32
+          description: Number of elements
+        resources:
+          type: array
+          description: List of users
+          items:
+            $ref: '#/definitions/User'
+    UserUpdate:
+      type: object
+      description: Used for user update requests
+      required:
+        - id
+        - name
+        - role
+        - email
+      properties:
+        id:
+          type: string
+          description: The user's ID
+        name:
+          type: string
+          description: The user's full name
+        old_password:
+          type: string
+          description: Current password must be provided when user updates his own profile.
+        new_password:
+          type: string
+          description: New password
+        role:
+          type: string
+          description: The user's role. Administrators have the `bluadmin` role. Regular users have the `bluuser` role.
+          enum:
+          - bluadmin
+          - bluuser
+        email:
+          type: string
+          description: The user's email address
+
+
