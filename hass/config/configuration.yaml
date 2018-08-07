@@ -240,21 +240,13 @@ panel_iframe:
     icon: mdi:webcam
     url: 'http://www.dcmartin.com/CABIN.html'
   motion:
-    title: 'Motion Cams'
-    icon: mdi:movie
-    url: 'http://192.168.1.40:8080'
-  motion_files:
-    title: 'Motion Images'
+    title: 'Motion AddOn'
     icon: mdi:image-plus
-    url: 'http://192.168.1.40:8000'
+    url: 'http://192.168.1.40:7999'
   netdata:
     title: 'NetData'
     icon: mdi:database-search
     url: 'http://192.168.1.40:19999'
-  cloudant:
-    title: 'Cloudant'
-    icon: mdi:sofa
-    url: !secret cloudant_url
   nodered:
     title: 'Node-RED'
     icon: mdi:clipboard-flow
@@ -267,10 +259,6 @@ panel_iframe:
     title: 'Mikrotik'
     icon: mdi:router-wireless
     url: 'http://192.168.1.1'
-  classify:
-    title: 'CLASSIFY'
-    icon: mdi:image-filter
-    url: 'http://192.168.1.40:8999/classify.html'
   digits:
     title: 'DIGITS'
     icon: mdi:format-list-numbers
