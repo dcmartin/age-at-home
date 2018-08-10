@@ -41,7 +41,7 @@ if ($vendor == "all") then
   set vendors = ( `cat "$out" | awk '/Nmap scan report for/ { printf("%s ", $5) ; getline; getline; printf("%s %s\n", $3, $4)}' | awk '{ print $3 }' | egrep "^\(" | sed 's/(//g' | sed 's/)//g' | sort | uniq` )
 endif
 
-set names = ( \
+set cisco-linksys = ( \
     wcv80n_woodshed \
     wcv80n_livingroom \
     wcv80n_poolhouse_fridge \
@@ -103,7 +103,7 @@ foreach vendor ( $vendors )
     switch ($vendor)
       case "camera":
       case "Cisco-Linksys":
-        set name = "$names[$i]"
+        set name = "$cisco-linksys[$i]"
         /bin/echo '# '"$name"' '"$ip"' '"$mac" >>! "$config"
         /bin/echo 'camera '"$name"':' >>! "$config"
         /bin/echo '  - platform: mjpeg' >>! "$config"

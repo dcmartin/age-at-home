@@ -69,11 +69,11 @@ if (-d "$dir/addons") then
 	  set options = `jq -r '.' "$json"`
 	  jq '.|.options='"$options" "$aoe" >! "$addons"/"$ao:t"/"$aoe:t"
         else if (-d "$aoe") then
-          echo -n "$aoe:t "
+          echo -n "$aoe:t/ "
           mkdir -p "$addons/$ao:t/$aoe:t"
           foreach k ( "$aoe"/* )
             echo -n "$k:t "
-            cp "$k" "$addons"/"$ao:t"/"$aoe:t"/"$k:t"
+            cp -r "$k" "$addons"/"$ao:t"/"$aoe:t"/"$k:t"
           end
         else
           echo -n "$aoe:t "
