@@ -1,4 +1,4 @@
-#!/bin/csh 
+#!/bin/tcsh -fb
 set old = ( `docker ps | egrep ageathome | awk '{ print $1 }'` )
 if ($?old) then
   if ($#old) then
@@ -8,7 +8,7 @@ endif
 docker rm ageathome
 if (-d "/home/AAH/lib/age-at-home") then
   set vol = "/home/AAH/lib/age-at-home"
-else if (-d "/Volumes/AAH/age-athome") then
+else if (-d "/Volumes/AAH/age-at-home") then
   set vol = "/Volumes/AAH/age-at-home"
 else
   echo "No AAHDIR"
