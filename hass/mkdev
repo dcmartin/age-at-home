@@ -1,4 +1,4 @@
-#!/bin/csh -fb
+#!/bin/tcsh
 
 onintr cleanup
 
@@ -26,11 +26,11 @@ echo "$0 - using net ($net)" >&! /dev/stderr
 
 # find hosts on the LAN
 set out = "/tmp/$0:t.$$.txt"
-if (! -e "/usr/bin/nmap") then
+if (! -e "/usr/local/bin/nmap") then
   /bin/echo 'No nmap(8); install using brew or apt' >& /dev/stderr
   exit
 endif
-/usr/bin/sudo /usr/bin/nmap -sn -T5 "$net" >! "$out"
+/usr/bin/sudo /usr/local/bin/nmap -sn -T5 "$net" >! "$out"
 
 if (! -e "$out") then
   /bin/echo 'No nmap(8) output for '"$net" >& /dev/stderr
@@ -38,7 +38,7 @@ if (! -e "$out") then
 endif
 
 if ($vendor == "all") then
-  set vendors = ( `/bin/cat "$out" | /usr/bin/awk '/Nmap scan report for/ { printf("%s ", $5) ; getline; getline; printf("%s %s\n", $3, $4)}' | /usr/bin/awk '{ print $3 }' | /bin/egrep "^\(" | /bin/sed 's/(//g' | /bin/sed 's/)//g' | /usr/bin/sort | /usr/bin/uniq` )
+  set vendors = ( `cat "$out" | awk '/Nmap scan report for/ { printf("%s ", $5) ; getline; getline; printf("%s %s\n", $3, $4)}' | awk '{ print $3 }' | egrep "^\(" | sed 's/(//g' | sed 's/)//g' | sort | uniq` )
 endif
 
 set cisco-linksys = ( \
