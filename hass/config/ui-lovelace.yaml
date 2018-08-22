@@ -1,3 +1,6 @@
+# UI LOVELACE
+name: Fazenda da Saudade
+
 ageathome_learning:
   name: ageathome_learning
   initial: false
@@ -17,8 +20,6 @@ ageathome_notify_poolhouse:
   name: ageathome_notify_poolhouse
   initial: true
   icon: mdi:pool
-
-name: My Awesome Home
 
 views:
   - icon: mdi:worker
@@ -46,3 +47,60 @@ views:
         - input_boolean.ageathome_notify_email
         - input_boolean.ageathome_notify_gate
         - input_boolean.ageathome_notify_poolhouse
+  - icon: mdi:animation
+    title: ANIMATIONS
+    cards:
+    - type: picture-entity
+      entity: camera.motion_kinect_animated
+    - type: picture-entity
+      entity: camera.motion_gate_animated
+    - type: picture-entity
+      entity: camera.motion_bathroom_animated
+    - type: picture-entity
+      entity: camera.motion_poolhouse_animated
+    - type: picture-entity
+      entity: camera.motion_road_animated
+    - type: picture-entity
+      entity: camera.motion_kitchen_animated
+    - type: picture-entity
+      entity: camera.motion_frontdoor_animated
+    - type: picture-entity
+      entity: camera.motion_gravelparking_animated
+    - type: picture-entity
+      entity: camera.motion_livingroom_animated
+    - type: picture-entity
+      entity: camera.motion_dogpond_animated
+    - type: picture-entity
+      entity: camera.motion_fireplace_animated
+    - type: picture-entity
+      entity: camera.motion_dogyard_animated
+    - type: picture-entity
+      entity: camera.motion_dogshed_animated
+    - type: picture-entity
+      entity: camera.motion_laundry_animated
+    - type: picture-entity
+      entity: camera.motion_foyer_animated
+    - type: picture-entity
+      entity: camera.motion_diningroom_animated
+    - type: picture-entity
+      entity: camera.motion_garage_animated
+    - type: picture-entity
+      entity: camera.motion_poolcam_animated
+    - type: picture-entity
+      entity: camera.motion_phexterior_animated
+    - type: picture-entity
+      entity: camera.motion_gravelpad_animated
+    - type: picture-entity
+      entity: camera.motion_backyard_animated
+    - type: picture-entity
+      entity: camera.motion_sideyard_animated
+    - type: picture-entity
+      entity: camera.motion_frontwalk_animated
+    - type: picture-entity
+      entity: camera.motion_dogshedmiddle_animated
+    - type: picture-entity
+      entity: camera.motion_dogshedfront_animated
+    - type: picture-entity
+      entity: camera.motion_pondview_animated
+    - type: picture-entity
+      entity: camera.motion_upperpathgate_animated

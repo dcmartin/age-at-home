@@ -722,3 +722,39 @@ webcam_status:
     - device_tracker.wcv80n_upperpath
     - device_tracker.wcv80n_woodshed
 
+
+### MOTION
+motion_animated_view:
+  view: true
+  name: Motion Animated View
+  icon: mdi:animation
+  entities:
+    - camera.motion_kinect_animated
+    - camera.motion_backyard_animated
+    - camera.motion_diningroom_animated
+    - camera.motion_dogpond_animated
+    - camera.motion_dogshed_animated
+    - camera.motion_dogshedfront_animated
+    - camera.motion_dogshedmiddle_animated
+    - camera.motion_dogyard_animated
+    - camera.motion_fireplace_animated
+    - camera.motion_foyer_animated
+    - camera.motion_frontwalk_animated
+    - camera.motion_garage_animated
+    - camera.motion_gravelpad_animated
+    - camera.motion_gravelparking_animated
+    - camera.motion_laundry_animated
+    - camera.motion_livingroom_animated
+    - camera.motion_phexterior_animated
+    - camera.motion_pondview_animated
+    - camera.motion_poolcam_animated
+    - camera.motion_sideyard_animated
+    - camera.motion_upperpathgate_animated
+    # ageathome
+    - camera.kitchen_image_animated
+    - camera.bathroom_image_animated
+    - camera.frontdoor_image_animated
+    - camera.poolhouse_image_animated
+    - camera.frontdoor_image_animated
+    - camera.gate_image_animated
+    - camera.road_image_animated

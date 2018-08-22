@@ -569,20 +569,20 @@ ios:
 ### PLEX
 ###
 
-media_player david_plex:
-  - platform: plex
-    name: david_plex
-    ip_address: 192.168.1.27
-    port: 32400
-    token: !secret plex_token
-
-sensor david_plex:
-  - platform: plex
-    host: 192.168.1.27
-    port: 32400
-    name: david_plex
-    username: !secret plex_username
-    password: !secret plex_password
+#media_player david_plex:
+#  - platform: plex
+#    name: david_plex
+#    ip_address: 192.168.1.27
+#    port: 32400
+#    token: !secret plex_token
+#
+#sensor david_plex:
+#  - platform: plex
+#    host: 192.168.1.27
+#    port: 32400
+#    name: david_plex
+#    username: !secret plex_username
+#    password: !secret plex_password
 
 ###
 ### WEATHER
@@ -3604,4 +3604,127 @@ input_boolean: !include input_boolean.yaml
 input_select: !include input_select.yaml
 
 # input_text: !include input_text.yaml
+
+###
+### MOTION CAMERAS
+###
+
+## LAST IMAGE(s)
+
+camera motion_image:
+  - platform: mqtt
+    name: motion_last
+    topic: '+/+/+/image'
+
+camera motion_average:
+  - platform: mqtt
+    name: motion_average
+    topic: '+/+/+/image-average'
+
+camera motion_blend:
+  - platform: mqtt
+    name: motion_blend
+    topic: '+/+/+/image-blend'
+
+camera motion_animated_mask:
+  - platform: mqtt
+    name: motion_animated_mask
+    topic: '+/+/+/image-animated-mask'
+
+camera motion_composite:
+  - platform: mqtt
+    name: motion_composite
+    topic: '+/+/+/image-composite'
+
+camera motion_last_animated:
+  - platform: mqtt
+    name: motion_animated
+    topic: '+/+/+/image-animated'
+
+## ALL CAMERAS
+
+camera motion_gate_animated:
+  - platform: mqtt
+    name: motion_gate_animated
+    topic: 'image-animated/gate'
+
+camera motion_bathroom_animated:
+  - platform: mqtt
+    name: motion_bathroom_animated
+    topic: 'image-animated/bathroom'
+
+camera motion_poolcam_animated:
+  - platform: mqtt
+    name: motion_poolcam_animated
+    topic: '+/+/poolcam/image-animated'
+
+camera motion_poolhouse_animated:
+  - platform: mqtt
+    name: motion_poolhouse_animated
+    topic: 'image-animated/poolhouse'
+
+camera motion_livingroom_animated:
+  - platform: mqtt
+    name: motion_livingroom_animated
+    topic: '+/+/livingroom/image-animated'
+
+camera motion_dogpond_animated:
+  - platform: mqtt
+    name: motion_dogpond_animated
+    topic: '+/+/dogpond/image-animated'
+
+camera motion_fireplace_animated:
+  - platform: mqtt
+    name: motion_fireplace_animated
+    topic: '+/+/fireplace/image-animated'
+
+camera motion_dogshed_animated:
+  - platform: mqtt
+    name: motion_dogshed_animated
+    topic: '+/+/dogshed/image-animated'
+
+camera motion_laundry_animated:
+  - platform: mqtt
+    name: motion_laundry_animated
+    topic: '+/+/laundry/image-animated'
+
+camera motion_foyer_animated:
+  - platform: mqtt
+    name: motion_foyer_animated
+    topic: '+/+/foyer/image-animated'
+
+camera motion_diningroom_animated:
+  - platform: mqtt
+    name: motion_diningroom_animated
+    topic: '+/+/diningroom/image-animated'
+
+camera motion_garage_animated:
+  - platform: mqtt
+    name: motion_garage_animated
+    topic: '+/+/garage/image-animated'
+
+camera motion_frontwalk_animated:
+  - platform: mqtt
+    name: motion_frontwalk_animated
+    topic: '+/+/frontwalk/image-animated'
+
+camera motion_kinect_animated:
+  - platform: mqtt
+    name: motion_kinect_animated
+    topic: '+/+/kinect/image-animated'
+
+camera motion_road_animated:
+  - platform: mqtt
+    name: motion_road_animated
+    topic: 'image-animated/road'
+
+camera motion_kitchen_animated:
+  - platform: mqtt
+    name: motion_kitchen_animated
+    topic: 'image-animated/kitchen'
+
+camera motion_frontdoor_animated:
+  - platform: mqtt
+    name: motion_frontdoor_animated
+    topic: 'image-animated/frontdoor'
 
