@@ -59,11 +59,11 @@ http:
   api_password: !secret http_api_password
   trusted_networks: 
   cors_allowed_origins: 
-    - http://192.168.1.40:7080
+    - http://192.168.1.46:7080
     - https://google.com
     - https://home-assistant.io
     - http://dcmartin.com
-  base_url: 192.168.1.40:8123
+  base_url: 192.168.1.46:8123
 
 ###
 ### EXTERNAL IP
@@ -105,9 +105,9 @@ sensor solar:
 
 ## broker is LAN IP address of this instance
 mqtt:
-  broker: 192.168.1.40
+  broker: 192.168.1.46
   keepalive: 60
-  client_id: homeassistant
+  client_id: ubuntu
   # port:
   # username:
   # password:
@@ -242,19 +242,19 @@ panel_iframe:
   motion:
     title: 'Motion AddOn'
     icon: mdi:image-plus
-    url: 'http://192.168.1.40:7999'
+    url: 'http://192.168.1.46:7999'
   netdata:
     title: 'NetData'
     icon: mdi:database-search
-    url: 'http://192.168.1.40:19999'
+    url: 'http://192.168.1.46:19999'
   nodered:
     title: 'Node-RED'
     icon: mdi:clipboard-flow
-    url: 'http://192.168.1.40:1880'
+    url: 'http://192.168.1.46:1880'
   ageathome:
     title: 'Age-At-Home'
     icon: mdi:home-account
-    url: 'http://192.168.1.40:8999/devices.html'
+    url: 'http://192.168.1.46:7999/devices.html'
   docsis:
     title: 'Mikrotik'
     icon: mdi:router-wireless
@@ -266,11 +266,11 @@ panel_iframe:
   controls:
     title: Control Panel
     icon: mdi:windows
-    url: 'http://192.168.1.40:7080'
+    url: 'http://192.168.1.46:7080'
   terminal:
     title: Terminal
     icon: mdi:console
-    url: 'http://192.168.1.40:7681'
+    url: 'http://192.168.1.46:7681'
   plexpy:
     title: DAVID-PLEX
     icon: mdi:television
@@ -501,7 +501,7 @@ device_tracker dt_nmap:
     track_devices_new: yes
     consider_home: 180
     exclude:
-     - 192.168.1.40
+     - 192.168.1.46
 
 ## device tracking from iCloud
 device_tracker:
@@ -939,7 +939,7 @@ sensor error_device:
 camera error_image:
   - platform: generic
     name: error_image
-    still_image_url: 'http://p40.local:8999/CGI/aah-images.cgi?db={{states.sensor.error_device.state}}&id={{states.sensor.error_id.state}}&ext=full'
+    still_image_url: 'http://p40.local:7999/CGI/aah-images.cgi?db={{states.sensor.error_device.state}}&id={{states.sensor.error_id.state}}&ext=full'
 
 ##
 ## WRONG
@@ -3256,7 +3256,7 @@ group: !include group.yaml
 
 sensor aah_device_count:
   - platform: rest
-    resource: 'http://192.168.1.40:8999/CGI/aah-devices.cgi'
+    resource: 'http://192.168.1.46:7999/CGI/aah-devices.cgi'
     name: aah_device_count
     value_template: >
       {%- if value_json is defined -%}
@@ -3269,7 +3269,7 @@ sensor aah_device_count:
 
 sensor aah_device_names:
   - platform: rest
-    resource: 'http://192.168.1.40:8999/CGI/aah-devices.cgi'
+    resource: 'http://192.168.1.46:7999/CGI/aah-devices.cgi'
     name: aah_device_names
     value_template: >
       {%- if value_json is defined -%}
@@ -3285,7 +3285,7 @@ sensor aah_device_names:
 
 sensor aah_device_dates:
   - platform: rest
-    resource: 'http://192.168.1.40:8999/CGI/aah-devices.cgi'
+    resource: 'http://192.168.1.46:7999/CGI/aah-devices.cgi'
     name: aah_device_dates
     value_template: >
       {%- if value_json is defined -%}
