@@ -63,7 +63,6 @@ http:
     - https://google.com
     - https://home-assistant.io
     - http://dcmartin.com
-  base_url: 192.168.1.46:8123
 
 ###
 ### EXTERNAL IP
@@ -107,8 +106,6 @@ sensor solar:
 mqtt:
   broker: 192.168.1.46
   keepalive: 60
-  client_id: ubuntu
-  # port:
   # username:
   # password:
 
