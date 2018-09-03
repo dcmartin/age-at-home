@@ -59,7 +59,6 @@ http:
   api_password: !secret http_api_password
   trusted_networks: 
   cors_allowed_origins: 
-    - http://192.168.1.46:7080
     - https://google.com
     - https://home-assistant.io
     - http://dcmartin.com
@@ -104,10 +103,7 @@ sensor solar:
 
 ## broker is LAN IP address of this instance
 mqtt:
-  broker: 192.168.1.46
-  keepalive: 60
-  # username:
-  # password:
+  broker: mqtt.dcmartin.com
 
 ###
 ### HUE bridge & lights
@@ -239,19 +235,19 @@ panel_iframe:
   motion:
     title: 'Motion AddOn'
     icon: mdi:image-plus
-    url: 'http://192.168.1.46:7999'
+    url: 'http://192.168.1.40:7999'
   netdata:
     title: 'NetData'
     icon: mdi:database-search
-    url: 'http://192.168.1.46:19999'
+    url: 'http://192.168.1.40:19999'
   nodered:
     title: 'Node-RED'
     icon: mdi:clipboard-flow
-    url: 'http://192.168.1.46:1880'
+    url: 'http://node-red.dcmartin.com:1880'
   ageathome:
     title: 'Age-At-Home'
     icon: mdi:home-account
-    url: 'http://192.168.1.46:7999/devices.html'
+    url: 'http://age-at-home.dcmartin.com:8999'
   docsis:
     title: 'Mikrotik'
     icon: mdi:router-wireless
@@ -259,19 +255,19 @@ panel_iframe:
   digits:
     title: 'DIGITS'
     icon: mdi:format-list-numbers
-    url: 'http://192.168.1.40:32769/'
+    url: 'http://digits.dcmartin.com:5000/'
   controls:
     title: Control Panel
     icon: mdi:windows
-    url: 'http://192.168.1.46:7080'
+    url: 'http://homeassistant.dcmartin.com:7080'
   terminal:
     title: Terminal
     icon: mdi:console
-    url: 'http://192.168.1.46:7681'
+    url: 'http://rpi2.dcmartin.com:7681'
   plexpy:
     title: DAVID-PLEX
     icon: mdi:television
-    url: 'http://192.168.1.27:8181'
+    url: 'http://plex.dcmartin.com:8181'
 
 ###
 ### SENSORS
@@ -496,9 +492,7 @@ device_tracker dt_nmap:
     hosts: 192.168.1.1/24
     home_interval: 10
     track_devices_new: yes
-    consider_home: 180
-    exclude:
-     - 192.168.1.46
+    consider_home: 15
 
 ## device tracking from iCloud
 device_tracker:
@@ -561,25 +555,6 @@ ios:
             # behavior: 'textInput'
             # textInputButtonTitle: 'Who?'
             # textInputPlaceholder: 'Unknown'
-
-###
-### PLEX
-###
-
-#media_player david_plex:
-#  - platform: plex
-#    name: david_plex
-#    ip_address: 192.168.1.27
-#    port: 32400
-#    token: !secret plex_token
-#
-#sensor david_plex:
-#  - platform: plex
-#    host: 192.168.1.27
-#    port: 32400
-#    name: david_plex
-#    username: !secret plex_username
-#    password: !secret plex_password
 
 ###
 ### WEATHER
@@ -653,11 +628,11 @@ camera wcv80n_livingroom:
     username: !secret wcv80n_username
     password: !secret wcv80n_password
 
-camera wcv80n_driveway:
+camera wcv80n_dogpond:
   - platform: mjpeg
     mjpeg_url: http://192.168.1.165/img/video.mjpeg
     still_image_url: http://192.168.1.165/img/snapshot.cgi
-    name: wcv80n_driveway
+    name: wcv80n_dogpond
     username: !secret wcv80n_username
     password: !secret wcv80n_password
 
@@ -671,11 +646,11 @@ camera wcv80n_fireplace:
 
 # NO 167
 
-camera wcv80n_poolhouse_exterior:
+camera wcv80n_phexterior:
   - platform: mjpeg
     mjpeg_url: http://192.168.1.168/img/video.mjpeg
     still_image_url: http://192.168.1.168/img/snapshot.cgi
-    name: wcv80n_poolhouse_exterior
+    name: wcv80n_phexterior
     username: !secret wcv80n_username
     password: !secret wcv80n_password
 
@@ -715,7 +690,7 @@ camera wcv80n_dogshed_interior:
   - platform: mjpeg
     mjpeg_url: http://192.168.1.173/img/video.mjpeg
     still_image_url: http://192.168.1.173/img/snapshot.cgi
-    name: wcv80n_dogshed_interior
+    name: wcv80n_dogshed
     username: !secret wcv80n_username
     password: !secret wcv80n_password
 
@@ -936,7 +911,7 @@ sensor error_device:
 camera error_image:
   - platform: generic
     name: error_image
-    still_image_url: 'http://p40.local:7999/CGI/aah-images.cgi?db={{states.sensor.error_device.state}}&id={{states.sensor.error_id.state}}&ext=full'
+    still_image_url: 'http://age-at-home.dcmartin.com:8999/CGI/aah-images.cgi?db={{states.sensor.error_device.state}}&id={{states.sensor.error_id.state}}&ext=full'
 
 ##
 ## WRONG
@@ -3253,7 +3228,7 @@ group: !include group.yaml
 
 sensor aah_device_count:
   - platform: rest
-    resource: 'http://192.168.1.46:7999/CGI/aah-devices.cgi'
+    resource: 'http://age-at-home.dcmartin.com:8999/CGI/aah-devices.cgi'
     name: aah_device_count
     value_template: >
       {%- if value_json is defined -%}
@@ -3266,7 +3241,7 @@ sensor aah_device_count:
 
 sensor aah_device_names:
   - platform: rest
-    resource: 'http://192.168.1.46:7999/CGI/aah-devices.cgi'
+    resource: 'http://age-at-home.dcmartin.com:8999/CGI/aah-devices.cgi'
     name: aah_device_names
     value_template: >
       {%- if value_json is defined -%}
@@ -3282,7 +3257,7 @@ sensor aah_device_names:
 
 sensor aah_device_dates:
   - platform: rest
-    resource: 'http://192.168.1.46:7999/CGI/aah-devices.cgi'
+    resource: 'http://age-at-home.dcmartin.com:8999/CGI/aah-devices.cgi'
     name: aah_device_dates
     value_template: >
       {%- if value_json is defined -%}
@@ -3640,88 +3615,107 @@ camera motion_last_animated:
 
 ## ALL CAMERAS
 
-camera motion_gate_animated:
+camera motion_backyard_animated:
   - platform: mqtt
-    name: motion_gate_animated
-    topic: 'image-animated/gate'
-
-camera motion_bathroom_animated:
-  - platform: mqtt
-    name: motion_bathroom_animated
-    topic: 'image-animated/bathroom'
-
-camera motion_poolcam_animated:
-  - platform: mqtt
-    name: motion_poolcam_animated
-    topic: '+/+/poolcam/image-animated'
-
-camera motion_poolhouse_animated:
-  - platform: mqtt
-    name: motion_poolhouse_animated
-    topic: 'image-animated/poolhouse'
-
-camera motion_livingroom_animated:
-  - platform: mqtt
-    name: motion_livingroom_animated
-    topic: '+/+/livingroom/image-animated'
-
-camera motion_dogpond_animated:
-  - platform: mqtt
-    name: motion_dogpond_animated
-    topic: '+/+/dogpond/image-animated'
-
-camera motion_fireplace_animated:
-  - platform: mqtt
-    name: motion_fireplace_animated
-    topic: '+/+/fireplace/image-animated'
-
-camera motion_dogshed_animated:
-  - platform: mqtt
-    name: motion_dogshed_animated
-    topic: '+/+/dogshed/image-animated'
-
-camera motion_laundry_animated:
-  - platform: mqtt
-    name: motion_laundry_animated
-    topic: '+/+/laundry/image-animated'
-
-camera motion_foyer_animated:
-  - platform: mqtt
-    name: motion_foyer_animated
-    topic: '+/+/foyer/image-animated'
+    name: motion_backyard_animated
+    topic: '+/+/backyard/image-animated'
 
 camera motion_diningroom_animated:
   - platform: mqtt
     name: motion_diningroom_animated
     topic: '+/+/diningroom/image-animated'
 
-camera motion_garage_animated:
+camera motion_dogpond_animated:
   - platform: mqtt
-    name: motion_garage_animated
-    topic: '+/+/garage/image-animated'
+    name: motion_dogpond_animated
+    topic: '+/+/dogpond/image-animated'
+
+camera motion_dogshed_animated:
+  - platform: mqtt
+    name: motion_dogshed_animated
+    topic: '+/+/dogshed/image-animated'
+
+camera motion_dogshedfront_animated:
+  - platform: mqtt
+    name: motion_dogshedfront_animated
+    topic: '+/+/dogshedfront/image-animated'
+
+camera motion_dogshedmiddle_animated:
+  - platform: mqtt
+    name: motion_dogshedmiddle_animated
+    topic: '+/+/dogshedmiddle/image-animated'
+
+camera motion_dogyard_animated:
+  - platform: mqtt
+    name: motion_dogyard_animated
+    topic: '+/+/dogyard/image-animated'
+
+camera motion_fireplace_animated:
+  - platform: mqtt
+    name: motion_fireplace_animated
+    topic: '+/+/fireplace/image-animated'
+
+camera motion_foyer_animated:
+  - platform: mqtt
+    name: motion_foyer_animated
+    topic: '+/+/foyer/image-animated'
 
 camera motion_frontwalk_animated:
   - platform: mqtt
     name: motion_frontwalk_animated
     topic: '+/+/frontwalk/image-animated'
 
+camera motion_garage_animated:
+  - platform: mqtt
+    name: motion_garage_animated
+    topic: '+/+/garage/image-animated'
+
+camera motion_gravelpad_animated:
+  - platform: mqtt
+    name: motion_gravelpad_animated
+    topic: '+/+/gravelpad/image-animated'
+
+camera motion_laundry_animated:
+  - platform: mqtt
+    name: motion_laundry_animated
+    topic: '+/+/laundry/image-animated'
+
+camera motion_livingroom_animated:
+  - platform: mqtt
+    name: motion_livingroom_animated
+    topic: '+/+/livingroom/image-animated'
+
+camera motion_phexterior_animated:
+  - platform: mqtt
+    name: motion_phexterior_animated
+    topic: '+/+/phexterior/image-animated'
+
+camera motion_pondview_animated:
+  - platform: mqtt
+    name: motion_pondview_animated
+    topic: '+/+/pondview/image-animated'
+
+camera motion_poolcam_animated:
+  - platform: mqtt
+    name: motion_poolcam_animated
+    topic: '+/+/poolcam/image-animated'
+
+camera motion_upperpathgate_animated:
+  - platform: mqtt
+    name: motion_upperpathgate_animated
+    topic: '+/+/upperpathgate/image-animated'
+
+camera motion_woodshed_animated:
+  - platform: mqtt
+    name: motion_woodshed_animated
+    topic: '+/+/woodshed/image-animated'
+
+camera motion_office_animated:
+  - platform: mqtt
+    name: motion_office_animated
+    topic: '+/+/office/image-animated'
+
 camera motion_kinect_animated:
   - platform: mqtt
     name: motion_kinect_animated
     topic: '+/+/kinect/image-animated'
-
-camera motion_road_animated:
-  - platform: mqtt
-    name: motion_road_animated
-    topic: 'image-animated/road'
-
-camera motion_kitchen_animated:
-  - platform: mqtt
-    name: motion_kitchen_animated
-    topic: 'image-animated/kitchen'
-
-camera motion_frontdoor_animated:
-  - platform: mqtt
-    name: motion_frontdoor_animated
-    topic: 'image-animated/frontdoor'
-
