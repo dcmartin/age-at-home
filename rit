@@ -6,7 +6,9 @@ if ($?old) then
   endif
 endif
 docker rm ageathome
-if (-d "/home/AAH/lib/age-at-home") then
+if (-d "/var/lib/age-at-home") then
+  set vol = "/var/lib/age-at-home"
+else if (-d "/home/AAH/lib/age-at-home") then
   set vol = "/home/AAH/lib/age-at-home"
 else if (-d "/Volumes/AAH/age-at-home") then
   set vol = "/Volumes/AAH/age-at-home"
@@ -14,6 +16,7 @@ else
   echo "No AAHDIR"
   exit
 endif 
+
 docker run \
   -d \
   -i \
