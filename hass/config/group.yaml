@@ -524,40 +524,6 @@ weather_view:
     - group.daily_forecast
 
 #
-# WEBCAMS VIEW
-#
-
-webcams_view:
-  view: true
-  name: Webcams View
-  icon: mdi:webcam
-  entities:
-    - camera.ageathome_bathroom
-    - camera.ageathome_frontdoor
-    - camera.ageathome_gate
-    - camera.ageathome_kitchen
-    - camera.ageathome_poolhouse
-    - camera.ageathome_road
-    - camera.wcv80n_backyard
-    - camera.wcv80n_diningroom
-    - camera.wcv80n_dogshedfront
-    - camera.wcv80n_dogshed_interior
-    - camera.wcv80n_dogshedmiddle
-    - camera.wcv80n_dogyard
-    - camera.wcv80n_driveway
-    - camera.wcv80n_fireplace
-    - camera.wcv80n_foyer
-    - camera.wcv80n_frontwalk
-    - camera.wcv80n_gravelpad
-    - camera.wcv80n_kitchen
-    - camera.wcv80n_laundry
-    - camera.wcv80n_livingroom
-    - camera.wcv80n_pondview
-    - camera.wcv80n_poolhouse_exterior
-    - camera.wcv80n_upperpath
-    - camera.wcv80n_woodshed
-
-#
 # MEDIAPLAYERS VIEW
 #
 
@@ -709,7 +675,7 @@ webcam_status:
     - device_tracker.wcv80n_dogshed_interior
     - device_tracker.wcv80n_dogshedmiddle
     - device_tracker.wcv80n_dogyard
-    - device_tracker.wcv80n_driveway
+    - device_tracker.wcv80n_dogpond
     - device_tracker.wcv80n_fireplace
     - device_tracker.wcv80n_foyer
     - device_tracker.wcv80n_frontwalk
@@ -722,14 +688,83 @@ webcam_status:
     - device_tracker.wcv80n_upperpath
     - device_tracker.wcv80n_woodshed
 
+ageathome_animated:
+  view: false
+  name: AgeAtHome Animated
+  entities:
+    - camera.kitchen_image_animated
+    - camera.bathroom_image_animated
+    - camera.frontdoor_image_animated
+    - camera.poolhouse_image_animated
+    - camera.frontdoor_image_animated
+    - camera.gate_image_animated
+    - camera.road_image_animated
 
-### MOTION
+#
+# WEBCAMS VIEW
+#
+
+webcams_view:
+  view: true
+  name: Webcams View
+  icon: mdi:webcam
+  entities:
+    - group.wcv80n_webcams
+    - group.ageathome_webcams
+
 motion_animated_view:
   view: true
   name: Motion Animated View
-  icon: mdi:animation
+  icon: mdi:filmstrip
   entities:
+    - group.motion_ftpd_camera_animation
+    - group.motion_device_camera_animation
+    - group.ageathome_animated
+
+ageathome_webcams:
+  view: false
+  entities:
+    - camera.ageathome_bathroom
+    - camera.ageathome_frontdoor
+    - camera.ageathome_gate
+    - camera.ageathome_kitchen
+    - camera.ageathome_poolhouse
+    - camera.ageathome_road
+
+wcv80n_webcams:
+  view: false
+  entities:
+    - camera.wcv80n_backyard
+    - camera.wcv80n_diningroom
+    - camera.wcv80n_dogshedfront
+    - camera.wcv80n_dogshed
+    - camera.wcv80n_dogshedmiddle
+    - camera.wcv80n_dogyard
+    - camera.wcv80n_dogpond
+    - camera.wcv80n_fireplace
+    - camera.wcv80n_foyer
+    - camera.wcv80n_frontwalk
+    - camera.wcv80n_garage
+    - camera.wcv80n_gravelpad
+    - camera.wcv80n_kitchen
+    - camera.wcv80n_laundry
+    - camera.wcv80n_livingroom
+    - camera.wcv80n_pondview
+    - camera.wcv80n_poolcam
+    - camera.wcv80n_phexterior
+    - camera.wcv80n_sideyard
+    - camera.wcv80n_upperpath
+    - camera.wcv80n_woodshed
+
+motion_device_camera_animation:
+  view: false
+  entities:
+    - camera.motion_office_animated
     - camera.motion_kinect_animated
+
+motion_ftpd_camera_animation:
+  view: false
+  entities:
     - camera.motion_backyard_animated
     - camera.motion_diningroom_animated
     - camera.motion_dogpond_animated
@@ -742,7 +777,6 @@ motion_animated_view:
     - camera.motion_frontwalk_animated
     - camera.motion_garage_animated
     - camera.motion_gravelpad_animated
-    - camera.motion_gravelparking_animated
     - camera.motion_laundry_animated
     - camera.motion_livingroom_animated
     - camera.motion_phexterior_animated
@@ -750,11 +784,4 @@ motion_animated_view:
     - camera.motion_poolcam_animated
     - camera.motion_sideyard_animated
     - camera.motion_upperpathgate_animated
-    # ageathome
-    - camera.kitchen_image_animated
-    - camera.bathroom_image_animated
-    - camera.frontdoor_image_animated
-    - camera.poolhouse_image_animated
-    - camera.frontdoor_image_animated
-    - camera.gate_image_animated
-    - camera.road_image_animated
+    - camera.motion_woodshed_animated
