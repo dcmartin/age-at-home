@@ -4,7 +4,7 @@
 
 homeassistant:
   # Name of the location where Home Assistant is running
-  name: Fazenda da Saudade (P40)
+  name: Fazenda da Saudade (UBUNTU)
   # Location required to calculate the time the sun rises and sets
   latitude: 37.174956
   longitude: -121.816344
@@ -491,8 +491,13 @@ device_tracker dt_nmap:
   - platform: nmap_tracker
     hosts: 192.168.1.1/24
     home_interval: 10
+    interval_seconds: 30
     track_devices_new: yes
-    consider_home: 15
+    consider_home: 180
+    exclude:
+      - 192.168.1.1
+      - 192.168.1.2
+      - 192.168.1.46
 
 ## device tracking from iCloud
 device_tracker:
