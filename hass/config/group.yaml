@@ -13,7 +13,6 @@ default_view:
     - camera.last_image_annotated
     - group.people
 
-
 ## HIDDEN GROUPS
 
 motion:
@@ -194,6 +193,7 @@ ageathome_view:
   icon: mdi:human-male-female
   entities:
     - group.ageathome_learning
+    - group.notify_controls
     - camera.last_image
     - camera.last_image_annotated
     - camera.last_image_animated
@@ -219,6 +219,13 @@ ageathome_learning:
     - input_boolean.ageathome_notify_road
     - input_boolean.ageathome_learning
     - input_select.ageathome_learning
+
+notify_controls:
+  name: Notify Controls
+  icon: mdi:notify
+  control: hidden
+  entities:
+    - input_boolean.devices_notify_offline
 
 ageathome_annotated_images:
   view: true

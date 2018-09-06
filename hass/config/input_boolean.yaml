@@ -38,3 +38,8 @@ ageathome_notify_road:
   initial: false
   icon: mdi:road
 
+devices_notify_offline:
+  name: devices_notify_offline
+  initial: false
+  icon: mdi:switch
+

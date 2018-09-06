@@ -4,7 +4,7 @@
 
 homeassistant:
   # Name of the location where Home Assistant is running
-  name: Fazenda da Saudade (UBUNTU)
+  name: Fazenda da Saudade (P40)
   # Location required to calculate the time the sun rises and sets
   latitude: 37.174956
   longitude: -121.816344
@@ -27,6 +27,7 @@ config: # enable configuration changes (to all)
 map: # provide a map of tracked devices
 conversation: # Allows you to issue voice commands from the frontend in enabled browsers
 logbook: # View all events in a logbook
+snips: # enable voice commands
 
 ## do updates automatically (including sub-components)
 
@@ -222,6 +223,15 @@ binary_sensor ageathome_learning_template:
           - input_boolean.ageathome_notify_road
         value_template: >
           {{ is_state('input_boolean.ageathome_notify_road','on') }}
+
+binary_sensor devices_notify_template:
+  - platform: template
+    sensors:
+      devices_notify_offline:
+        entity_id: 
+          - input_boolean.devices_notify_offline
+        value_template: >
+          {{ is_state('input_boolean.devices_notify_offline','on') }}
 
 ###
 ### PANEL_IFRAME (tabs in HTTP web interface; see "frontend")
@@ -497,7 +507,7 @@ device_tracker dt_nmap:
     exclude:
       - 192.168.1.1
       - 192.168.1.2
-      - 192.168.1.46
+      - 192.168.1.40
 
 ## device tracking from iCloud
 device_tracker:
