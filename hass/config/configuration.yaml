@@ -4,7 +4,7 @@
 
 homeassistant:
   # Name of the location where Home Assistant is running
-  name: Fazenda da Saudade (P40)
+  name: Fazenda da Saudade (UBUNTU)
   # Location required to calculate the time the sun rises and sets
   latitude: 37.174956
   longitude: -121.816344
