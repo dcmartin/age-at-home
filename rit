@@ -25,4 +25,5 @@ docker run \
   -p 8999:80 \
   --network bridge \
   --name='ageathome' \
+  --restart always \
   ageathome
