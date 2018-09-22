@@ -1,6 +1,6 @@
 #!/bin/bash
 who=$(whoami)
-if [[ "${who}" != "root" ]]; then
+if [ "${who}" != "root" ]; then
   echo "Please run as root; e.g. sudo $*"
   exit
 fi
@@ -10,5 +10,13 @@ apt-get install jq
 apt-get install curl
 apt-get install docker.io
 apt-get install socat
-curl -sL https://raw.githubusercontent.com/home-assistant/hassio-build/master/install/hassio_install | bash -s
+if [ -n "${1}" ]; then
+  DATA_SHARE="${1}"
+fi
+if [ -z "${DATA_SHARE}" ]; then
+  echo 'Please provide directory for shared files (e.g. /usr/share/hassio)'
+  exit
+fi
+exit
+curl -sL https://raw.githubusercontent.com/home-assistant/hassio-build/master/install/hassio_install | sed "s|DATA_SHARE=.*|DATA_SHARE=${DATA_SHARE}|" | bash -s 
 echo "Please wait while server initializes; access at http://localhost:8123/"

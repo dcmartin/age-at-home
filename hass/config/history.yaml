@@ -186,3 +186,7 @@
       - sensor.poolhouse_other_ratio
       - sensor.poolhouse_other_time
       - sensor.poolhouse_size
+      - sensor.motion_event_end_count
+      - sensor.motion_event_end_time
+      - sensor.motion_event_end_state
+      - sensor.motion_event_end_camera

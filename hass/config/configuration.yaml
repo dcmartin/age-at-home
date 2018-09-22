@@ -4,7 +4,7 @@
 
 homeassistant:
   # Name of the location where Home Assistant is running
-  name: Fazenda da Saudade (UBUNTU)
+  name: Fazenda da Saudade (P40)
   # Location required to calculate the time the sun rises and sets
   latitude: 37.174956
   longitude: -121.816344
@@ -28,6 +28,7 @@ map: # provide a map of tracked devices
 conversation: # Allows you to issue voice commands from the frontend in enabled browsers
 logbook: # View all events in a logbook
 snips: # enable voice commands
+homekit: # enable HomeKit
 
 ## do updates automatically (including sub-components)
 
@@ -238,6 +239,14 @@ binary_sensor devices_notify_template:
 ###
 
 panel_iframe:
+  grafana:
+    title: Grafana
+    icon: mdi:chart-timeline
+    url: http://192.168.1.40:3000
+  influxdb:
+    title: InfluxDB
+    icon: mdi:chart-areaspline
+    url: http://192.168.1.40:8888
   cameras:
     title: 'Cameras'
     icon: mdi:webcam
@@ -266,10 +275,6 @@ panel_iframe:
     title: 'DIGITS'
     icon: mdi:format-list-numbers
     url: 'http://digits.dcmartin.com:5000/'
-  controls:
-    title: Control Panel
-    icon: mdi:windows
-    url: 'http://homeassistant.dcmartin.com:7080'
   terminal:
     title: Terminal
     icon: mdi:console
@@ -366,7 +371,7 @@ sensor aah_state_template:
         entity_id: states.device_tracker
         value_template: >
           {%- for state in states.device_tracker -%}
-            {%- if loop.first -%} [ {%- endif -%}
+            {%- if loop.first -%}[{%- endif -%}
             {%- if state.attributes.friendly_name.startswith('ageathome_') -%}
               {"dev":"{{state.entity_id.replace('device_tracker.','')}}","loc":"{{state.attributes.friendly_name.replace('ageathome_','')}}"},
             {%- endif -%}
@@ -3592,16 +3597,275 @@ input_select: !include input_select.yaml
 
 # input_text: !include input_text.yaml
 
-###
-### MOTION CAMERAS
-###
+####
+#### INFLUX DB
+####
 
-## LAST IMAGE(s)
+influxdb:
+  host: 127.0.0.1
+  port: 8086
+  database: homeassistant
+  username: homeassistant
+  password: !secret http_api_password
+  max_retries: 3
+  default_measurement: state
 
-camera motion_image:
+####
+#### MOTION ADDON
+####
+
+# state topic should be '<device>/<host>/start' for this device if slave; should be '<device>/+/start' for master
+sensor motion_configuration:
   - platform: mqtt
-    name: motion_last
-    topic: '+/+/+/image'
+    name: motion_configuration
+    state_topic: '+/+/start'
+    json_attributes:
+      - unit_system
+      - latitude
+      - longitude
+      - elevation
+      - interval
+      - minimum_animate
+      - post_pictures
+      - share_dir
+      - name
+      - host
+      - date
+      - www
+      - devicedb
+      - timezone
+      - mqtt
+      - watson
+      - digits
+      - motion
+      - cameras
+    value_template: >
+      {% if value_json is defined %}
+        {{ value_json.devicedb,value_json.host,value_json.name }}
+      {% else %} {{ 'failure' }} {% endif %}
+
+sensor motion_camera_template:
+  platform: template
+  sensors:
+    motion_camera_count:
+      entity_id: 
+        - sensor.motion_configuration
+      value_template: >-
+        {% if states.sensor.motion_configuration.attributes.cameras is defined %}
+          {{ states.sensor.motion_configuration.attributes.cameras | length }}
+        {% else %} {{ null }} {% endif %}
+    motion_camera_names:
+      entity_id: 
+        - sensor.motion_configuration
+      value_template: >-
+        {% if states.sensor.motion_configuration.attributes.cameras is defined %}
+          {%- for camera in states.sensor.motion_configuration.attributes.cameras -%}
+            {% if loop.first %}[{% else %},{% endif %}
+            {{- camera.name | tojson -}}
+            {%- if loop.last -%}]{%- endif -%}
+          {% endfor %}
+        {% else %} {{ null }} {% endif %}
+
+# {"device":"p40","camera":"woodshed","time":1537208567,"status":"found"}
+sensor motion_camera_found:
+  - platform: mqtt
+    name: motion_camera_found
+    state_topic: '+/+/+/status/found'
+    json_attributes:
+      - device
+      - camera
+      - date
+      - status
+    value_template: >
+      {% if value_json is defined %}
+        {{ 'on' }}
+      {% else %} {{ 'off' }} {% endif %}
+
+sensor motion_camera_lost:
+  - platform: mqtt
+    name: motion_camera_lost
+    state_topic: '+/+/+/status/lost'
+    json_attributes:
+      - device
+      - camera
+      - date
+      - status
+    value_template: >
+      {% if value_json is defined %}
+        {{ 'on' }}
+      {% else %} {{ 'off' }} {% endif %}
+
+# '{"device":"'$MOTION_DEVICE_NAME'","camera":"'"$CN"'","type":"jpeg","time":'"$NOW"',"seqno":"'"$SN"'","event":"'"$EN"'","id":"'"$ID"'","center":{"x":'"$MX"',"y":'"$MY"'},"width":'"$MW"',"height":'"$MH"',"size":'$SZ',"noise":'$NL'}'
+sensor motion_event_image:
+  - platform: mqtt
+    name: motion_event_image
+    state_topic: '+/+/+/event/image'
+    json_attributes:
+      - device
+      - camera
+      - type
+      - date
+      - seqno
+      - event
+      - id
+      - center
+      - width
+      - height
+      - size
+      - noise
+    value_template: >
+      {% if value_json is defined %}
+        {{ value_json.device,value_json.camera,value_json.date,value_json.event,value_json.id,value_json.size }}
+      {% else %} {{ null }} {% endif %}
+
+sensor motion_event_end_state:
+  - platform: mqtt
+    name: motion_event_end_state
+    state_topic: '+/+/+/event/end'
+    expire_after: 15
+    force_update: true
+    value_template: >
+      {% if value_json is defined %}
+        {{ 'on' }}
+      {% else %} {{ 'off' }} {% endif %}
+
+sensor motion_event_end:
+  - platform: mqtt
+    name: motion_event_end
+    state_topic: '+/+/+/event/end'
+    json_attributes:
+      - device
+      - camera
+      - event
+      - start
+      - end
+      - elapsed
+      - date
+      - images
+    value_template: >
+      {% if value_json is defined %}
+        {{ value_json.device,value_json.camera,value_json.date,value_json.event,value_json.elapsed,value_json.images|length }}
+      {% else %} {{ null }} {% endif %}
+
+sensor motion_event_end_count:
+  - platform: history_stats
+    name: motion_event_end_count
+    entity_id: sensor.motion_event_end_state
+    state: 'on'
+    type: count
+    start: '{{ now().replace(hour=0).replace(minute=0).replace(second=0) }}'
+    end: '{{ now() }}'
+
+sensor motion_event_end_time:
+  - platform: history_stats
+    icon: mdi:timer
+    name: motion_event_end_time
+    entity_id: sensor.motion_event_end_state
+    state: 'on'
+    type: time
+    start: '{{ now().replace(hour=0).replace(minute=0).replace(second=0) }}'
+    end: '{{ now() }}'
+
+sensor motion_event_end_ago_statistics:
+  - platform: statistics
+    name: motion_event_end_ago
+    unit_of_measurement: seconds
+    entity_id: sensor.motion_event_end_ago
+    max_age:
+      hours: 24
+
+# 'start': 1536826793, 'elapsed': 18, 'date': 1536852042, 'camera': 'office', 'device': 'hassio', 'end': 1536621667, 'event': '178'
+
+sensor motion_event_end_template:
+  platform: template
+  sensors:
+    motion_event_end_ago:
+      entity_id:
+        - sensor.motion_event_end
+        - sun.sun
+      unit_of_measurement: seconds
+      value_template: '{{ (now().timestamp()|int) - (states.sensor.motion_event_end.attributes.date|int) }}'
+      icon_template: '{% if (states.sensor.motion_event_end.attributes.date|int) > 300 %} mdi:timer-off {% else %} mdi:timer {% endif %}'
+    motion_event_end_image_first:
+      entity_id: 
+        - sensor.motion_event_end
+      value_template: >-
+        {% if states.sensor.motion_event_end is defined %} 
+          {% for image in states.sensor.motion_event_end.attributes.images %}
+            {% if loop.first %} {{ image }} {% endif %}
+          {% endfor %}
+        {% else %} "none" {% endif %}
+    motion_event_end_image_last:
+      entity_id: 
+        - sensor.motion_event_end
+      value_template: >-
+        {% if states.sensor.motion_event_end is defined %} 
+          {% for image in states.sensor.motion_event_end.attributes.images %}
+            {% if loop.last %} {{ image }} {% endif %}
+          {% endfor %}
+        {% else %} "none" {% endif %}
+    motion_event_end_image_count:
+      entity_id: 
+        - sensor.motion_event_end
+      unit_of_measurement: 'images'
+      value_template: >
+        {% if states.sensor.motion_event_end is defined %} 
+          {{ states.sensor.motion_event_end.attributes.images | length }}
+        {% else %} "never" {% endif %}
+    motion_event_end_when:
+      entity_id: 
+        - sensor.motion_event_end
+      value_template: >
+        {% if states.sensor.motion_event_end is defined %} 
+          {{ states.sensor.motion_event_end.attributes.date | timestamp_custom("%a %b %d ~ %I:%M %p") }}
+        {% else %} "never" {% endif %}
+    motion_event_end_device:
+      entity_id: 
+        - sensor.motion_event_end
+      value_template: >
+        {% if states.sensor.motion_event_end is defined %} 
+          {{ states.sensor.motion_event_end.attributes.device }}
+        {% else %} "none" {% endif %}
+    motion_event_end_camera:
+      entity_id: 
+        - sensor.motion_event_end
+      value_template: >
+        {% if states.sensor.motion_event_end is defined %} 
+          {{ states.sensor.motion_event_end.attributes.camera }}
+        {% else %} "none" {% endif %}
+    motion_event_end_event:
+      entity_id: 
+        - sensor.motion_event_end
+      value_template: >
+        {% if states.sensor.motion_event_end is defined %} 
+          {{ states.sensor.motion_event_end.attributes.event }}
+        {% else %} null {% endif %}
+    motion_event_end_start:
+      entity_id: 
+        - sensor.motion_event_end
+      unit_of_measurement: seconds
+      value_template: >
+        {% if states.sensor.motion_event_end is defined %} 
+          {{ states.sensor.motion_event_end.attributes.start | int }}
+        {% else %} 0 {% endif %}
+    motion_event_end_end:
+      entity_id: 
+        - sensor.motion_event_end
+      unit_of_measurement: seconds
+      value_template: >
+        {% if states.sensor.motion_event_end is defined %} 
+          {{ states.sensor.motion_event_end.attributes.end | int }}
+        {% else %} 0 {% endif %}
+    motion_event_end_elapsed:
+      entity_id: 
+        - sensor.motion_event_end
+      unit_of_measurement: seconds
+      value_template: >
+        {% if states.sensor.motion_event_end is defined %} 
+          {{ states.sensor.motion_event_end.attributes.elapsed }}
+        {% else %} 0 {% endif %}
+
+## IMAGES PROCESSED
 
 camera motion_average:
   - platform: mqtt
@@ -3625,10 +3889,27 @@ camera motion_composite:
 
 camera motion_last_animated:
   - platform: mqtt
-    name: motion_animated
+    name: motion_last_animated
     topic: '+/+/+/image-animated'
 
-## ALL CAMERAS
+camera motion_last_annotated:
+  - platform: mqtt
+    name: motion_last_annotated
+    topic: '+/+/+/image-annotated'
+
+camera motion_last_cropped:
+  - platform: mqtt
+    name: motion_last_cropped
+    topic: '+/+/+/image-cropped'
+
+## LAST IMAGE
+
+camera motion_last_image:
+  - platform: mqtt
+    name: motion_last_image
+    topic: '+/+/+/image'
+
+## ANIMATED
 
 camera motion_backyard_animated:
   - platform: mqtt
