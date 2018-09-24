@@ -443,10 +443,10 @@ wcv80n_livingroom:
   hide_if_away: false
   vendor: Cisco-Linksys, LLC
 
-# NO 165
-wcv80n_driveway:
+# 192.168.1.165 00:22:6B:FF:2B:DF (Cisco-Linksys)
+wcv80n_dogpond:
   mac: 00:22:6B:FF:2B:DF
-  name: wcv80n_driveway
+  name: wcv80n_dogpond
   icon: mdi:webcam
   picture: http://www.linksys.com/images/productmt/834045/372.jpg
   track: true
