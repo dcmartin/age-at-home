@@ -105,7 +105,7 @@ sensor solar:
 
 ## broker is LAN IP address of this instance
 mqtt:
-  broker: mqtt.dcmartin.com
+  broker: 192.168.1.40
 
 ###
 ### HUE bridge & lights
@@ -522,10 +522,10 @@ device_tracker:
     account_name: DCMARTIN
 
 ## device tracking from LAN/WAN gateway 
-  - platform: mikrotik
-    host: 192.168.1.1
-    username: !secret mikrotik_username
-    password: !secret mikrotik_password
+#  - platform: mikrotik
+#    host: 192.168.1.1
+#    username: !secret mikrotik_username
+#    password: !secret mikrotik_password
 
 ###
 ### ZONES
@@ -4015,3 +4015,17 @@ camera motion_kinect_animated:
   - platform: mqtt
     name: motion_kinect_animated
     topic: '+/+/kinect/image-animated'
+
+camera motion_p40_kinect:
+  - platform: mjpeg
+    mjpeg_url: http://192.168.1.40:8090/img/video.mjpeg
+    name: motion_p40_kinect
+    username: !secret wcv80n_username
+    password: !secret wcv80n_password
+
+camera motion_hassio_office:
+  - platform: mjpeg
+    mjpeg_url: http://192.168.1.47:8090/img/video.mjpeg
+    name: motion_hassio_office
+    username: !secret wcv80n_username
+    password: !secret wcv80n_password

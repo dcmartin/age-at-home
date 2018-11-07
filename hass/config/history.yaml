@@ -190,3 +190,8 @@
       - sensor.motion_event_end_time
       - sensor.motion_event_end_state
       - sensor.motion_event_end_camera
+      - sensor.cpu2msghub_nodeid
+      - sensor.cpu2msghub_cpuload
+      - sensor.cpu2msghub_latitude
+      - sensor.cpu2msghub_longitude
+      - sensor.cpu2msghub_elevation

@@ -517,31 +517,31 @@ wcv80n_dogshedfront:
 
 # 192.168.1.173 00:25:9C:83:34:E7 (Cisco-Linksys)
 wcv80n_dogshed_interior:
+  mac: 00:25:9C:83:34:E7
+  name: wcv80n_dogshed_interior
   icon: mdi:webcam
   picture: http://www.linksys.com/images/productmt/834045/372.jpg
   hide_if_away: false
-  mac: 00:25:9C:83:34:E7
-  name: wcv80n_dogshed_interior
   track: true
   vendor: Cisco-Linksys, LLC
 
 # 192.168.1.174 00:22:6B:F2:5A:9B (Cisco-Linksys)
 wcv80n_pondview:
+  mac: 00:22:6B:F2:5A:9B
+  name: wcv80n_pondview
   icon: mdi:webcam
   picture: http://www.linksys.com/images/productmt/834045/372.jpg
   hide_if_away: false
-  mac: 00:22:6B:F2:5A:9B
-  name: wcv80n_pondview
   track: true
   vendor: Cisco-Linksys, LLC
 
 # 192.168.1.175 00:22:6B:FB:98:34 (Cisco-Linksys)
 wcv80n_gravelpad:
-  hide_if_away: false
   mac: 00:22:6B:FB:98:34
   name: wcv80n_gravelpad
   icon: mdi:webcam
   picture: http://www.linksys.com/images/productmt/834045/372.jpg
+  hide_if_away: false
   track: true
   vendor: Cisco-Linksys, LLC
 

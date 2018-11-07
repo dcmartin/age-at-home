@@ -40,6 +40,24 @@ ageathome_notify_road:
 
 devices_notify_offline:
   name: devices_notify_offline
-  initial: false
+  initial: true
   icon: mdi:switch
 
+##
+## MOTION ADDON
+##
+
+motion_camera_network_status_notify:
+  name: motion_camera_network_status_notify
+  initial: true
+  icon: mdi:switch
+
+motion_event_end_notify:
+  name: motion_event_end_notify
+  initial: true
+  icon: mdi:switch
+
+motion_camera_status_notify:
+  name: motion_camera_status_notify
+  initial: true
+  icon: mdi:switch

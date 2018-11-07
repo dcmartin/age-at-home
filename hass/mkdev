@@ -39,6 +39,9 @@ endif
 
 if ($vendor == "all") then
   set vendors = ( `cat "$out" | awk '/Nmap scan report for/ { printf("%s ", $5) ; getline; getline; printf("%s %s\n", $3, $4)}' | awk '{ print $3 }' | egrep "^\(" | sed 's/(//g' | sed 's/)//g' | sort | uniq` )
+  set vds = ( `cat "$out" | egrep MAC | sed 's/.*(\(.*\))/\1/' | sed 's/ /_/g'` )
+  set ips = ( `cat "$out" | egrep "Nmap scan for" | sed "s/.*for \(.*\)/\1/"` )
+  set macs = ( `cat "$out" | egrep MAC | sed "s/.*: \([^ ]*\) .*/\1/"` )
 endif
 
 set cisco_linksys = ( \
