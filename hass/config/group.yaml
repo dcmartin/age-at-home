@@ -584,16 +584,51 @@ notify_controls:
   icon: mdi:notify
   control: hidden
   entities:
-    - sensor.externalip
     - input_boolean.devices_notify_offline
     - input_boolean.motion_event_end_notify
     - input_boolean.motion_camera_status_notify
+
+internet_tests:
+  name: Internet Tests
+  icon: mdi:network
+  control: hidden
+  entities:
+    - sensor.externalip
+    - sensor.internet_test
+    - sensor.internet_test_send
+    - sensor.internet_test_receive
+    - sensor.internet_send_mean
+    - sensor.internet_receive_mean
+    - sensor.internet_send_min_value
+    - sensor.internet_receive_min_value
+    - sensor.internet_send_max_value
+    - sensor.internet_receive_max_value
+
+intranet_tests:
+  name: Intranet Tests
+  icon: mdi:network
+  control: hidden
+  entities:
+    - sensor.intranet_test
+    - sensor.intranet_test_send
+    - sensor.intranet_test_receive
+    - sensor.intranet_send_mean
+    - sensor.intranet_receive_mean
+    - sensor.intranet_send_min_value
+    - sensor.intranet_receive_min_value
+    - sensor.intranet_send_max_value
+    - sensor.intranet_receive_max_value
 
 status_view:
   view: true
   name: Status View
   icon: mdi:sitemap
   entities:
+    - group.intranet_tests
+    - group.internet_tests
+    - history_graph.intranet_test
+    - history_graph.internet_send
+    - history_graph.internet_receive
     - group.notify_controls
     - group.system_status
     - group.network_status

@@ -77,7 +77,279 @@ sensor external_ip:
     value_template: >
       {%- if value_json is defined -%} 
         {{ value_json.ip | default(null) }}
-      {%- else -%} 0 {%- endif -%}
+      {%- else -%}null{%- endif -%}
+
+sensor intranet_test:
+  - platform: command_line
+    command: iperf3 -c 192.168.1.32 -J | jq '{"date":.start.timestamp.timesecs,"send":.end.sum_sent.bits_per_second,"receive":.end.sum_received.bits_per_second}'
+    name: intranet_test
+    scan_interval: 120
+    command_timeout: 60
+    json_attributes:
+      - date
+      - send
+      - receive
+    value_template: >
+      {%- if value_json is defined -%} 
+        {{ value_json.date | timestamp_custom("%a %b %d @ %I:%M %p") }}
+      {%- else -%}null{%- endif -%}
+    icon_template: >-
+      {%- if value_json is defined -%} 
+      {% if (value_json.send >= state.sensor.intranet_send_mean and value_json.receive >= state.sensor.intranet_receive_mean) %}
+        mdi:emoticon:happy
+      {% else %}
+        mdi:emoticon:sad
+      {% endif %}
+  - platform: template
+    sensors:
+      intranet_test_receive:
+        entity_id:
+          - sensor.intranet_test
+        unit_of_measurement: Mbps
+        value_template: >
+          {% if states.sensor.intranet_test.attributes.receive is defined and states.sensor.intranet_test.attributes.receive != null %}
+            {{ '%0.2f' | format(states.sensor.intranet_test.attributes.receive / 1000000.0) }}
+          {%- else -%}null{%- endif -%}
+      intranet_test_send:
+        entity_id:
+          - sensor.intranet_test
+        unit_of_measurement: Mbps
+        value_template: >
+          {% if states.sensor.intranet_test.attributes.send is defined and states.sensor.intranet_test.attributes.send != null %}
+            {{ '%0.2f' | format(states.sensor.intranet_test.attributes.send / 1000000.0) }}
+          {%- else -%}null{%- endif -%}
+      intranet_receive_mean:
+        entity_id:
+          - sensor.intranet_receive_statistics_mean
+        unit_of_measurement: Mbps
+        value_template: >
+          {% if states.sensor.intranet_receive_statistics_mean is defined %}
+            {{ states.sensor.intranet_receive_statistics_mean.state }}
+          {%- else -%}null{%- endif -%}
+      intranet_receive_min_value:
+        entity_id:
+          - sensor.intranet_receive_statistics_mean
+        unit_of_measurement: Mbps
+        value_template: >
+          {% if states.sensor.intranet_receive_statistics_mean is defined %}
+            {{ states.sensor.intranet_receive_statistics_mean.attributes.min_value }}
+          {%- else -%}null{%- endif -%}
+      intranet_receive_max_value:
+        entity_id:
+          - sensor.intranet_receive_statistics_mean
+        unit_of_measurement: Mbps
+        value_template: >
+          {% if states.sensor.intranet_receive_statistics_mean is defined %}
+            {{ states.sensor.intranet_receive_statistics_mean.attributes.max_value }}
+          {%- else -%}null{%- endif -%}
+      intranet_receive_standard_deviation:
+        entity_id:
+          - sensor.intranet_receive_statistics_mean
+        unit_of_measurement: Mbps
+        value_template: >
+          {% if states.sensor.intranet_receive_statistics_mean is defined %}
+            {{ states.sensor.intranet_receive_statistics_mean.attributes.standard_deviation }}
+          {%- else -%}null{%- endif -%}
+      intranet_send_mean:
+        entity_id:
+          - sensor.intranet_send_statistics_mean
+        unit_of_measurement: Mbps
+        value_template: >
+          {% if states.sensor.intranet_send_statistics_mean is defined %}
+            {{ states.sensor.intranet_send_statistics_mean.state }}
+          {%- else -%}null{%- endif -%}
+      intranet_send_min_value:
+        entity_id:
+          - sensor.intranet_send_statistics_mean
+        unit_of_measurement: Mbps
+        value_template: >
+          {% if states.sensor.intranet_send_statistics_mean is defined %}
+            {{ states.sensor.intranet_send_statistics_mean.attributes.min_value }}
+          {%- else -%}null{%- endif -%}
+      intranet_send_max_value:
+        entity_id:
+          - sensor.intranet_send_statistics_mean
+        unit_of_measurement: Mbps
+        value_template: >
+          {% if states.sensor.intranet_send_statistics_mean is defined %}
+            {{ states.sensor.intranet_send_statistics_mean.attributes.max_value }}
+          {%- else -%}null{%- endif -%}
+      intranet_send_standard_deviation:
+        entity_id:
+          - sensor.intranet_send_statistics_mean
+        unit_of_measurement: Mbps
+        value_template: >
+          {% if states.sensor.intranet_send_statistics_mean is defined %}
+            {{ states.sensor.intranet_send_statistics_mean.attributes.standard_deviation }}
+          {%- else -%}null{%- endif -%}
+      intranet_test_ago:
+        entity_id:
+          - sensor.intranet_test
+          - sun.sun
+        unit_of_measurement: seconds
+        value_template: '{{ (now().timestamp()|int) - (states.sensor.intranet_test.attributes.date|int) }}'
+      intranet_test_state:
+        entity_id:
+          - sensor.intranet_test_ago
+        value_template: >
+          {% if states.sensor.intranet_test_ago.state|int > 30 %}'off'{% else %}'on'{% endif %}
+  - platform: statistics
+    entity_id: sensor.intranet_test_send
+    name: intranet_send_statistics
+    max_age:
+      hours: 24
+  - platform: statistics
+    entity_id: sensor.intranet_test_receive
+    name: intranet_receive_statistics
+    max_age:
+      hours: 24
+
+sensor intranet_test_count:
+  - platform: history_stats
+    name: intranet_test_count
+    entity_id: sensor.intranet_test_state
+    state: 'on'
+    type: count
+    start: '{{ now().replace(hour=0).replace(minute=0).replace(second=0) }}'
+    end: '{{ now() }}'
+
+sensor internet_test:
+  - platform: command_line
+    command: speedtest --csv --csv-delimiter '|' | xargs -I '%' echo $(date +%s)"|%" | awk -F'|' '{ printf("{\"date\":%d,\"server\":\"%s\",\"timestamp\":\"%s\",\"distance\":%d,\"ping\":%d,\"receive\":%f,\"send\":%f }\n", $1, $2, $5, $6, $7, $8, $9 ) }'
+    name: internet_test
+    scan_interval: 1800
+    command_timeout: 60
+    json_attributes:
+      - server
+      - date
+      - timestamp
+      - distance
+      - ping
+      - receive 
+      - send
+    value_template: >
+      {%- if value_json is defined -%} 
+        {{ value_json.date | timestamp_custom("%a %b %d @ %I:%M %p") }}
+      {%- else -%}null{%- endif -%}
+    icon_template: >-
+      {%- if value_json is defined -%} 
+      {% if (value_json.send >= state.sensor.internet_send_mean and value_json.receive >= state.sensor.internet_receive_mean) %}
+        mdi:emoticon:happy
+      {% else %}
+        mdi:emoticon:sad
+      {% endif %}
+  - platform: template
+    sensors:
+      internet_test_receive:
+        entity_id:
+          - sensor.internet_test
+        unit_of_measurement: Mbps
+        value_template: >
+          {% if states.sensor.internet_test.attributes.receive is defined and states.sensor.internet_test.attributes.receive != null %}
+            {{ '%0.2f' | format(states.sensor.internet_test.attributes.receive / 1000000.0) }}
+          {%- else -%}null{%- endif -%}
+      internet_test_send:
+        entity_id:
+          - sensor.internet_test
+        unit_of_measurement: Mbps
+        value_template: >
+          {% if states.sensor.internet_test.attributes.send is defined and states.sensor.internet_test.attributes.send != null %}
+            {{ '%0.2f' | format(states.sensor.internet_test.attributes.send / 1000000.0) }}
+          {%- else -%}null{%- endif -%}
+      internet_receive_mean:
+        entity_id:
+          - sensor.internet_receive_statistics_mean
+        unit_of_measurement: Mbps
+        value_template: >
+          {% if states.sensor.internet_receive_statistics_mean is defined %}
+            {{ states.sensor.internet_receive_statistics_mean.state }}
+          {%- else -%}null{%- endif -%}
+      internet_receive_min_value:
+        entity_id:
+          - sensor.internet_receive_statistics_mean
+        unit_of_measurement: Mbps
+        value_template: >
+          {% if states.sensor.internet_receive_statistics_mean is defined %}
+            {{ states.sensor.internet_receive_statistics_mean.attributes.min_value }}
+          {%- else -%}null{%- endif -%}
+      internet_receive_max_value:
+        entity_id:
+          - sensor.internet_receive_statistics_mean
+        unit_of_measurement: Mbps
+        value_template: >
+          {% if states.sensor.internet_receive_statistics_mean is defined %}
+            {{ states.sensor.internet_receive_statistics_mean.attributes.max_value }}
+          {%- else -%}null{%- endif -%}
+      internet_receive_standard_deviation:
+        entity_id:
+          - sensor.internet_receive_statistics_mean
+        unit_of_measurement: Mbps
+        value_template: >
+          {% if states.sensor.internet_receive_statistics_mean is defined %}
+            {{ states.sensor.internet_receive_statistics_mean.attributes.standard_deviation }}
+          {%- else -%}null{%- endif -%}
+      internet_send_mean:
+        entity_id:
+          - sensor.internet_send_statistics_mean
+        unit_of_measurement: Mbps
+        value_template: >
+          {% if states.sensor.internet_send_statistics_mean is defined %}
+            {{ states.sensor.internet_send_statistics_mean.state }}
+          {%- else -%}null{%- endif -%}
+      internet_send_min_value:
+        entity_id:
+          - sensor.internet_send_statistics_mean
+        unit_of_measurement: Mbps
+        value_template: >
+          {% if states.sensor.internet_send_statistics_mean is defined %}
+            {{ states.sensor.internet_send_statistics_mean.attributes.min_value }}
+          {%- else -%}null{%- endif -%}
+      internet_send_max_value:
+        entity_id:
+          - sensor.internet_send_statistics_mean
+        unit_of_measurement: Mbps
+        value_template: >
+          {% if states.sensor.internet_send_statistics_mean is defined %}
+            {{ states.sensor.internet_send_statistics_mean.attributes.max_value }}
+          {%- else -%}null{%- endif -%}
+      internet_send_standard_deviation:
+        entity_id:
+          - sensor.internet_send_statistics_mean
+        unit_of_measurement: Mbps
+        value_template: >
+          {% if states.sensor.internet_send_statistics_mean is defined %}
+            {{ states.sensor.internet_send_statistics_mean.attributes.standard_deviation }}
+          {%- else -%}null{%- endif -%}
+      internet_test_ago:
+        entity_id:
+          - sensor.internet_test
+          - sun.sun
+        unit_of_measurement: seconds
+        value_template: '{{ (now().timestamp()|int) - (states.sensor.internet_test.attributes.date|int) }}'
+      internet_test_state:
+        entity_id:
+          - sensor.internet_test_ago
+        value_template: >
+          {% if states.sensor.internet_test_ago.state|int > 30 %}'off'{% else %}'on'{% endif %}
+  - platform: statistics
+    entity_id: sensor.internet_test_send
+    name: internet_send_statistics
+    max_age:
+      hours: 24
+  - platform: statistics
+    entity_id: sensor.internet_test_receive
+    name: internet_receive_statistics
+    max_age:
+      hours: 24
+
+sensor internet_test_count:
+  - platform: history_stats
+    name: internet_test_count
+    entity_id: sensor.internet_test_state
+    state: 'on'
+    type: count
+    start: '{{ now().replace(hour=0).replace(minute=0).replace(second=0) }}'
+    end: '{{ now() }}'
 
 ###
 ### SUN
@@ -239,6 +511,10 @@ binary_sensor devices_notify_template:
 ###
 
 panel_iframe:
+  portainer:
+    title: Portainer
+    icon: mdi:anchor
+    url: http://192.168.1.40:9000
   grafana:
     title: Grafana
     icon: mdi:chart-timeline
@@ -994,7 +1270,7 @@ sensor aah_wrong_when:
   - platform: mqtt
     state_topic: 'wrong/#'
     name: aah_wrong_when
-    value_template: '{% if value_json is defined %} {{ value_json.date | timestamp_custom("%a %b %d @ %I:%M %p") }} {% else %} "never" {% endif %}'
+    value_template: '{% if value_json is defined %} {{ value_json.date | timestamp_custom("%a %b %d @ %I:%M %p") }} {% else %}null{% endif %}'
     icon_template: >-
       {% if ((states.sensor.aah_wrong_date.state|int) | timestamp_custom("%p")) == "PM" %}
         mdi:weather-night
@@ -3567,6 +3843,38 @@ history_graph:
       - sensor.poolhouse_accuracy_ratio
     hours_to_show: 24
     refresh: 60
+  intranet_test:
+    name: Intranet Test
+    hours_to_show: 24
+    refresh: 30
+    entities:
+      - sensor.intranet_test_receive
+      - sensor.intranet_receive_mean
+      - sensor.intranet_receive_min_value
+      - sensor.intranet_receive_max_value
+      - sensor.intranet_test_send
+      - sensor.intranet_send_mean
+      - sensor.intranet_send_min_value
+      - sensor.intranet_send_max_value
+  internet_receive:
+    name: Internet Receive
+    hours_to_show: 24
+    refresh: 30
+    entities:
+      - sensor.internet_test_receive
+      - sensor.internet_receive_mean
+      - sensor.internet_receive_min_value
+      - sensor.internet_receive_max_value
+  internet_send:
+    name: Internet Send
+    hours_to_show: 24
+    refresh: 30
+    entities:
+      - sensor.internet_test_send
+      - sensor.internet_send_mean
+      - sensor.internet_send_min_value
+      - sensor.internet_send_max_value
+
 
 ##
 ## SCRIPTS

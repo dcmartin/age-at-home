@@ -67,7 +67,7 @@
         title: >
           Camera {{ trigger.payload_json.camera }} {{ trigger.payload_json.status }} 
         notification_id: >
-          {{ trigger.payload_json.camera }}
+          {{ trigger.payload_json.device }}
         message: >-
           Camera {{ trigger.payload_json.camera }} on device {{ trigger.payload_json.device }} {{ trigger.payload_json.status }} at 
           {{ trigger.payload_json.time|int|timestamp_custom("%a %b %d @ %I:%M %p") | default(null) }}
