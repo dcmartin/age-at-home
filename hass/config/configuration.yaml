@@ -192,7 +192,7 @@ sensor intranet_test:
         entity_id:
           - sensor.intranet_test_ago
         value_template: >
-          {% if states.sensor.intranet_test_ago.state|int > 30 %}'off'{% else %}'on'{% endif %}
+          {% if states.sensor.intranet_test_ago.state|int > 30 %}null{% else %}true{% endif %}
   - platform: statistics
     entity_id: sensor.intranet_test_send
     name: intranet_send_statistics
@@ -208,7 +208,7 @@ sensor intranet_test_count:
   - platform: history_stats
     name: intranet_test_count
     entity_id: sensor.intranet_test_state
-    state: 'on'
+    state: true
     type: count
     start: '{{ now().replace(hour=0).replace(minute=0).replace(second=0) }}'
     end: '{{ now() }}'
