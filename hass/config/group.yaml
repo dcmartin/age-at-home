@@ -6,35 +6,24 @@ default_view:
   icon: mdi:home-variant
   control: hidden
   entities:
-    - group.ageathome_cameras
-    - group.motion_cameras
     - group.people
-    - group.motion_last
+    - group.ageathome_cameras_last
+    - group.motion_cameras_last
+    - group.when_and_where
 
-ageathome_cameras:
-  name: ageathome cameras
+when_and_where:
+  name: When & Where
+  entities:
+    - sensor.last_when
+    - sensor.last_where
+    - sensor.motion_event_end_when
+    - sensor.motion_event_end_camera
+
+ageathome_cameras_last:
+  name: ageathome cameras last
   entities:
     - camera.last_image_annotated
     - camera.last_image_animated
-
-motion_cameras:
-  name: motion cameras
-  entities:
-    - camera.motion_last_image
-    - camera.motion_last_animated
-
-motion_last:
-  name: Last Motion
-  entities:
-    - sensor.motion_event_end_when
-    - sensor.motion_event_end_ago
-    - sensor.motion_event_end_device
-    - sensor.motion_event_end_camera
-    - sensor.motion_event_end_elapsed
-    - sensor.motion_event_end_image_count
-    - sensor.motion_event_end_time
-    - sensor.motion_event_end_count
-    - sensor.motion_event_end_ago_mean
 
 people:
   name: People
@@ -147,23 +136,13 @@ iphones:
 # PLAY1
 #
 
-play1_view:
+sonos_view:
   view: true
   icon: mdi:speaker
-  name: Play1 View
+  name: Sonos View
   entities:
     - media_player.play1
     - group.sonos_play1
-
-#
-# PLAY3
-#
-
-play3_view:
-  view: true
-  icon: mdi:speaker
-  name: Play3 View
-  entities:
     - media_player.play3
     - group.sonos_play3
 
@@ -222,8 +201,8 @@ ageathome_view:
     - camera.last_image_cropped
     - group.ageathome_devices
     - group.ageathome_last
-    - group.ageathome_when
-    - group.ageathome_ago
+    - group.ageathome_locations_when
+    - group.ageathome_events_ago
     - group.ageathome_motion
     - group.ageathome_wrong
 
@@ -299,7 +278,7 @@ ageathome_wrong:
     - binary_sensor.gate_wrong
     - binary_sensor.poolhouse_wrong
 
-ageathome_last:
+ageathome_event_end:
   name: 'AgeAtHome Last'
   entities:
     - sensor.last_who
@@ -315,7 +294,7 @@ ageathome_last:
     - sensor.gate_last
     - sensor.poolhouse_last
 
-ageathome_ago:
+ageathome_events_ago:
   name: 'AgeAtHome Ago' 
   entities:
     - sensor.kitchen_ago
@@ -327,7 +306,7 @@ ageathome_ago:
     - sensor.interior_ago
     - sensor.exterior_ago
 
-ageathome_when:
+ageathome_locations_when:
   name: 'AgeAtHome When' 
   entities:
     - sensor.kitchen_when
@@ -756,23 +735,23 @@ webcams_view:
   icon: mdi:webcam
   entities:
     - group.wcv80n_webcams
-    - group.motion_webcams
+    - group.webcam_webcams
     - group.ageathome_webcams
 
-motion_animated_view:
+webcam_animated_view:
   view: true
   name: Motion Animated View
   icon: mdi:filmstrip
   entities:
-    - group.motion_ftpd_camera_animation
-    - group.motion_device_camera_animation
+    - group.webcam_ftpd_camera_animation
+    - group.webcam_device_camera_animation
     - group.ageathome_animated
 
-motion_webcams:
+webcam_webcams:
   view: false
   entities:
-    - camera.motion_p40_kinect
-    - camera.motion_hassio_office
+    - camera.webcam_p40_kinect
+    - camera.webcam_hassio_office
 
 ageathome_webcams:
   view: false
@@ -809,14 +788,79 @@ wcv80n_webcams:
     - camera.wcv80n_upperpath
     - camera.wcv80n_woodshed
 
-motion_device_camera_animation:
-  view: false
+webcam_camera_network_status:
+  name: Motion Camera Network Status
   entities:
-    - camera.motion_office_animated
-    - camera.motion_kinect_animated
+    - device_tracker.poolcamera
+    - device_tracker.wcv80n_backyard
+    - device_tracker.wcv80n_diningroom
+    - device_tracker.wcv80n_dogshedfront
+    - device_tracker.wcv80n_dogshed_interior
+    - device_tracker.wcv80n_dogshedmiddle
+    - device_tracker.wcv80n_dogyard
+    - device_tracker.wcv80n_dogpond
+    - device_tracker.wcv80n_fireplace
+    - device_tracker.wcv80n_foyer
+    - device_tracker.wcv80n_frontwalk
+    - device_tracker.wcv80n_gravelpad
+    - device_tracker.wcv80n_laundry
+    - device_tracker.wcv80n_livingroom
+    - device_tracker.wcv80n_pondview
+    - device_tracker.wcv80n_poolhouse_exterior
+    - device_tracker.wcv80n_upperpath
+    - device_tracker.wcv80n_woodshed
 
-motion_ftpd_camera_animation:
-  view: false
+###
+### MOTION
+###
+
+motion_group:
+  name: MOTION
+  view: true
+  icon: mdi:video
+  entities:
+    - group.motion_localhost_cameras
+    - group.motion_cameras_last
+    - group.motion_cameras_animated
+    - group.motion_history
+    - group.motion_event_end
+    - group.motion_notify_controls
+
+motion_history:
+  name: motion_history
+  icon: mdi:graph
+  entities:
+    - history_graph.motion_event_ago
+    - history_graph.motion_event_count
+    - history_graph.motion_event_elapsed
+
+motion_notify_controls:
+  name: motion_notify_controls
+  icon: mdi:notify
+  control: hidden
+  entities:
+    - input_boolean.motion_event_notify
+    - input_boolean.motion_status_notify
+    - automation.motion_event_end_notify
+    - automation.motion_camera_status_notify
+    - automation.motion_camera_network_status_notify
+
+motion_cameras_last:
+  name: motion_cameras_last
+  entities:
+    - camera.motion_last_image
+    - camera.motion_last_animated
+    - camera.motion_last_composite
+
+motion_localhost_cameras:
+  name: motion_localhost_cameras
+  entities:
+    - camera.motion_localhost_live
+    - camera.motion_localhost_animated
+    - camera.motion_localhost_composite
+    
+motion_cameras_animated:
+  name: motion_cameras_animated
   entities:
     - camera.motion_backyard_animated
     - camera.motion_diningroom_animated
@@ -839,24 +883,15 @@ motion_ftpd_camera_animation:
     - camera.motion_upperpathgate_animated
     - camera.motion_woodshed_animated
 
-motion_camera_network_status:
-  name: Motion Camera Network Status
+motion_event_end:
+  name: motion_event_end
   entities:
-    - device_tracker.poolcamera
-    - device_tracker.wcv80n_backyard
-    - device_tracker.wcv80n_diningroom
-    - device_tracker.wcv80n_dogshedfront
-    - device_tracker.wcv80n_dogshed_interior
-    - device_tracker.wcv80n_dogshedmiddle
-    - device_tracker.wcv80n_dogyard
-    - device_tracker.wcv80n_dogpond
-    - device_tracker.wcv80n_fireplace
-    - device_tracker.wcv80n_foyer
-    - device_tracker.wcv80n_frontwalk
-    - device_tracker.wcv80n_gravelpad
-    - device_tracker.wcv80n_laundry
-    - device_tracker.wcv80n_livingroom
-    - device_tracker.wcv80n_pondview
-    - device_tracker.wcv80n_poolhouse_exterior
-    - device_tracker.wcv80n_upperpath
-    - device_tracker.wcv80n_woodshed
+    - sensor.motion_event_end_when
+    - sensor.motion_event_end_ago
+    - sensor.motion_event_end_device
+    - sensor.motion_event_end_camera
+    - sensor.motion_event_end_elapsed
+    - sensor.motion_event_end_image_count
+    - sensor.motion_event_end_time
+    - sensor.motion_event_end_count
+    - sensor.motion_event_end_ago_mean

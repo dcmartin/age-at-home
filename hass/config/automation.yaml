@@ -1,164 +1,78 @@
 ###
-### AUTOMATIONS
+### SONOS
 ###
 
-##
-## MOTION EVENT END
-##
-
-#
-# from addons/motion/on_event_end.sh
-#
-# {
-#   "device": "hassio",
-#   "camera": "office",
-#   "event": "586",
-#   "start": 1538996926,
-#   "elapsed": 7,
-#   "end": 1538554232,
-#   "date": 1539022150,
-#   "images": [ "20181008110846-586-01", "20181008110853-586-00" ]
-# }
-
-- id: motion_event_end_notify
-  alias: 'motion_event_end_notify'
+- id: sonos_volume_limiter
+  alias: sonos_volume_limiter
   initial_state: 'on'
   trigger:
-    - platform: mqtt
-      topic: 'motion/+/+/event/end'
-  condition: 
-    condition: template
-    value_template: >
-      {{ is_state('input_boolean.motion_event_end_notify','on') }}
+    - platform: numeric_state
+      entity_id: media_player.play1
+      value_template: '{{ state.attributes.volume_level }}'
+      above: 0.35
+  condition:
+    - condition: time
+      after: '08:00:00'
+      before: '20:00:00'
   action:
-    - service: persistent_notification.create
+    - service: media_player.volume_set
       data_template:
-        title: >
-          Motion {{ trigger.payload_json.camera }} camera
-        notification_id: >
-          {{ trigger.payload_json.device }}
-        message: >-
-          Detected {{ trigger.payload_json.elapsed }} seconds ({{trigger.payload_json.images|length}} frames) on
-          {{ trigger.payload_json.date|int|timestamp_custom("%a %b %d @ %I:%M %p") | default(null) }}
+        entity_id: media_player.play1
+        volume_level: 0.34
 
-#
-# from addons/motion/on_camera_{lost|found}.sh
-#
-# {
-#   "device":"p40",
-#   "camera":"upperpathgate",
-#   "time":1539422950,
-#   "status":"lost"
-# }
+###
+### LIGHTS
+###
 
-- id: motion_camera_status_notify
-  alias: 'motion_camera_status_notify'
-  initial_state: 'on'
+# enable automated lights on changes to input_sliders (light_auto_minutes, light_auto_duration)
+- id: light_auto_on_enabled
+  alias: light_auto_on_enabled
   trigger:
-    - platform: mqtt
-      topic: 'motion/+/+/status/+'
-  condition: 
-    condition: template
-    value_template: >
-      {{ is_state('input_boolean.motion_camera_status_notify','on') }}
+    platform: state
+    entity_id: input_slider.light_auto_minutes, input_slider.light_auto_duration
   action:
-    - service: persistent_notification.create
-      data_template:
-        title: >
-          Camera {{ trigger.payload_json.camera }} {{ trigger.payload_json.status }} 
-        notification_id: >
-          {{ trigger.payload_json.device }}
-        message: >-
-          Camera {{ trigger.payload_json.camera }} on device {{ trigger.payload_json.device }} {{ trigger.payload_json.status }} at 
-          {{ trigger.payload_json.time|int|timestamp_custom("%a %b %d @ %I:%M %p") | default(null) }}
+  - service: homeassistant.turn_on
+    data:
+      entity_id:
+        - automation.light_auto_on
+  - service: homeassistant.turn_on
+    data:
+      entity_id:
+        - automation.light_auto_off
 
-##
-## MOTION
-##
-
-# change in known_device state 
-- id: motion_camera_network_status_notify
-  alias: 'motion_camera_network_status_notify'
-  initial_state: 'on'
+# ask HA to turn_on group.all_lights by checking every minute/10 secons if now() ==  sensor.light_auto_start (seconds since epoch)
+- id: light_auto_on
+  alias: light_auto_on
+  initial_state: True
   trigger:
-    - platform: state
-      entity_id: 
-        - group.motion_camera_network_status
-  condition: 
-    condition: and
-    conditions:
-      - condition: template
-        value_template: >
-          {{ is_state('input_boolean.motion_camera_network_status_notify','on') }}
-      - condition: template
-        value_template: >
-          {{ (trigger.from_state != None) and ((trigger.from_state.state|lower) != "unknown") and (trigger.to_state.state != trigger.from_state.state) }}
+    - platform: time
+      minutes: '/1'
+      seconds: 10
+  condition:
+    - condition: template
+      value_template: '{{ (now().strftime("%s") | int | timestamp_custom("%H:%M")) == states.sensor.light_auto_start.state }}'
   action:
-    - service: persistent_notification.create
-      data_template:
-        title: >
-          {{ state_attr(trigger.entity_id,"friendly_name") }} Status
-        notification_id: >
-          {{ state_attr(trigger.entity_id,"friendly_name") }}
-          # {{ trigger.entity_id }}
-        message: >
-          {{ trigger.to_state.attributes.friendly_name }} changed from {{ trigger.from_state.state }} to {{ trigger.to_state.state }}
+    - service: homeassistant.turn_on
+      entity_id: "group.all_lights"
 
-##
-## SYSTEM STATUS OFFLINE
-##
-
-- id: notify_device_status
-  alias: notify_device_status
-  initial_state: on
+# ask HA to turn_off group.all_lights by checking every minute/10 secons if now() ==  sensor.light_auto_start (seconds since epoch)
+- id: light_auto_off
+  alias: light_auto_off
+  initial_state: True
   trigger:
-    - platform: state
-      entity_id: 
-        - group.webcam_status
-        - group.network_status
-        - group.tivo_status
-        - group.system_status
-        - group.ageathome_devices
-  condition: 
-    condition: and
-    conditions:
-      - condition: template
-        value_template: '{{ (trigger.from_state.state|lower) != "unknown" }}'
-      - condition: template
-        value_template: '{{ is_state("binary_sensor.devices_notify_offline","on") }}'
+    - platform: time
+      minutes: '/1'
+      seconds: 10
+  condition:
+    - condition: template
+      value_template: '{{ (now().strftime("%s") | int | timestamp_custom("%H:%M")) == states.sensor.light_auto_stop.state }}'
   action:
-    - service: persistent_notification.create
-      data_template:
-        title: >
-          {{ state_attr(trigger.entity_id,"friendly_name") }}
-        notification_id: >
-          {{ trigger.entity_id }}
-        message: >
-          {% for state in state_attr(trigger.entity_id,"entity_id") %}
-            {%- if (states(state)|lower) != 'home' -%} 
-              {{ state }} is {{ states(state) }}
-            {% endif -%}
-          {% endfor %}
-    - service: mqtt.publish
-      data_template:
-        topic: 'status/change'
-        retain: false
-        payload: >
-          {%- for state in state_attr(trigger.entity_id,"entity_id") -%}
-            {%- if loop.first -%}{"status":"{{trigger.entity_id}}","date":{{ (now().timestamp()|int) }},"items":[
-            {%- else -%},
-            {%- endif -%}
-            {"name":"{{state}}","status":"{{states(state)}}"}
-          {%- endfor -%}]}
+    - service: homeassistant.turn_off
+      entity_id: "group.all_lights"
 
-##
-## NOTIFY LOCATION CHANGES
-##
-
-
-##
-## STATE MONITOR AUTOMATIONS -- PUBLISH TO MQTT 'state/<state>/all' from <state> in { light, automation, binary_sensor, camera, device_tracker, media_player, sensor, zone, state }
-##
+###
+### STATE MONITOR 
+###
 
 # LIGHTS
 - id: publish_lights
@@ -353,10 +267,6 @@
             {"name":"{{ i.name }}","domain":"{{ i.domain }}"}
           {%- endfor -%}
 
-###
-### DEBUG
-###
-
 ##
 ## DEBUG AUTOMATION
 ##
@@ -424,66 +334,592 @@
           {%- endif -%}
 
 ###
-### LIGHTS
+### INTERNET
 ###
 
-##
-## control automated lights
-##
-
-# enable automated lights on changes to input_sliders (light_auto_minutes, light_auto_duration)
-- id: light_auto_on_enabled
-  alias: light_auto_on_enabled
+- id: internet_slow
+  alias: internet_slow
+  initial_state: on
   trigger:
     platform: state
-    entity_id: input_slider.light_auto_minutes, input_slider.light_auto_duration
-  action:
-  - service: homeassistant.turn_on
-    data:
-      entity_id:
-        - automation.light_auto_on
-  - service: homeassistant.turn_on
-    data:
-      entity_id:
-        - automation.light_auto_off
-
-# ask HA to turn_on group.all_lights by checking every minute/10 secons if now() ==  sensor.light_auto_start (seconds since epoch)
-- id: light_auto_on
-  alias: light_auto_on
-  initial_state: True
-  trigger:
-    - platform: time
-      minutes: '/1'
-      seconds: 10
+    entity_id: binary_sensor.internet_slow
   condition:
     - condition: template
-      value_template: '{{ (now().strftime("%s") | int | timestamp_custom("%H:%M")) == states.sensor.light_auto_start.state }}'
+      value_template: >
+        {{ states.binary_sensor.internet_slow.state == 'on' }}
   action:
-    - service: homeassistant.turn_on
-      entity_id: "group.all_lights"
+    - service: persistent_notification.create
+      data_template:
+        title: >
+          Internet slow at
+          {{ states.sensor.internet_test.attributes.date | timestamp_custom("%a %b %d %I:%M %p") }}
+        notification_id: internet_slow
+        message: >
+          Current: {{ states.sensor.internet_test_receive.state }} Mbps; 
+          average {{ states.sensor.internet_receive_mean.state }} Mbps;
+          stdev {{ states.sensor.internet_receive_statistics_mean.attributes.standard_deviation }} Mbps
+    - service: mqtt.publish
+      data_template:
+        topic: 'status/internet/download'
+        retain: false
+        payload: >
+          {{ states.sensor.internet_receive_statistics_mean.attributes }}
 
-# ask HA to turn_off group.all_lights by checking every minute/10 secons if now() ==  sensor.light_auto_start (seconds since epoch)
-- id: light_auto_off
-  alias: light_auto_off
-  initial_state: True
+- id: internet_slow_dismiss
+  alias: internet_slow_dismiss
+  initial_state: on
   trigger:
-    - platform: time
-      minutes: '/1'
-      seconds: 10
+    platform: state
+    entity_id: binary_sensor.internet_slow
   condition:
     - condition: template
-      value_template: '{{ (now().strftime("%s") | int | timestamp_custom("%H:%M")) == states.sensor.light_auto_stop.state }}'
+      value_template: >
+        {{ states.binary_sensor.internet_slow.state == 'off' }}
   action:
-    - service: homeassistant.turn_off
-      entity_id: "group.all_lights"
+    - service: persistent_notification.dismiss
+      data_template:
+        notification_id: internet_slow
+
+- id: internet_fast
+  alias: internet_fast
+  initial_state: on
+  trigger:
+    platform: state
+    entity_id: binary_sensor.internet_fast
+  condition:
+    - condition: template
+      value_template: >
+        {{ states.binary_sensor.internet_fast.state == 'on' }}
+  action:
+    - service: persistent_notification.create
+      data_template:
+        title: >
+          Internet fast at
+          {{ states.sensor.internet_test.attributes.date | timestamp_custom("%a %b %d %I:%M %p") }}
+        notification_id: internet_fast
+        message: >
+          Current: {{ states.sensor.internet_test_receive.state }} Mbps; 
+          average {{ states.sensor.internet_receive_mean.state }} Mbps;
+          stdev {{ states.sensor.internet_receive_statistics_mean.attributes.standard_deviation }} Mbps
+    - service: mqtt.publish
+      data_template:
+        topic: 'status/internet/download'
+        retain: false
+        payload: >
+          {{ states.sensor.internet_receive_statistics_mean.attributes }}
+
+- id: internet_fast_dismiss
+  alias: internet_fast_dismiss
+  initial_state: on
+  trigger:
+    platform: state
+    entity_id: binary_sensor.internet_fast
+  condition:
+    - condition: template
+      value_template: >
+        {{ states.binary_sensor.internet_fast.state == 'off' }}
+  action:
+    - service: persistent_notification.dismiss
+      data_template:
+        notification_id: internet_fast
+
+- id: internet_slow_persistent
+  alias: internet_slow_persistent
+  initial_state: on
+  trigger:
+    platform: state
+    entity_id: binary_sensor.internet_slow_persistent
+  condition:
+    - condition: template
+      value_template: >
+        {{ states.binary_sensor.internet_slow_persistent.state == 'on' }}
+  action:
+    - service: persistent_notification.create
+      data_template:
+        title: >
+          Internet slowing at
+          {{ states.sensor.internet_test.attributes.date | timestamp_custom("%a %b %d %I:%M %p") }}
+        notification_id: internet_slow
+        message: >
+          Current: {{ states.sensor.internet_test_receive.state }} Mbps; 
+          average {{ states.sensor.internet_receive_mean.state }} Mbps;
+          average stdev {{ states.sensor.internet_receive_stdev_mean.state }} Mbps
+    - service: mqtt.publish
+      data_template:
+        topic: 'status/internet/download/stdev'
+        retain: false
+        payload: >
+          {{ states.sensor.internet_receive_stdev_mean.attributes }}
+
+- id: internet_fast_persistent
+  alias: internet_fast_persistent
+  initial_state: on
+  trigger:
+    platform: state
+    entity_id: binary_sensor.internet_fast_persistent
+  condition:
+    - condition: template
+      value_template: >
+        {{ states.binary_sensor.internet_fast_persistent.state == 'on' }}
+  action:
+    - service: persistent_notification.create
+      data_template:
+        title: >
+          Internet improving at
+          {{ states.sensor.internet_test.attributes.date | timestamp_custom("%a %b %d %I:%M %p") }}
+        notification_id: internet_fast
+        message: >
+          Current: {{ states.sensor.internet_test_receive.state }} Mbps; 
+          average {{ states.sensor.internet_receive_mean.state }} Mbps;
+          average stdev {{ states.sensor.internet_receive_stdev_mean.state }} Mbps
+    - service: mqtt.publish
+      data_template:
+        topic: 'status/internet/download/stdev'
+        retain: false
+        payload: >
+          {{ states.sensor.internet_receive_stdev_mean.attributes }}
 
 ###
-### iOS NOTIFICATIONS
+### INTRANET
 ###
 
+- id: intranet_docsisgw_slow
+  alias: intranet_docsisgw_slow
+  initial_state: on
+  trigger:
+    platform: state
+    entity_id: binary_sensor.intranet_docsisgw_slow
+  condition:
+    - condition: template
+      value_template: >
+        {{ states.binary_sensor.intranet_docsisgw_slow.state == 'on' }}
+  action:
+    - service: persistent_notification.create
+      data_template:
+        title: >
+          Internet slow at
+          {{ states.sensor.intranet_docsisgw_test.attributes.date | timestamp_custom("%a %b %d %I:%M %p") }}
+        notification_id: intranet_docsisgw_slow
+        message: >
+          Current: {{ states.sensor.intranet_docsisgw_test_receive.state }} Mbps; 
+          average {{ states.sensor.intranet_docsisgw_receive_mean.state }} Mbps;
+          stdev {{ states.sensor.intranet_docsisgw_receive_statistics_mean.attributes.standard_deviation }} Mbps
+    - service: mqtt.publish
+      data_template:
+        topic: 'status/intranet_docsisgw/download'
+        retain: false
+        payload: >
+          {{ states.sensor.intranet_docsisgw_receive_statistics_mean.attributes }}
+
+- id: intranet_docsisgw_slow_dismiss
+  alias: intranet_docsisgw_slow_dismiss
+  initial_state: on
+  trigger:
+    platform: state
+    entity_id: binary_sensor.intranet_docsisgw_slow
+  condition:
+    - condition: template
+      value_template: >
+        {{ states.binary_sensor.intranet_docsisgw_slow.state == 'off' }}
+  action:
+    - service: persistent_notification.dismiss
+      data_template:
+        notification_id: intranet_docsisgw_slow
+
+- id: intranet_docsisgw_fast
+  alias: intranet_docsisgw_fast
+  initial_state: on
+  trigger:
+    platform: state
+    entity_id: binary_sensor.intranet_docsisgw_fast
+  condition:
+    - condition: template
+      value_template: >
+        {{ states.binary_sensor.intranet_docsisgw_fast.state == 'on' }}
+  action:
+    - service: persistent_notification.create
+      data_template:
+        title: >
+          Internet fast at
+          {{ states.sensor.intranet_docsisgw_test.attributes.date | timestamp_custom("%a %b %d %I:%M %p") }}
+        notification_id: intranet_docsisgw_fast
+        message: >
+          Current: {{ states.sensor.intranet_docsisgw_test_receive.state }} Mbps; 
+          average {{ states.sensor.intranet_docsisgw_receive_mean.state }} Mbps;
+          stdev {{ states.sensor.intranet_docsisgw_receive_statistics_mean.attributes.standard_deviation }} Mbps
+    - service: mqtt.publish
+      data_template:
+        topic: 'status/intranet_docsisgw/download'
+        retain: false
+        payload: >
+          {{ states.sensor.intranet_docsisgw_receive_statistics_mean.attributes }}
+
+- id: intranet_docsisgw_fast_dismiss
+  alias: intranet_docsisgw_fast_dismiss
+  initial_state: on
+  trigger:
+    platform: state
+    entity_id: binary_sensor.intranet_docsisgw_fast
+  condition:
+    - condition: template
+      value_template: >
+        {{ states.binary_sensor.intranet_docsisgw_fast.state == 'off' }}
+  action:
+    - service: persistent_notification.dismiss
+      data_template:
+        notification_id: intranet_docsisgw_fast
+
+- id: intranet_docsisgw_slow_persistent
+  alias: intranet_docsisgw_slow_persistent
+  initial_state: on
+  trigger:
+    platform: state
+    entity_id: binary_sensor.intranet_docsisgw_slow_persistent
+  condition:
+    - condition: template
+      value_template: >
+        {{ states.binary_sensor.intranet_docsisgw_slow_persistent.state == 'on' }}
+  action:
+    - service: persistent_notification.create
+      data_template:
+        title: >
+          Internet slowing at
+          {{ states.sensor.intranet_docsisgw_test.attributes.date | timestamp_custom("%a %b %d %I:%M %p") }}
+        notification_id: intranet_docsisgw_slow
+        message: >
+          Current: {{ states.sensor.intranet_docsisgw_test_receive.state }} Mbps; 
+          average {{ states.sensor.intranet_docsisgw_receive_mean.state }} Mbps;
+          average stdev {{ states.sensor.intranet_docsisgw_receive_stdev_mean.state }} Mbps
+    - service: mqtt.publish
+      data_template:
+        topic: 'status/intranet_docsisgw/download/stdev'
+        retain: false
+        payload: >
+          {{ states.sensor.intranet_docsisgw_receive_stdev_mean.attributes }}
+
+- id: intranet_docsisgw_fast_persistent
+  alias: intranet_docsisgw_fast_persistent
+  initial_state: on
+  trigger:
+    platform: state
+    entity_id: binary_sensor.intranet_docsisgw_fast_persistent
+  condition:
+    - condition: template
+      value_template: >
+        {{ states.binary_sensor.intranet_docsisgw_fast_persistent.state == 'on' }}
+  action:
+    - service: persistent_notification.create
+      data_template:
+        title: >
+          Internet improving at
+          {{ states.sensor.intranet_docsisgw_test.attributes.date | timestamp_custom("%a %b %d %I:%M %p") }}
+        notification_id: intranet_docsisgw_fast
+        message: >
+          Current: {{ states.sensor.intranet_docsisgw_test_receive.state }} Mbps; 
+          average {{ states.sensor.intranet_docsisgw_receive_mean.state }} Mbps;
+          average stdev {{ states.sensor.intranet_docsisgw_receive_stdev_mean.state }} Mbps
+    - service: mqtt.publish
+      data_template:
+        topic: 'status/intranet_docsisgw/download/stdev'
+        retain: false
+        payload: >
+          {{ states.sensor.intranet_docsisgw_receive_stdev_mean.attributes }}
+
+- id: intranet_dslgw_slow
+  alias: intranet_dslgw_slow
+  initial_state: on
+  trigger:
+    platform: state
+    entity_id: binary_sensor.intranet_dslgw_slow
+  condition:
+    - condition: template
+      value_template: >
+        {{ states.binary_sensor.intranet_dslgw_slow.state == 'on' }}
+  action:
+    - service: persistent_notification.create
+      data_template:
+        title: >
+          Internet slow at
+          {{ states.sensor.intranet_dslgw_test.attributes.date | timestamp_custom("%a %b %d %I:%M %p") }}
+        notification_id: intranet_dslgw_slow
+        message: >
+          Current: {{ states.sensor.intranet_dslgw_test_receive.state }} Mbps; 
+          average {{ states.sensor.intranet_dslgw_receive_mean.state }} Mbps;
+          stdev {{ states.sensor.intranet_dslgw_receive_statistics_mean.attributes.standard_deviation }} Mbps
+    - service: mqtt.publish
+      data_template:
+        topic: 'status/intranet_dslgw/download'
+        retain: false
+        payload: >
+          {{ states.sensor.intranet_dslgw_receive_statistics_mean.attributes }}
+
+- id: intranet_dslgw_slow_dismiss
+  alias: intranet_dslgw_slow_dismiss
+  initial_state: on
+  trigger:
+    platform: state
+    entity_id: binary_sensor.intranet_dslgw_slow
+  condition:
+    - condition: template
+      value_template: >
+        {{ states.binary_sensor.intranet_dslgw_slow.state == 'off' }}
+  action:
+    - service: persistent_notification.dismiss
+      data_template:
+        notification_id: intranet_dslgw_slow
+
+- id: intranet_dslgw_fast
+  alias: intranet_dslgw_fast
+  initial_state: on
+  trigger:
+    platform: state
+    entity_id: binary_sensor.intranet_dslgw_fast
+  condition:
+    - condition: template
+      value_template: >
+        {{ states.binary_sensor.intranet_dslgw_fast.state == 'on' }}
+  action:
+    - service: persistent_notification.create
+      data_template:
+        title: >
+          Internet fast at
+          {{ states.sensor.intranet_dslgw_test.attributes.date | timestamp_custom("%a %b %d %I:%M %p") }}
+        notification_id: intranet_dslgw_fast
+        message: >
+          Current: {{ states.sensor.intranet_dslgw_test_receive.state }} Mbps; 
+          average {{ states.sensor.intranet_dslgw_receive_mean.state }} Mbps;
+          stdev {{ states.sensor.intranet_dslgw_receive_statistics_mean.attributes.standard_deviation }} Mbps
+    - service: mqtt.publish
+      data_template:
+        topic: 'status/intranet_dslgw/download'
+        retain: false
+        payload: >
+          {{ states.sensor.intranet_dslgw_receive_statistics_mean.attributes }}
+
+- id: intranet_dslgw_fast_dismiss
+  alias: intranet_dslgw_fast_dismiss
+  initial_state: on
+  trigger:
+    platform: state
+    entity_id: binary_sensor.intranet_dslgw_fast
+  condition:
+    - condition: template
+      value_template: >
+        {{ states.binary_sensor.intranet_dslgw_fast.state == 'off' }}
+  action:
+    - service: persistent_notification.dismiss
+      data_template:
+        notification_id: intranet_dslgw_fast
+
+- id: intranet_dslgw_slow_persistent
+  alias: intranet_dslgw_slow_persistent
+  initial_state: on
+  trigger:
+    platform: state
+    entity_id: binary_sensor.intranet_dslgw_slow_persistent
+  condition:
+    - condition: template
+      value_template: >
+        {{ states.binary_sensor.intranet_dslgw_slow_persistent.state == 'on' }}
+  action:
+    - service: persistent_notification.create
+      data_template:
+        title: >
+          Internet slowing at
+          {{ states.sensor.intranet_dslgw_test.attributes.date | timestamp_custom("%a %b %d %I:%M %p") }}
+        notification_id: intranet_dslgw_slow
+        message: >
+          Current: {{ states.sensor.intranet_dslgw_test_receive.state }} Mbps; 
+          average {{ states.sensor.intranet_dslgw_receive_mean.state }} Mbps;
+          average stdev {{ states.sensor.intranet_dslgw_receive_stdev_mean.state }} Mbps
+    - service: mqtt.publish
+      data_template:
+        topic: 'status/intranet_dslgw/download/stdev'
+        retain: false
+        payload: >
+          {{ states.sensor.intranet_dslgw_receive_stdev_mean.attributes }}
+
+- id: intranet_dslgw_fast_persistent
+  alias: intranet_dslgw_fast_persistent
+  initial_state: on
+  trigger:
+    platform: state
+    entity_id: binary_sensor.intranet_dslgw_fast_persistent
+  condition:
+    - condition: template
+      value_template: >
+        {{ states.binary_sensor.intranet_dslgw_fast_persistent.state == 'on' }}
+  action:
+    - service: persistent_notification.create
+      data_template:
+        title: >
+          Internet improving at
+          {{ states.sensor.intranet_dslgw_test.attributes.date | timestamp_custom("%a %b %d %I:%M %p") }}
+        notification_id: intranet_dslgw_fast
+        message: >
+          Current: {{ states.sensor.intranet_dslgw_test_receive.state }} Mbps; 
+          average {{ states.sensor.intranet_dslgw_receive_mean.state }} Mbps;
+          average stdev {{ states.sensor.intranet_dslgw_receive_stdev_mean.state }} Mbps
+    - service: mqtt.publish
+      data_template:
+        topic: 'status/intranet_dslgw/download/stdev'
+        retain: false
+        payload: >
+          {{ states.sensor.intranet_dslgw_receive_stdev_mean.attributes }}
+
+###
+### MOTION
+###
+
+#
+# from addons/motion/on_event_end.sh
+#
+# {
+#   "device": "hassio",
+#   "camera": "office",
+#   "event": "586",
+#   "start": 1538996926,
+#   "elapsed": 7,
+#   "end": 1538554232,
+#   "date": 1539022150,
+#   "images": [ "20181008110846-586-01", "20181008110853-586-00" ]
+# }
+
+- id: motion_event_end_notify
+  alias: 'motion_event_end_notify'
+  initial_state: 'on'
+  trigger:
+    - platform: mqtt
+      topic: 'motion/+/+/event/end'
+  condition: 
+    condition: template
+    value_template: >
+      {{ is_state('input_boolean.motion_event_end_notify','on') }}
+  action:
+    - service: persistent_notification.create
+      data_template:
+        title: >
+          Motion {{ trigger.payload_json.camera }} camera
+        notification_id: >
+          {{ trigger.payload_json.device }}
+        message: >-
+          Detected {{ trigger.payload_json.elapsed }} seconds ({{trigger.payload_json.images|length}} frames) on
+          {{ trigger.payload_json.date|int|timestamp_custom("%a %b %d @ %I:%M %p") | default(null) }}
+
+#
+# from addons/motion/on_camera_{lost|found}.sh
+#
+# {
+#   "device":"p40",
+#   "camera":"upperpathgate",
+#   "time":1539422950,
+#   "status":"lost"
+# }
+
+- id: motion_camera_status_notify
+  alias: 'motion_camera_status_notify'
+  initial_state: 'on'
+  trigger:
+    - platform: mqtt
+      topic: 'motion/+/+/status/+'
+  condition: 
+    condition: template
+    value_template: >
+      {{ is_state('input_boolean.motion_camera_status_notify','on') }}
+  action:
+    - service: persistent_notification.create
+      data_template:
+        title: >
+          Camera {{ trigger.payload_json.camera }} {{ trigger.payload_json.status }} 
+        notification_id: >
+          {{ trigger.payload_json.device }}
+        message: >-
+          Camera {{ trigger.payload_json.camera }} on device {{ trigger.payload_json.device }} {{ trigger.payload_json.status }} at 
+          {{ trigger.payload_json.time|int|timestamp_custom("%a %b %d @ %I:%M %p") | default(null) }}
+
 ##
-## AGE-AT-HOME
+## MOTION
 ##
+
+# change in known_device state 
+- id: motion_camera_network_status_notify
+  alias: 'motion_camera_network_status_notify'
+  initial_state: 'on'
+  trigger:
+    - platform: state
+      entity_id: 
+        - group.motion_camera_network_status
+  condition: 
+    condition: and
+    conditions:
+      - condition: template
+        value_template: >
+          {{ is_state('input_boolean.motion_camera_network_status_notify','on') }}
+      - condition: template
+        value_template: >
+          {{ (trigger.from_state != None) and ((trigger.from_state.state|lower) != "unknown") and (trigger.to_state.state != trigger.from_state.state) }}
+  action:
+    - service: persistent_notification.create
+      data_template:
+        title: >
+          {{ state_attr(trigger.entity_id,"friendly_name") }} Status
+        notification_id: >
+          {{ state_attr(trigger.entity_id,"friendly_name") }}
+          # {{ trigger.entity_id }}
+        message: >
+          {{ trigger.to_state.attributes.friendly_name }} changed from {{ trigger.from_state.state }} to {{ trigger.to_state.state }}
+
+##
+## SYSTEM STATUS OFFLINE
+##
+
+- id: notify_device_status
+  alias: notify_device_status
+  initial_state: on
+  trigger:
+    - platform: state
+      entity_id: 
+        - group.webcam_status
+        - group.network_status
+        - group.tivo_status
+        - group.system_status
+        - group.ageathome_devices
+  condition: 
+    condition: and
+    conditions:
+      - condition: template
+        value_template: '{{ (trigger.from_state.state|lower) != "unknown" }}'
+      - condition: template
+        value_template: '{{ is_state("binary_sensor.devices_notify_offline","on") }}'
+  action:
+    - service: persistent_notification.create
+      data_template:
+        title: >
+          {{ state_attr(trigger.entity_id,"friendly_name") }}
+        notification_id: >
+          {{ trigger.entity_id }}
+        message: >
+          OFFLINE:
+          {% for state in state_attr(trigger.entity_id,"entity_id") %}
+            {% if (states(state)|lower) != 'home' -%} 
+              {{ state }} state: {{ states(state) }}
+            {%- endif -%}
+          {%- endfor -%}
+    - service: mqtt.publish
+      data_template:
+        topic: 'status/change'
+        retain: false
+        payload: >
+          {%- for state in state_attr(trigger.entity_id,"entity_id") -%}
+            {%- if loop.first -%}{"status":"{{trigger.entity_id}}","date":{{ (now().timestamp()|int) }},"items":[
+            {%- else -%},
+            {%- endif -%}
+            {"name":"{{state}}","status":"{{states(state)}}"}
+          {%- endfor -%}]}
+
+###
+### AGE-AT-HOME
+###
 
 # devices offline ('not_home')
 - id: aah_notify_devices_offline
@@ -528,7 +964,7 @@
         title: AGE AT HOME
         message: >
           {{ trigger.to_state.attributes.friendly_name }} is offline.
-
+# DAVID
 - id: notify_david
   alias: 'notify_david'
   initial_state: 'on'
@@ -551,6 +987,7 @@
       data_template:
         message: >
           {{ trigger.to_state.attributes.friendly_name }} location just changed from {{ trigger.from_state.state }} to {{ trigger.to_state.state }}
+    # publish to mqtt
     - service: mqtt.publish
       data_template:
         topic: status/location
@@ -566,7 +1003,6 @@
            "person":{{ what }}
            "state": {{states(("sensor.status_",what)|join|lower) }}
           }
-
 # KELI
 - id: notify_keli
   alias: 'notify_keli'
@@ -590,7 +1026,6 @@
       data_template:
         message: >
           {{ trigger.to_state.attributes.friendly_name }} location just changed from {{ trigger.from_state.state }} to {{ trigger.to_state.state }}
-
 # HALI
 - id: notify_hali
   alias: 'notify_hali'
@@ -614,7 +1049,6 @@
       data_template:
         message: >
           {{ trigger.to_state.attributes.friendly_name }} location just changed from {{ trigger.from_state.state }} to {{ trigger.to_state.state }}
-
 # IAN
 - id: notify_ian
   alias: 'notify_ian'
@@ -638,7 +1072,6 @@
       data_template:
         message: >
           {{ trigger.to_state.attributes.friendly_name }} location just changed from {{ trigger.from_state.state }} to {{ trigger.to_state.state }}
-
 # RILEY
 - id: notify_riley
   alias: 'notify_riley'
@@ -662,7 +1095,6 @@
       data_template:
         message: >
           {{ trigger.to_state.attributes.friendly_name }} location just changed from {{ trigger.from_state.state }} to {{ trigger.to_state.state }}
-
 # ELLEN
 - id: notify_ellen
   alias: 'notify_ellen'
@@ -687,10 +1119,248 @@
         message: >
           {{ trigger.to_state.attributes.friendly_name }} location just changed from {{ trigger.from_state.state }} to {{ trigger.to_state.state }}
 
-#
-# MQTT
-#
+##
+## NOTIFICATIONS at LOCATIONS
+##
 
+# GATE
+- id: aah_notify_gate
+  alias: aah_notify_gate
+  initial_state: on
+  trigger:
+    - platform: mqtt
+      topic: 'presence/gate/#'
+  condition: 
+    condition: and
+    conditions:
+      - condition: time
+        after: '06:00'
+      - condition: time
+        before: '22:00'
+      - condition: template
+        value_template: >
+          {{ ((now().timestamp()|int) - trigger.payload_json.date) < 60 }}
+      - condition: template
+        value_template: >
+          {{ is_state('binary_sensor.ageathome_notify_gate','on') }}
+  action:
+    - service: mqtt.publish
+      data_template:
+        topic: 'status/gate'
+        payload: >-
+          { "type":"motion", "location":"gate", "triggered":{{- (now().timestamp()|int) -}}, "payload":{{- trigger.payload_json|tojson -}} }
+    - service: notify.notify
+      data_template:
+        title: Gate motion
+        message: >-
+          SAW {{ trigger.payload_json.class }}
+          AT {{ trigger.payload_json.date|int|timestamp_custom("%a %b %d @ %I:%M %p") | default(null) }}
+          [ {{ trigger.payload_json.model }} {{ trigger.payload_json.score|float }} {{ trigger.payload_json.size }} {{ trigger.payload_json.id }} ]
+        data:
+          attachment:
+            url: http://homeassistant.dcmartin.com:8123{{- states(("sensor.",trigger.payload_json.location,"_entity_picture")|join|lower) -}}
+            content-type: jpeg
+            hide-thumbnail: false
+
+# POOLHOUSE
+- id: aah_notify_poolhouse
+  alias: aah_notify_poolhouse
+  initial_state: on
+  trigger:
+    - platform: mqtt
+      topic: 'presence/poolhouse/#'
+  condition: 
+    condition: and
+    conditions:
+      - condition: time
+        after: '06:00'
+      - condition: time
+        before: '22:00'
+      - condition: template
+        value_template: >
+          {{ ((now().timestamp()|int) - trigger.payload_json.date) < 60 }}
+      - condition: template
+        value_template: >
+          {{ is_state('binary_sensor.ageathome_notify_poolhouse','on') }}
+  action:
+    - service: mqtt.publish
+      data_template:
+        topic: 'status/poolhouse'
+        payload: >-
+          { "type":"motion", "location":"poolhouse", "triggered":{{- (now().timestamp()|int) -}}, "payload":{{- trigger.payload_json|tojson -}} }
+    - service: notify.notify
+      data_template:
+        title: Poolhouse motion
+        message: >-
+          SAW {{ trigger.payload_json.class }}
+          AT {{ trigger.payload_json.date|int|timestamp_custom("%a %b %d @ %I:%M %p") | default(null) }}
+          [ {{ trigger.payload_json.model }} {{ trigger.payload_json.score|float }} {{ trigger.payload_json.size }} {{ trigger.payload_json.id }} ]
+        data:
+          attachment:
+            url: http://homeassistant.dcmartin.com:8123{{- states(("sensor.",trigger.payload_json.location,"_entity_picture")|join|lower) -}}
+            content-type: jpeg
+            hide-thumbnail: false
+
+# FRONTDOOR
+- id: aah_notify_frontdoor
+  alias: aah_notify_frontdoor
+  initial_state: on
+  trigger:
+    - platform: mqtt
+      topic: 'presence/frontdoor/#'
+  condition: 
+    condition: and
+    conditions:
+      - condition: time
+        after: '06:00'
+      - condition: time
+        before: '22:00'
+      - condition: template
+        value_template: >
+          {{ ((now().timestamp()|int) - trigger.payload_json.date) < 60 }}
+      - condition: template
+        value_template: >
+          {{ is_state('binary_sensor.ageathome_notify_frontdoor','on') }}
+  action:
+    - service: mqtt.publish
+      data_template:
+        topic: 'status/frontdoor'
+        payload: >-
+          { "type":"motion", "location":"frontdoor", "triggered":{{- (now().timestamp()|int) -}}, "payload":{{- trigger.payload_json|tojson -}} }
+    - service: notify.notify
+      data_template:
+        title: Frontdoor motion
+        message: >-
+          SAW {{ trigger.payload_json.class }}
+          AT {{ trigger.payload_json.date|int|timestamp_custom("%a %b %d @ %I:%M %p") | default(null) }}
+          [ {{ trigger.payload_json.model }} {{ trigger.payload_json.score|float }} {{ trigger.payload_json.size }} {{ trigger.payload_json.id }} ]
+        data:
+          attachment:
+            url: http://homeassistant.dcmartin.com:8123{{- states(("sensor.",trigger.payload_json.location,"_entity_picture")|join|lower) -}}
+            content-type: jpeg
+            hide-thumbnail: false
+
+# KITCHEN
+- id: aah_notify_kitchen
+  alias: aah_notify_kitchen
+  initial_state: on
+  trigger:
+    - platform: mqtt
+      topic: 'presence/kitchen/#'
+  condition: 
+    condition: and
+    conditions:
+      - condition: time
+        after: '06:00'
+      - condition: time
+        before: '22:00'
+      - condition: template
+        value_template: >
+          {{ ((now().timestamp()|int) - trigger.payload_json.date) < 60 }}
+      - condition: template
+        value_template: >
+          {{ is_state('binary_sensor.ageathome_notify_kitchen','on') }}
+  action:
+    - service: mqtt.publish
+      data_template:
+        topic: 'status/kitchen'
+        payload: >-
+          { "type":"motion", "location":"kitchen", "triggered":{{- (now().timestamp()|int) -}}, "payload":{{- trigger.payload_json|tojson -}} }
+    - service: notify.notify
+      data_template:
+        title: >-
+          {{ trigger.payload_json.class }} motion
+        message: >-
+          SAW {{ trigger.payload_json.class }}
+          AT {{ trigger.payload_json.date|int|timestamp_custom("%a %b %d @ %I:%M %p") | default(null) }}
+          [ {{ trigger.payload_json.model }} {{ trigger.payload_json.score|float }} {{ trigger.payload_json.size }} {{ trigger.payload_json.id }} ]
+        data:
+          attachment:
+            url: http://homeassistant.dcmartin.com:8123{{- states(("sensor.",trigger.payload_json.location,"_entity_picture")|join|lower) -}}
+            content-type: jpeg
+            hide-thumbnail: false
+
+# BATHROOM
+- id: aah_notify_bathroom
+  alias: aah_notify_bathroom
+  initial_state: on
+  trigger:
+    - platform: mqtt
+      topic: 'presence/bathroom/#'
+  condition: 
+    condition: and
+    conditions:
+      - condition: time
+        after: '06:00'
+      - condition: time
+        before: '22:00'
+      - condition: template
+        value_template: >
+          {{ ((now().timestamp()|int) - trigger.payload_json.date) < 60 }}
+      - condition: template
+        value_template: >
+          {{ is_state('binary_sensor.ageathome_notify_bathroom','on') }}
+  action:
+    - service: mqtt.publish
+      data_template:
+        topic: 'status/bathroom'
+        payload: >-
+          { "type":"motion", "location":"bathroom", "triggered":{{- (now().timestamp()|int) -}}, "payload":{{- trigger.payload_json|tojson -}} }
+    - service: notify.notify
+      data_template:
+        title: >-
+          {{ trigger.payload_json.class }} motion
+        message: >-
+          SAW {{ trigger.payload_json.class }}
+          AT {{ trigger.payload_json.date|int|timestamp_custom("%a %b %d @ %I:%M %p") | default(null) }}
+          [ {{ trigger.payload_json.model }} {{ trigger.payload_json.score|float }} {{ trigger.payload_json.size }} {{ trigger.payload_json.id }} ]
+        data:
+          attachment:
+            url: http://homeassistant.dcmartin.com:8123{{- states(("sensor.",trigger.payload_json.location,"_entity_picture")|join|lower) -}}
+            content-type: jpeg
+            hide-thumbnail: false
+
+# ROAD
+- id: aah_notify_road
+  alias: aah_notify_road
+  initial_state: on
+  trigger:
+    - platform: mqtt
+      topic: 'presence/road/#'
+  condition: 
+    condition: and
+    conditions:
+      - condition: time
+        after: '06:00'
+      - condition: time
+        before: '22:00'
+      - condition: template
+        value_template: >
+          {{ ((now().timestamp()|int) - trigger.payload_json.date) < 60 }}
+      - condition: template
+        value_template: >
+          {{ is_state('binary_sensor.ageathome_notify_road','on') }}
+  action:
+    - service: mqtt.publish
+      data_template:
+        topic: 'status/road'
+        payload: >-
+          { "type":"motion", "location":"road", "triggered":{{- (now().timestamp()|int) -}}, "payload":{{- trigger.payload_json|tojson -}} }
+    - service: notify.notify
+      data_template:
+        title: >-
+          {{ trigger.payload_json.class }} motion
+        message: >-
+          SAW {{ trigger.payload_json.class }}
+          AT {{ trigger.payload_json.date|int|timestamp_custom("%a %b %d @ %I:%M %p") | default(null) }}
+          [ {{ trigger.payload_json.model }} {{ trigger.payload_json.score|float }} {{ trigger.payload_json.size }} {{ trigger.payload_json.id }} ]
+        data:
+          attachment:
+            url: http://homeassistant.dcmartin.com:8123{{- states(("sensor.",trigger.payload_json.location,"_entity_picture")|join|lower) -}}
+            content-type: jpeg
+            hide-thumbnail: false
+
+## EXPERIMENTAL
 
 - id: aah_publish_lowscore
   alias: very low score
@@ -718,9 +1388,7 @@
         payload: >
           {"location":{{states('sensor.last_where')|tojson}},"model":{{states('sensor.last_who')|tojson}},"class":{{states('sensor.last_what')|tojson}},"score":{{states('sensor.last_why')}}}
 
-###
-### INTERIOR GATE
-###
+# INTERIOR GATE
 
 - id: gate_open
   alias: 'Gate Open'
@@ -770,13 +1438,9 @@
     service: cover.close_cover
     entity_id: cover.gate_opener
 
-###
-### NOTIFY IF PERSON SEEN IN LOCATION IS NOT HOME or UNKNOWN (DNE)
-###
+## MODEL TESTERS
 
-##
-## LISTEN to 'presence/#' AND WATCH FOR FALSE POSITIVES (PERSON SEEN but not at HOME)
-##
+# PERSON WRONG
 - id: aah_wrong_person_detector
   alias: aah_wrong_person_detector
   initial_state: on
@@ -821,12 +1485,7 @@
               {%- if not loop.last -%} "{{ score.classifier_id }}", {%- else -%} "{{ score.classifier_id }}" {%- endif -%}
             {%- endfor -%}]
           }
-
-##
-## LISTEN to 'wrong/person/#' 
-##
-
-# NOTIFY BY EMAIL
+# NOTIFY EMAIL
 - id: aah_wrong_person_email
   alias: aah_wrong_person_email
   initial_state: on
@@ -865,8 +1524,7 @@
             url: http://homeassistant.dcmartin.com:8123{{- states(("sensor.",trigger.payload_json.location,"_entity_picture")|join|lower) -}}
             content-type: jpeg
             hide-thumbnail: false
-
-## NOTIFY BY IOS PUSH
+# NOTIFY IOS
 - id: aah_wrong_person_notify
   alias: aah_wrong_person_notify
   initial_state: on
@@ -914,11 +1572,7 @@
               {{ ("camera.",trigger.payload_json.location,"_image_annotated")|join|lower }}
             my_custom_data: >
               {{ trigger.payload_json|tojson }}
-
-## CAPTURE RESPONSE from IOS NOTIFICATIONS
-#
-# EXAMPLE PAYLOAD FROM IOS NOTIFICATION
-#
+# CAPTURE RESPONSE from IOS NOTIFICATIONS
 # {
 #  "sourceDeviceName": "Robbie's iPhone 7 Plus",
 #  "sourceDeviceID": "robbies_iphone_7_plus",
@@ -927,7 +1581,6 @@
 #  "textInput": "",
 #  "actionData": {}
 # }
-#
 - id: aah_correction
   alias: aah_correction
   initial_state: on
@@ -952,10 +1605,7 @@
         message: >
           {{ trigger.payload_json.textInput }} {{ trigger.payload_json.actionData }} 
 
-##
-## SEND NOTIFICATION FOR MARTIN_C70 on ROAD when DAVID is HOME
-##
-
+# VEHICLE
 - id: aah_wrong_vehicle_detector
   alias: aah_wrong_vehicle_detector
   initial_state: on
@@ -985,7 +1635,6 @@
            "box":{{trigger.payload_json.box|tojson}},
            "scores":{{trigger.payload_json.scores}}
           }
-
 - id: aah_wrong_vehicle_notify
   alias: aah_wrong_vehicle_notify
   initial_state: on
@@ -1012,281 +1661,3 @@
             url: http://homeassistant.dcmartin.com:8123{{- states(("sensor.",trigger.payload_json.location,"_entity_picture")|join|lower) -}}
             content-type: jpeg
             hide-thumbnail: false
-
-###
-### SONOS
-###
-
-- id: sonos_volume_limiter
-  alias: sonos_volume_limiter
-  initial_state: 'on'
-  trigger:
-    - platform: numeric_state
-      entity_id: media_player.play1
-      value_template: '{{ state.attributes.volume_level }}'
-      above: 0.35
-  condition:
-    - condition: time
-      after: '08:00:00'
-      before: '20:00:00'
-  action:
-    - service: media_player.volume_set
-      data_template:
-        entity_id: media_player.play1
-        volume_level: 0.34
-
-##
-## NOTIFY MOTION at gate
-##
-
-- id: aah_notify_gate
-  alias: aah_notify_gate
-  initial_state: on
-  trigger:
-    - platform: mqtt
-      topic: 'presence/gate/#'
-  condition: 
-    condition: and
-    conditions:
-      - condition: time
-        after: '06:00'
-      - condition: time
-        before: '22:00'
-      - condition: template
-        value_template: >
-          {{ ((now().timestamp()|int) - trigger.payload_json.date) < 60 }}
-      - condition: template
-        value_template: >
-          {{ is_state('binary_sensor.ageathome_notify_gate','on') }}
-  action:
-    - service: mqtt.publish
-      data_template:
-        topic: 'status/gate'
-        payload: >-
-          { "type":"motion", "location":"gate", "triggered":{{- (now().timestamp()|int) -}}, "payload":{{- trigger.payload_json|tojson -}} }
-    - service: notify.notify
-      data_template:
-        title: Gate motion
-        message: >-
-          SAW {{ trigger.payload_json.class }}
-          AT {{ trigger.payload_json.date|int|timestamp_custom("%a %b %d @ %I:%M %p") | default(null) }}
-          [ {{ trigger.payload_json.model }} {{ trigger.payload_json.score|float }} {{ trigger.payload_json.size }} {{ trigger.payload_json.id }} ]
-        data:
-          attachment:
-            url: http://homeassistant.dcmartin.com:8123{{- states(("sensor.",trigger.payload_json.location,"_entity_picture")|join|lower) -}}
-            content-type: jpeg
-            hide-thumbnail: false
-
-##
-## NOTIFY MOTION at poolhouse
-##
-
-- id: aah_notify_poolhouse
-  alias: aah_notify_poolhouse
-  initial_state: on
-  trigger:
-    - platform: mqtt
-      topic: 'presence/poolhouse/#'
-  condition: 
-    condition: and
-    conditions:
-      - condition: time
-        after: '06:00'
-      - condition: time
-        before: '22:00'
-      - condition: template
-        value_template: >
-          {{ ((now().timestamp()|int) - trigger.payload_json.date) < 60 }}
-      - condition: template
-        value_template: >
-          {{ is_state('binary_sensor.ageathome_notify_poolhouse','on') }}
-  action:
-    - service: mqtt.publish
-      data_template:
-        topic: 'status/poolhouse'
-        payload: >-
-          { "type":"motion", "location":"poolhouse", "triggered":{{- (now().timestamp()|int) -}}, "payload":{{- trigger.payload_json|tojson -}} }
-    - service: notify.notify
-      data_template:
-        title: Poolhouse motion
-        message: >-
-          SAW {{ trigger.payload_json.class }}
-          AT {{ trigger.payload_json.date|int|timestamp_custom("%a %b %d @ %I:%M %p") | default(null) }}
-          [ {{ trigger.payload_json.model }} {{ trigger.payload_json.score|float }} {{ trigger.payload_json.size }} {{ trigger.payload_json.id }} ]
-        data:
-          attachment:
-            url: http://homeassistant.dcmartin.com:8123{{- states(("sensor.",trigger.payload_json.location,"_entity_picture")|join|lower) -}}
-            content-type: jpeg
-            hide-thumbnail: false
-
-##
-## NOTIFY MOTION at frontdoor
-##
-
-- id: aah_notify_frontdoor
-  alias: aah_notify_frontdoor
-  initial_state: on
-  trigger:
-    - platform: mqtt
-      topic: 'presence/frontdoor/#'
-  condition: 
-    condition: and
-    conditions:
-      - condition: time
-        after: '06:00'
-      - condition: time
-        before: '22:00'
-      - condition: template
-        value_template: >
-          {{ ((now().timestamp()|int) - trigger.payload_json.date) < 60 }}
-      - condition: template
-        value_template: >
-          {{ is_state('binary_sensor.ageathome_notify_frontdoor','on') }}
-  action:
-    - service: mqtt.publish
-      data_template:
-        topic: 'status/frontdoor'
-        payload: >-
-          { "type":"motion", "location":"frontdoor", "triggered":{{- (now().timestamp()|int) -}}, "payload":{{- trigger.payload_json|tojson -}} }
-    - service: notify.notify
-      data_template:
-        title: Frontdoor motion
-        message: >-
-          SAW {{ trigger.payload_json.class }}
-          AT {{ trigger.payload_json.date|int|timestamp_custom("%a %b %d @ %I:%M %p") | default(null) }}
-          [ {{ trigger.payload_json.model }} {{ trigger.payload_json.score|float }} {{ trigger.payload_json.size }} {{ trigger.payload_json.id }} ]
-        data:
-          attachment:
-            url: http://homeassistant.dcmartin.com:8123{{- states(("sensor.",trigger.payload_json.location,"_entity_picture")|join|lower) -}}
-            content-type: jpeg
-            hide-thumbnail: false
-
-##
-## NOTIFY MOTION at kitchen
-##
-
-- id: aah_notify_kitchen
-  alias: aah_notify_kitchen
-  initial_state: on
-  trigger:
-    - platform: mqtt
-      topic: 'presence/kitchen/#'
-  condition: 
-    condition: and
-    conditions:
-      - condition: time
-        after: '06:00'
-      - condition: time
-        before: '22:00'
-      - condition: template
-        value_template: >
-          {{ ((now().timestamp()|int) - trigger.payload_json.date) < 60 }}
-      - condition: template
-        value_template: >
-          {{ is_state('binary_sensor.ageathome_notify_kitchen','on') }}
-  action:
-    - service: mqtt.publish
-      data_template:
-        topic: 'status/kitchen'
-        payload: >-
-          { "type":"motion", "location":"kitchen", "triggered":{{- (now().timestamp()|int) -}}, "payload":{{- trigger.payload_json|tojson -}} }
-    - service: notify.notify
-      data_template:
-        title: >-
-          {{ trigger.payload_json.class }} motion
-        message: >-
-          SAW {{ trigger.payload_json.class }}
-          AT {{ trigger.payload_json.date|int|timestamp_custom("%a %b %d @ %I:%M %p") | default(null) }}
-          [ {{ trigger.payload_json.model }} {{ trigger.payload_json.score|float }} {{ trigger.payload_json.size }} {{ trigger.payload_json.id }} ]
-        data:
-          attachment:
-            url: http://homeassistant.dcmartin.com:8123{{- states(("sensor.",trigger.payload_json.location,"_entity_picture")|join|lower) -}}
-            content-type: jpeg
-            hide-thumbnail: false
-
-##
-## NOTIFY MOTION at bathroom
-##
-
-- id: aah_notify_bathroom
-  alias: aah_notify_bathroom
-  initial_state: on
-  trigger:
-    - platform: mqtt
-      topic: 'presence/bathroom/#'
-  condition: 
-    condition: and
-    conditions:
-      - condition: time
-        after: '06:00'
-      - condition: time
-        before: '22:00'
-      - condition: template
-        value_template: >
-          {{ ((now().timestamp()|int) - trigger.payload_json.date) < 60 }}
-      - condition: template
-        value_template: >
-          {{ is_state('binary_sensor.ageathome_notify_bathroom','on') }}
-  action:
-    - service: mqtt.publish
-      data_template:
-        topic: 'status/bathroom'
-        payload: >-
-          { "type":"motion", "location":"bathroom", "triggered":{{- (now().timestamp()|int) -}}, "payload":{{- trigger.payload_json|tojson -}} }
-    - service: notify.notify
-      data_template:
-        title: >-
-          {{ trigger.payload_json.class }} motion
-        message: >-
-          SAW {{ trigger.payload_json.class }}
-          AT {{ trigger.payload_json.date|int|timestamp_custom("%a %b %d @ %I:%M %p") | default(null) }}
-          [ {{ trigger.payload_json.model }} {{ trigger.payload_json.score|float }} {{ trigger.payload_json.size }} {{ trigger.payload_json.id }} ]
-        data:
-          attachment:
-            url: http://homeassistant.dcmartin.com:8123{{- states(("sensor.",trigger.payload_json.location,"_entity_picture")|join|lower) -}}
-            content-type: jpeg
-            hide-thumbnail: false
-
-##
-## NOTIFY MOTION at road
-##
-
-- id: aah_notify_road
-  alias: aah_notify_road
-  initial_state: on
-  trigger:
-    - platform: mqtt
-      topic: 'presence/road/#'
-  condition: 
-    condition: and
-    conditions:
-      - condition: time
-        after: '06:00'
-      - condition: time
-        before: '22:00'
-      - condition: template
-        value_template: >
-          {{ ((now().timestamp()|int) - trigger.payload_json.date) < 60 }}
-      - condition: template
-        value_template: >
-          {{ is_state('binary_sensor.ageathome_notify_road','on') }}
-  action:
-    - service: mqtt.publish
-      data_template:
-        topic: 'status/road'
-        payload: >-
-          { "type":"motion", "location":"road", "triggered":{{- (now().timestamp()|int) -}}, "payload":{{- trigger.payload_json|tojson -}} }
-    - service: notify.notify
-      data_template:
-        title: >-
-          {{ trigger.payload_json.class }} motion
-        message: >-
-          SAW {{ trigger.payload_json.class }}
-          AT {{ trigger.payload_json.date|int|timestamp_custom("%a %b %d @ %I:%M %p") | default(null) }}
-          [ {{ trigger.payload_json.model }} {{ trigger.payload_json.score|float }} {{ trigger.payload_json.size }} {{ trigger.payload_json.id }} ]
-        data:
-          attachment:
-            url: http://homeassistant.dcmartin.com:8123{{- states(("sensor.",trigger.payload_json.location,"_entity_picture")|join|lower) -}}
-            content-type: jpeg
-            hide-thumbnail: false
-

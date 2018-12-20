@@ -1,0 +1,313 @@
+## HISTORY GRAPH
+
+## AGE-AT-HOME
+kitchen_accuracy:
+  name: Kitchen Accuracy
+  entities:
+    - sensor.kitchen_accuracy_ratio
+  hours_to_show: 24
+  refresh: 60
+kitchen_time:
+  name: Kitchen Time
+  entities:
+    - sensor.kitchen_david_time
+    - sensor.kitchen_keli_time
+    - sensor.kitchen_hali_time
+    - sensor.kitchen_ian_time
+    - sensor.kitchen_riley_time
+    - sensor.kitchen_ellen_time
+  hours_to_show: 24
+  refresh: 60
+kitchen_ratio:
+  name: Kitchen Ratio
+  entities:
+    - sensor.kitchen_david_ratio
+    - sensor.kitchen_keli_ratio
+    - sensor.kitchen_hali_ratio
+    - sensor.kitchen_ian_ratio
+    - sensor.kitchen_riley_ratio
+    - sensor.kitchen_ellen_ratio
+  hours_to_show: 24
+  refresh: 60
+kitchen_count:
+  name: Kitchen Count
+  entities:
+    - sensor.kitchen_david_count
+    - sensor.kitchen_keli_count
+    - sensor.kitchen_hali_count
+    - sensor.kitchen_ian_count
+    - sensor.kitchen_riley_count
+    - sensor.kitchen_ellen_count
+    - sensor.kitchen_motion_count
+  hours_to_show: 24
+  refresh: 60
+bathroom_accuracy:
+  name: Bathroom Accuracy
+  entities:
+    - sensor.bathroom_accuracy_ratio
+  hours_to_show: 24
+  refresh: 60
+bathroom_time:
+  name: Bathroom Time
+  entities:
+    - sensor.bathroom_david_time
+    - sensor.bathroom_keli_time
+    - sensor.bathroom_hali_time
+    - sensor.bathroom_ian_time
+    - sensor.bathroom_riley_time
+    - sensor.bathroom_ellen_time
+  hours_to_show: 24
+  refresh: 60
+bathroom_ratio:
+  name: Bathroom Ratio
+  entities:
+    - sensor.bathroom_david_ratio
+    - sensor.bathroom_keli_ratio
+    - sensor.bathroom_hali_ratio
+    - sensor.bathroom_ian_ratio
+    - sensor.bathroom_riley_ratio
+    - sensor.bathroom_ellen_ratio
+  hours_to_show: 24
+  refresh: 60
+bathroom_count:
+  name: Bathroom Count
+  entities:
+    - sensor.bathroom_david_count
+    - sensor.bathroom_keli_count
+    - sensor.bathroom_hali_count
+    - sensor.bathroom_ian_count
+    - sensor.bathroom_riley_count
+    - sensor.bathroom_ellen_count
+    - sensor.bathroom_motion_count
+  hours_to_show: 24
+  refresh: 60
+frontdoor_accuracy:
+  name: Frontdoor Accuracy
+  entities:
+    - sensor.frontdoor_accuracy_ratio
+  hours_to_show: 24
+  refresh: 60
+frontdoor_time:
+  name: Frontdoor Time
+  entities:
+    - sensor.frontdoor_david_time
+    - sensor.frontdoor_keli_time
+    - sensor.frontdoor_hali_time
+    - sensor.frontdoor_ian_time
+    - sensor.frontdoor_riley_time
+    - sensor.frontdoor_ellen_time
+  hours_to_show: 24
+  refresh: 60
+frontdoor_ratio:
+  name: Frontdoor Ratio
+  entities:
+    - sensor.frontdoor_david_ratio
+    - sensor.frontdoor_keli_ratio
+    - sensor.frontdoor_hali_ratio
+    - sensor.frontdoor_ian_ratio
+    - sensor.frontdoor_riley_ratio
+    - sensor.frontdoor_ellen_ratio
+  hours_to_show: 24
+  refresh: 60
+frontdoor_count:
+  name: Frontdoor Count
+  entities:
+    - sensor.frontdoor_david_count
+    - sensor.frontdoor_keli_count
+    - sensor.frontdoor_hali_count
+    - sensor.frontdoor_ian_count
+    - sensor.frontdoor_riley_count
+    - sensor.frontdoor_ellen_count
+    - sensor.frontdoor_motion_count
+  hours_to_show: 24
+  refresh: 60
+road_accuracy:
+  name: Road Accuracy
+  entities:
+    - sensor.road_accuracy_ratio
+  hours_to_show: 24
+  refresh: 60
+road_time:
+  name: Road Time
+  entities:
+    - sensor.road_martin_time
+    - sensor.road_fletcher_time
+    - sensor.road_other_time
+  hours_to_show: 24
+  refresh: 60
+road_ratio:
+  name: Road Ratio
+  entities:
+    - sensor.road_martin_ratio
+    - sensor.road_fletcher_ratio
+    - sensor.road_other_ratio
+  hours_to_show: 24
+  refresh: 60
+road_count:
+  name: Road Count
+  entities:
+    - sensor.road_martin_count
+    - sensor.road_fletcher_count
+    - sensor.road_other_count
+  hours_to_show: 24
+  refresh: 60
+gate_time:
+  name: Gate Time
+  entities:
+    - sensor.gate_martin_time
+    - sensor.gate_other_time
+  hours_to_show: 24
+  refresh: 60
+gate_ratio:
+  name: Gate Ratio
+  entities:
+    - sensor.gate_martin_ratio
+    - sensor.gate_other_ratio
+  hours_to_show: 24
+  refresh: 60
+gate_count:
+  name: Gate Count
+  entities:
+    - sensor.gate_martin_count
+    - sensor.gate_other_count
+  hours_to_show: 24
+  refresh: 60
+gate_accuracy:
+  name: Gate Accuracy
+  entities:
+    - sensor.gate_accuracy_ratio
+  hours_to_show: 24
+  refresh: 60
+poolhouse_time:
+  name: Poolhouse Time
+  entities:
+    - sensor.poolhouse_martin_time
+    - sensor.poolhouse_other_time
+  hours_to_show: 24
+  refresh: 60
+poolhouse_ratio:
+  name: Poolhouse Ratio
+  entities:
+    - sensor.poolhouse_martin_ratio
+    - sensor.poolhouse_other_ratio
+  hours_to_show: 24
+  refresh: 60
+poolhouse_count:
+  name: Poolhouse Count
+  entities:
+    - sensor.poolhouse_martin_count
+    - sensor.poolhouse_other_count
+  hours_to_show: 24
+  refresh: 60
+poolhouse_accuracy:
+  name: Poolhouse Accuracy
+  entities:
+    - sensor.poolhouse_accuracy_ratio
+  hours_to_show: 24
+  refresh: 60
+
+## INTRANET
+intranet_docsisgw_test:
+  name: Intranet DOCSISGW Test
+  hours_to_show: 24
+  refresh: 30
+  entities:
+    # - sensor.intranet_docsisgw_test_receive
+    - sensor.intranet_docsisgw_receive_mean
+    - sensor.intranet_docsisgw_receive_min_value
+    - sensor.intranet_docsisgw_receive_max_value
+    # - sensor.intranet_docsisgw_test_send
+    - sensor.intranet_docsisgw_send_mean
+    - sensor.intranet_docsisgw_send_min_value
+    - sensor.intranet_docsisgw_send_max_value
+intranet_dslgw_test:
+  name: Intranet DSLGW Test
+  hours_to_show: 24
+  refresh: 30
+  entities:
+    # - sensor.intranet_dslgw_test_receive
+    - sensor.intranet_dslgw_receive_mean
+    - sensor.intranet_dslgw_receive_min_value
+    - sensor.intranet_dslgw_receive_max_value
+    # - sensor.intranet_dslgw_test_send
+    - sensor.intranet_dslgw_send_mean
+    - sensor.intranet_dslgw_send_min_value
+    - sensor.intranet_dslgw_send_max_value
+
+## INTERNET
+internet_receive:
+  name: Internet Receive
+  hours_to_show: 24
+  refresh: 30
+  entities:
+    # - sensor.internet_test_receive
+    - sensor.internet_receive_mean
+    - sensor.internet_receive_min_value
+    - sensor.internet_receive_max_value
+internet_send_stdev:
+  name: Internet Send Stdev
+  hours_to_show: 24
+  refresh: 30
+  entities:
+    - sensor.internet_send_stdev_mean
+    - sensor.internet_send_standard_deviation
+internet_recv_stdev:
+  name: Internet Recv Stdev
+  hours_to_show: 24
+  refresh: 30
+  entities:
+    - sensor.internet_receive_stdev_mean
+    - sensor.internet_receive_standard_deviation
+internet_send:
+  name: Internet Send
+  hours_to_show: 24
+  refresh: 30
+  entities:
+    # - sensor.internet_test_send
+    - sensor.internet_send_mean
+    - sensor.internet_send_min_value
+    - sensor.internet_send_max_value
+internet_tests:
+  name: Internet Tests
+  hours_to_show: 24
+  refresh: 30
+  entities:
+    - sensor.internet_slow_count
+    - sensor.internet_fast_count
+    - sensor.internet_tests_count
+
+## MOTION
+motion_event_elapsed:
+  name: motion_event_elapsed
+  hours_to_show: 1
+  refresh: 10
+  entities:
+    - sensor.motion_event_end_elapsed
+    - sensor.motion_event_elapsed_mean
+motion_event_ago:
+  name: motion_event_ago
+  hours_to_show: 1
+  refresh: 10
+  entities:
+    - sensor.motion_event_end_ago
+    - sensor.motion_event_ago_mean
+motion_event_count:
+  name: motion_event_count
+  hours_to_show: 1
+  refresh: 10
+  entities:
+    - sensor.motion_event_count
+## INTRANET
+intranet_docsisgw_test:
+  name: Intranet DOCSISGW Test
+  hours_to_show: 24
+  refresh: 30
+  entities:
+    # - sensor.intranet_docsisgw_test_receive
+    - sensor.intranet_docsisgw_receive_mean
+    - sensor.intranet_docsisgw_receive_min_value
+    - sensor.intranet_docsisgw_receive_max_value
+    # - sensor.intranet_docsisgw_test_send
+    - sensor.intranet_docsisgw_send_mean
+    - sensor.intranet_docsisgw_send_min_value
+    - sensor.intranet_docsisgw_send_max_value

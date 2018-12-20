@@ -83,7 +83,7 @@ sensor intranet_test:
   - platform: command_line
     command: iperf3 -c 192.168.1.32 -J | jq '{"date":.start.timestamp.timesecs,"send":.end.sum_sent.bits_per_second,"receive":.end.sum_received.bits_per_second}'
     name: intranet_test
-    scan_interval: 120
+    scan_interval: 900
     command_timeout: 60
     json_attributes:
       - date
@@ -330,7 +330,7 @@ sensor internet_test:
         entity_id:
           - sensor.internet_test_ago
         value_template: >
-          {% if states.sensor.internet_test_ago.state|int > 30 %}'off'{% else %}'on'{% endif %}
+          {% if states.sensor.internet_test_ago.state|int > 30 %}null{% else %}true{% endif %}
   - platform: statistics
     entity_id: sensor.internet_test_send
     name: internet_send_statistics
@@ -346,7 +346,7 @@ sensor internet_test_count:
   - platform: history_stats
     name: internet_test_count
     entity_id: sensor.internet_test_state
-    state: 'on'
+    state: true
     type: count
     start: '{{ now().replace(hour=0).replace(minute=0).replace(second=0) }}'
     end: '{{ now() }}'
@@ -511,6 +511,10 @@ binary_sensor devices_notify_template:
 ###
 
 panel_iframe:
+  configurator:
+    title: Configurator
+    icon: mdi:wrench
+    url: http://192.168.1.40:3218
   portainer:
     title: Portainer
     icon: mdi:anchor
@@ -527,14 +531,14 @@ panel_iframe:
     title: 'Cameras'
     icon: mdi:webcam
     url: 'http://www.dcmartin.com/CABIN.html'
+  horizon:
+    title: Horizon Control
+    icon: mdi:weather-sunset
+    url: http://192.168.1.199:9999
   motion:
     title: 'Motion AddOn'
     icon: mdi:image-plus
     url: 'http://192.168.1.40:7999'
-  netdata:
-    title: 'NetData'
-    icon: mdi:database-search
-    url: 'http://192.168.1.40:19999'
   nodered:
     title: 'Node-RED'
     icon: mdi:clipboard-flow
@@ -543,20 +547,24 @@ panel_iframe:
     title: 'Age-At-Home'
     icon: mdi:home-account
     url: 'http://age-at-home.dcmartin.com:8999'
-  docsis:
-    title: 'Mikrotik'
+  dslgw:
+    title: 'DSLGW'
+    icon: mdi:router-wireless
+    url: 'http://192.168.1.2'
+  docsisgw:
+    title: 'DOCSISGW'
     icon: mdi:router-wireless
     url: 'http://192.168.1.1'
   digits:
     title: 'DIGITS'
     icon: mdi:format-list-numbers
     url: 'http://digits.dcmartin.com:5000/'
-  terminal:
-    title: Terminal
+  rpi2:
+    title: DHCP/DNS
     icon: mdi:console
     url: 'http://rpi2.dcmartin.com:7681'
   plexpy:
-    title: DAVID-PLEX
+    title: PLEX usage
     icon: mdi:television
     url: 'http://plex.dcmartin.com:8181'
 
@@ -905,158 +913,115 @@ camera poolcamera:
     name: poolcamera
     username: !secret wcv80n_username
     password: !secret wcv80n_password
-
-## all Linksys/Cisco WCV80N cameras
-
-camera wcv80n_woodshed:
   - platform: mjpeg
     mjpeg_url: http://192.168.1.163/img/video.mjpeg
     still_image_url: http://192.168.1.163/img/snapshot.cgi
     name: wcv80n_woodshed
     username: !secret wcv80n_username
     password: !secret wcv80n_password
-
-camera wcv80n_livingroom:
   - platform: mjpeg
     mjpeg_url: http://192.168.1.164/img/video.mjpeg
     still_image_url: http://192.168.1.164/img/snapshot.cgi
     name: wcv80n_livingroom
     username: !secret wcv80n_username
     password: !secret wcv80n_password
-
-camera wcv80n_dogpond:
   - platform: mjpeg
     mjpeg_url: http://192.168.1.165/img/video.mjpeg
     still_image_url: http://192.168.1.165/img/snapshot.cgi
     name: wcv80n_dogpond
     username: !secret wcv80n_username
     password: !secret wcv80n_password
-
-camera wcv80n_fireplace:
   - platform: mjpeg
     mjpeg_url: http://192.168.1.166/img/video.mjpeg
     still_image_url: http://192.168.1.166/img/snapshot.cgi
     name: wcv80n_fireplace
     username: !secret wcv80n_username
     password: !secret wcv80n_password
-
-# NO 167
-
-camera wcv80n_phexterior:
+  # NO 167
   - platform: mjpeg
     mjpeg_url: http://192.168.1.168/img/video.mjpeg
     still_image_url: http://192.168.1.168/img/snapshot.cgi
     name: wcv80n_phexterior
     username: !secret wcv80n_username
     password: !secret wcv80n_password
-
-camera wcv80n_dogyard:
   - platform: mjpeg
     mjpeg_url: http://192.168.1.169/img/video.mjpeg
     still_image_url: http://192.168.1.169/img/snapshot.cgi
     name: wcv80n_dogyard
     username: !secret wcv80n_username
     password: !secret wcv80n_password
-
-camera wcv80n_dogshedmiddle:
   - platform: mjpeg
     mjpeg_url: http://192.168.1.170/img/video.mjpeg
     still_image_url: http://192.168.1.170/img/snapshot.cgi
     name: wcv80n_dogshedmiddle
     username: !secret wcv80n_username
     password: !secret wcv80n_password
-
-camera wcv80n_sideyard:
   - platform: mjpeg
     mjpeg_url: http://192.168.1.171/img/video.mjpeg
     still_image_url: http://192.168.1.171/img/snapshot.cgi
     name: wcv80n_sideyard
     username: !secret wcv80n_username
     password: !secret wcv80n_password
-
-camera wcv80n_dogshedfront:
   - platform: mjpeg
     mjpeg_url: http://192.168.1.172/img/video.mjpeg
     still_image_url: http://192.168.1.172/img/snapshot.cgi
     name: wcv80n_dogshedfront
     username: !secret wcv80n_username
     password: !secret wcv80n_password
-
-camera wcv80n_dogshed_interior:
   - platform: mjpeg
     mjpeg_url: http://192.168.1.173/img/video.mjpeg
     still_image_url: http://192.168.1.173/img/snapshot.cgi
     name: wcv80n_dogshed
     username: !secret wcv80n_username
     password: !secret wcv80n_password
-
-camera wcv80n_pondview:
   - platform: mjpeg
     mjpeg_url: http://192.168.1.174/img/video.mjpeg
     still_image_url: http://192.168.1.174/img/snapshot.cgi
     name: wcv80n_pondview
     username: !secret wcv80n_username
     password: !secret wcv80n_password
-
-camera wcv80n_gravelpad:
   - platform: mjpeg
     mjpeg_url: http://192.168.1.175/img/video.mjpeg
     still_image_url: http://192.168.1.175/img/snapshot.cgi
     name: wcv80n_gravelpad
     username: !secret wcv80n_username
     password: !secret wcv80n_password
-
-camera wcv80n_upperpath:
   - platform: mjpeg
     mjpeg_url: http://192.168.1.176/img/video.mjpeg
     still_image_url: http://192.168.1.176/img/snapshot.cgi
     name: wcv80n_upperpath
     username: !secret wcv80n_username
     password: !secret wcv80n_password
-
-camera wcv80n_laundry:
   - platform: mjpeg
     mjpeg_url: http://192.168.1.177/img/video.mjpeg
     still_image_url: http://192.168.1.177/img/snapshot.cgi
     name: wcv80n_laundry
     username: !secret wcv80n_username
     password: !secret wcv80n_password
-
-camera wcv80n_foyer:
   - platform: mjpeg
     mjpeg_url: http://192.168.1.178/img/video.mjpeg
     still_image_url: http://192.168.1.178/img/snapshot.cgi
     name: wcv80n_foyer
     username: !secret wcv80n_username
     password: !secret wcv80n_password
-
-camera wcv80n_frontwalk:
   - platform: mjpeg
     mjpeg_url: http://192.168.1.179/img/video.mjpeg
     still_image_url: http://192.168.1.179/img/snapshot.cgi
     name: wcv80n_frontwalk
     username: !secret wcv80n_username
     password: !secret wcv80n_password
-
-camera wcv80n_garage:
   - platform: mjpeg
     mjpeg_url: http://192.168.1.180/img/video.mjpeg
     still_image_url: http://192.168.1.180/img/snapshot.cgi
     name: wcv80n_garage
     username: !secret wcv80n_username
     password: !secret wcv80n_password
-
-# NO 181
-
-camera wcv80n_diningroom:
   - platform: mjpeg
     mjpeg_url: http://192.168.1.182/img/video.mjpeg
     still_image_url: http://192.168.1.182/img/snapshot.cgi
     name: wcv80n_diningroom
     username: !secret wcv80n_username
     password: !secret wcv80n_password
-
-camera wcv80n_backyard:
   - platform: mjpeg
     mjpeg_url: http://192.168.1.183/img/video.mjpeg
     still_image_url: http://192.168.1.183/img/snapshot.cgi
@@ -3637,244 +3602,7 @@ binary_sensor template:
              states.binary_sensor.aah_config.attributes.vr_apikey is defined and
              states.binary_sensor.aah_config.attributes.vr_apikey != 'null' }}
 
-## HISTORY GRAPH
-history_graph:
-  kitchen_accuracy:
-    name: Kitchen Accuracy
-    entities:
-      - sensor.kitchen_accuracy_ratio
-    hours_to_show: 24
-    refresh: 60
-  kitchen_time:
-    name: Kitchen Time
-    entities:
-      - sensor.kitchen_david_time
-      - sensor.kitchen_keli_time
-      - sensor.kitchen_hali_time
-      - sensor.kitchen_ian_time
-      - sensor.kitchen_riley_time
-      - sensor.kitchen_ellen_time
-    hours_to_show: 24
-    refresh: 60
-  kitchen_ratio:
-    name: Kitchen Ratio
-    entities:
-      - sensor.kitchen_david_ratio
-      - sensor.kitchen_keli_ratio
-      - sensor.kitchen_hali_ratio
-      - sensor.kitchen_ian_ratio
-      - sensor.kitchen_riley_ratio
-      - sensor.kitchen_ellen_ratio
-    hours_to_show: 24
-    refresh: 60
-  kitchen_count:
-    name: Kitchen Count
-    entities:
-      - sensor.kitchen_david_count
-      - sensor.kitchen_keli_count
-      - sensor.kitchen_hali_count
-      - sensor.kitchen_ian_count
-      - sensor.kitchen_riley_count
-      - sensor.kitchen_ellen_count
-      - sensor.kitchen_motion_count
-    hours_to_show: 24
-    refresh: 60
-  bathroom_accuracy:
-    name: Bathroom Accuracy
-    entities:
-      - sensor.bathroom_accuracy_ratio
-    hours_to_show: 24
-    refresh: 60
-  bathroom_time:
-    name: Bathroom Time
-    entities:
-      - sensor.bathroom_david_time
-      - sensor.bathroom_keli_time
-      - sensor.bathroom_hali_time
-      - sensor.bathroom_ian_time
-      - sensor.bathroom_riley_time
-      - sensor.bathroom_ellen_time
-    hours_to_show: 24
-    refresh: 60
-  bathroom_ratio:
-    name: Bathroom Ratio
-    entities:
-      - sensor.bathroom_david_ratio
-      - sensor.bathroom_keli_ratio
-      - sensor.bathroom_hali_ratio
-      - sensor.bathroom_ian_ratio
-      - sensor.bathroom_riley_ratio
-      - sensor.bathroom_ellen_ratio
-    hours_to_show: 24
-    refresh: 60
-  bathroom_count:
-    name: Bathroom Count
-    entities:
-      - sensor.bathroom_david_count
-      - sensor.bathroom_keli_count
-      - sensor.bathroom_hali_count
-      - sensor.bathroom_ian_count
-      - sensor.bathroom_riley_count
-      - sensor.bathroom_ellen_count
-      - sensor.bathroom_motion_count
-    hours_to_show: 24
-    refresh: 60
-  frontdoor_accuracy:
-    name: Frontdoor Accuracy
-    entities:
-      - sensor.frontdoor_accuracy_ratio
-    hours_to_show: 24
-    refresh: 60
-  frontdoor_time:
-    name: Frontdoor Time
-    entities:
-      - sensor.frontdoor_david_time
-      - sensor.frontdoor_keli_time
-      - sensor.frontdoor_hali_time
-      - sensor.frontdoor_ian_time
-      - sensor.frontdoor_riley_time
-      - sensor.frontdoor_ellen_time
-    hours_to_show: 24
-    refresh: 60
-  frontdoor_ratio:
-    name: Frontdoor Ratio
-    entities:
-      - sensor.frontdoor_david_ratio
-      - sensor.frontdoor_keli_ratio
-      - sensor.frontdoor_hali_ratio
-      - sensor.frontdoor_ian_ratio
-      - sensor.frontdoor_riley_ratio
-      - sensor.frontdoor_ellen_ratio
-    hours_to_show: 24
-    refresh: 60
-  frontdoor_count:
-    name: Frontdoor Count
-    entities:
-      - sensor.frontdoor_david_count
-      - sensor.frontdoor_keli_count
-      - sensor.frontdoor_hali_count
-      - sensor.frontdoor_ian_count
-      - sensor.frontdoor_riley_count
-      - sensor.frontdoor_ellen_count
-      - sensor.frontdoor_motion_count
-    hours_to_show: 24
-    refresh: 60
-  road_accuracy:
-    name: Road Accuracy
-    entities:
-      - sensor.road_accuracy_ratio
-    hours_to_show: 24
-    refresh: 60
-  road_time:
-    name: Road Time
-    entities:
-      - sensor.road_martin_time
-      - sensor.road_fletcher_time
-      - sensor.road_other_time
-    hours_to_show: 24
-    refresh: 60
-  road_ratio:
-    name: Road Ratio
-    entities:
-      - sensor.road_martin_ratio
-      - sensor.road_fletcher_ratio
-      - sensor.road_other_ratio
-    hours_to_show: 24
-    refresh: 60
-  road_count:
-    name: Road Count
-    entities:
-      - sensor.road_martin_count
-      - sensor.road_fletcher_count
-      - sensor.road_other_count
-    hours_to_show: 24
-    refresh: 60
-  gate_time:
-    name: Gate Time
-    entities:
-      - sensor.gate_martin_time
-      - sensor.gate_other_time
-    hours_to_show: 24
-    refresh: 60
-  gate_ratio:
-    name: Gate Ratio
-    entities:
-      - sensor.gate_martin_ratio
-      - sensor.gate_other_ratio
-    hours_to_show: 24
-    refresh: 60
-  gate_count:
-    name: Gate Count
-    entities:
-      - sensor.gate_martin_count
-      - sensor.gate_other_count
-    hours_to_show: 24
-    refresh: 60
-  gate_accuracy:
-    name: Gate Accuracy
-    entities:
-      - sensor.gate_accuracy_ratio
-    hours_to_show: 24
-    refresh: 60
-  poolhouse_time:
-    name: Poolhouse Time
-    entities:
-      - sensor.poolhouse_martin_time
-      - sensor.poolhouse_other_time
-    hours_to_show: 24
-    refresh: 60
-  poolhouse_ratio:
-    name: Poolhouse Ratio
-    entities:
-      - sensor.poolhouse_martin_ratio
-      - sensor.poolhouse_other_ratio
-    hours_to_show: 24
-    refresh: 60
-  poolhouse_count:
-    name: Poolhouse Count
-    entities:
-      - sensor.poolhouse_martin_count
-      - sensor.poolhouse_other_count
-    hours_to_show: 24
-    refresh: 60
-  poolhouse_accuracy:
-    name: Poolhouse Accuracy
-    entities:
-      - sensor.poolhouse_accuracy_ratio
-    hours_to_show: 24
-    refresh: 60
-  intranet_test:
-    name: Intranet Test
-    hours_to_show: 24
-    refresh: 30
-    entities:
-      - sensor.intranet_test_receive
-      - sensor.intranet_receive_mean
-      - sensor.intranet_receive_min_value
-      - sensor.intranet_receive_max_value
-      - sensor.intranet_test_send
-      - sensor.intranet_send_mean
-      - sensor.intranet_send_min_value
-      - sensor.intranet_send_max_value
-  internet_receive:
-    name: Internet Receive
-    hours_to_show: 24
-    refresh: 30
-    entities:
-      - sensor.internet_test_receive
-      - sensor.internet_receive_mean
-      - sensor.internet_receive_min_value
-      - sensor.internet_receive_max_value
-  internet_send:
-    name: Internet Send
-    hours_to_show: 24
-    refresh: 30
-    entities:
-      - sensor.internet_test_send
-      - sensor.internet_send_mean
-      - sensor.internet_send_min_value
-      - sensor.internet_send_max_value
-
+history_graph: !include history_graph.yaml
 
 ##
 ## SCRIPTS
@@ -3901,13 +3629,15 @@ scene: !include scene.yaml
 
 input_boolean: !include input_boolean.yaml
 
+input_number: !include input_number.yaml
+
 input_select: !include input_select.yaml
 
 # input_text: !include input_text.yaml
 
-####
-#### INFLUX DB
-####
+###
+### INFLUX DB
+###
 
 influxdb:
   host: 127.0.0.1
@@ -3918,15 +3648,750 @@ influxdb:
   max_retries: 3
   default_measurement: state
 
-####
-#### MOTION ADDON
-####
+###
+### HORIZON
+###
 
-# state topic should be '<device>/<host>/start' for this device if slave; should be '<device>/+/start' for master
-sensor motion_configuration:
+sensor horizon:
+  - platform: rest
+    name: horizon_exchange_node_list
+    resource: http://localhost:9999/cgi-bin/hzn-exchange-nodes
+    method: GET
+    authentication: basic
+#    username: !secret exchange_auth
+#    password: !secret exchange_api
+    force_update: true
+    json_attributes:
+      - date
+      - nodes
+    value_template: >
+      {%- if value_json is defined -%}
+        {{ value_json.nodes|length }}
+      {%- else -%}null{%- endif -%}
+  - platform: rest
+    name: horizon_exchange_status
+    resource: !secret exchange_status
+    method: GET
+    authentication: basic
+    username: !secret exchange_auth
+    password: !secret exchange_api
+    force_update: true
+    json_attributes:
+      - dbSchemaVersion
+      - msg
+      - numberOfAgbotAgreements
+      - numberOfAgbotMsgs
+      - numberOfAgbots
+      - numberOfNodeAgreements
+      - numberOfNodeMsgs
+      - numberOfNodes
+      - numberOfUsers
+    value_template: >
+      {%- if value_json is defined -%}
+        {{ value_json.msg }}
+      {%- else -%}null{%- endif -%}
+  - platform: rest
+    name: horizon_status
+    resource: 'http://localhost/status'
+    method: GET
+    force_update: true
+    json_attributes:
+     - configuration
+     - connectivity
+    value_template: >
+      {{ now().strftime("%a %b %d @ %I:%M %p") }}
+  - platform: rest
+    name: horizon_agreements
+    resource: 'http://localhost/agreement'
+    method: GET
+    force_update: true
+    json_attributes:
+     - agreements
+    value_template: >
+      {% if value_json is defined and value_json != '[]' %}
+        {{ now().strftime("%a %b %d @ %I:%M %p") }}
+      {% else %}null{% endif %}
+  - platform: template
+    sensors:
+      horizon_agreement_active:
+        entity_id:
+          - sensor.horizon_agreements_count_active
+        value_template: >
+          {% if states.sensor.horizon_agreements_count_active.state|int > 0 %}
+            {{ states.sensor.horizon_agreements.attributes.agreements.active[0].workload_to_run.url }}
+          {% else %}null{% endif %}
+      horizon_agreements_count_active:
+        entity_id:
+          - sensor.horizon_agreements
+        value_template: >
+          {% if states.sensor.horizon_agreements.attributes.agreements is defined and states.sensor.horizon_agreements.attributes.agreements.active != '[]' %}
+            {{ states.sensor.horizon_agreements.attributes.agreements.active|length }}
+          {% else %}null{% endif %}
+      horizon_agreements_count_archived:
+        entity_id:
+          - sensor.horizon_agreements
+        value_template: >
+          {% if states.sensor.horizon_agreements.attributes.agreements is defined and states.sensor.horizon_agreements.attributes.agreements.archived != '[]' %}
+            {{ states.sensor.horizon_agreements.attributes.agreements.archived|length }}
+          {% else %}null{% endif %}
+      horizon_exchange_api:
+        entity_id:
+          - sensor.horizon_status
+        value_template: >
+          {{ states.sensor.horizon_status.attributes.configuration.exchange_api }} 
+      horizon_exchange_version:
+        entity_id:
+          - sensor.horizon_status
+        value_template: >
+          {{ states.sensor.horizon_status.attributes.configuration.exchange_version }} 
+      horizon_required_minimum_exchange_version:
+        entity_id:
+          - sensor.horizon_status
+        value_template: >
+          {{ states.sensor.horizon_status.attributes.configuration.required_minimum_exchange_version }} 
+      horizon_preferred_exchange_version:
+        entity_id:
+          - sensor.horizon_status
+        value_template: >
+          {{ states.sensor.horizon_status.attributes.configuration.preferred_exchange_version }} 
+      horizon_architecture:
+        entity_id:
+          - sensor.horizon_status
+        value_template: >
+          {{ states.sensor.horizon_status.attributes.configuration.architecture }} 
+      horizon_version:
+        entity_id:
+          - sensor.horizon_status
+        value_template: >
+          {{ states.sensor.horizon_status.attributes.configuration.horizon_version }} 
+
+###
+### INTERNET TEST
+###
+
+sensor internet_test:
+  - platform: command_line
+    command: speedtest --json | jq '.date='$(date +%s)'|.latitude=(.client.lat|tonumber)|.longitude=(.client.lon|tonumber)'
+    name: internet_test
+    scan_interval: 120
+    sampling_size: 60
+    max_age:
+      hours: 24
+    command_timeout: 60
+    json_attributes:
+      - server
+      - latitude
+      - longitude
+      - bytes_sent
+      - bytes_received
+      - client 
+      - date
+      - timestamp
+      - ping
+      - download
+      - upload 
+    value_template: >
+      {%- if value_json is defined -%}
+        {{ value_json.date | timestamp_custom("%a %b %d @ %I:%M %p") }}
+      {%- else -%}null{%- endif -%}
+  - platform: template
+    sensors:
+      internet_test_receive:
+        entity_id:
+          - sensor.internet_test
+        unit_of_measurement: Mbps
+        value_template: >
+          {% if states.sensor.internet_test.attributes.download is defined and states.sensor.internet_test.attributes.download != null %}
+            {{ '%0.2f' | format(states.sensor.internet_test.attributes.download / 1000000.0) }}
+          {%- else -%}null{%- endif -%}
+      internet_test_send:
+        entity_id:
+          - sensor.internet_test
+        unit_of_measurement: Mbps
+        value_template: >
+          {% if states.sensor.internet_test.attributes.upload is defined and states.sensor.internet_test.attributes.upload != null %}
+            {{ '%0.2f' | format(states.sensor.internet_test.attributes.upload / 1000000.0) }}
+          {%- else -%}null{%- endif -%}
+      internet_receive_mean:
+        entity_id:
+          - sensor.internet_receive_statistics_mean
+        unit_of_measurement: Mbps
+        value_template: >
+          {% if states.sensor.internet_receive_statistics_mean is defined %}
+            {{ states.sensor.internet_receive_statistics_mean.state }}
+          {%- else -%}null{%- endif -%}
+      internet_receive_min_value:
+        entity_id:
+          - sensor.internet_receive_statistics_mean
+        unit_of_measurement: Mbps
+        value_template: >
+          {% if states.sensor.internet_receive_statistics_mean is defined %}
+            {{ states.sensor.internet_receive_statistics_mean.attributes.min_value }}
+          {%- else -%}null{%- endif -%}
+      internet_receive_max_value:
+        entity_id:
+          - sensor.internet_receive_statistics_mean
+        unit_of_measurement: Mbps
+        value_template: >
+          {% if states.sensor.internet_receive_statistics_mean is defined %}
+            {{ states.sensor.internet_receive_statistics_mean.attributes.max_value }}
+          {%- else -%}null{%- endif -%}
+      internet_receive_standard_deviation:
+        entity_id:
+          - sensor.internet_receive_statistics_mean
+        unit_of_measurement: Mbps
+        value_template: >
+          {% if states.sensor.internet_receive_statistics_mean is defined %}
+            {{ states.sensor.internet_receive_statistics_mean.attributes.standard_deviation }}
+          {%- else -%}null{%- endif -%}
+      internet_send_mean:
+        entity_id:
+          - sensor.internet_send_statistics_mean
+        unit_of_measurement: Mbps
+        value_template: >
+          {% if states.sensor.internet_send_statistics_mean is defined %}
+            {{ states.sensor.internet_send_statistics_mean.state }}
+          {%- else -%}null{%- endif -%}
+      internet_send_min_value:
+        entity_id:
+          - sensor.internet_send_statistics_mean
+        unit_of_measurement: Mbps
+        value_template: >
+          {% if states.sensor.internet_send_statistics_mean is defined %}
+            {{ states.sensor.internet_send_statistics_mean.attributes.min_value }}
+          {%- else -%}null{%- endif -%}
+      internet_send_max_value:
+        entity_id:
+          - sensor.internet_send_statistics_mean
+        unit_of_measurement: Mbps
+        value_template: >
+          {% if states.sensor.internet_send_statistics_mean is defined %}
+            {{ states.sensor.internet_send_statistics_mean.attributes.max_value }}
+          {%- else -%}null{%- endif -%}
+      internet_send_standard_deviation:
+        entity_id:
+          - sensor.internet_send_statistics_mean
+        unit_of_measurement: Mbps
+        value_template: >
+          {% if states.sensor.internet_send_statistics_mean is defined %}
+            {{ states.sensor.internet_send_statistics_mean.attributes.standard_deviation }}
+          {%- else -%}null{%- endif -%}
+      internet_test_ago:
+        entity_id:
+          - sensor.internet_test
+          - sun.sun
+        unit_of_measurement: seconds
+        value_template: '{{ (now().timestamp()|int) - (states.sensor.internet_test.attributes.date|int) }}'
+      internet_tests_count:
+        entity_id:
+          - sensor.internet_test_count
+        unit_of_measurement: tests
+        value_template: >
+          {% if states.sensor.internet_test_count is defined %}
+            {{ states.sensor.internet_test_count.state }}
+          {%- else -%}null{%- endif -%}
+      internet_slow_count:
+        entity_id:
+          - sensor.internet_slow_test_count
+        unit_of_measurement: tests
+        value_template: >
+          {% if states.sensor.internet_slow_test_count is defined %}
+            {{ states.sensor.internet_slow_test_count.state }}
+          {%- else -%}null{%- endif -%}
+      internet_fast_count:
+        entity_id:
+          - sensor.internet_fast_test_count
+        unit_of_measurement: tests
+        value_template: >
+          {% if states.sensor.internet_fast_test_count is defined %}
+            {{ states.sensor.internet_fast_test_count.state }}
+          {%- else -%}null{%- endif -%}
+  - platform: statistics
+    entity_id: sensor.internet_test_send
+    name: internet_send_statistics
+    sampling_size: 20
+    max_age:
+      hours: 24
+  - platform: statistics
+    entity_id: sensor.internet_test_receive
+    name: internet_receive_statistics
+    sampling_size: 20
+    max_age:
+      hours: 24
+  - platform: statistics
+    entity_id: sensor.internet_send_standard_deviation
+    name: internet_send_stdev
+    sampling_size: 120
+    max_age:
+      hours: 24
+  - platform: statistics
+    entity_id: sensor.internet_receive_standard_deviation
+    name: internet_receive_stdev
+    sampling_size: 120
+    max_age:
+      hours: 24
+  - platform: history_stats
+    name: internet_test_count
+    entity_id: binary_sensor.internet_test_state
+    state: 'on'
+    type: count
+    start: '{{ now().replace(hour=0).replace(minute=0).replace(second=0) }}'
+    end: '{{ now() }}'
+  - platform: history_stats
+    name: internet_slow_test_count
+    entity_id: binary_sensor.internet_slow
+    state: 'on'
+    type: count
+    start: '{{ now().replace(hour=0).replace(minute=0).replace(second=0) }}'
+    end: '{{ now() }}'
+  - platform: history_stats
+    name: internet_fast_test_count
+    entity_id: binary_sensor.internet_fast
+    state: 'on'
+    type: count
+    start: '{{ now().replace(hour=0).replace(minute=0).replace(second=0) }}'
+    end: '{{ now() }}'
+
+binary_sensor internet_test:
+  - platform: template
+    sensors:
+      internet_test_state:
+        entity_id:
+          - sensor.internet_test
+          - sensor.internet_test_ago
+        value_template: >
+          {% if states.sensor.internet_test_ago.state|int > 30 %}False{% else %}True{% endif %}
+      internet_slow:
+        entity_id:
+          - sensor.internet_test_receive
+          - sensor.internet_receive_statistics_mean
+          - input_number.internet_deviation
+        value_template: >-
+          {{ (((states.sensor.internet_receive_mean.state|float) - (states.sensor.internet_test_receive.state|float))
+               / (states.sensor.internet_receive_statistics_mean.attributes.standard_deviation|float) 
+             > (states.input_number.internet_deviation.state|float)) }}
+        icon_template: >
+            mdi:emoticon-sad
+      internet_fast:
+        entity_id:
+          - sensor.internet_test_receive
+          - sensor.internet_receive_statistics_mean
+          - input_number.internet_deviation
+        value_template: >-
+          {{ (((states.sensor.internet_test_receive.state|float) - (states.sensor.internet_receive_mean.state|float))
+               / (states.sensor.internet_receive_statistics_mean.attributes.standard_deviation|float)) 
+             > (states.input_number.internet_deviation.state|float) }}
+        icon_template: >-
+            mdi:emoticon-happy
+      internet_slow_persistent:
+        entity_id:
+          - sensor.internet_test_receive
+          - sensor.internet_receive_stdev_mean
+          - input_number.internet_deviation
+        value_template: >-
+          {{ (((states.sensor.internet_receive_mean.state|float) - (states.sensor.internet_test_receive.state|float))
+               / (states.sensor.internet_receive_stdev_mean.state|float) 
+             > (states.input_number.internet_deviation.state|float)) }}
+        icon_template: >
+            mdi:emoticon-sad
+      internet_fast_persistent:
+        entity_id:
+          - sensor.internet_test_receive
+          - sensor.internet_receive_stdev_mean
+          - input_number.internet_deviation
+        value_template: >-
+          {{ (((states.sensor.internet_test_receive.state|float) - (states.sensor.internet_receive_mean.state|float))
+               / (states.sensor.internet_receive_stdev_mean.state|float)) 
+             > (states.input_number.internet_deviation.state|float) }}
+        icon_template: >-
+            mdi:emoticon-happy
+
+###
+### INTRANET TEST
+###
+
+sensor intranet_docsisgw_test:
+  - platform: command_line
+    command: iperf3 -c 192.168.1.32 -J | jq '{"date":.start.timestamp.timesecs,"send":.end.sum_sent.bits_per_second,"receive":.end.sum_received.bits_per_second}'
+    name: intranet_docsisgw_test
+    scan_interval: 120
+    command_timeout: 60
+    json_attributes:
+      - date
+      - send
+      - receive
+    value_template: >
+      {%- if value_json is defined -%}
+        {{ value_json.date | timestamp_custom("%a %b %d @ %I:%M %p") }}
+      {%- else -%}null{%- endif -%}
+  - platform: template
+    sensors:
+      intranet_docsisgw_test_receive:
+        entity_id:
+          - sensor.intranet_docsisgw_test
+        unit_of_measurement: Mbps
+        value_template: >
+          {% if states.sensor.intranet_docsisgw_test.attributes.receive is defined and states.sensor.intranet_docsisgw_test.attributes.receive != null %}
+            {{ '%0.2f' | format(states.sensor.intranet_docsisgw_test.attributes.receive / 1000000.0) }}
+          {%- else -%}null{%- endif -%}
+      intranet_docsisgw_test_send:
+        entity_id:
+          - sensor.intranet_docsisgw_test
+        unit_of_measurement: Mbps
+        value_template: >
+          {% if states.sensor.intranet_docsisgw_test.attributes.send is defined and states.sensor.intranet_docsisgw_test.attributes.send != null %}
+            {{ '%0.2f' | format(states.sensor.intranet_docsisgw_test.attributes.send / 1000000.0) }}
+          {%- else -%}null{%- endif -%}
+      intranet_docsisgw_receive_mean:
+        entity_id:
+          - sensor.intranet_docsisgw_receive_statistics_mean
+        unit_of_measurement: Mbps
+        value_template: >
+          {% if states.sensor.intranet_docsisgw_receive_statistics_mean is defined %}
+            {{ states.sensor.intranet_docsisgw_receive_statistics_mean.state }}
+          {%- else -%}null{%- endif -%}
+      intranet_docsisgw_receive_min_value:
+        entity_id:
+          - sensor.intranet_docsisgw_receive_statistics_mean
+        unit_of_measurement: Mbps
+        value_template: >
+          {% if states.sensor.intranet_docsisgw_receive_statistics_mean is defined %}
+            {{ states.sensor.intranet_docsisgw_receive_statistics_mean.attributes.min_value }}
+          {%- else -%}null{%- endif -%}
+      intranet_docsisgw_receive_max_value:
+        entity_id:
+          - sensor.intranet_docsisgw_receive_statistics_mean
+        unit_of_measurement: Mbps
+        value_template: >
+          {% if states.sensor.intranet_docsisgw_receive_statistics_mean is defined %}
+            {{ states.sensor.intranet_docsisgw_receive_statistics_mean.attributes.max_value }}
+          {%- else -%}null{%- endif -%}
+      intranet_docsisgw_receive_standard_deviation:
+        entity_id:
+          - sensor.intranet_docsisgw_receive_statistics_mean
+        unit_of_measurement: Mbps
+        value_template: >
+          {% if states.sensor.intranet_docsisgw_receive_statistics_mean is defined %}
+            {{ states.sensor.intranet_docsisgw_receive_statistics_mean.attributes.standard_deviation }}
+          {%- else -%}null{%- endif -%}
+      intranet_docsisgw_send_mean:
+        entity_id:
+          - sensor.intranet_docsisgw_send_statistics_mean
+        unit_of_measurement: Mbps
+        value_template: >
+          {% if states.sensor.intranet_docsisgw_send_statistics_mean is defined %}
+            {{ states.sensor.intranet_docsisgw_send_statistics_mean.state }}
+          {%- else -%}null{%- endif -%}
+      intranet_docsisgw_send_min_value:
+        entity_id:
+          - sensor.intranet_docsisgw_send_statistics_mean
+        unit_of_measurement: Mbps
+        value_template: >
+          {% if states.sensor.intranet_docsisgw_send_statistics_mean is defined %}
+            {{ states.sensor.intranet_docsisgw_send_statistics_mean.attributes.min_value }}
+          {%- else -%}null{%- endif -%}
+      intranet_docsisgw_send_max_value:
+        entity_id:
+          - sensor.intranet_docsisgw_send_statistics_mean
+        unit_of_measurement: Mbps
+        value_template: >
+          {% if states.sensor.intranet_docsisgw_send_statistics_mean is defined %}
+            {{ states.sensor.intranet_docsisgw_send_statistics_mean.attributes.max_value }}
+          {%- else -%}null{%- endif -%}
+      intranet_docsisgw_send_standard_deviation:
+        entity_id:
+          - sensor.intranet_docsisgw_send_statistics_mean
+        unit_of_measurement: Mbps
+        value_template: >
+          {% if states.sensor.intranet_docsisgw_send_statistics_mean is defined %}
+            {{ states.sensor.intranet_docsisgw_send_statistics_mean.attributes.standard_deviation }}
+          {%- else -%}null{%- endif -%}
+      intranet_docsisgw_test_ago:
+        entity_id:
+          - sensor.intranet_docsisgw_test
+          - sun.sun
+        unit_of_measurement: seconds
+        value_template: '{{ (now().timestamp()|int) - (states.sensor.intranet_docsisgw_test.attributes.date|int) }}'
+      intranet_docsisgw_test_state:
+        entity_id:
+          - sensor.intranet_docsisgw_test_ago
+        value_template: >
+          {% if states.sensor.intranet_docsisgw_test_ago.state|int > 30 %}False{% else %}True{% endif %}
+      intranet_docsisgw_count:
+        entity_id:
+          - sensor.intranet_docsisgw_test_count
+        unit_of_measurement: tests
+        value_template: >
+          {% if states.sensor.intranet_docsisgw_test_count is defined %}
+            {{ states.sensor.intranet_docsisgw_test_count.state }}
+          {%- else -%}null{%- endif -%}
+  - platform: statistics
+    entity_id: sensor.intranet_docsisgw_test_send
+    name: intranet_docsisgw_send_statistics
+    max_age:
+      hours: 24
+  - platform: statistics
+    entity_id: sensor.intranet_docsisgw_test_receive
+    name: intranet_docsisgw_receive_statistics
+    max_age:
+      hours: 24
+  - platform: history_stats
+    name: intranet_docsisgw_test_count
+    entity_id: sensor.intranet_docsisgw_test_state
+    state: True
+    type: count
+    start: '{{ now().replace(hour=0).replace(minute=0).replace(second=0) }}'
+    end: '{{ now() }}'
+
+binary_sensor intranet_docsisgw_test:
+  - platform: template
+    sensors:
+      intranet_docsisgw_test_state:
+        entity_id:
+          - sensor.intranet_docsisgw_test
+          - sensor.intranet_docsisgw_test_ago
+        value_template: >
+          {% if states.sensor.intranet_docsisgw_test_ago.state|int > 30 %}False{% else %}True{% endif %}
+      intranet_docsisgw_slow:
+        entity_id:
+          - sensor.intranet_docsisgw_test_receive
+          - sensor.intranet_docsisgw_receive_statistics_mean
+          - input_number.intranet_docsisgw_deviation
+        value_template: >-
+          {{ (((states.sensor.intranet_docsisgw_receive_mean.state|float) - (states.sensor.intranet_docsisgw_test_receive.state|float))
+               / (states.sensor.intranet_docsisgw_receive_statistics_mean.attributes.standard_deviation|float) 
+             > (states.input_number.intranet_docsisgw_deviation.state|float)) }}
+        icon_template: >
+            mdi:emoticon-sad
+      intranet_docsisgw_fast:
+        entity_id:
+          - sensor.intranet_docsisgw_test_receive
+          - sensor.intranet_docsisgw_receive_statistics_mean
+          - input_number.intranet_docsisgw_deviation
+        value_template: >-
+          {{ (((states.sensor.intranet_docsisgw_test_receive.state|float) - (states.sensor.intranet_docsisgw_receive_mean.state|float))
+               / (states.sensor.intranet_docsisgw_receive_statistics_mean.attributes.standard_deviation|float)) 
+             > (states.input_number.intranet_docsisgw_deviation.state|float) }}
+        icon_template: >-
+            mdi:emoticon-happy
+      intranet_docsisgw_slow_persistent:
+        entity_id:
+          - sensor.intranet_docsisgw_test_receive
+          - sensor.intranet_docsisgw_receive_stdev_mean
+          - input_number.intranet_docsisgw_deviation
+        value_template: >-
+          {{ (((states.sensor.intranet_docsisgw_receive_mean.state|float) - (states.sensor.intranet_docsisgw_test_receive.state|float))
+               / (states.sensor.intranet_docsisgw_receive_stdev_mean.state|float) 
+             > (states.input_number.intranet_docsisgw_deviation.state|float)) }}
+        icon_template: >
+            mdi:emoticon-sad
+      intranet_docsisgw_fast_persistent:
+        entity_id:
+          - sensor.intranet_docsisgw_test_receive
+          - sensor.intranet_docsisgw_receive_stdev_mean
+          - input_number.intranet_docsisgw_deviation
+        value_template: >-
+          {{ (((states.sensor.intranet_docsisgw_test_receive.state|float) - (states.sensor.intranet_docsisgw_receive_mean.state|float))
+               / (states.sensor.intranet_docsisgw_receive_stdev_mean.state|float)) 
+             > (states.input_number.intranet_docsisgw_deviation.state|float) }}
+        icon_template: >-
+            mdi:emoticon-happy
+
+sensor intranet_dslgw_test:
+  - platform: command_line
+    command: iperf3 -c 192.168.1.32 -J | jq '{"date":.start.timestamp.timesecs,"send":.end.sum_sent.bits_per_second,"receive":.end.sum_received.bits_per_second}'
+    name: intranet_dslgw_test
+    scan_interval: 120
+    command_timeout: 60
+    json_attributes:
+      - date
+      - send
+      - receive
+    value_template: >
+      {%- if value_json is defined -%}
+        {{ value_json.date | timestamp_custom("%a %b %d @ %I:%M %p") }}
+      {%- else -%}null{%- endif -%}
+  - platform: template
+    sensors:
+      intranet_dslgw_test_receive:
+        entity_id:
+          - sensor.intranet_dslgw_test
+        unit_of_measurement: Mbps
+        value_template: >
+          {% if states.sensor.intranet_dslgw_test.attributes.receive is defined and states.sensor.intranet_dslgw_test.attributes.receive != null %}
+            {{ '%0.2f' | format(states.sensor.intranet_dslgw_test.attributes.receive / 1000000.0) }}
+          {%- else -%}null{%- endif -%}
+      intranet_dslgw_test_send:
+        entity_id:
+          - sensor.intranet_dslgw_test
+        unit_of_measurement: Mbps
+        value_template: >
+          {% if states.sensor.intranet_dslgw_test.attributes.send is defined and states.sensor.intranet_dslgw_test.attributes.send != null %}
+            {{ '%0.2f' | format(states.sensor.intranet_dslgw_test.attributes.send / 1000000.0) }}
+          {%- else -%}null{%- endif -%}
+      intranet_dslgw_receive_mean:
+        entity_id:
+          - sensor.intranet_dslgw_receive_statistics_mean
+        unit_of_measurement: Mbps
+        value_template: >
+          {% if states.sensor.intranet_dslgw_receive_statistics_mean is defined %}
+            {{ states.sensor.intranet_dslgw_receive_statistics_mean.state }}
+          {%- else -%}null{%- endif -%}
+      intranet_dslgw_receive_min_value:
+        entity_id:
+          - sensor.intranet_dslgw_receive_statistics_mean
+        unit_of_measurement: Mbps
+        value_template: >
+          {% if states.sensor.intranet_dslgw_receive_statistics_mean is defined %}
+            {{ states.sensor.intranet_dslgw_receive_statistics_mean.attributes.min_value }}
+          {%- else -%}null{%- endif -%}
+      intranet_dslgw_receive_max_value:
+        entity_id:
+          - sensor.intranet_dslgw_receive_statistics_mean
+        unit_of_measurement: Mbps
+        value_template: >
+          {% if states.sensor.intranet_dslgw_receive_statistics_mean is defined %}
+            {{ states.sensor.intranet_dslgw_receive_statistics_mean.attributes.max_value }}
+          {%- else -%}null{%- endif -%}
+      intranet_dslgw_receive_standard_deviation:
+        entity_id:
+          - sensor.intranet_dslgw_receive_statistics_mean
+        unit_of_measurement: Mbps
+        value_template: >
+          {% if states.sensor.intranet_dslgw_receive_statistics_mean is defined %}
+            {{ states.sensor.intranet_dslgw_receive_statistics_mean.attributes.standard_deviation }}
+          {%- else -%}null{%- endif -%}
+      intranet_dslgw_send_mean:
+        entity_id:
+          - sensor.intranet_dslgw_send_statistics_mean
+        unit_of_measurement: Mbps
+        value_template: >
+          {% if states.sensor.intranet_dslgw_send_statistics_mean is defined %}
+            {{ states.sensor.intranet_dslgw_send_statistics_mean.state }}
+          {%- else -%}null{%- endif -%}
+      intranet_dslgw_send_min_value:
+        entity_id:
+          - sensor.intranet_dslgw_send_statistics_mean
+        unit_of_measurement: Mbps
+        value_template: >
+          {% if states.sensor.intranet_dslgw_send_statistics_mean is defined %}
+            {{ states.sensor.intranet_dslgw_send_statistics_mean.attributes.min_value }}
+          {%- else -%}null{%- endif -%}
+      intranet_dslgw_send_max_value:
+        entity_id:
+          - sensor.intranet_dslgw_send_statistics_mean
+        unit_of_measurement: Mbps
+        value_template: >
+          {% if states.sensor.intranet_dslgw_send_statistics_mean is defined %}
+            {{ states.sensor.intranet_dslgw_send_statistics_mean.attributes.max_value }}
+          {%- else -%}null{%- endif -%}
+      intranet_dslgw_send_standard_deviation:
+        entity_id:
+          - sensor.intranet_dslgw_send_statistics_mean
+        unit_of_measurement: Mbps
+        value_template: >
+          {% if states.sensor.intranet_dslgw_send_statistics_mean is defined %}
+            {{ states.sensor.intranet_dslgw_send_statistics_mean.attributes.standard_deviation }}
+          {%- else -%}null{%- endif -%}
+      intranet_dslgw_test_ago:
+        entity_id:
+          - sensor.intranet_dslgw_test
+          - sun.sun
+        unit_of_measurement: seconds
+        value_template: '{{ (now().timestamp()|int) - (states.sensor.intranet_dslgw_test.attributes.date|int) }}'
+      intranet_dslgw_test_state:
+        entity_id:
+          - sensor.intranet_dslgw_test_ago
+        value_template: >
+          {% if states.sensor.intranet_dslgw_test_ago.state|int > 30 %}False{% else %}True{% endif %}
+      intranet_dslgw_count:
+        entity_id:
+          - sensor.intranet_dslgw_test_count
+        unit_of_measurement: tests
+        value_template: >
+          {% if states.sensor.intranet_dslgw_test_count is defined %}
+            {{ states.sensor.intranet_dslgw_test_count.state }}
+          {%- else -%}null{%- endif -%}
+  - platform: statistics
+    entity_id: sensor.intranet_dslgw_test_send
+    name: intranet_dslgw_send_statistics
+    max_age:
+      hours: 24
+  - platform: statistics
+    entity_id: sensor.intranet_dslgw_test_receive
+    name: intranet_dslgw_receive_statistics
+    max_age:
+      hours: 24
+  - platform: history_stats
+    name: intranet_dslgw_test_count
+    entity_id: sensor.intranet_dslgw_test_state
+    state: True
+    type: count
+    start: '{{ now().replace(hour=0).replace(minute=0).replace(second=0) }}'
+    end: '{{ now() }}'
+
+binary_sensor intranet_dslgw_test:
+  - platform: template
+    sensors:
+      intranet_dslgw_test_state:
+        entity_id:
+          - sensor.intranet_dslgw_test
+          - sensor.intranet_dslgw_test_ago
+        value_template: >
+          {% if states.sensor.intranet_dslgw_test_ago.state|int > 30 %}False{% else %}True{% endif %}
+      intranet_dslgw_slow:
+        entity_id:
+          - sensor.intranet_dslgw_test_receive
+          - sensor.intranet_dslgw_receive_statistics_mean
+          - input_number.intranet_dslgw_deviation
+        value_template: >-
+          {{ (((states.sensor.intranet_dslgw_receive_mean.state|float) - (states.sensor.intranet_dslgw_test_receive.state|float))
+               / (states.sensor.intranet_dslgw_receive_statistics_mean.attributes.standard_deviation|float) 
+             > (states.input_number.intranet_dslgw_deviation.state|float)) }}
+        icon_template: >
+            mdi:emoticon-sad
+      intranet_dslgw_fast:
+        entity_id:
+          - sensor.intranet_dslgw_test_receive
+          - sensor.intranet_dslgw_receive_statistics_mean
+          - input_number.intranet_dslgw_deviation
+        value_template: >-
+          {{ (((states.sensor.intranet_dslgw_test_receive.state|float) - (states.sensor.intranet_dslgw_receive_mean.state|float))
+               / (states.sensor.intranet_dslgw_receive_statistics_mean.attributes.standard_deviation|float)) 
+             > (states.input_number.intranet_dslgw_deviation.state|float) }}
+        icon_template: >-
+            mdi:emoticon-happy
+      intranet_dslgw_slow_persistent:
+        entity_id:
+          - sensor.intranet_dslgw_test_receive
+          - sensor.intranet_dslgw_receive_stdev_mean
+          - input_number.intranet_dslgw_deviation
+        value_template: >-
+          {{ (((states.sensor.intranet_dslgw_receive_mean.state|float) - (states.sensor.intranet_dslgw_test_receive.state|float))
+               / (states.sensor.intranet_dslgw_receive_stdev_mean.state|float) 
+             > (states.input_number.intranet_dslgw_deviation.state|float)) }}
+        icon_template: >
+            mdi:emoticon-sad
+      intranet_dslgw_fast_persistent:
+        entity_id:
+          - sensor.intranet_dslgw_test_receive
+          - sensor.intranet_dslgw_receive_stdev_mean
+          - input_number.intranet_dslgw_deviation
+        value_template: >-
+          {{ (((states.sensor.intranet_dslgw_test_receive.state|float) - (states.sensor.intranet_dslgw_receive_mean.state|float))
+               / (states.sensor.intranet_dslgw_receive_stdev_mean.state|float)) 
+             > (states.input_number.intranet_dslgw_deviation.state|float) }}
+        icon_template: >-
+            mdi:emoticon-happy
+
+###
+### MOTION
+###
+
+sensor motion_sensors:
   - platform: mqtt
-    name: motion_configuration
-    state_topic: '+/+/start'
+    name: motion_configuration_localhost
+    state_topic: 'motion/p40/start'
     json_attributes:
       - unit_system
       - latitude
@@ -3948,66 +4413,61 @@ sensor motion_configuration:
       - motion
       - cameras
     value_template: >
-      {% if value_json is defined %}
-        {{ value_json.devicedb,value_json.host,value_json.name }}
-      {% else %} {{ 'failure' }} {% endif %}
-
-sensor motion_camera_template:
-  platform: template
-  sensors:
-    motion_camera_count:
-      entity_id: 
-        - sensor.motion_configuration
-      value_template: >-
-        {% if states.sensor.motion_configuration.attributes.cameras is defined %}
-          {{ states.sensor.motion_configuration.attributes.cameras | length }}
-        {% else %} {{ null }} {% endif %}
-    motion_camera_names:
-      entity_id: 
-        - sensor.motion_configuration
-      value_template: >-
-        {% if states.sensor.motion_configuration.attributes.cameras is defined %}
-          {%- for camera in states.sensor.motion_configuration.attributes.cameras -%}
-            {% if loop.first %}[{% else %},{% endif %}
-            {{- camera.name | tojson -}}
-            {%- if loop.last -%}]{%- endif -%}
-          {% endfor %}
-        {% else %} {{ null }} {% endif %}
-
-# {"device":"p40","camera":"woodshed","time":1537208567,"status":"found"}
-sensor motion_camera_found:
+      {% if value_json is defined %}True{% else %}null{% endif %}
+  - platform: mqtt
+    name: motion_configuration_network
+    state_topic: 'motion/+/start'
+    json_attributes:
+      - unit_system
+      - latitude
+      - longitude
+      - elevation
+      - interval
+      - minimum_animate
+      - post_pictures
+      - share_dir
+      - name
+      - host
+      - date
+      - www
+      - devicedb
+      - timezone
+      - mqtt
+      - watson
+      - digits
+      - motion
+      - cameras
+    value_template: >
+      {% if value_json is defined %}True{% else %}null{% endif %}
   - platform: mqtt
     name: motion_camera_found
-    state_topic: '+/+/+/status/found'
+    state_topic: 'motion/+/+/status/found'
+    expire_after: 1
+    force_update: true
     json_attributes:
       - device
       - camera
       - date
       - status
     value_template: >
-      {% if value_json is defined %}
-        {{ 'on' }}
-      {% else %} {{ 'off' }} {% endif %}
-
-sensor motion_camera_lost:
+      {% if value_json is defined %}True{% else %}null{% endif %}
   - platform: mqtt
     name: motion_camera_lost
-    state_topic: '+/+/+/status/lost'
+    state_topic: 'motion/+/+/status/lost'
+    expire_after: 1
+    force_update: true
     json_attributes:
       - device
       - camera
       - date
       - status
     value_template: >
-      {% if value_json is defined %}
-        {{ 'on' }}
-      {% else %} {{ 'off' }} {% endif %}
-
-# '{"device":"'$MOTION_DEVICE_NAME'","camera":"'"$CN"'","type":"jpeg","time":'"$NOW"',"seqno":"'"$SN"'","event":"'"$EN"'","id":"'"$ID"'","center":{"x":'"$MX"',"y":'"$MY"'},"width":'"$MW"',"height":'"$MH"',"size":'$SZ',"noise":'$NL'}'
-sensor motion_event_image:
+      {% if value_json is defined %}True{% else %}null{% endif %}
   - platform: mqtt
     name: motion_event_image
-    state_topic: '+/+/+/event/image'
+    state_topic: 'motion/+/+/event/image'
+    expire_after: 1
+    force_update: true
     json_attributes:
       - device
       - camera
@@ -4022,25 +4482,12 @@ sensor motion_event_image:
       - size
       - noise
     value_template: >
-      {% if value_json is defined %}
-        {{ value_json.device,value_json.camera,value_json.date,value_json.event,value_json.id,value_json.size }}
-      {% else %} {{ null }} {% endif %}
-
-sensor motion_event_end_state:
-  - platform: mqtt
-    name: motion_event_end_state
-    state_topic: '+/+/+/event/end'
-    expire_after: 15
-    force_update: true
-    value_template: >
-      {% if value_json is defined %}
-        {{ 'on' }}
-      {% else %} {{ 'off' }} {% endif %}
-
-sensor motion_event_end:
+      {% if value_json is defined %}True{% else %}null{% endif %}
   - platform: mqtt
     name: motion_event_end
-    state_topic: '+/+/+/event/end'
+    state_topic: 'motion/+/+/event/end'
+    expire_after: 1
+    force_update: true
     json_attributes:
       - device
       - camera
@@ -4051,289 +4498,393 @@ sensor motion_event_end:
       - date
       - images
     value_template: >
-      {% if value_json is defined %}
-        {{ value_json.device,value_json.camera,value_json.date,value_json.event,value_json.elapsed,value_json.images|length }}
-      {% else %} {{ null }} {% endif %}
-
-sensor motion_event_end_count:
+      {% if value_json is defined %}True{% else %}null{% endif %}
+  - platform: template
+    sensors:
+      motion_configuration_localhost_camera_count:
+        entity_id:
+          - sensor.motion_configuration_localhost
+        value_template: >-
+          {% if states.sensor.motion_configuration_localhost.attributes.cameras is defined %}
+            {{ states.sensor.motion_configuration_localhost.attributes.cameras | length }}
+          {% else %}null{% endif %}
+      motion_configuration_localhost_camera_names:
+        entity_id:
+          - sensor.motion_configuration_localhost
+        value_template: >-
+          {% if states.sensor.motion_configuration_localhost.attributes.cameras is defined %}
+            {%- for camera in states.sensor.motion_configuration_localhost.attributes.cameras -%}
+              {% if loop.first %}[{% else %},{% endif %}
+              {{- camera.name | tojson -}}
+              {%- if loop.last -%}]{%- endif -%}
+            {% endfor %}
+          {% else %}null{% endif %}
+      motion_configuration_network_camera_count:
+        entity_id:
+          - sensor.motion_configuration_network
+        value_template: >-
+          {% if states.sensor.motion_configuration_network.attributes.cameras is defined %}
+            {{ states.sensor.motion_configuration_network.attributes.cameras | length }}
+          {% else %}null{% endif %}
+      motion_configuration_network_camera_names:
+        entity_id:
+          - sensor.motion_configuration_network
+        value_template: >-
+          {% if states.sensor.motion_configuration_network.attributes.cameras is defined %}
+            {%- for camera in states.sensor.motion_configuration_network.attributes.cameras -%}
+              {% if loop.first %}[{% else %},{% endif %}
+              {{- camera.name | tojson -}}
+              {%- if loop.last -%}]{%- endif -%}
+            {% endfor %}
+          {% else %}null{% endif %}
+      motion_event_end_ago:
+        entity_id:
+          - sensor.motion_event_end
+          - sun.sun
+        unit_of_measurement: seconds
+        value_template: '{{ (now().timestamp()|int) - (states.sensor.motion_event_end.attributes.date|int) }}'
+        icon_template: '{% if (states.sensor.motion_event_end.attributes.date|int) > 300 %} mdi:timer-off {% else %} mdi:timer {% endif %}'
+      motion_event_end_image_first:
+        entity_id:
+          - sensor.motion_event_end
+        value_template: >-
+          {% if states.sensor.motion_event_end is defined %}
+            {% for image in states.sensor.motion_event_end.attributes.images %}
+              {% if loop.first %} {{ image }} {% endif %}
+            {% endfor %}
+          {% else %} null {% endif %}
+      motion_event_end_image_last:
+        entity_id:
+          - sensor.motion_event_end
+        value_template: >-
+          {% if states.sensor.motion_event_end is defined %}
+            {% for image in states.sensor.motion_event_end.attributes.images %}
+              {% if loop.last %} {{ image }} {% endif %}
+            {% endfor %}
+          {% else %} null {% endif %}
+      motion_event_end_image_count:
+        entity_id:
+          - sensor.motion_event_end
+        unit_of_measurement: 'images'
+        value_template: >
+          {% if states.sensor.motion_event_end is defined %}
+            {{ states.sensor.motion_event_end.attributes.images | length }}
+          {% else %} null {% endif %}
+      motion_event_end_when:
+        entity_id:
+          - sensor.motion_event_end
+        value_template: >
+          {% if states.sensor.motion_event_end is defined %}
+            {{ states.sensor.motion_event_end.attributes.date | timestamp_custom("%a %b %d ~ %I:%M %p") }}
+          {% else %} null {% endif %}
+      motion_event_end_device:
+        entity_id:
+          - sensor.motion_event_end
+        value_template: >
+          {% if states.sensor.motion_event_end is defined %}
+            {{ states.sensor.motion_event_end.attributes.device }}
+          {% else %} null {% endif %}
+      motion_event_end_camera:
+        entity_id:
+          - sensor.motion_event_end
+        value_template: >
+          {% if states.sensor.motion_event_end is defined %}
+            {{ states.sensor.motion_event_end.attributes.camera }}
+          {% else %} null {% endif %}
+      motion_event_end_event:
+        entity_id:
+          - sensor.motion_event_end
+        value_template: >
+          {% if states.sensor.motion_event_end is defined %}
+            {{ states.sensor.motion_event_end.attributes.event }}
+          {% else %} null {% endif %}
+      motion_event_end_start:
+        entity_id:
+          - sensor.motion_event_end
+        unit_of_measurement: seconds
+        value_template: >
+          {% if states.sensor.motion_event_end is defined %}
+            {{ states.sensor.motion_event_end.attributes.start | int }}
+          {% else %}null{% endif %}
+      motion_event_end_end:
+        entity_id:
+          - sensor.motion_event_end
+        unit_of_measurement: seconds
+        value_template: >
+          {% if states.sensor.motion_event_end is defined %}
+            {{ states.sensor.motion_event_end.attributes.end | int }}
+          {% else %}null{% endif %}
+      motion_event_end_elapsed:
+        entity_id:
+          - sensor.motion_event_end
+        unit_of_measurement: seconds
+        value_template: >
+          {% if states.sensor.motion_event_end is defined %}
+            {{ states.sensor.motion_event_end.attributes.elapsed }}
+          {% else %}null{% endif %}
+      motion_event_count:
+        entity_id:
+          - sensor.motion_event_end_count
+        unit_of_measurement: events
+        value_template: >
+          {% if states.sensor.motion_event_end_count is defined %}
+            {{ states.sensor.motion_event_end_count.state }}
+          {%- else -%}null{%- endif -%}
+      motion_event_ratio:
+        entity_id:
+          - sensor.motion_event_end_ratio
+        unit_of_measurement: '%'
+        value_template: >
+          {% if states.sensor.motion_event_end_ratio is defined %}
+            {{ states.sensor.motion_event_end_ratio.state }}
+          {%- else -%}null{%- endif -%}
+      motion_event_elapsed_mean:
+        entity_id:
+          - sensor.motion_event_elapsed_statistics_mean
+        unit_of_measurement: seconds
+        value_template: >
+          {% if states.sensor.motion_event_elapsed_statistics_mean is defined %}
+            {{ states.sensor.motion_event_elapsed_statistics_mean.state }}
+          {%- else -%}null{%- endif -%}
+      motion_event_ago_mean:
+        entity_id:
+          - sensor.motion_event_ago_statistics_mean
+        unit_of_measurement: seconds
+        value_template: >
+          {% if states.sensor.motion_event_ago_statistics_mean is defined %}
+            {{ states.sensor.motion_event_ago_statistics_mean.state }}
+          {%- else -%}null{%- endif -%}
   - platform: history_stats
     name: motion_event_end_count
-    entity_id: sensor.motion_event_end_state
-    state: 'on'
+    entity_id: sensor.motion_event_end
+    state: True
     type: count
     start: '{{ now().replace(hour=0).replace(minute=0).replace(second=0) }}'
     end: '{{ now() }}'
-
-sensor motion_event_end_time:
   - platform: history_stats
     icon: mdi:timer
     name: motion_event_end_time
-    entity_id: sensor.motion_event_end_state
-    state: 'on'
+    entity_id: sensor.motion_event_end
+    state: True
     type: time
     start: '{{ now().replace(hour=0).replace(minute=0).replace(second=0) }}'
     end: '{{ now() }}'
-
-sensor motion_event_end_ago_statistics:
+  - platform: history_stats
+    icon: mdi:percent
+    name: motion_event_ratio
+    entity_id: sensor.motion_event_end
+    state: True
+    type: ratio
+    start: '{{ now().replace(hour=0).replace(minute=0).replace(second=0) }}'
+    end: '{{ now() }}'
+  - platform: history_stats
+    icon: mdi:sigma
+    name: motion_event_count
+    entity_id: sensor.motion_event_end
+    state: True
+    type: count
+    start: '{{ now().replace(hour=0).replace(minute=0).replace(second=0) }}'
+    end: '{{ now() }}'
+  - platform: history_stats
+    icon: mdi:timer
+    name: motion_event_end_time
+    entity_id: sensor.motion_event_end
+    state: True
+    type: time
+    start: '{{ now().replace(hour=0).replace(minute=0).replace(second=0) }}'
+    end: '{{ now() }}'
   - platform: statistics
-    name: motion_event_end_ago
+    name: motion_event_ago_statistics
     unit_of_measurement: seconds
     entity_id: sensor.motion_event_end_ago
     max_age:
       hours: 24
+  - platform: statistics
+    icon: mdi:clock
+    name: motion_event_elapsed_statistics
+    entity_id: sensor.motion_event_end_elapsed
+    max_age:
+      hours: 24
 
-# 'start': 1536826793, 'elapsed': 18, 'date': 1536852042, 'camera': 'office', 'device': 'hassio', 'end': 1536621667, 'event': '178'
-
-sensor motion_event_end_template:
-  platform: template
-  sensors:
-    motion_event_end_ago:
-      entity_id:
-        - sensor.motion_event_end
-        - sun.sun
-      unit_of_measurement: seconds
-      value_template: '{{ (now().timestamp()|int) - (states.sensor.motion_event_end.attributes.date|int) }}'
-      icon_template: '{% if (states.sensor.motion_event_end.attributes.date|int) > 300 %} mdi:timer-off {% else %} mdi:timer {% endif %}'
-    motion_event_end_image_first:
-      entity_id: 
-        - sensor.motion_event_end
-      value_template: >-
-        {% if states.sensor.motion_event_end is defined %} 
-          {% for image in states.sensor.motion_event_end.attributes.images %}
-            {% if loop.first %} {{ image }} {% endif %}
-          {% endfor %}
-        {% else %} "none" {% endif %}
-    motion_event_end_image_last:
-      entity_id: 
-        - sensor.motion_event_end
-      value_template: >-
-        {% if states.sensor.motion_event_end is defined %} 
-          {% for image in states.sensor.motion_event_end.attributes.images %}
-            {% if loop.last %} {{ image }} {% endif %}
-          {% endfor %}
-        {% else %} "none" {% endif %}
-    motion_event_end_image_count:
-      entity_id: 
-        - sensor.motion_event_end
-      unit_of_measurement: 'images'
-      value_template: >
-        {% if states.sensor.motion_event_end is defined %} 
-          {{ states.sensor.motion_event_end.attributes.images | length }}
-        {% else %} "never" {% endif %}
-    motion_event_end_when:
-      entity_id: 
-        - sensor.motion_event_end
-      value_template: >
-        {% if states.sensor.motion_event_end is defined %} 
-          {{ states.sensor.motion_event_end.attributes.date | timestamp_custom("%a %b %d ~ %I:%M %p") }}
-        {% else %} "never" {% endif %}
-    motion_event_end_device:
-      entity_id: 
-        - sensor.motion_event_end
-      value_template: >
-        {% if states.sensor.motion_event_end is defined %} 
-          {{ states.sensor.motion_event_end.attributes.device }}
-        {% else %} "none" {% endif %}
-    motion_event_end_camera:
-      entity_id: 
-        - sensor.motion_event_end
-      value_template: >
-        {% if states.sensor.motion_event_end is defined %} 
-          {{ states.sensor.motion_event_end.attributes.camera }}
-        {% else %} "none" {% endif %}
-    motion_event_end_event:
-      entity_id: 
-        - sensor.motion_event_end
-      value_template: >
-        {% if states.sensor.motion_event_end is defined %} 
-          {{ states.sensor.motion_event_end.attributes.event }}
-        {% else %} null {% endif %}
-    motion_event_end_start:
-      entity_id: 
-        - sensor.motion_event_end
-      unit_of_measurement: seconds
-      value_template: >
-        {% if states.sensor.motion_event_end is defined %} 
-          {{ states.sensor.motion_event_end.attributes.start | int }}
-        {% else %} 0 {% endif %}
-    motion_event_end_end:
-      entity_id: 
-        - sensor.motion_event_end
-      unit_of_measurement: seconds
-      value_template: >
-        {% if states.sensor.motion_event_end is defined %} 
-          {{ states.sensor.motion_event_end.attributes.end | int }}
-        {% else %} 0 {% endif %}
-    motion_event_end_elapsed:
-      entity_id: 
-        - sensor.motion_event_end
-      unit_of_measurement: seconds
-      value_template: >
-        {% if states.sensor.motion_event_end is defined %} 
-          {{ states.sensor.motion_event_end.attributes.elapsed }}
-        {% else %} 0 {% endif %}
-
-## IMAGES PROCESSED
-
-camera motion_average:
+# CAMERA
+camera motion_cameras:
+  # LOCALHOST
+  - platform: mjpeg
+    name: motion_localhost_live
+    mjpeg_url: http://cb7b3237-motion:8090/
+    username: !secret motion_username
+    password: !secret motion_password
   - platform: mqtt
-    name: motion_average
-    topic: '+/+/+/image-average'
-
-camera motion_blend:
+    name: motion_localhost_image
+    topic: 'motion/p40/+/image'
   - platform: mqtt
-    name: motion_blend
-    topic: '+/+/+/image-blend'
-
-camera motion_animated_mask:
+    name: motion_localhost_average
+    topic: 'motion/p40/+/image-average'
   - platform: mqtt
-    name: motion_animated_mask
-    topic: '+/+/+/image-animated-mask'
-
-camera motion_composite:
+    name: motion_localhost_blend
+    topic: 'motion/p40/+/image-blend'
   - platform: mqtt
-    name: motion_composite
-    topic: '+/+/+/image-composite'
-
-camera motion_last_animated:
+    name: motion_localhost_animated_mask
+    topic: 'motion/p40/+/image-animated-mask'
   - platform: mqtt
-    name: motion_last_animated
-    topic: '+/+/+/image-animated'
-
-camera motion_last_annotated:
+    name: motion_localhost_composite
+    topic: 'motion/p40/+/image-composite'
   - platform: mqtt
-    name: motion_last_annotated
-    topic: '+/+/+/image-annotated'
-
-camera motion_last_cropped:
+    name: motion_localhost_animated
+    topic: 'motion/p40/+/image-animated'
   - platform: mqtt
-    name: motion_last_cropped
-    topic: '+/+/+/image-cropped'
-
-## LAST IMAGE
-
-camera motion_last_image:
+    name: motion_localhost_annotated
+    topic: 'motion/p40/+/image-annotated'
+  - platform: mqtt
+    name: motion_localhost_cropped
+    topic: 'motion/p40/+/image-cropped'
+  - platform: mqtt
+    name: motion_localhost_image
+    topic: 'motion/p40/+/image'
+  # LAST
   - platform: mqtt
     name: motion_last_image
-    topic: '+/+/+/image'
-
-## ANIMATED
-
-camera motion_backyard_animated:
+    topic: 'motion/+/+/image'
+  - platform: mqtt
+    name: motion_last_average
+    topic: 'motion/+/+/image-average'
+  - platform: mqtt
+    name: motion_last_blend
+    topic: 'motion/+/+/image-blend'
+  - platform: mqtt
+    name: motion_last_animated_mask
+    topic: 'motion/+/+/image-animated-mask'
+  - platform: mqtt
+    name: motion_last_composite
+    topic: 'motion/+/+/image-composite'
+  - platform: mqtt
+    name: motion_last_animated
+    topic: 'motion/+/+/image-animated'
+  - platform: mqtt
+    name: motion_last_annotated
+    topic: 'motion/+/+/image-annotated'
+  - platform: mqtt
+    name: motion_last_cropped
+    topic: 'motion/+/+/image-cropped'
+  # ANIMATED
   - platform: mqtt
     name: motion_backyard_animated
-    topic: '+/+/backyard/image-animated'
-
-camera motion_diningroom_animated:
+    topic: 'motion/+/backyard/image-animated'
   - platform: mqtt
     name: motion_diningroom_animated
-    topic: '+/+/diningroom/image-animated'
-
-camera motion_dogpond_animated:
+    topic: 'motion/+/diningroom/image-animated'
   - platform: mqtt
     name: motion_dogpond_animated
-    topic: '+/+/dogpond/image-animated'
-
-camera motion_dogshed_animated:
+    topic: 'motion/+/dogpond/image-animated'
   - platform: mqtt
     name: motion_dogshed_animated
-    topic: '+/+/dogshed/image-animated'
-
-camera motion_dogshedfront_animated:
+    topic: 'motion/+/dogshed/image-animated'
   - platform: mqtt
     name: motion_dogshedfront_animated
-    topic: '+/+/dogshedfront/image-animated'
-
-camera motion_dogshedmiddle_animated:
+    topic: 'motion/+/dogshedfront/image-animated'
   - platform: mqtt
     name: motion_dogshedmiddle_animated
-    topic: '+/+/dogshedmiddle/image-animated'
-
-camera motion_dogyard_animated:
+    topic: 'motion/+/dogshedmiddle/image-animated'
   - platform: mqtt
     name: motion_dogyard_animated
-    topic: '+/+/dogyard/image-animated'
-
-camera motion_fireplace_animated:
+    topic: 'motion/+/dogyard/image-animated'
   - platform: mqtt
     name: motion_fireplace_animated
-    topic: '+/+/fireplace/image-animated'
-
-camera motion_foyer_animated:
+    topic: 'motion/+/fireplace/image-animated'
   - platform: mqtt
     name: motion_foyer_animated
-    topic: '+/+/foyer/image-animated'
-
-camera motion_frontwalk_animated:
+    topic: 'motion/+/foyer/image-animated'
   - platform: mqtt
     name: motion_frontwalk_animated
-    topic: '+/+/frontwalk/image-animated'
-
-camera motion_garage_animated:
+    topic: 'motion/+/frontwalk/image-animated'
   - platform: mqtt
     name: motion_garage_animated
-    topic: '+/+/garage/image-animated'
-
-camera motion_gravelpad_animated:
+    topic: 'motion/+/garage/image-animated'
   - platform: mqtt
     name: motion_gravelpad_animated
-    topic: '+/+/gravelpad/image-animated'
-
-camera motion_laundry_animated:
+    topic: 'motion/+/gravelpad/image-animated'
   - platform: mqtt
     name: motion_laundry_animated
-    topic: '+/+/laundry/image-animated'
-
-camera motion_livingroom_animated:
+    topic: 'motion/+/laundry/image-animated'
   - platform: mqtt
     name: motion_livingroom_animated
-    topic: '+/+/livingroom/image-animated'
-
-camera motion_phexterior_animated:
+    topic: 'motion/+/livingroom/image-animated'
   - platform: mqtt
     name: motion_phexterior_animated
-    topic: '+/+/phexterior/image-animated'
-
-camera motion_pondview_animated:
+    topic: 'motion/+/phexterior/image-animated'
   - platform: mqtt
     name: motion_pondview_animated
-    topic: '+/+/pondview/image-animated'
-
-camera motion_poolcam_animated:
+    topic: 'motion/+/pondview/image-animated'
   - platform: mqtt
     name: motion_poolcam_animated
-    topic: '+/+/poolcam/image-animated'
-
-camera motion_upperpathgate_animated:
+    topic: 'motion/+/poolcam/image-animated'
   - platform: mqtt
     name: motion_upperpathgate_animated
-    topic: '+/+/upperpathgate/image-animated'
-
-camera motion_woodshed_animated:
+    topic: 'motion/+/upperpathgate/image-animated'
   - platform: mqtt
     name: motion_woodshed_animated
-    topic: '+/+/woodshed/image-animated'
-
-camera motion_office_animated:
-  - platform: mqtt
-    name: motion_office_animated
-    topic: '+/+/office/image-animated'
-
-camera motion_kinect_animated:
+    topic: 'motion/+/woodshed/image-animated'
   - platform: mqtt
     name: motion_kinect_animated
-    topic: '+/+/kinect/image-animated'
-
-camera motion_p40_kinect:
-  - platform: mjpeg
-    mjpeg_url: http://192.168.1.40:8090/img/video.mjpeg
-    name: motion_p40_kinect
-    username: !secret wcv80n_username
-    password: !secret wcv80n_password
-
-camera motion_hassio_office:
-  - platform: mjpeg
-    mjpeg_url: http://192.168.1.47:8090/img/video.mjpeg
-    name: motion_hassio_office
-    username: !secret wcv80n_username
-    password: !secret wcv80n_password
+    topic: 'motion/+/kinect/image-animated'
+  # IMAGE
+  - platform: mqtt
+    name: motion_backyard_image
+    topic: 'motion/+/backyard/image'
+  - platform: mqtt
+    name: motion_diningroom_image
+    topic: 'motion/+/diningroom/image'
+  - platform: mqtt
+    name: motion_dogpond_image
+    topic: 'motion/+/dogpond/image'
+  - platform: mqtt
+    name: motion_dogshed_image
+    topic: 'motion/+/dogshed/image'
+  - platform: mqtt
+    name: motion_dogshedfront_image
+    topic: 'motion/+/dogshedfront/image'
+  - platform: mqtt
+    name: motion_dogshedmiddle_image
+    topic: 'motion/+/dogshedmiddle/image'
+  - platform: mqtt
+    name: motion_dogyard_image
+    topic: 'motion/+/dogyard/image'
+  - platform: mqtt
+    name: motion_fireplace_image
+    topic: 'motion/+/fireplace/image'
+  - platform: mqtt
+    name: motion_foyer_image
+    topic: 'motion/+/foyer/image'
+  - platform: mqtt
+    name: motion_frontwalk_image
+    topic: 'motion/+/frontwalk/image'
+  - platform: mqtt
+    name: motion_garage_image
+    topic: 'motion/+/garage/image'
+  - platform: mqtt
+    name: motion_gravelpad_image
+    topic: 'motion/+/gravelpad/image'
+  - platform: mqtt
+    name: motion_laundry_image
+    topic: 'motion/+/laundry/image'
+  - platform: mqtt
+    name: motion_livingroom_image
+    topic: 'motion/+/livingroom/image'
+  - platform: mqtt
+    name: motion_phexterior_image
+    topic: 'motion/+/phexterior/image'
+  - platform: mqtt
+    name: motion_pondview_image
+    topic: 'motion/+/pondview/image'
+  - platform: mqtt
+    name: motion_poolcam_image
+    topic: 'motion/+/poolcam/image'
+  - platform: mqtt
+    name: motion_upperpathgate_image
+    topic: 'motion/+/upperpathgate/image'
+  - platform: mqtt
+    name: motion_woodshed_image
+    topic: 'motion/+/woodshed/image'
+  - platform: mqtt
+    name: motion_kinect_image
+    topic: 'motion/+/kinect/image'
