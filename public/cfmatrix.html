@@ -567,7 +567,7 @@ function on_classifiers_load() {
 function get_classifiers(device) {
   console.log("get_classifiers");
 
-  var get = "http://age-at-home.dcmartin.com:8999/CGI/aah-cfmatrix.cgi"
+  var get = "http://age-at-home.dcmartin.com:8999/cgi-bin/aah-cfmatrix.cgi"
   var req = new XMLHttpRequest();
 
   if (device) get += "?db=" + device;
@@ -622,7 +622,7 @@ function model_load() {
 function get_model(device,model) {
   console.log("get_model");
 
-  var get = "http://age-at-home.dcmartin.com:8999/CGI/aah-cfmatrix.cgi?"
+  var get = "http://age-at-home.dcmartin.com:8999/cgi-bin/aah-cfmatrix.cgi?"
 
   if (device) {
     get += "db=" + device + "&";
