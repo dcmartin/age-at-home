@@ -1,13 +1,14 @@
 <!DOCTYPE html>
 <html>
 <head>
+<link rel="shortcut icon" href="favicon.ico" />
 <meta property="fb:app_id" content="987455534707663"/>
 
-<link href="https://fonts.googleapis.com/css?family=Open+Sans" rel="stylesheet" type="text/css">
+<link href="https://fonts.googleapis.com/css?family=IBM+Plex+Sans" rel="stylesheet" type="text/css">
 <style>
   body {
-    font-family: 'Open+Sans', sans;
-    font-size: 14px;
+    font-family: 'IBM Plex Sans', sans;
+    font-size: 22px;
   }
 </style>
 <title>Age-At-Home</title>
@@ -166,16 +167,23 @@ UserVoice.push(['addTrigger', {mode: 'contact', trigger_position: 'bottom-right'
 UserVoice.push(['autoprompt', {}]);
 </script>
 
-<body>
+<body style="background-color:#d0d0d0">
 
-<img width="10%" src="images/age-at-home.jpg">
+<table width="75%">
+<tr>
+<td width="45%">
+<img width="90%" src="images/cover.png">
+</td>
+<td valign="middle">
 <h1>
-Age-At-Home
+Private, personal, elder care and assistance
 </h1>
-<a href="http://www.dcmartin.com"><code>Home</code></a>
-<a href="http://www.linkedin.com/in/davidcharlesmartin/"><code>LinkedIn</code></a>
-<a href="http://www.github.com/dcmartin"><code>GitHub</code></a>
-<a href="http://www.twitter.com/dcmartin/"><code>Twitter</code></a>
+<h2>
+Improving elder wellness at home using artificial intelliegence to sense, respond, inform, understand, plan, predict, and act.
+</h2>
+</td>
+</tr>
+</table>
 <div
   class="fb-like"
   data-share="true"
@@ -186,120 +194,152 @@ Age-At-Home
 </fb:login-button>
 <hr>
 <div id="status"></div>
-<p>
-The need for helping elderly individuals or couples remain in their home is increasing as our global population ages.  
-Cognitive processing offers opportunities to assist the elderly by sensing and responding to their actions, needs, and wishes.
-<p>
-To improve overall health many factors must be considered, including diet, exercise, medication adherence, and many other physical metrics,
-but other non-measurable components (e.g. loneliness) need proxies.
-<p>
-While many approaches require devices to be worn, charged and kept up-to-date, as well as send uncontrolled quantities and details of personal information to the Cloud and potentially unknown consumers, the AgeAtHome experiment is based on minimizing the information shared while 
-maximizing the value for any shared information.
-<p>
-The AgeAtHome project's objective is to improve the lives of people, starting with the elderly, by <i>sensing and responding</i> in the home
-and leveraging the cloud to understand, learn, plan, and share teachings from those interactions.
-<p>
-This project is an exploration of the IBM Watson & Cloud Platform for the use of 
-high-fidelity, low-latency, private, hybrid cognitive applications.
-<p>
-This <a href="video.html">video</a> provides an overview.
 
-<h2>
-NEWS
-</h2>
+<p>
+While many approaches to assisting the elderly require devices to be worn, charged and kept up-to-date, smartphone applications to use, and detailed personal information sent to the Cloud, the Age-At-Home system is based on minimizing the information shared while maximizing the value received.
+<p>
+Our objective is to improve the lives of people, starting with the elderly, by <i>sensing and responding</i> in the home
+and leveraging communities of shared interest to improve AI's ability to understand, learn, plan, and interact.
+<p>
+We provide a pervasive, but not invasive, capability to sense and respond <i>in the home</i>; disclosing nothing to anyone outside the home.
+
+
+<h1>How does it work?</h1>
+<p>
+Age-At-Home interfaces with <b>Internet-of-Things</b> (IoT) devices, including cameras, microphones, speakers and utilizes artificial intelligence to:
+
 <ul>
-<li>2018 May 1: <a href="http://ibm.biz/aah-aiconfny2018">"Cognitive IoT and Eldercare"</a> at O'Reilly AI Conference in New York, NY USA
-<li>2018 February 20-22: IBM <a href="https://developer.ibm.com/indexconf/">IBM INDEX Conference</a> in San Francisco, CA USA
-<li>2018 January 18: <a href="https://www.ibm.com/developerworks/library/iot-lessons-learned-02/">"Lessons learned while building a closed-loop, full-stack cognitive IoT application"</a> on IBM DeveloperWorks
-<li>2017 May 8-11:  <a href="http://ibm.biz/aah-gputech">"AgeAtHome - Deep Learning at the Edge"</a> at nVidia GPU Technology Conference in San Jose, CA USA
+<li>processs sensor data into information (e.g. <code>person detected kitchen</code>)
+<li>calculate information statistics for <b>normal</b> to help determine <i>abnormal</i> conditions
+<li>interact for reminders, notifications, with rule-based automations
+<li>collect feedback enabling automated learning and improved predictions
 </ul>
 
-<h2>
-Overview
-</h2>
+<h1>Open Source</h1>
+All the hardware, software, and components are open source and generally available.
+The primary open source projects utilized are:
 <ul>
-<li><a href="howitworks.html">How it Works</a>
-<li><a href="equipment.html">Equipment</a>
-<li><a href="examples.html">examples</a>
-<li><a href="kitchen.html">kitchen</a>
-<li><a href="resin.html">Resin.io</a>
-<li><a href="wiotp.html">Watson IoT Platform</a>
-<li><a href="setup.html">Setup</a>
-<li><a href="hassio.html">Home Assistant</a>
-<li><a href="firstlast.html">First and Last</a>
-<li><a href="devices.html">Devices</a>
-<li><a href="training.html">Training</a>
-<li><a href="digits.html">nVidia DIGITS</a>
+<li><a href="http://home-assistant.io">Home Assistant</a> - home automation software enabling access to 1,000+ IoT devices from many vendors, including those from Apple and Amazon
+<li><a href="http://github.com/motion-ai">Motion Ã👁</a> - Platform for capture and analysis of IoT sensor data (aka <i>situational awareness</i>)
+<li><a href="http://github.com/open-horizon">Open Horizon</a> - LINUX Foundation project for distribution and management of AI services
 </ul>
-
-<h2>
-Analysis
-</h2>
-<ul>
-<li><a href="watson-analytics.html">Watson Analytics</a>
-<li><a href="dsx.html">IBM Data Science Experience</a>
-<li><a href="looker.html">Looker</a>
-<li><a href="excel.html">Analysis with Excel</a>
-<li><a href="restful.html">ReSTful Services</a>
-<li><a href="tree.html">Tree of Watson Visual Recognition classifiers</a>
-</ul>
-
-<h2>GitHub</h2>
 <p>
-The project is openly available on GitHub in two repositories:
-<ul>
-<li><a href="https://github.com/dcmartin/AgeAtHome">RaspberryPi container for resin.io deployment</a>
-<li><a href="https://github.com/dcmartin/age-at-home">Bluemix CloudFoundry application</a>.
-</ul>
 
-<h2>More Information</h2>
+<h1>Activities of Daily Living (ADL)</h1>
+<table>
+<tr>
+<td width="25%" valign="top">
 <h3>
-<a href="http://ibm.biz/ot-aging">IBM Outthink Aging</a>
-</h3>
-IBM Research 
-is developing cognitive technology to build life
-advisors to support the Elderly. These cognitive advisors will be
-fueled by fusion of data such as IoT, wearables, social interactions,
-health, and financial. To power the advisors, IBM Research has built
-core technology, we called the Knowledge Reactor, that is designed
-to be a general-purpose reactive data fusion engine for Cognitive
-IoT. We use the Watson IoT Platform for all the sensor interfaces
-to feed into our reactive data fusion engine. The Knowledge Reactor
-will normalize data across various sensors from different manufactures,
-heterogeneous device types, and so on and build a contextual model
-to track the Elder's status and behavior, and produce alerts from
-cognitive agents. The cognitive insights can easily feed into an
-iPad app like the Elder ones used in the Japan Post project. Through
-our Cognitive Eldercare Research, we will help governments, industries,
-and companies around the world as they seek to develop products and
-technology enabled services for consumers in the new longevity
-economy.
+The portfolio of AI's detect the presence of people -- and animals, vehicles, faces, posture -- and analyze that data to produce <b>actionable information</b> relevant for the <i>key performance indicators</i> (KPI) to be effected; for example elder wellness includes many indicators, including:
 <ul>
-<li>
-<a href="https://www-03.ibm.com/press/us/en/pressrelease/51672.wss">IBM and Avamere to Bring Cognitive Eldercare Research to Senior Living and Skilled Nursing Facilities</a>
-<li>
-<a href="http://www-03.ibm.com/press/us/en/pressrelease/51197.wss">IBM and Italian Healthcare Provider Sole Cooperativa to Study How Internet of Things Can Improve Senior Housing Facilities</a>
-<li>
-<a href="https://www.ibm.com/blogs/emerging-technology/projects/smarter-care-in-bolzano/">IBM Human Centric Solutions Center is making a difference for Italian seniors aging at home in Bolzano</a>
+<li>Mobility
+<li>Cooking
+<li>Sleeping
+<li>Bathing
+<li>Dressing
+<li>Toileting
 </ul>
+</h3>
+</td>
+<td>
+<img src="images/adl.png" width="70%">
+</td>
+</tr>
+</table>
+
+<table>
+<tr>
+<td width="25%"> <h3>Visualizations of entity detection information across time and location; for example analysis of <code>person</code> detected in the <code>kitchen</code>: </h3> </td>
+<td>
+<table>
+<tr><td align="center"><img src="images/person-normal-active.png" height="256"> </td> </tr>
+<tr><td align="center"><img src="images/person-over-active.png" height="256"> </td> </tr>
+<tr><td align="center"><img src="images/person-under-active.png" height="256"> </td></tr>
+</table>
+</td>
+<td width="25%">
+<h3>Visualizations of the entities detected in the <code>kitchen</code>, including <i>heatmap</i>, <i>cloud</i>, and <i>relationships</i></h3>
+</td>
+<td>
+<table>
+<tr> <td align="left"> <img src="images/classifier-heatmap.png" height="256"> </td>
+<tr> <td align="left"> <img src="images/classifier-cloud.png" height="256"> </td>
+<tr> <td align="left"> <img src="images/classifier-score.png" height="256"> </td> </tr>
+</td>
+</tr>
+</table>
+</table>
+
+<h1>Proactive engagements via voice</h1>
+
+<table>
+<tr>
+<td width="25%">
+<ul>
+<li><h3>Reminders for activities, e.g. eating, bathing, ...</h3></li>
+<li><h3>Question & Answer to request confirmation or selection of option</h3></li>
+<li><h3>Learning from new examples based on feedback</h3></li>
+</ul>
+</td>
+<td>
+<img src="images/interact.png" width="70%">
+</td>
+</tr>
+</table>
+
+<h1>Our Principles</h1>
+<table>
+<tr>
+<td width="70%">
+<h2>We <i>believe</i> AI accuracy depends on data intimacy; and intimacy requires privacy.</h2>
+<h2>We <i>aspire</i> to effect ethical AI with beneficial outcomes.</h2>
+<h2>We <i>make</i> to help people live more satisfying and fulfilling lives.</h2>
+</td>
+<td valign="middle">
+<img src="images/we.png" width="70%">
+</td>
+</tr>
+</table>
+
+<h1>
+References
+</h1>
+<ul>
+<li><a href="https://www.linkedin.com/pulse/understanding-ai-david-c-martin/">Understanding AI</a>
+<li><a href="https://www.linkedin.com/pulse/building-better-bot-david-c-martin/">Building a Better 'bot</a>
+<li><a href="http://ibm.biz/aah-aiconfny2018">Cognitive IoT and Eldercare</a> at O'Reilly AI Conference in New York, NY USA
+<li><a href="http://on-demand.gputechconf.com/gtc/2017/presentation/s7857-david-martin-age-at-home-deep-learning-at-the-edge.pdf">AgeAtHome - Deep Learning at the Edge</a> at nVidia GPU Technology Conference in San Jose, CA USA (<a href=">PDF</a> <a href="https://www.youtube.com/watch?v=ZkqNiCcHgdI">YouTube</a>)
+<li><a href="http://ibm.biz/ot-aging">IBM Outthink Aging</a>
+<li> <a href="https://www-03.ibm.com/press/us/en/pressrelease/51672.wss">IBM and Avamere to Bring Cognitive Eldercare Research to Senior Living and Skilled Nursing Facilities</a>
+<li> <a href="http://www-03.ibm.com/press/us/en/pressrelease/51197.wss">IBM and Italian Healthcare Provider Sole Cooperativa to Study How Internet of Things Can Improve Senior Housing Facilities</a>
+<li> <a href="https://www.ibm.com/blogs/emerging-technology/projects/smarter-care-in-bolzano/">IBM Human Centric Solutions Center is making a difference for Italian seniors aging at home in Bolzano</a>
+</ul>
+
+
+<h1>Video</h1>
+<video width="50%" controls src="images/AgeAtHome.mp4" type="video/mp4"></video>
+
+<h1>Prototypes</h1>
+
+<table>
+<tr>
+<td><img src="images/jetson.png" width="512"></td>
+<td><img src="images/pi4.png" width="512"></td>
+</tr>
+</table>
+
+<hr>
 <p>
+If you've read all the way to here and you still want more information, you can find me at the following places; or click on the little blue circle in the lower right of your web browser to talk to me directly:
+<a href="http://www.linkedin.com/in/davidcharlesmartin/">LinkedIn</a>
+<a href="http://www.github.com/dcmartin">GitHub</a>
+<a href="http://www.twitter.com/dcmartin/">Twitter</a>
+<p>
+<img width="5%" src="images/dcm.jpg">
 <a href="https://clustrmaps.com/site/17cyl" title="Visit tracker">
 <img width="0" src="//www.clustrmaps.com/map_v2.png?d=Shbg_JkATX2fyNkoaJZSr_lIB_gPefMFNFGjwbJV3wc&cl=ffffff">
 </a>
 
-<!-- NO TALKING
-
-<script>
-var aud = document.createElement("iframe");
-aud.setAttribute('src', "http://age-at-home.mybluemix.net/hello.mp3"); // replace with actual file path
-aud.setAttribute('width', '1px');
-aud.setAttribute('height', '1px');
-aud.setAttribute('scrolling', 'no');
-aud.style.border = "0px";
-document.body.appendChild(aud);
-</script>
-
---!>
 
 </body>
 </html>
