@@ -1,6 +1,0 @@
-env
-*.caffemodel
-*.mlmodel
-*.lmdb
-*.map
-TEST
