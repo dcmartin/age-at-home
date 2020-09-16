@@ -2,126 +2,26 @@
 <html>
 <head>
 <link rel="shortcut icon" href="favicon.ico" />
-<meta property="fb:app_id" content="987455534707663"/>
-
 <link href="https://fonts.googleapis.com/css?family=IBM+Plex+Sans" rel="stylesheet" type="text/css">
 <style>
-  body {
-    font-family: 'IBM Plex Sans', sans;
-    font-size: 22px;
-  }
+body { font-family: 'IBM Plex Sans', sans; font-size: 22px; }
 </style>
 <title>Age-At-Home</title>
 </head>
 
-<!-- start Mixpanel -->
+<!--
+MIXPANEL
+--!>
+
 <script type="text/javascript">(function(e,b){if(!b.__SV){var a,f,i,g;window.mixpanel=b;b._i=[];b.init=function(a,e,d){function f(b,h){var a=h.split(".");2==a.length&&(b=b[a[0]],h=a[1]);b[h]=function(){b.push([h].concat(Array.prototype.slice.call(arguments,0)))}}var c=b;"undefined"!==typeof d?c=b[d]=[]:d="mixpanel";c.people=c.people||[];c.toString=function(b){var a="mixpanel";"mixpanel"!==d&&(a+="."+d);b||(a+=" (stub)");return a};c.people.toString=function(){return c.toString(1)+".people (stub)"};i="disable time_event track track_pageview track_links track_forms register register_once alias unregister identify name_tag set_config people.set people.set_once people.increment people.append people.union people.track_charge people.clear_charges people.delete_user".split(" ");
 for(g=0;g<i.length;g++)f(c,i[g]);b._i.push([a,e,d])};b.__SV=1.2;a=e.createElement("script");a.type="text/javascript";a.async=!0;a.src="undefined"!==typeof MIXPANEL_CUSTOM_LIB_URL?MIXPANEL_CUSTOM_LIB_URL:"file:"===e.location.protocol&&"//cdn.mxpnl.com/libs/mixpanel-2-latest.min.js".match(/^\/\//)?"https://cdn.mxpnl.com/libs/mixpanel-2-latest.min.js":"//cdn.mxpnl.com/libs/mixpanel-2-latest.min.js";f=e.getElementsByTagName("script")[0];f.parentNode.insertBefore(a,f)}})(document,window.mixpanel||[]);
 mixpanel.init("8ce3a282a575094e41bbc4b4b0f4bf9e");
 mixpanel.track("home");
 </script>
-<!-- end Mixpanel -->
 
-
-<!-- BEGIN FACEBOOK -->
-<script>
-  window.fbAsyncInit = function() {
-    FB.init({
-      appId      : '1111540888912456',
-      xfbml      : true,
-      version    : 'v2.6'
-    });
-  };
-
-  (function(d, s, id){
-     var js, fjs = d.getElementsByTagName(s)[0];
-     if (d.getElementById(id)) {return;}
-     js = d.createElement(s); js.id = id;
-     js.src = "//connect.facebook.net/en_US/sdk.js";
-     fjs.parentNode.insertBefore(js, fjs);
-   }(document, 'script', 'facebook-jssdk'));
-</script>
-<script>
-  // This is called with the results from from FB.getLoginStatus().
-  function statusChangeCallback(response) {
-    console.log('statusChangeCallback');
-    console.log(response);
-    // The response object is returned with a status field that lets the
-    // app know the current login status of the person.
-    // Full docs on the response object can be found in the documentation
-    // for FB.getLoginStatus().
-    if (response.status === 'connected') {
-      // Logged into your app and Facebook.
-      testAPI();
-    } else if (response.status === 'not_authorized') {
-      // The person is logged into Facebook, but not your app.
-      document.getElementById('status').innerHTML = 'Please log ' +
-        'into this app.';
-    } else {
-      // The person is not logged into Facebook, so we're not sure if
-      // they are logged into this app or not.
-      document.getElementById('status').innerHTML = 'Please log ' +
-        'into Facebook.';
-    }
-  }
-
-  // This function is called when someone finishes with the Login
-  // Button.  See the onlogin handler attached to it in the sample
-  // code below.
-  function checkLoginState() {
-    FB.getLoginStatus(function(response) {
-      statusChangeCallback(response);
-    });
-  }
-
-  window.fbAsyncInit = function() {
-  FB.init({
-    appId      : '1111540888912456',
-    cookie     : true,  // enable cookies to allow the server to access 
-                        // the session
-    xfbml      : true,  // parse social plugins on this page
-    version    : 'v2.5' // use graph api version 2.5
-  });
-
-  // Now that we've initialized the JavaScript SDK, we call 
-  // FB.getLoginStatus().  This function gets the state of the
-  // person visiting this page and can return one of three states to
-  // the callback you provide.  They can be:
-  //
-  // 1. Logged into your app ('connected')
-  // 2. Logged into Facebook, but not your app ('not_authorized')
-  // 3. Not logged into Facebook and can't tell if they are logged into
-  //    your app or not.
-  //
-  // These three cases are handled in the callback function.
-
-  FB.getLoginStatus(function(response) {
-    statusChangeCallback(response);
-  });
-
-  };
-
-  // Load the SDK asynchronously
-  (function(d, s, id) {
-    var js, fjs = d.getElementsByTagName(s)[0];
-    if (d.getElementById(id)) return;
-    js = d.createElement(s); js.id = id;
-    js.src = "//connect.facebook.net/en_US/sdk.js";
-    fjs.parentNode.insertBefore(js, fjs);
-  }(document, 'script', 'facebook-jssdk'));
-
-  // Here we run a very simple test of the Graph API after login is
-  // successful.  See statusChangeCallback() for when this call is made.
-  function testAPI() {
-    console.log('Welcome!  Fetching your information.... ');
-    FB.api('/me', function(response) {
-      console.log('Successful login for: ' + response.name);
-      document.getElementById('status').innerHTML =
-        'Thanks for logging in, ' + response.name + '!';
-    });
-  }
-</script>
-<!-- END FACEBOOK -->
+<!--
+USERVOICE
+--!>
 
 <script>
 // Include the UserVoice JavaScript SDK (only needed once on a page)
@@ -167,6 +67,10 @@ UserVoice.push(['addTrigger', {mode: 'contact', trigger_position: 'bottom-right'
 UserVoice.push(['autoprompt', {}]);
 </script>
 
+<!--
+MAIN
+--!>
+
 <body style="background-color:#d0d0d0">
 
 <table width="75%">
@@ -184,25 +88,21 @@ Improving elder wellness at home using artificial intelliegence to sense, respon
 </td>
 </tr>
 </table>
-<div
-  class="fb-like"
-  data-share="true"
-  data-width="450"
-  data-show-faces="true">
-</div>
-<fb:login-button scope="public_profile,email" onlogin="checkLoginState();">
-</fb:login-button>
-<hr>
-<div id="status"></div>
 
+<h1>Our Story</h1>
+Inspired by an award-winning IBM <b>Cognitive Build</b> <a href="http://age-at-home.mybluemix.net/">project</a>; <b>now available as an open-source project!</b>
 <p>
-While many approaches to assisting the elderly require devices to be worn, charged and kept up-to-date, smartphone applications to use, and detailed personal information sent to the Cloud, the Age-At-Home system is based on minimizing the information shared while maximizing the value received.
+Age-At-Home provides personal, local, artificial intelligence to assist and interact with both the elderly and their community of family, friends, and care-givers.
+<p>
+Utilizing open-source software from <a href="http://home-assistant.io">Home Assistant</a> and the LINUX Foundation's <a href="https://www.lfedge.org/projects/openhorizon/">Open Horizon</a>, the system provides
+ distributed and decentralized <b>edge AI</b> to <i>sense</i> and <b>respond</b> to end-user activities and interactions.
+<p>
+While many approaches to assisting the elderly require devices to be worn or smartphone <i>apps</i> and sending data to the Cloud,
+Age-At-Home is a pervasive, but not invasive, aggregation of your Internet-of-Things (IOT) and "smart" devices and their capabilities.
+Analyzing data, producing information, and sensing and responding <i>in the home</i>; disclosing <b>only</b> <i>your</i> selected information to friends, family, or care-takers.
 <p>
 Our objective is to improve the lives of people, starting with the elderly, by <i>sensing and responding</i> in the home
 and leveraging communities of shared interest to improve AI's ability to understand, learn, plan, and interact.
-<p>
-We provide a pervasive, but not invasive, capability to sense and respond <i>in the home</i>; disclosing nothing to anyone outside the home.
-
 
 <h1>How does it work?</h1>
 <p>
@@ -215,22 +115,12 @@ Age-At-Home interfaces with <b>Internet-of-Things</b> (IoT) devices, including c
 <li>collect feedback enabling automated learning and improved predictions
 </ul>
 
-<h1>Open Source</h1>
-All the hardware, software, and components are open source and generally available.
-The primary open source projects utilized are:
-<ul>
-<li><a href="http://home-assistant.io">Home Assistant</a> - home automation software enabling access to 1,000+ IoT devices from many vendors, including those from Apple and Amazon
-<li><a href="http://github.com/motion-ai">Motion Ã👁</a> - Platform for capture and analysis of IoT sensor data (aka <i>situational awareness</i>)
-<li><a href="http://github.com/open-horizon">Open Horizon</a> - LINUX Foundation project for distribution and management of AI services
-</ul>
-<p>
-
 <h1>Activities of Daily Living (ADL)</h1>
 <table>
 <tr>
 <td width="25%" valign="top">
 <h3>
-The portfolio of AI's detect the presence of people -- and animals, vehicles, faces, posture -- and analyze that data to produce <b>actionable information</b> relevant for the <i>key performance indicators</i> (KPI) to be effected; for example elder wellness includes many indicators, including:
+The portfolio of AI's detect the presence of people -- and animals, vehicles, faces, posture -- and analyze that data to produce <b>actionable information</b> relevant for the <i>key performance indicators</i>:
 <ul>
 <li>Mobility
 <li>Cooking
@@ -245,29 +135,6 @@ The portfolio of AI's detect the presence of people -- and animals, vehicles, fa
 <img src="images/adl.png" width="70%">
 </td>
 </tr>
-</table>
-
-<table>
-<tr>
-<td width="25%"> <h3>Visualizations of entity detection information across time and location; for example analysis of <code>person</code> detected in the <code>kitchen</code>: </h3> </td>
-<td>
-<table>
-<tr><td align="center"><img src="images/person-normal-active.png" height="256"> </td> </tr>
-<tr><td align="center"><img src="images/person-over-active.png" height="256"> </td> </tr>
-<tr><td align="center"><img src="images/person-under-active.png" height="256"> </td></tr>
-</table>
-</td>
-<td width="25%">
-<h3>Visualizations of the entities detected in the <code>kitchen</code>, including <i>heatmap</i>, <i>cloud</i>, and <i>relationships</i></h3>
-</td>
-<td>
-<table>
-<tr> <td align="left"> <img src="images/classifier-heatmap.png" height="256"> </td>
-<tr> <td align="left"> <img src="images/classifier-cloud.png" height="256"> </td>
-<tr> <td align="left"> <img src="images/classifier-score.png" height="256"> </td> </tr>
-</td>
-</tr>
-</table>
 </table>
 
 <h1>Proactive engagements via voice</h1>
@@ -318,6 +185,65 @@ References
 
 <h1>Video</h1>
 <video width="50%" controls src="images/AgeAtHome.mp4" type="video/mp4"></video>
+
+<!--
+VISUALIZATIONS
+--!>
+
+<h1>Analysis</h1>
+
+<table>
+<tr>
+<td valign="top" width="25%"> <h3>Entity detection information across time and location; for example analysis of <code>person</code> detected in the <code>kitchen</code>: </h3> </td>
+<td>
+<table>
+<tr><td align="center"><img src="images/person-normal-active.png" height="256"> </td> </tr>
+<tr><td align="center"><img src="images/person-over-active.png" height="256"> </td> </tr>
+<tr><td align="center"><img src="images/person-under-active.png" height="256"> </td></tr>
+</table>
+</td>
+<td valign="top" width="25%">
+<h3>Entities detected in the <code>kitchen</code>, including <i>heatmap</i>, <i>cloud</i>, and <i>relationships</i></h3>
+</td>
+<td>
+<table>
+<tr> <td align="left"> <img src="images/classifier-heatmap.png" height="256"> </td>
+<tr> <td align="left"> <img src="images/classifier-cloud.png" height="256"> </td>
+<tr> <td align="left"> <img src="images/classifier-score.png" height="256"> </td> </tr>
+</td>
+</tr>
+</table>
+</table>
+
+<h1>Open Source</h1>
+All the hardware, software, and components are open source and generally available.
+<p>
+<table>
+<tr>
+<td valign="top" width="25%">
+<a href="http://github.com/motion-ai">Motion Ã👁</a> - Platform for capture and analysis of IoT sensor data (aka <i>situational awareness</i>)
+</td>
+<td>
+<a href="https://raw.githubusercontent.com/dcmartin/motion-ai/master/docs/samples/example-motion-detection.gif"><img src="https://raw.githubusercontent.com/dcmartin/motion-ai/master/docs/samples/example-motion-detection.gif" width="70%"></a>
+</td>
+</tr>
+<tr>
+<td valign="top" width="25%">
+<a href="http://home-assistant.io">Home Assistant</a> - home automation software enabling access to 1,000+ IoT devices from many vendors, including those from Apple and Amazon
+</td>
+<td>
+<img src="https://www.home-assistant.io/images/hero_screenshot.png" width="30%">
+</td>
+</tr>
+<tr>
+<td valign="top" width="25%">
+<a href="https://www.lfedge.org/projects/openhorizon/">Open Horizon</a> - LINUX Foundation project for distribution and management of AI services
+</td>
+<td>
+<img src="https://www.lfedge.org/wp-content/uploads/2020/04/Screen-Shot-2020-04-24-at-2.30.46-PM.png" width="20%">
+</td>
+</tr>
+</table>
 
 <h1>Prototypes</h1>
 
